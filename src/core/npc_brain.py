@@ -1,7 +1,10 @@
 import random
+import logging
 from typing import Dict, List, Optional
 from .entities import NPC, Player, Faction, FACTION_NAMES, NpcType
 from .llm_client import get_llm_client, FACTION_RELATIONS
+
+logger = logging.getLogger(__name__)
 
 
 class DialogueState:
@@ -12,6 +15,9 @@ class DialogueState:
     TEACH_OFFER = "teach_offer"
     TRADE = "trade"
     FAREWELL = "farewell"
+    ROMANCE = "romance"
+    DARK_STORYLINE = "dark_storyline"
+    PREQUEL = "prequel"
 
 
 class PlayerBehaviorTracker:
@@ -54,7 +60,7 @@ class PlayerBehaviorTracker:
         else:
             b["bad_deeds"] += 1
         if npc.faction != Faction.NONE:
-            faction_name = FACTION_NAMES[npc.faction.value]
+            faction_name = FACTION_NAMES.get(npc.faction, '未知门派')
             if npc.npc_type == NpcType.ENEMY:
                 b["factions_helped"].add(faction_name)
             else:
@@ -68,7 +74,7 @@ class PlayerBehaviorTracker:
         if quest_type in ("kill", "guard"):
             b["good_deeds"] += 1
         if npc_faction != Faction.NONE:
-            b["factions_helped"].add(FACTION_NAMES[npc_faction.value])
+            b["factions_helped"].add(FACTION_NAMES.get(npc_faction, '未知门派'))
 
     def record_dialogue(self, player_name: str, npc_name: str, npc_faction: Faction) -> None:
         b = self.get_behavior(player_name)
@@ -144,7 +150,7 @@ class NPCBrain:
             "name": player.name,
             "level": player.level,
             "faction": player.faction.value,
-            "faction_name": FACTION_NAMES[player.faction.value],
+            "faction_name": FACTION_NAMES.get(player.faction, '未知门派'),
             "daode": player.daode,
             "strength": player.strength,
             "dexterity": player.dexterity,
@@ -203,6 +209,18 @@ class NPCBrain:
             f"门派态度：{faction_attitude}",
         ]
 
+        romance_context = self._get_romance_context(player)
+        if romance_context:
+            context.append(romance_context)
+
+        dark_context = self._get_dark_context(player)
+        if dark_context:
+            context.append(dark_context)
+
+        prequel_context = self._get_prequel_context(player)
+        if prequel_context:
+            context.append(prequel_context)
+
         if player.name not in self._greeted_players:
             self._greeted_players.add(player.name)
             self.state = DialogueState.GREETING
@@ -212,13 +230,19 @@ class NPCBrain:
             self._add_to_history("player", player_input)
             self.state = self._determine_next_state(player_input)
 
-        response_text = llm.generate_dialogue(
-            npc_info=npc_info,
-            player_info=player_info,
-            player_input=player_input,
-            context=context,
-            dialogue_history=self.dialogue_history,
-        )
+        try:
+            response_text = llm.generate_dialogue(
+                npc_info=npc_info,
+                player_info=player_info,
+                player_input=player_input,
+                context=context,
+                dialogue_history=self.dialogue_history,
+            )
+        except Exception:
+            response_text = f"你好，我是{self.npc.name}。有什么事吗？"
+
+        if not response_text:
+            response_text = f"你好，我是{self.npc.name}。"
 
         self._add_to_history("npc", response_text)
 
@@ -248,6 +272,9 @@ class NPCBrain:
         trade_keywords = ['买', '卖', '东西', '货物', '价格', '交易']
         bye_keywords = ['再见', '告辞', '走了', '下次', '留步']
         gossip_keywords = ['传闻', '消息', '最近', '发生', '江湖']
+        romance_keywords = ['喜欢', '心意', '在一起', '约会', '灯会', '花灯', '月下', '绣花', '茶花', '心意']
+        dark_keywords = ['暗影', '暗影司', '密探', '密约', '七派密约', '噬魂']
+        prequel_keywords = ['二十年前', '血月教', '围剿', '前传', '往事', '旧事']
 
         if any(k in player_input for k in bye_keywords):
             return DialogueState.FAREWELL
@@ -259,6 +286,12 @@ class NPCBrain:
             return DialogueState.TRADE
         if any(k in player_input for k in gossip_keywords):
             return DialogueState.CHATTING
+        if any(k in player_input for k in romance_keywords):
+            return DialogueState.ROMANCE
+        if any(k in player_input for k in dark_keywords):
+            return DialogueState.DARK_STORYLINE
+        if any(k in player_input for k in prequel_keywords):
+            return DialogueState.PREQUEL
         return DialogueState.CHATTING
 
     def _generate_quest_hint(self, player: Player) -> str:
@@ -286,13 +319,54 @@ class NPCBrain:
         if not self.npc.teach_skills:
             return ""
         skill_names = []
-        from .world import ALL_SKILLS
-        for sid in self.npc.teach_skills[:3]:
-            if sid in ALL_SKILLS:
-                skill_names.append(ALL_SKILLS[sid].name)
+        try:
+            from .world import ALL_SKILLS
+            for sid in self.npc.teach_skills[:3]:
+                if sid in ALL_SKILLS:
+                    skill_names.append(ALL_SKILLS[sid].name)
+        except ImportError:
+            pass
         if skill_names:
             return f"我可以传授你{', '.join(skill_names)}等武功。"
         return "我可以教你一些武功。"
+
+    def _get_romance_context(self, player: Player) -> str:
+        try:
+            from .script_system import get_script_db, get_character_names
+            script_db = get_script_db()
+            for line in script_db.get_romance_storylines():
+                if line.character and self.npc.name in get_character_names(line.character):
+                    flags = getattr(player, '_story_flags', [])
+                    if any(f in flags for f in line.prerequisites.get("flags", [])):
+                        return f"【浪漫剧情】你与{self.npc.name}之间有特殊的情感线'{line.title}'，可以展开浪漫对话"
+                    return f"【浪漫剧情】你与{self.npc.name}之间可能发展出情感线'{line.title}'"
+        except Exception as e:
+            logger.debug(f"获取浪漫上下文失败: {e}")
+        return ""
+
+    def _get_dark_context(self, player: Player) -> str:
+        try:
+            from .script_system import get_script_db
+            script_db = get_script_db()
+            flags = getattr(player, '_story_flags', [])
+            for line in script_db.get_dark_storylines():
+                if any(f in flags for f in line.prerequisites.get("flags", [])):
+                    return f"【暗线剧情】暗影司的阴影正在逼近，'{line.title}'剧情可以展开"
+        except Exception as e:
+            logger.debug(f"获取暗线上下文失败: {e}")
+        return ""
+
+    def _get_prequel_context(self, player: Player) -> str:
+        try:
+            from .script_system import get_script_db
+            script_db = get_script_db()
+            flags = getattr(player, '_story_flags', [])
+            for line in script_db.get_prequel_storylines():
+                if any(f in flags for f in line.prerequisites.get("flags", [])):
+                    return f"【前传剧情】尘封的往事正在浮现，'{line.title}'可以展开"
+        except Exception as e:
+            logger.debug(f"获取前传上下文失败: {e}")
+        return ""
 
     def request_quest(self, player: Player, player_behavior: Dict = None) -> Optional[Dict]:
         if not self.npc.has_quests:
@@ -302,12 +376,18 @@ class NPCBrain:
         npc_info = self.get_npc_info()
         player_info = self.get_player_info(player)
 
-        task = llm.generate_task(
-            npc_info=npc_info,
-            player_info=player_info,
-            existing_tasks=[],
-            player_behavior=player_behavior,
-        )
+        try:
+            task = llm.generate_task(
+                npc_info=npc_info,
+                player_info=player_info,
+                existing_tasks=[],
+                player_behavior=player_behavior,
+            )
+        except Exception:
+            return None
+
+        if not task:
+            return None
 
         self._pending_task = task
         self.state = DialogueState.TASK_DETAIL

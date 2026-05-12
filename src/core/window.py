@@ -3,9 +3,9 @@ import math
 import random
 from typing import Optional, List, Dict
 from .config import GAME_CONFIG, COLORS, UI_CONFIG, VISUAL_CONFIG
-from . import renderer
+from . import render as renderer
 from .vfx import VFXManager
-from .world import GameWorld, MAP_W, MAP_H, WALKABLE, TS, col_to_x, row_to_y
+from .world import GameWorld, MAP_W, MAP_H, WALKABLE, TS, col_to_x, row_to_y, FACTION_NAMES
 from .entities import Player, NPC, Faction, NpcType, QuestType, Quest, Skill
 from .quest import get_quest_manager
 from .npc_brain import DialogueState, get_npc_brain_manager
@@ -73,6 +73,10 @@ class GameWindow(arcade.Window):
         self.time_of_day = 0.0
         self.vfx = VFXManager(SW, SH)
         self._hurt_flash_val = 0.0
+        self._in_combat = False
+        self._combat_enemy = None
+        self._combat_log = []
+        self._shop_items = []
 
         self.font = "Arial"
 
@@ -102,11 +106,20 @@ class GameWindow(arcade.Window):
 
         self.vfx.update(delta_time)
 
+        from .render.post_process import get_advanced_lights, get_env_particles, get_post_processor
+        get_advanced_lights().update(delta_time)
+        get_post_processor().update(delta_time)
+        env = get_env_particles()
+        if not env._initialized:
+            env.init(SW, SH)
+        day_progress = self.vfx.day_night.time if hasattr(self.vfx, 'day_night') else 0.5
+        env.update(delta_time, day_progress)
+
         if self.game_state == "playing" and self.game_world.player:
             self.game_world.update(delta_time)
 
             p = self.game_world.player
-            speed = 200 * delta_time
+            speed = 300 * delta_time
             dx, dy = 0.0, 0.0
 
             if self.movement["up"]:
@@ -140,8 +153,8 @@ class GameWindow(arcade.Window):
         p = self.game_world.player
         if not p:
             return
-        npc = self.game_world.get_nearby_npc(p.position, 90)
-        enemy = self.game_world.get_nearby_enemy(p.position, 90)
+        npc = self.game_world.get_nearby_npc(p.position, 150)
+        enemy = self.game_world.get_nearby_enemy(p.position, 150)
         if npc:
             self.interaction_prompt = f"按 T 与 {npc.name} 对话"
             self.interaction_npc = npc
@@ -455,8 +468,8 @@ class GameWindow(arcade.Window):
         if p and cam:
             target_x = p.position.x
             target_y = p.position.y
-            self.camera_x += (target_x - self.camera_x) * 0.1
-            self.camera_y += (target_y - self.camera_y) * 0.1
+            self.camera_x += (target_x - self.camera_x) * 0.15
+            self.camera_y += (target_y - self.camera_y) * 0.15
 
         shake_x, shake_y = self.vfx.get_camera_offset()
         cam_x = self.camera_x + shake_x
@@ -466,6 +479,8 @@ class GameWindow(arcade.Window):
 
         renderer.clear_light_sources()
         for npc in self.game_world.npcs:
+            if abs(npc.position.x - cam_x) > SW and abs(npc.position.y - cam_y) > SH:
+                continue
             if npc.is_master:
                 renderer.add_light_source(npc.position.x, npc.position.y, 100, (255, 200, 100), 0.4)
             elif npc.npc_type == NpcType.ENEMY:
@@ -473,12 +488,18 @@ class GameWindow(arcade.Window):
 
         self._spawn_ambient_particles(cam_x, cam_y)
         for part in self.particles:
-            sx, sy = renderer._world_to_screen(part["x"], part["y"], cam_x, cam_y)
+            sx, sy = renderer.world_to_screen(part["x"], part["y"], cam_x, cam_y)
+            if sx < -20 or sx > SW + 20 or sy < -20 or sy > SH + 20:
+                continue
             alpha = int(255 * (part["life"] / part["max_life"]))
             c = part["color"]
             arcade.draw_circle_filled(sx, sy, part["size"], (c[0], c[1], c[2], max(0, min(255, alpha))))
 
         for npc in self.game_world.npcs:
+            dx = npc.position.x - cam_x
+            dy = npc.position.y - cam_y
+            if abs(dx) > SW * 0.7 or abs(dy) > SH * 0.7:
+                continue
             renderer.draw_npc(npc, cam_x, cam_y)
 
         if p:
@@ -492,6 +513,16 @@ class GameWindow(arcade.Window):
         self.vfx.draw_weather()
 
         self.vfx.draw_vignette()
+
+        from .render.post_process import get_post_processor, get_advanced_lights, get_env_particles
+        post = get_post_processor()
+        lights = get_advanced_lights()
+        env = get_env_particles()
+
+        day_progress = self.vfx.day_night.time if hasattr(self.vfx, 'day_night') else 0.5
+        lights.draw(cam_x, cam_y, day_progress)
+        env.draw(day_progress)
+        post.draw_all(day_progress)
 
         if p:
             renderer.draw_hud(p, self.game_world.game_time)
@@ -605,20 +636,26 @@ class GameWindow(arcade.Window):
         arcade.draw_text("武 功", px + pw // 2, py + ph - 22, (100, 180, 255), 20,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
+        from .systems.cultivation import get_cultivation_system, get_mastery_tier, get_mastery_color
+        cult_sys = get_cultivation_system()
+
         if p.skills:
             iy = py + ph - 65
             for skill in p.skills[self.skill_scroll:self.skill_scroll + 10]:
                 type_colors = {0: (255, 150, 150), 1: (150, 200, 255), 2: (255, 180, 100), 3: (200, 150, 255), 4: (150, 255, 200), 5: (200, 200, 200), 6: (255, 200, 150), 7: (200, 180, 150), 8: (255, 150, 200), 9: (255, 255, 150), 10: (255, 200, 220)}
                 tc = type_colors.get(skill.type, (200, 200, 200))
                 self._R(px + 15, iy - 12, pw - 30, 28, (25, 30, 50, 180))
-                arcade.draw_text(f"{skill.name} Lv.{skill.level}", px + 25, iy, tc, 15,
+                tier = get_mastery_tier(skill.level)
+                tier_color = get_mastery_color(tier)
+                arcade.draw_text(f"{skill.name} Lv.{skill.level} [{tier}]", px + 25, iy, tc, 15,
                                  font_name=self.font, anchor_x="left", anchor_y="center")
                 bar_w = 100
                 bar_x = px + pw - 30 - bar_w
-                exp_pct = skill.exp / skill.get_exp_for_next_level() if skill.get_exp_for_next_level() > 0 else 0
+                exp_needed = cult_sys.get_skill_exp_for_next_level(skill)
+                exp_pct = skill.exp / exp_needed if exp_needed > 0 else 0
                 self._R(bar_x, iy - 5, bar_w, 10, (30, 30, 50))
                 if exp_pct > 0:
-                    self._R(bar_x, iy - 5, int(bar_w * exp_pct), 10, tc)
+                    self._R(bar_x, iy - 5, int(bar_w * min(1.0, exp_pct)), 10, tier_color)
                 iy -= 34
         else:
             arcade.draw_text("尚未习得武功", px + pw // 2, py + ph // 2, (100, 100, 120), 18,
@@ -686,6 +723,33 @@ class GameWindow(arcade.Window):
             elif key == arcade.key.ESCAPE:
                 self.game_state = "menu"
         elif self.game_state == "playing":
+            if getattr(self, '_in_combat', False) and self.show_dialog:
+                combat_actions = {"1": "攻击", "2": "技能", "3": "防御", "4": "逃跑", "5": "物品"}
+                if key == arcade.key.KEY_1:
+                    self._combat_action("攻击")
+                    return
+                elif key == arcade.key.KEY_2:
+                    self._combat_action("技能")
+                    return
+                elif key == arcade.key.KEY_3:
+                    self._combat_action("防御")
+                    return
+                elif key == arcade.key.KEY_4:
+                    self._combat_action("逃跑")
+                    return
+                elif key == arcade.key.KEY_5:
+                    self._combat_action("物品")
+                    return
+                elif key == arcade.key.ESCAPE:
+                    self._in_combat = False
+                    self._combat_enemy = None
+                    self._combat_log = []
+                    self.game_world.combat_system.end_combat()
+                    self.show_dialog = False
+                    self.dialogue_options = []
+                    return
+                return
+
             if self.encounter_display:
                 if key == arcade.key.Y:
                     self._accept_encounter()
@@ -693,6 +757,8 @@ class GameWindow(arcade.Window):
                     self.pending_encounter = None
                     self.encounter_display = False
                     self.show_dialog = False
+                    self.current_npc = None
+                    self.dialogue_options = []
                 return
 
             if self.show_dialog:
@@ -715,6 +781,18 @@ class GameWindow(arcade.Window):
                         self.dialog_text = "你拒绝了任务。"
                         return
 
+                if getattr(self, '_shop_items', []):
+                    shop_keys = {
+                        arcade.key.KEY_1: 0, arcade.key.KEY_2: 1,
+                        arcade.key.KEY_3: 2, arcade.key.KEY_4: 3,
+                        arcade.key.KEY_5: 4, arcade.key.KEY_6: 5,
+                    }
+                    if key in shop_keys:
+                        idx = shop_keys[key]
+                        if idx < len(self._shop_items):
+                            self._buy_shop_item(idx)
+                            return
+
                 if self._pending_teach:
                     if key == arcade.key.Y:
                         self._accept_teach()
@@ -735,6 +813,9 @@ class GameWindow(arcade.Window):
                     self.show_dialog = False
                     self.player_input_mode = False
                     self._pending_task = None
+                    self._shop_items = []
+                    self.current_npc = None
+                    self.dialogue_options = []
 
                 option_keys = {
                     arcade.key.KEY_1: 0, arcade.key.KEY_2: 1,
@@ -794,10 +875,18 @@ class GameWindow(arcade.Window):
                 self.show_minimap = not self.show_minimap
             elif key == arcade.key.E:
                 self._use_first_consumable()
+            elif key == arcade.key.R:
+                self._inn_rest()
+            elif key == arcade.key.P:
+                self._show_reputation()
+            elif key == arcade.key.G:
+                self._show_equipment()
             elif key == arcade.key.ESCAPE:
                 self.game_state = "menu"
             elif key == arcade.key.SPACE:
                 self.show_dialog = False
+                self.current_npc = None
+                self.dialogue_options = []
 
     def on_key_release(self, key, modifiers):
         if self.game_state == "playing":
@@ -842,9 +931,29 @@ class GameWindow(arcade.Window):
         p.hp = p.max_hp
         p.mp = p.max_mp
         p.position.x = col_to_x(25)
-        p.position.y = row_to_y(40)
+        p.position.y = row_to_y(31)
         self.camera_x = p.position.x
         self.camera_y = p.position.y
+
+        self.game_world._init_player_skills()
+
+        if self.char_faction != Faction.NONE:
+            self.game_world.reputation_system.on_join_faction(p, self.char_faction)
+            from .world import FACTION_SKILLS, ALL_SKILLS
+            faction_skills = FACTION_SKILLS.get(self.char_faction, [])
+            for skill_id in faction_skills:
+                if not any(s.id == skill_id for s in p.skills):
+                    if skill_id in ALL_SKILLS:
+                        new_skill = Skill(
+                            id=ALL_SKILLS[skill_id].id,
+                            name=ALL_SKILLS[skill_id].name,
+                            type=ALL_SKILLS[skill_id].type,
+                            level=1, exp=0,
+                            damage=ALL_SKILLS[skill_id].damage,
+                            accuracy=ALL_SKILLS[skill_id].accuracy,
+                        )
+                        p.skills.append(new_skill)
+
         self.game_state = "playing"
 
     def talk_to_npc(self):
@@ -900,6 +1009,8 @@ class GameWindow(arcade.Window):
             brain = brain_mgr.get_brain(self.current_npc)
             brain.reset_state()
             self.show_dialog = False
+            self.current_npc = None
+            self.dialogue_options = []
             self.dialogue_state = DialogueState.GREETING
             self.player_input_mode = False
             return
@@ -937,13 +1048,22 @@ class GameWindow(arcade.Window):
         if option == "请求传授武功":
             if self.current_npc.teach_skills:
                 from .world import ALL_SKILLS
-                skill_names = []
+                from .systems.cultivation import get_mastery_tier, get_mastery_color
+                skill_info = []
                 for sid in self.current_npc.teach_skills:
                     if sid in ALL_SKILLS:
-                        skill_names.append(ALL_SKILLS[sid].name)
+                        s = ALL_SKILLS[sid]
+                        player_skill = next((ps for ps in self.game_world.player.skills if ps.id == sid), None)
+                        if player_skill:
+                            tier = get_mastery_tier(player_skill.level)
+                            skill_info.append(f"  · {s.name} (Lv.{player_skill.level} {tier})")
+                        else:
+                            skill_info.append(f"  · {s.name} (未学习)")
+                cost = 10 + (self.current_npc.level or 1) * 2
                 self.dialog_text = (f"【{self.current_npc.name}】我可以传授你：\n"
-                                   + "\n".join(f"  · {sn}" for sn in skill_names)
-                                   + "\n\n按 Y 拜师学艺 | 按 N 取消")
+                                   + "\n".join(skill_info)
+                                   + f"\n\n修炼费用：{cost}文/次"
+                                   + "\n\n按 Y 开始修炼 | 按 N 取消")
                 self.dialog_type = "npc"
                 self._pending_teach = {"npc": self.current_npc, "skills": self.current_npc.teach_skills}
             else:
@@ -952,13 +1072,23 @@ class GameWindow(arcade.Window):
 
         if option == "查看商品":
             if self.current_npc.sell_items:
+                from .systems.reputation import get_reputation_system
+                rep_sys = get_reputation_system()
                 item_names = []
+                self._shop_items = []
                 for item_id in self.current_npc.sell_items[:6]:
                     item = self.game_world.get_item_by_id(item_id)
                     if item:
-                        item_names.append(f"  · {item.name} ({item.price}文)")
+                        rep_mod = rep_sys.get_modifier(self.game_world.player, self.current_npc.faction, "shop_discount")
+                        final_price = max(1, int(item.price * rep_mod))
+                        discount = "" if rep_mod >= 1.0 else " [折扣]"
+                        markup = "" if rep_mod <= 1.0 else " [加价]"
+                        item_names.append(f"  {len(self._shop_items)+1}.{item.name} ({final_price}文){discount}{markup}")
+                        self._shop_items.append((item_id, final_price))
                 self.dialog_text = (f"【{self.current_npc.name}】本店商品：\n"
-                                   + "\n".join(item_names))
+                                   + "\n".join(item_names)
+                                   + f"\n\n你的银两：{self.game_world.player.money}文"
+                                   + "\n\n按数字键购买 | ESC关闭")
             else:
                 self.dialog_text = f"【{self.current_npc.name}】暂时没有货物。"
             return
@@ -1024,30 +1154,25 @@ class GameWindow(arcade.Window):
         npc = teach_info["npc"]
         skill_ids = teach_info["skills"]
         player = self.game_world.player
-        from .world import ALL_SKILLS
-        learned = []
-        already = []
+
+        results = []
         for sid in skill_ids:
-            if sid in ALL_SKILLS:
-                skill = ALL_SKILLS[sid]
-                if not any(s.id == sid for s in player.skills):
-                    new_skill = Skill(
-                        id=sid,
-                        name=skill.name,
-                        type=skill.type,
-                        level=1,
-                        exp=0,
-                    )
+            if not any(s.id == sid for s in player.skills):
+                from .world import ALL_SKILLS
+                if sid in ALL_SKILLS:
+                    skill = ALL_SKILLS[sid]
+                    new_skill = Skill(id=sid, name=skill.name, type=skill.type, level=1, exp=0,
+                                      damage=skill.damage, accuracy=skill.accuracy)
                     player.skills.append(new_skill)
-                    learned.append(skill.name)
+                    results.append(f"学会了{skill.name}！")
+            else:
+                train_result = self.game_world.train_skill(player, sid, npc)
+                if train_result["success"]:
+                    results.append(train_result["message"])
                 else:
-                    already.append(skill.name)
-        parts = []
-        if learned:
-            parts.append(f"学会了：{', '.join(learned)}")
-        if already:
-            parts.append(f"已掌握：{', '.join(already)}")
-        self.dialog_text = f"【{npc.name}】{parts[0] if parts else '传授完毕'}"
+                    results.append(train_result["message"])
+
+        self.dialog_text = f"【{npc.name}】\n" + "\n".join(results)
         self.dialog_type = "npc"
         self._pending_teach = None
 
@@ -1074,21 +1199,245 @@ class GameWindow(arcade.Window):
     def attack_npc(self):
         if not self.game_world.player:
             return
-        e = self.game_world.get_nearby_enemy(self.game_world.player.position)
+        p = self.game_world.player
+        if self.game_world.combat_system.is_in_combat():
+            return
+        e = self.game_world.get_nearby_enemy(p.position)
         if e:
-            old_hp = self.game_world.player.hp
-            self.dialog_text = self.game_world.start_combat(self.game_world.player, e)
-            if self.game_world.player.hp < old_hp:
-                self._hurt_flash_val = 1.0
-                renderer.set_hurt_flash(1.0)
-            self.dialog_title = "战斗"
-            self.dialog_type = "combat"
-            self.show_dialog = True
+            self.game_world.combat_system.start_combat(p, e)
+            self._combat_enemy = e
+            self._show_combat_ui()
         else:
             self.dialog_text = "附近没有敌人"
             self.dialog_title = "提示"
             self.dialog_type = "info"
             self.show_dialog = True
+
+    def _show_combat_ui(self):
+        combat = self.game_world.combat_system
+        if not combat.is_in_combat():
+            return
+        info = combat.get_combat_info()
+        e = self._combat_enemy
+        p = self.game_world.player
+        hp_bar_len = 20
+        p_hp_fill = int(info["player_hp"] / info["player_max_hp"] * hp_bar_len) if info["player_max_hp"] > 0 else 0
+        e_hp_fill = int(info["enemy_hp"] / info["enemy_max_hp"] * hp_bar_len) if info["enemy_max_hp"] > 0 else 0
+        p_hp_bar = "█" * p_hp_fill + "░" * (hp_bar_len - p_hp_fill)
+        e_hp_bar = "█" * e_hp_fill + "░" * (hp_bar_len - e_hp_fill)
+
+        self.dialog_text = (
+            f"【{p.name}】 HP:{p_hp_bar} {info['player_hp']}/{info['player_max_hp']}  "
+            f"MP:{info['player_mp']}/{info['player_max_mp']}\n"
+            f"【{e.name}】 HP:{e_hp_bar} {info['enemy_hp']}/{info['enemy_max_hp']}\n"
+            f"回合:{info['round']}  姿态:{info['stance_name']}  连击:{info['combo_count']}\n\n"
+            f"1.攻击  2.技能  3.防御  4.逃跑  5.物品"
+        )
+        self.dialog_title = f"⚔ 战斗 VS {e.name}"
+        self.dialog_type = "combat"
+        self.show_dialog = True
+        self.dialogue_options = ["攻击", "技能", "防御", "逃跑", "物品"]
+        self._in_combat = True
+
+    def _combat_action(self, action: str):
+        combat = self.game_world.combat_system
+        p = self.game_world.player
+        if not combat.is_in_combat():
+            self._in_combat = False
+            return
+
+        if action == "攻击":
+            result = combat.player_attack()
+        elif action == "技能":
+            result = self._combat_use_skill()
+            if result is None:
+                return
+        elif action == "防御":
+            result = combat.player_defend()
+        elif action == "逃跑":
+            result = combat.flee()
+            if result.get("success"):
+                self.dialog_text = result["message"]
+                self.dialog_title = "逃跑"
+                self.dialog_type = "info"
+                self._in_combat = False
+                self._combat_enemy = None
+                return
+        elif action == "物品":
+            self._combat_use_item()
+            return
+        else:
+            return
+
+        self._add_combat_log(result.get("message", ""))
+
+        if result.get("victory"):
+            self._handle_combat_victory(result)
+            return
+        if result.get("defeat"):
+            self._handle_combat_defeat(result)
+            return
+
+        enemy_result = combat.enemy_attack()
+        self._add_combat_log(enemy_result.get("message", ""))
+
+        if enemy_result.get("defeat"):
+            self._handle_combat_defeat(enemy_result)
+            return
+
+        if p.hp < p.max_hp * 0.3:
+            self._hurt_flash_val = 0.6
+            renderer.set_hurt_flash(0.6)
+
+        self._show_combat_ui_with_log()
+
+    def _combat_use_skill(self):
+        combat = self.game_world.combat_system
+        p = self.game_world.player
+        if not p.skills:
+            self.dialog_text = "你没有技能"
+            return None
+        usable = [s for s in p.skills if s.damage > 0 or s.type in (0, 1, 2, 6, 7, 8)]
+        if not usable:
+            self.dialog_text = "没有可用的攻击技能"
+            return None
+        skill = usable[0]
+        mp_cost = skill.level * 2
+        if p.mp < mp_cost:
+            return combat.player_attack()
+        return combat.use_skill(skill.id)
+
+    def _combat_use_item(self):
+        p = self.game_world.player
+        from .entities import ItemType
+        consumables = []
+        for item_id, qty in p.inventory.items():
+            item = self.game_world.get_item_by_id(item_id)
+            if item and item.type == ItemType.CONSUMABLE:
+                consumables.append((item, qty))
+        if consumables:
+            item, qty = consumables[0]
+            result = self.game_world.combat_system.use_item(item)
+            if result.get("success"):
+                self._add_combat_log(result["message"])
+                enemy_result = self.game_world.combat_system.enemy_attack()
+                self._add_combat_log(enemy_result.get("message", ""))
+                if enemy_result.get("defeat"):
+                    self._handle_combat_defeat(enemy_result)
+                    return
+                self._show_combat_ui_with_log()
+            else:
+                self._show_combat_ui()
+        else:
+            self._show_combat_ui()
+
+    def _add_combat_log(self, msg: str):
+        if msg:
+            self._combat_log = getattr(self, '_combat_log', [])
+            self._combat_log.append(msg)
+            if len(self._combat_log) > 5:
+                self._combat_log = self._combat_log[-5:]
+
+    def _show_combat_ui_with_log(self):
+        combat = self.game_world.combat_system
+        if not combat.is_in_combat():
+            return
+        info = combat.get_combat_info()
+        e = self._combat_enemy
+        p = self.game_world.player
+        hp_bar_len = 20
+        p_hp_fill = int(info["player_hp"] / info["player_max_hp"] * hp_bar_len) if info["player_max_hp"] > 0 else 0
+        e_hp_fill = int(info["enemy_hp"] / info["enemy_max_hp"] * hp_bar_len) if info["enemy_max_hp"] > 0 else 0
+        p_hp_bar = "█" * p_hp_fill + "░" * (hp_bar_len - p_hp_fill)
+        e_hp_bar = "█" * e_hp_fill + "░" * (hp_bar_len - e_hp_fill)
+
+        log_text = "\n".join(getattr(self, '_combat_log', [])[-3:])
+
+        self.dialog_text = (
+            f"【{p.name}】 HP:{p_hp_bar} {info['player_hp']}/{info['player_max_hp']}  "
+            f"MP:{info['player_mp']}/{info['player_max_mp']}\n"
+            f"【{e.name}】 HP:{e_hp_bar} {info['enemy_hp']}/{info['enemy_max_hp']}\n"
+            f"回合:{info['round']}  姿态:{info['stance_name']}  连击:{info['combo_count']}\n\n"
+            f"{log_text}\n\n"
+            f"1.攻击  2.技能  3.防御  4.逃跑  5.物品"
+        )
+        self.dialog_title = f"⚔ 战斗 VS {e.name}"
+        self.dialog_type = "combat"
+        self.show_dialog = True
+        self.dialogue_options = ["攻击", "技能", "防御", "逃跑", "物品"]
+
+    def _handle_combat_victory(self, result: Dict):
+        p = self.game_world.player
+        msg = f"胜利！{self._combat_enemy.name}被击败！\n"
+        msg += f"经验+{result.get('exp_reward', 0)}  银两+{result.get('money_reward', 0)}"
+        if result.get('level_up'):
+            msg += f"\n升级到第{p.level}级！"
+        self.dialog_text = msg
+        self.dialog_title = "战斗胜利"
+        self.dialog_type = "info"
+        self.show_dialog = True
+        self._in_combat = False
+        self._combat_enemy = None
+        self._combat_log = []
+        self.game_world.combat_system.end_combat()
+        self._mark_enemy_dead(self._combat_enemy)
+
+    def _handle_combat_defeat(self, result: Dict):
+        p = self.game_world.player
+        msg = f"你被击败了！\n"
+        msg += result.get("message", "")
+        p.hp = max(1, int(p.max_hp * 0.1))
+        p.mp = max(0, int(p.max_mp * 0.1))
+        self.dialog_text = msg
+        self.dialog_title = "战斗失败"
+        self.dialog_type = "info"
+        self.show_dialog = True
+        self._in_combat = False
+        self._combat_enemy = None
+        self._combat_log = []
+        self.game_world.combat_system.end_combat()
+
+    def _mark_enemy_dead(self, enemy):
+        if enemy and hasattr(enemy, '_death_time'):
+            enemy._death_time = self.game_world.game_time
+
+    def _buy_shop_item(self, idx: int):
+        if not self._shop_items or idx >= len(self._shop_items):
+            return
+        item_id, price = self._shop_items[idx]
+        p = self.game_world.player
+        if p.money < price:
+            self.dialog_text = f"银两不足！需要{price}文，你只有{p.money}文"
+            return
+        result = self.game_world.buy_item(p, item_id, self.current_npc)
+        if result.get("success"):
+            self.dialog_text = f"购买了{result.get('message', item_id)}！\n银两剩余：{p.money}文"
+            self._update_shop_display()
+        else:
+            self.dialog_text = result.get("message", "购买失败")
+
+    def _update_shop_display(self):
+        if not self.current_npc or not self.current_npc.sell_items:
+            return
+        from .systems.reputation import get_reputation_system
+        rep_sys = get_reputation_system()
+        item_names = []
+        self._shop_items = []
+        for item_id in self.current_npc.sell_items[:6]:
+            item = self.game_world.get_item_by_id(item_id)
+            if item:
+                rep_mod = rep_sys.get_modifier(self.game_world.player, self.current_npc.faction, "shop_discount")
+                final_price = max(1, int(item.price * rep_mod))
+                discount = "" if rep_mod >= 1.0 else " [折扣]"
+                markup = "" if rep_mod <= 1.0 else " [加价]"
+                qty = self.game_world.player.inventory.get(item_id, 0)
+                owned = f" (已有{qty})" if qty > 0 else ""
+                item_names.append(f"  {len(self._shop_items)+1}.{item.name} ({final_price}文){discount}{markup}{owned}")
+                self._shop_items.append((item_id, final_price))
+        self.dialog_text = (f"【{self.current_npc.name}】本店商品：\n"
+                           + "\n".join(item_names)
+                           + f"\n\n你的银两：{self.game_world.player.money}文"
+                           + "\n\n按数字键购买 | ESC关闭")
 
     def show_quests(self):
         qs = self.quest_manager.get_active_quests() if self.game_world.player else []
@@ -1117,6 +1466,53 @@ class GameWindow(arcade.Window):
                 return
         self.dialog_text = "背包中没有可使用的物品"
         self.dialog_title = "提示"
+        self.dialog_type = "info"
+        self.show_dialog = True
+
+    def _inn_rest(self):
+        p = self.game_world.player
+        if not p:
+            return
+        result = self.game_world.inn_rest(p)
+        self.dialog_text = result["message"]
+        self.dialog_title = "客栈休息"
+        self.dialog_type = "info"
+        self.show_dialog = True
+
+    def _show_reputation(self):
+        p = self.game_world.player
+        if not p:
+            return
+        rep_info = self.game_world.reputation_system.get_all_reputations(p)
+        lines = []
+        for faction_val, info in rep_info.items():
+            bar_len = 20
+            filled = int((info["value"] + 100) / 200 * bar_len)
+            bar = "█" * filled + "░" * (bar_len - filled)
+            lines.append(f"{info['name']}: [{bar}] {info['value']:+d} ({info['tier']})")
+        faction_name = FACTION_NAMES.get(p.faction, '未知门派') if p.faction else "无门无派"
+        self.dialog_text = f"【江湖声望】\n门派：{faction_name}\n\n" + "\n".join(lines)
+        self.dialog_title = "江湖声望"
+        self.dialog_type = "info"
+        self.show_dialog = True
+
+    def _show_equipment(self):
+        p = self.game_world.player
+        if not p:
+            return
+        from .systems.equipment import EQUIPMENT_SLOTS
+        equip_stats = self.game_world.equipment_system.get_equipment_stats(p, self.game_world.items)
+        lines = []
+        for slot, slot_name in EQUIPMENT_SLOTS.items():
+            equipped = equip_stats["equipped"].get(slot)
+            if equipped:
+                lines.append(f"{slot_name}: {equipped['name']}")
+            else:
+                lines.append(f"{slot_name}: (空)")
+        lines.append(f"\n攻击加成: +{equip_stats['attack_bonus']}")
+        lines.append(f"防御加成: +{equip_stats['defense_bonus']}")
+        self.dialog_text = f"【装备信息】\n" + "\n".join(lines)
+        self.dialog_title = "装备"
         self.dialog_type = "info"
         self.show_dialog = True
 
