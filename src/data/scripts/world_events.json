@@ -1,0 +1,274 @@
+[
+  {
+    "id": "world_plague",
+    "title": "瘟疫横行",
+    "type": "world_event",
+    "description": "一场神秘的瘟疫从南方蔓延而来，平安镇也未能幸免。药铺的药材告罄，百姓人心惶惶。你需要找到瘟疫的源头，才能拯救平安镇。",
+    "trigger": {"random": true, "min_day": 30, "probability": 0.15},
+    "phases": [
+      {
+        "id": "plague_1",
+        "title": "瘟疫初现",
+        "type": "announcement",
+        "narration": "平安镇传来消息：镇上出现了不明瘟疫，已有数十人病倒。药铺的掌柜说，这种瘟疫他从未见过，普通的药方完全无效。镇民们开始恐慌，有人甚至传言这是血月教的诅咒。",
+        "announcement": "【世界事件】瘟疫横行！平安镇出现不明瘟疫，数十人病倒。药铺药材告罄，急需援助！",
+        "set_flags": ["plague_started"],
+        "duration_days": 3
+      },
+      {
+        "id": "plague_2",
+        "title": "寻药之路",
+        "type": "quest",
+        "narration": "你决定帮助平安镇度过难关。药铺掌柜告诉你，要治好这种瘟疫，需要三种药材：雪山的冰莲、花间派的雪莲露、和太极门的九转还丹。你需要分别前往三个门派求药。",
+        "dialogue": "少侠，求求你帮帮忙！这种瘟疫我从来没见过，普通药方完全没用。\n\n我翻遍了古书，终于找到一个方子——需要雪山的冰莲、花间派的雪莲露、和太极门的九转还丹。\n\n但这三样东西都是各派的珍宝，普通人是求不到的。\n\n只有你...只有你有这个面子去求他们。\n\n拜托了！再拖下去，整个平安镇都要完了！",
+        "objectives": ["obtain_ice_lotus", "obtain_snow_lotus_dew", "obtain_nine_turn_pill"],
+        "set_flags": ["plague_quest"],
+        "duration_days": 7
+      },
+      {
+        "id": "plague_3",
+        "title": "瘟疫源头",
+        "type": "combat",
+        "narration": "你收集齐了三种药材，但在配药时发现了一个惊人的秘密——瘟疫的源头不是天灾，而是人祸！有人在平安镇的水源中投了毒！追踪线索，你发现了一个隐藏在镇外的暗影司据点。",
+        "dialogue": "等等...这瘟疫的源头不对。\n\n这些症状...不像是自然产生的瘟疫，更像是...中毒！\n\n有人在水源里投毒！\n\n（你顺着水源追踪，在镇外的山洞中发现了一个暗影司的秘密据点）\n\n暗影司...他们竟然用瘟疫来削弱平安镇的力量！\n\n必须摧毁这个据点，阻止他们继续投毒！",
+        "combat_enemy": "暗影司毒师",
+        "set_flags": ["plague_source_found"],
+        "duration_days": 1
+      },
+      {
+        "id": "plague_4",
+        "title": "疫后重生",
+        "type": "resolution",
+        "narration": "药材配好了，毒源也清除了。平安镇的瘟疫终于得到了控制。镇民们感激涕零，在镇口立了一块碑，上面刻着你的名字。从此以后，平安镇的百姓都知道——有一个少侠，在危难之际拯救了全镇。",
+        "reward": {"exp": 800, "daode": 30, "money": 1000, "reputation": 50},
+        "set_flags": ["plague_resolved"],
+        "world_changes": ["peace_town_grateful", "pharmacy_stocked"]
+      }
+    ]
+  },
+  {
+    "id": "world_tournament",
+    "title": "武林大会",
+    "type": "world_event",
+    "description": "十年一度的武林大会即将在平安镇举行！各大门派齐聚一堂，比武论剑。这不仅是展示实力的舞台，更是暗影司觊觎的良机。",
+    "trigger": {"random": true, "min_day": 60, "probability": 0.1},
+    "phases": [
+      {
+        "id": "tournament_1",
+        "title": "英雄帖",
+        "type": "announcement",
+        "narration": "平安镇贴出了告示：十年一度的武林大会即将举行！各大门派掌门将亲临现场，比武论剑，共商江湖大事。获胜者将获得'武林盟主'的称号，以及传说中的'天机令'——据说持有天机令的人，可以号令天下英雄。",
+        "announcement": "【世界事件】武林大会即将开幕！十年一度的盛事，各路英雄齐聚平安镇！获胜者将获得'武林盟主'称号和'天机令'！",
+        "set_flags": ["tournament_announced"],
+        "duration_days": 5
+      },
+      {
+        "id": "tournament_2",
+        "title": "初赛风云",
+        "type": "combat",
+        "narration": "武林大会初赛开始！来自各大门派的弟子纷纷登台比武。你也要参加——不仅是为了荣誉，更是因为暗影司已经渗透了大会，你必须赢得比赛才能接近核心，揭露他们的阴谋。",
+        "dialogue": "第一轮对手：八卦门弟子\n\n'在下八卦门弟子，请赐教！'\n\n（你轻松取胜）\n\n第二轮对手：花间派弟子\n\n'花间派弟子，请！'\n\n（你再次获胜）\n\n第三轮对手：红莲教弟子\n\n'红莲教弟子，来吧！'\n\n（你连战连捷，引起了在场所有人的注意）",
+        "combat_enemy": "各门派弟子",
+        "set_flags": ["tournament_preliminary"],
+        "duration_days": 3
+      },
+      {
+        "id": "tournament_3",
+        "title": "暗影突袭",
+        "type": "combat",
+        "narration": "决赛即将开始，但暗影司突然发动了袭击！他们的目标是天机令——据说天机令中藏着屠龙刀碎片的线索。数十名暗影司杀手从四面八方涌来，武林大会瞬间变成了战场！",
+        "dialogue": "动手！拿下天机令！\n\n暗影司的命令——不惜一切代价！\n\n...什么？各门派掌门联手了？\n\n可恶！他们竟然早有防备！\n\n...撤！先撤！\n\n（暗影司的杀手开始撤退，但他们的首领还在——一个戴着面具的神秘人）\n\n'有意思...看来武林中还有能人。不过，这只是开始。'\n\n（神秘人消失在烟幕中）",
+        "combat_enemy": "暗影司杀手",
+        "set_flags": ["tournament_ambush"],
+        "duration_days": 1
+      },
+      {
+        "id": "tournament_4",
+        "title": "盟主诞生",
+        "type": "resolution",
+        "narration": "暗影司的袭击被击退了。各门派掌门一致决定，将天机令授予在战斗中表现最出色的人——那就是你。你成为了新一任武林盟主，肩负起了对抗暗影司的重任。",
+        "reward": {"exp": 1000, "daode": 20, "reputation": 100},
+        "set_flags": ["tournament_resolved", "became_alliance_leader"],
+        "world_changes": ["alliance_formed", "tianji_ling_obtained"]
+      }
+    ]
+  },
+  {
+    "id": "world_refugee",
+    "title": "流民潮涌",
+    "type": "world_event",
+    "description": "南方大旱，数万流民涌入平安镇。镇上的粮食和物资严重不足，流民与镇民之间的矛盾日益激化。你需要在人道与秩序之间找到平衡。",
+    "trigger": {"random": true, "min_day": 45, "probability": 0.12},
+    "phases": [
+      {
+        "id": "refugee_1",
+        "title": "流民涌至",
+        "type": "announcement",
+        "narration": "大批流民从南方涌来，平安镇的人口一夜之间翻了一倍。镇上的粮食和水源严重不足，流民们饥寒交迫，镇民们也怨声载道。镇长焦头烂额，不知如何是好。",
+        "announcement": "【世界事件】流民潮涌！南方大旱，数万流民涌入平安镇。粮食告急，矛盾激化，急需解决方案！",
+        "set_flags": ["refugee_crisis"],
+        "duration_days": 3
+      },
+      {
+        "id": "refugee_2",
+        "title": "两难抉择",
+        "type": "choice",
+        "narration": "镇长找到了你，请求你帮忙做出决定。一边是饥寒交迫的流民，一边是安居乐业的镇民。无论怎么选，都会有人受苦。",
+        "dialogue": "少侠，我实在没办法了。\n\n流民越来越多，镇上的粮食只够撑三天了。\n\n有人建议赶走流民，保住镇民的口粮。但那些流民...他们也是人啊！赶走他们，就是让他们去死！\n\n也有人建议打开粮仓，和流民共享。但粮仓一空，镇民也要挨饿。\n\n...你有什么办法吗？",
+        "choices": [
+          {"text": "打开粮仓，与流民共享——先救人再说", "next": "refugee_3a", "morality_change": 20},
+          {"text": "请流民离开，保住镇民的口粮", "next": "refugee_3b", "morality_change": -10},
+          {"text": "向各门派求助，筹集粮草", "next": "refugee_3c", "morality_change": 15}
+        ]
+      },
+      {
+        "id": "refugee_3a",
+        "title": "同舟共济",
+        "type": "resolution",
+        "narration": "你决定打开粮仓，与流民共享。虽然粮食紧张，但你的善举感动了所有人。流民中有不少能工巧匠，他们主动帮助镇民修缮房屋、开垦荒地。一个月后，平安镇不仅度过了危机，反而因为流民的加入而变得更加繁荣。",
+        "reward": {"exp": 600, "daode": 30, "reputation": 40},
+        "set_flags": ["refugee_resolved_kind"],
+        "world_changes": ["peace_town_grew", "refugees_integrated"]
+      },
+      {
+        "id": "refugee_3b",
+        "title": "铁面无私",
+        "type": "resolution",
+        "narration": "你选择了保住镇民的口粮，请流民离开。流民们含泪离去，镇民们松了口气。但你的心中始终有一个结——那些离去的流民，后来怎么样了？据说他们在北方的荒野中建立了自己的村落，虽然艰苦，但总算活了下来。",
+        "reward": {"exp": 400, "daode": -10, "reputation": -20},
+        "set_flags": ["refugee_resolved_harsh"],
+        "world_changes": ["peace_town_safe", "refugees_exiled"]
+      },
+      {
+        "id": "refugee_3c",
+        "title": "八方支援",
+        "type": "resolution",
+        "narration": "你向各门派发出了求助信。太极门送来了九转还丹救治病患，花间派送来了雪莲露净化水源，八卦门送来了粮草，红莲教送来了衣物。在各门派的帮助下，平安镇和流民都度过了难关。流民们感激不已，决定在平安镇附近定居，成为镇子的新居民。",
+        "reward": {"exp": 800, "daode": 25, "reputation": 60},
+        "set_flags": ["refugee_resolved_diplomacy"],
+        "world_changes": ["peace_town_grew", "all_factions_aided", "refugees_integrated"]
+      }
+    ]
+  },
+  {
+    "id": "world_dragon_awakening",
+    "title": "龙脉异动",
+    "type": "world_event",
+    "description": "屠龙刀碎片开始共鸣，龙脉出现异动。各地出现了奇异的天象——红月、地裂、龙吟。暗影司趁机行动，试图利用龙脉的力量复活血月教。",
+    "trigger": {"random": true, "min_day": 90, "probability": 0.08, "flags": ["main_story_chapter3"]},
+    "phases": [
+      {
+        "id": "dragon_1",
+        "title": "天降异象",
+        "type": "announcement",
+        "narration": "一夜之间，天空中出现了血红色的月亮。大地开始颤抖，远处的山脉中传来了低沉的龙吟声。平安镇的百姓惊恐万分，纷纷传言——屠龙刀要苏醒了！",
+        "announcement": "【世界事件】龙脉异动！天降红月，地裂龙吟，屠龙刀碎片开始共鸣！江湖大变在即！",
+        "set_flags": ["dragon_awakening"],
+        "duration_days": 2
+      },
+      {
+        "id": "dragon_2",
+        "title": "碎片共鸣",
+        "type": "dialogue",
+        "speaker": "老夫子",
+        "narration": "你找到了老夫子，询问龙脉异动的原因。老夫子翻开古籍，面色凝重地告诉你——这是屠龙刀碎片共鸣的征兆，意味着有人正在试图集齐碎片！",
+        "dialogue": "不好...这比我想象的还要严重。\n\n古籍上记载：'碎片共鸣，龙脉异动，红月当空，血月重生。'\n\n这意味着...有人正在集齐屠龙刀的碎片！\n\n当碎片之间的距离足够近时，它们就会产生共鸣，引发龙脉异动。\n\n如果七块碎片全部聚齐...屠龙刀就会重生！\n\n而屠龙刀一旦重生，血月教就会复活！\n\n我们必须阻止暗影司！不能让他们集齐碎片！\n\n...少侠，你知道碎片现在在哪里吗？\n\n太极门一块，八卦门一块，花间派一块，雪山派一块，逍遥派一块...还有两块下落不明。\n\n暗影司一定在找那两块碎片！我们必须比他们更快找到！",
+        "set_flags": ["dragon_shard_resonance"],
+        "duration_days": 1
+      },
+      {
+        "id": "dragon_3",
+        "title": "龙脉之战",
+        "type": "combat",
+        "narration": "你追踪龙脉异动的源头，来到了一座古老的龙脉祭坛。暗影司的人已经在这里了——他们正在用仪式激活龙脉，试图从龙脉中提取屠龙刀碎片的力量！你必须阻止他们！",
+        "dialogue": "龙脉的力量...终于要被我们释放了！\n\n只要龙脉被激活，血月教就能重生！\n\n...什么人？！\n\n可恶！又来捣乱！\n\n杀了他！不能让他破坏仪式！\n\n（祭坛上的红光越来越强，龙吟声震耳欲聋。你必须在仪式完成之前击败所有敌人！）",
+        "combat_enemy": "暗影司龙脉祭司",
+        "set_flags": ["dragon_battle"],
+        "duration_days": 1
+      },
+      {
+        "id": "dragon_4",
+        "title": "龙脉封印",
+        "type": "resolution",
+        "narration": "你击败了暗影司的祭司，但龙脉已经被部分激活了。红光从祭坛中涌出，龙吟声越来越响。你必须在龙脉完全失控之前，重新封印它！你将全身的内力注入封印，终于将龙脉重新封住。红月消退，大地恢复了平静。",
+        "reward": {"exp": 1200, "daode": 40, "reputation": 80},
+        "set_flags": ["dragon_sealed"],
+        "world_changes": ["dragon_vein_stable", "shadow_cult_weakened"]
+      }
+    ]
+  },
+  {
+    "id": "world_merchant_crisis",
+    "title": "商路断绝",
+    "type": "world_event",
+    "description": "连接南北的商路被山匪截断，物资无法流通。平安镇的物价飞涨，百姓苦不堪言。你需要清剿山匪，恢复商路。",
+    "trigger": {"random": true, "min_day": 20, "probability": 0.2},
+    "phases": [
+      {
+        "id": "merchant_1",
+        "title": "商路告急",
+        "type": "announcement",
+        "narration": "平安镇的商人们联名上书：连接南北的商路被一伙山匪截断，已经有一个月没有商队通过了。镇上的物资严重短缺，物价飞涨。百姓们买不起粮食，买不起药材，生活日益艰难。",
+        "announcement": "【世界事件】商路断绝！山匪截断南北商路，平安镇物资短缺，物价飞涨！",
+        "set_flags": ["merchant_crisis"],
+        "duration_days": 2
+      },
+      {
+        "id": "merchant_2",
+        "title": "山匪巢穴",
+        "type": "combat",
+        "narration": "你找到了山匪的巢穴——一座隐藏在山谷中的山寨。山匪头目自称'黑风大王'，手下有数百名喽啰。他拒绝投降，声称自己也是被暗影司逼迫的。",
+        "dialogue": "哈哈哈！又来一个送死的！\n\n我就是黑风大王！这条商路，我说了算！\n\n...你说暗影司？哼，你以为我想当山匪吗？\n\n暗影司威胁我——要么替他们截断商路，要么就灭我满门！\n\n我也是被逼的！但...但我也不能投降。因为暗影司的人还在监视我。\n\n...你要是真有本事，就去对付暗影司！别来为难我一个山匪！\n\n...什么？你能帮我解决暗影司的人？\n\n...好，我信你一次。但你得先帮我干掉暗影司的监工——他就藏在山寨后面！",
+        "combat_enemy": "暗影司监工",
+        "set_flags": ["merchant_bandit_deal"],
+        "duration_days": 1
+      },
+      {
+        "id": "merchant_3",
+        "title": "商路重开",
+        "type": "resolution",
+        "narration": "暗影司的监工被你击败了。黑风大王信守承诺，解散了山匪，让出了商路。商队重新通行，平安镇的物价逐渐恢复正常。黑风大王带着愿意跟随他的人，去了北方的荒野，打算重新做人。",
+        "reward": {"exp": 500, "daode": 15, "money": 800, "reputation": 30},
+        "set_flags": ["merchant_resolved"],
+        "world_changes": ["trade_route_open", "bandits_disbanded"]
+      }
+    ]
+  },
+  {
+    "id": "world_snow_disaster",
+    "title": "百年大雪",
+    "type": "world_event",
+    "description": "百年不遇的大雪灾席卷北方，雪山派和逍遥派首当其冲。积雪封山，弟子被困，物资断绝。你需要穿越暴风雪，为被困的门派送去救援物资。",
+    "trigger": {"random": true, "min_day": 50, "probability": 0.1, "season": "winter"},
+    "phases": [
+      {
+        "id": "snow_1",
+        "title": "暴风雪来袭",
+        "type": "announcement",
+        "narration": "一场百年不遇的暴风雪席卷了北方！大雪封山，道路断绝。雪山派和逍遥派被困在山上，物资断绝，情况危急。平安镇虽然也受到了影响，但还算安全。",
+        "announcement": "【世界事件】百年大雪！暴风雪席卷北方，雪山派和逍遥派被困！急需救援！",
+        "set_flags": ["snow_disaster"],
+        "duration_days": 2
+      },
+      {
+        "id": "snow_2",
+        "title": "穿越暴风雪",
+        "type": "quest",
+        "narration": "你决定带着救援物资穿越暴风雪，前往雪山派和逍遥派。风雪中，你遇到了被困的旅人、冻伤的猎人、和迷路的商队。每一步都充满了危险，但你不能停下。",
+        "dialogue": "少侠，你真的要去？这暴风雪...连老猎人都不敢出门！\n\n...好，我不拦你。但你要小心。\n\n这些物资你带上——粮食、药材、御寒的衣物。\n\n还有这个——平安镇的镇印。如果你遇到被困的人，给他们看这个，他们会信任你的。\n\n...平安归来。",
+        "objectives": ["deliver_supplies_xueshan", "deliver_supplies_xiaoyao", "rescue_stranded_travelers"],
+        "set_flags": ["snow_rescue_mission"],
+        "duration_days": 5
+      },
+      {
+        "id": "snow_3",
+        "title": "雪中送暖",
+        "type": "resolution",
+        "narration": "你穿越了暴风雪，将物资送到了雪山派和逍遥派。白瑞德掌门和逍遥子掌门都深受感动。你还沿途救下了数十名被困的旅人，你的善举在江湖中广为传颂。暴风雪终于停了，阳光重新照耀大地，积雪慢慢融化。春天，来了。",
+        "reward": {"exp": 800, "daode": 25, "reputation": 50},
+        "set_flags": ["snow_resolved"],
+        "world_changes": ["xueshan_grateful", "xiaoyao_grateful", "spring_comes"]
+      }
+    ]
+  }
+]

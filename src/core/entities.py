@@ -25,11 +25,15 @@ class NpcType(Enum):
 class SkillType(Enum):
     ATTACK = 0
     SWORD = 1
-    DODGE = 2
+    BLADE = 2
     FORCE = 3
-    PARRY = 4
-    LITERACY = 5
-    LOOKS = 6
+    DODGE = 4
+    PARRY = 5
+    STAFF = 6
+    WAND = 7
+    WHIP = 8
+    LITERACY = 9
+    LOOKS = 10
 
 
 class ItemType(Enum):
@@ -50,7 +54,16 @@ class QuestType(Enum):
     GUARD = "guard"
 
 
-FACTION_NAMES = ["无门无派", "八卦门", "花间派", "红莲教", "那迦派", "太极门", "雪山派", "逍遥派"]
+FACTION_NAMES = {
+    Faction.NONE: "无门无派",
+    Faction.BAGUA: "八卦门",
+    Faction.FLOWER: "花间派",
+    Faction.HONGLIAN: "红莲教",
+    Faction.NAJA: "那迦派",
+    Faction.TAIJI: "太极门",
+    Faction.XUESHAN: "雪山派",
+    Faction.XIAOYAO: "逍遥派",
+}
 SKILL_TYPE_NAMES = ["拳脚", "剑法", "刀法", "内功", "躲闪", "招架", "棍法", "杖法", "鞭法", "识字", "容貌"]
 
 
@@ -126,7 +139,7 @@ class Player:
     money: int = 100
     position: Position = field(default_factory=Position)
     skills: List[Skill] = field(default_factory=list)
-    equip_skills: List[str] = field(default_factory=lambda: ["", "", "", ""])
+    equip_skills: List[str] = field(default_factory=lambda: ["kf_basic_bare", "kf_basic_dodge", "kf_basic_force", "kf_basic_parry"])
     inventory: Dict[str, int] = field(default_factory=dict)
     equipment: Dict[str, str] = field(default_factory=dict)
     active_quests: List[str] = field(default_factory=list)
@@ -134,6 +147,10 @@ class Player:
     status_effects: List[Dict] = field(default_factory=list)
     food: int = 100
     water: int = 100
+    faction_rep: Dict[int, int] = field(default_factory=dict)
+    total_kills: int = 0
+    total_deaths: int = 0
+    play_time: float = 0.0
 
     def add_exp(self, amount: int) -> bool:
         self.exp += amount
@@ -141,12 +158,9 @@ class Player:
         if self.exp >= exp_needed:
             self.exp -= exp_needed
             self.level += 1
-            self.max_hp += 10
-            self.max_mp += 5
+            self.setup_attr()
             self.hp = self.max_hp
             self.mp = self.max_mp
-            self.attack += 2
-            self.defense += 1
             return True
         return False
 
@@ -188,14 +202,36 @@ class Player:
         return False
 
     def update_food_water(self, delta_time: float) -> None:
-        self.food = max(0, self.food - delta_time * 0.01)
-        self.water = max(0, self.water - delta_time * 0.015)
+        self.food = max(0, int(self.food - delta_time * 0.01))
+        self.water = max(0, int(self.water - delta_time * 0.015))
+
+    def get_food_water_debuff(self) -> Dict[str, float]:
+        debuff = {"attack_mult": 1.0, "defense_mult": 1.0, "hp_regen_mult": 1.0}
+        if self.food <= 0:
+            debuff["attack_mult"] *= 0.7
+            debuff["defense_mult"] *= 0.8
+            debuff["hp_regen_mult"] *= 0.0
+        elif self.food < 20:
+            debuff["attack_mult"] *= 0.85
+            debuff["defense_mult"] *= 0.9
+            debuff["hp_regen_mult"] *= 0.5
+        if self.water <= 0:
+            debuff["attack_mult"] *= 0.6
+            debuff["defense_mult"] *= 0.7
+            debuff["hp_regen_mult"] *= 0.0
+        elif self.water < 20:
+            debuff["attack_mult"] *= 0.8
+            debuff["defense_mult"] *= 0.85
+            debuff["hp_regen_mult"] *= 0.3
+        return debuff
 
     def setup_attr(self) -> None:
         self.max_hp = 50 + self.constitution * 10 + (self.level - 1) * 10
         self.max_mp = 20 + self.intelligence * 5 + (self.level - 1) * 5
         self.attack = 5 + self.strength + (self.level - 1) * 2
         self.defense = 2 + self.dexterity // 2 + (self.level - 1) * 1
+        self.hp = min(self.hp, self.max_hp)
+        self.mp = min(self.mp, self.max_mp)
 
     def use_item(self, item: Item) -> str:
         result = ""
@@ -208,6 +244,12 @@ class Player:
                 restore = min(item.effects["mp"], self.max_mp - self.mp)
                 self.mp += restore
                 result += f"使用{item.name}，恢复了{restore}点内力\n"
+            if "food" in item.effects:
+                self.food = min(100, self.food + item.effects["food"])
+                result += f"使用{item.name}，恢复了{item.effects['food']}点饱食度\n"
+            if "water" in item.effects:
+                self.water = min(100, self.water + item.effects["water"])
+                result += f"使用{item.name}，恢复了{item.effects['water']}点水分\n"
             self.remove_item(item.id)
         return result.strip()
 
@@ -250,7 +292,7 @@ class NPC:
             "name": self.name,
             "role": self.npc_type.value,
             "faction": self.faction.value,
-            "faction_name": FACTION_NAMES[self.faction.value],
+            "faction_name": FACTION_NAMES.get(self.faction, '未知门派'),
             "level": self.level,
             "description": self.description,
             "personality": self.personality,
@@ -284,7 +326,7 @@ class Quest:
     def is_available(self, player_level: int, player_morality: int) -> bool:
         return (not self.accepted and not self.completed and not self.failed and
                 player_level >= self.level_requirement and
-                abs(player_morality) >= self.morality_requirement)
+                player_morality >= self.morality_requirement)
 
     def update_progress(self, target: str, count: int = 1) -> bool:
         if self.target == target and not self.completed:

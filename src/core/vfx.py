@@ -343,13 +343,13 @@ class VFXManager:
         intensity = VISUAL_CONFIG["vignette_intensity"]
         cx, cy = self.sw / 2, self.sh / 2
         max_r = math.sqrt(cx * cx + cy * cy)
-        steps = 8
+        steps = 4
         for i in range(steps):
             t = i / steps
             r = max_r * (0.6 + 0.4 * t)
             alpha = int(intensity * 255 * t * t)
             alpha = min(255, max(0, alpha))
-            arcade.draw_circle_outline(cx, cy, r, (0, 0, 0, alpha), max_r * 0.08)
+            arcade.draw_circle_outline(cx, cy, r, (0, 0, 0, alpha), max_r * 0.15)
 
     def get_camera_offset(self):
         return self.screen_shake_x, self.screen_shake_y

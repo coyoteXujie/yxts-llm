@@ -35,7 +35,8 @@ TRIGGER_CONDITIONS = {
 class Encounter:
     def __init__(self, title: str, description: str, encounter_type: str,
                  reward: Dict, rarity: str = "common", trigger_npc: str = "",
-                 trigger_reason: str = ""):
+                 trigger_reason: str = "", choices: List[Dict] = None,
+                 trigger_area: str = ""):
         self.title = title
         self.description = description
         self.encounter_type = encounter_type
@@ -44,6 +45,8 @@ class Encounter:
         self.trigger_npc = trigger_npc
         self.trigger_reason = trigger_reason
         self.accepted = False
+        self.choices = choices or []
+        self.trigger_area = trigger_area
 
     def get_rarity_color(self):
         return ENCOUNTER_RARITY_COLORS.get(self.rarity, (200, 200, 200))
@@ -112,6 +115,139 @@ class EncounterManager:
 
         return None
 
+    def check_area_encounter(self, player: Player, area_name: str, game_time: float = 0.0) -> Optional[Encounter]:
+        if self._pending:
+            return self._pending
+        if game_time - self._cooldown < self._min_interval:
+            return None
+
+        area_encounter = self._generate_area_encounter(player, area_name)
+        if area_encounter:
+            self._pending = area_encounter
+            self._cooldown = game_time
+            return area_encounter
+        return None
+
+    def _generate_area_encounter(self, player: Player, area_name: str) -> Optional[Encounter]:
+        area_encounters = self._get_area_encounter_pool(area_name, player)
+        if not area_encounters:
+            return None
+        weights = []
+        for e in area_encounters:
+            rarity_weight = {"common": 10, "rare": 3, "epic": 1, "legendary": 0.2}
+            weights.append(rarity_weight.get(e.rarity, 1))
+        import random
+        chosen = random.choices(area_encounters, weights=weights, k=1)[0]
+        return chosen
+
+    def _get_area_encounter_pool(self, area_name: str, player: Player) -> List[Encounter]:
+        pool = []
+        if "雪" in area_name or "山" in area_name:
+            pool.append(Encounter(
+                title="冰洞秘宝", description="你在雪山深处发现了一个隐蔽的冰洞，洞中似乎有微光闪烁...",
+                encounter_type="choice", rarity="rare",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "进入冰洞探索", "reward": {"exp": 300, "pot": 30, "daode": 5}, "risk": 0.2},
+                    {"text": "在洞口观察", "reward": {"exp": 100}, "risk": 0},
+                    {"text": "离开，太危险了", "reward": {}, "risk": 0},
+                ]
+            ))
+            pool.append(Encounter(
+                title="雪中送炭", description="一个受伤的旅人倒在雪地中，奄奄一息...",
+                encounter_type="choice", rarity="common",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "施以援手", "reward": {"exp": 150, "daode": 15, "money": 200}, "risk": 0},
+                    {"text": "视而不见", "reward": {"daode": -10}, "risk": 0},
+                ]
+            ))
+        if "镇" in area_name or "城" in area_name:
+            pool.append(Encounter(
+                title="街头比武", description="一群人围在一起，原来是有人在摆擂台比武！胜者有赏！",
+                encounter_type="choice", rarity="common",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "上台比武", "reward": {"exp": 200, "money": 300}, "risk": 0.3},
+                    {"text": "在旁观看", "reward": {"exp": 30}, "risk": 0},
+                ]
+            ))
+            pool.append(Encounter(
+                title="神秘商人", description="一个蒙面商人向你招手：'少侠，要不要看看好东西？'",
+                encounter_type="choice", rarity="rare",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "看看他的商品", "reward": {"money": -200, "item": "item_dan"}, "risk": 0.1},
+                    {"text": "婉言谢绝", "reward": {}, "risk": 0},
+                ]
+            ))
+        if "林" in area_name or "谷" in area_name:
+            pool.append(Encounter(
+                title="古墓奇缘", description="密林深处，你发现了一座被藤蔓覆盖的古墓...",
+                encounter_type="choice", rarity="epic",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "推开石门进入", "reward": {"exp": 500, "pot": 80, "skill_exp": 100}, "risk": 0.4},
+                    {"text": "在墓外搜索", "reward": {"exp": 100, "money": 100}, "risk": 0.1},
+                    {"text": "标记后离开", "reward": {}, "risk": 0},
+                ]
+            ))
+        if "河" in area_name or "湖" in area_name or "水" in area_name:
+            pool.append(Encounter(
+                title="河中浮尸", description="河面上漂来一具'尸体'，走近一看，人还在动！",
+                encounter_type="choice", rarity="rare",
+                reward={}, trigger_area=area_name,
+                choices=[
+                    {"text": "跳入水中救人", "reward": {"exp": 200, "daode": 20, "item": "item_baodian"}, "risk": 0.15},
+                    {"text": "在岸边拉他上来", "reward": {"exp": 100, "daode": 10}, "risk": 0},
+                ]
+            ))
+        pool.append(Encounter(
+            title="路遇高人", description="一位白发老者拦住你的去路：'年轻人，我看你骨骼惊奇...'",
+            encounter_type="choice", rarity="epic",
+            reward={}, trigger_area=area_name,
+            choices=[
+                {"text": "虚心请教", "reward": {"exp": 400, "pot": 50}, "risk": 0},
+                {"text": "警惕后退", "reward": {}, "risk": 0},
+                {"text": "这是骗子吧？", "reward": {"daode": -5}, "risk": 0},
+            ]
+        ))
+        return pool
+
+    def accept_encounter_choice(self, player: Player, encounter: Encounter, choice_index: int) -> str:
+        if choice_index < 0 or choice_index >= len(encounter.choices):
+            return "无效选择"
+
+        choice = encounter.choices[choice_index]
+        import random
+
+        risk = choice.get("risk", 0)
+        if risk > 0 and random.random() < risk:
+            damage = int(player.max_hp * risk * 0.5)
+            player.hp = max(1, player.hp - damage)
+            encounter.accepted = True
+            self._history.append(encounter)
+            self._pending = None
+            return f"你遭遇了危险！损失了{damage}点生命值！"
+
+        reward = choice.get("reward", {})
+        encounter.reward = reward
+        encounter.accepted = True
+        self._history.append(encounter)
+        self._pending = None
+
+        reward_text = self._apply_reward(player, encounter)
+
+        dispatch(EventType.ENCOUNTER_TRIGGERED, {
+            "title": encounter.title,
+            "type": encounter.encounter_type,
+            "rarity": encounter.rarity,
+            "reward": reward,
+            "choice": choice.get("text", ""),
+        })
+
+        return reward_text
+
     def _determine_trigger(self, player: Player, npc: NPC = None) -> str:
         tracker = get_behavior_tracker()
         behavior = tracker.get_behavior_summary(player.name)
@@ -131,7 +267,7 @@ class EncounterManager:
             reasons.append(("high_level", f"等级达到{player.level}"))
         if npc and npc.faction != Faction.NONE and player.faction != Faction.NONE:
             if npc.faction == player.faction:
-                reasons.append(("faction_ally", f"同门{FACTION_NAMES[npc.faction.value]}"))
+                reasons.append(("faction_ally", f"同门{FACTION_NAMES.get(npc.faction, '未知门派')}"))
 
         if not reasons:
             if random.random() < 0.1:
@@ -160,7 +296,7 @@ class EncounterManager:
         player_info = {
             "name": player.name,
             "level": player.level,
-            "faction_name": FACTION_NAMES[player.faction.value],
+            "faction_name": FACTION_NAMES.get(player.faction, '未知门派'),
             "daode": player.daode,
         }
 

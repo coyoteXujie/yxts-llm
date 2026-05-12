@@ -6,6 +6,13 @@ from .combat import CombatSystem
 from .npc_brain import get_npc_brain_manager, get_behavior_tracker
 from .encounter import get_encounter_manager, Encounter
 from .event import EventType, dispatch
+from .systems.reputation import get_reputation_system
+from .systems.cultivation import get_cultivation_system
+from .systems.equipment import get_equipment_system
+from .systems.perform import get_perform_system
+from .systems.economy import get_economy_system
+from .world_event_engine import get_world_event_engine, apply_story_flags, apply_reward, serialize_node, STORYLINE_TYPE_EVENT_MAP
+from .script_system import get_script_db, StorylineType
 
 MAP_W, MAP_H = 100, 80
 TS = 64
@@ -60,14 +67,80 @@ T_BANNER = 46
 T_THRONE = 47
 T_PRISON = 48
 T_ARENA = 49
+T_PILLAR = 50
+T_TREE_PINE = 51
+T_TREE_WILLOW = 52
+T_TREE_BAMBOO_VAR = 53
+T_TREE_DEAD = 54
+T_PLANT_GREEN = 55
+T_PLANT_DARK = 56
+T_PLANT_COLD = 57
+T_PLANT_SNOW = 58
+T_FLOWER_RED = 59
+T_FLOWER_PINK = 60
+T_FLOWER_WHITE = 61
+T_FLOWER_SPECIAL1 = 62
+T_FLOWER_SPECIAL2 = 63
+T_COUNTER_WOOD = 64
+T_COUNTER_HERB = 65
+T_COUNTER_WEAPON = 66
+T_COUNTER_MONEY = 67
+T_COUNTER_INN = 68
+T_DESK_WOOD = 69
+T_DESK_STONE = 70
+T_DESK_LARGE = 71
+T_BENCH_WOOD = 72
+T_BENCH_STONE = 73
+T_BENCH_LONG = 74
+T_SHELF_WOOD = 75
+T_SHELF_BOOK = 76
+T_SHELF_HERB = 77
+T_SCULPTURE_LION = 78
+T_SCULPTURE_BUDA = 79
+T_SCULPTURE_WEAPON = 80
+T_BARS = 81
+T_BED = 82
+T_STAGE = 83
+T_BOTTLE = 84
+T_BOOK_OBJ = 85
+T_BROOM = 86
+T_PAIL = 87
+T_WOOD_LOG = 88
+T_MAT = 89
+T_DWELL = 90
+T_BRICK = 91
+T_FISH = 92
+T_HILL_SMALL = 93
+T_HILL_MEDIUM = 94
+T_HILL_LARGE = 95
+T_HILL_SNOW = 96
+T_STONE_SMALL = 97
+T_STONE_MEDIUM = 98
+T_STONE_LARGE = 99
+T_WALL_WHITE = 100
+T_WALL_GRAY = 101
+T_WALL_DARK = 102
+T_WALL_STONE = 103
+T_WALL_WOOD = 104
+T_LAKE = 105
+T_ROAD_DIRT = 106
+T_COURTYARD = 107
 
 WALKABLE = {
     T_GRASS, T_DIRT_ROAD, T_FOREST, T_DARK_GRASS, T_SAND, T_BRIDGE,
-    T_SHOP, T_STONE_ROAD, T_GARDEN, T_INN, T_TEMPLE, T_DOCK,
-    T_ROOF_RED, T_ROOF_BLUE, T_ROOF_GOLD, T_GATE, T_TRAINING,
-    T_BAMBOO, T_CAVE, T_STAIRS, T_CARPET, T_FLOWER_BED,
-    T_RICE_PADDY, T_TORCH, T_SIGN, T_CAMPFIRE, T_SNOW,
-    T_MUSHROOM, T_RUIN, T_ARENA, T_POND,
+    T_STONE_ROAD, T_GARDEN, T_INN, T_TEMPLE, T_DOCK, T_SHOP,
+    T_GATE, T_TRAINING, T_CAVE, T_STAIRS, T_CARPET,
+    T_FLOWER_BED, T_RICE_PADDY, T_TORCH, T_SIGN, T_CAMPFIRE,
+    T_SNOW, T_MUSHROOM, T_RUIN, T_ARENA, T_POND,
+    T_ROAD_DIRT, T_COURTYARD,
+    T_PLANT_GREEN, T_PLANT_DARK, T_PLANT_COLD, T_PLANT_SNOW,
+    T_FLOWER_RED, T_FLOWER_PINK, T_FLOWER_WHITE, T_FLOWER_SPECIAL1, T_FLOWER_SPECIAL2,
+    T_DESK_WOOD, T_DESK_STONE, T_DESK_LARGE,
+    T_BENCH_WOOD, T_BENCH_STONE, T_BENCH_LONG,
+    T_TABLE, T_MAT, T_BOTTLE, T_BOOK_OBJ, T_BROOM, T_PAIL, T_FISH, T_BRICK,
+    T_STONE_SMALL, T_STONE_MEDIUM,
+    T_WELL, T_CHEST, T_BOOKSHELF, T_ANVIL, T_BANNER, T_ALTAR,
+    T_ICE, T_SWAMP, T_BED, T_STAGE, T_DWELL, T_PILLAR,
 }
 
 
@@ -113,6 +186,10 @@ ALL_SKILLS = {
     "kf_xueying": Skill(id="kf_xueying", name="雪影爪", type=0, level=1, damage=10, accuracy=0.88),
     "kf_menghu": Skill(id="kf_menghu", name="猛虎拳", type=0, level=1, damage=15, accuracy=0.82),
     "kf_xi": Skill(id="kf_xi", name="西域心法", type=3, level=1, damage=0, accuracy=0.95),
+    "kf_lingbo": Skill(id="kf_lingbo", name="凌波微步", type=4, level=1, damage=0, accuracy=0.93),
+    "kf_beiming": Skill(id="kf_beiming", name="北冥神功", type=3, level=1, damage=0, accuracy=0.95),
+    "kf_liuyun": Skill(id="kf_liuyun", name="流云剑法", type=1, level=1, damage=16, accuracy=0.84),
+    "kf_xiaoyao_palm": Skill(id="kf_xiaoyao_palm", name="逍遥掌", type=0, level=1, damage=14, accuracy=0.85),
 }
 
 FACTION_SKILLS = {
@@ -122,7 +199,7 @@ FACTION_SKILLS = {
     Faction.NAJA: ["kf_renshu", "kf_wufa", "kf_wuying", "kf_yidao"],
     Faction.TAIJI: ["kf_taiji_sword", "kf_taiji_fist", "kf_taiji_force", "kf_wanliu", "kf_xuanxu"],
     Faction.XUESHAN: ["kf_taxue", "kf_xueshang", "kf_xueshan_sword", "kf_xueying"],
-    Faction.XIAOYAO: ["kf_menghu", "kf_xi", "kf_basic_sword", "kf_basic_dodge"],
+    Faction.XIAOYAO: ["kf_menghu", "kf_xi", "kf_lingbo", "kf_beiming", "kf_liuyun", "kf_xiaoyao_palm"],
 }
 
 PERFORMS = {
@@ -150,6 +227,11 @@ PERFORMS = {
     "pf_bingxin": {"name": "冰心", "faction": Faction.XUESHAN, "skill": "kf_xueshang", "lvl": 30, "damage": 32, "desc": "冰心诀，寒冰护体"},
     "pf_liuchu": {"name": "六出", "faction": Faction.XUESHAN, "skill": "kf_xueshan_sword", "lvl": 50, "damage": 45, "desc": "雪山六出剑，剑气如霜"},
     "pf_qinna": {"name": "擒拿", "faction": Faction.NONE, "skill": "kf_basic_bare", "lvl": 15, "damage": 18, "desc": "擒拿术，近身制敌"},
+    "pf_huxiao": {"name": "虎啸", "faction": Faction.XIAOYAO, "skill": "kf_menghu", "lvl": 20, "damage": 28, "desc": "猛虎下山，虎啸山林"},
+    "pf_liuyun_jian": {"name": "流云剑意", "faction": Faction.XIAOYAO, "skill": "kf_liuyun", "lvl": 30, "damage": 35, "desc": "流云无定，剑意如风"},
+    "pf_beiming_xi": {"name": "北冥吸功", "faction": Faction.XIAOYAO, "skill": "kf_beiming", "lvl": 50, "damage": 45, "desc": "北冥有鱼，吸化万物"},
+    "pf_xiaoyao_you": {"name": "逍遥游", "faction": Faction.XIAOYAO, "skill": "kf_lingbo", "lvl": 70, "damage": 58, "desc": "逍遥天地间，无拘无束"},
+    "pf_zhetian": {"name": "遮天手", "faction": Faction.XIAOYAO, "skill": "kf_xiaoyao_palm", "lvl": 80, "damage": 68, "desc": "一掌遮天，天地变色"},
 }
 
 NPC_DIALOGUES = {
@@ -265,20 +347,33 @@ class GameWorld:
         self.game_time: float = 0.0
         self.game_hour: int = 8
         self.game_day: int = 1
+        self._prev_hour: int = 8
         self.is_paused: bool = False
 
         self.combat_system = CombatSystem()
         self.game_state: str = "normal"
 
+        self.reputation_system = get_reputation_system()
+        self.cultivation_system = get_cultivation_system()
+        self.equipment_system = get_equipment_system()
+        self.perform_system = get_perform_system()
+        self.economy_system = get_economy_system()
+        self.world_event_engine = get_world_event_engine()
+        self.script_db = get_script_db()
+
         self._init_all_items()
         self._init_default_map()
         self._init_all_npcs()
 
-        self.player.position = Position(col_to_x(25), row_to_y(40))
+        self.combat_system.set_performs_db(PERFORMS)
+        self.combat_system.set_items_db(self.items)
+
+        self.player.position = Position(col_to_x(25), row_to_y(31))
+        self._init_player_skills()
 
     def set_player(self, player: Player):
         self.player = player
-        self.player.position = Position(col_to_x(25), row_to_y(40))
+        self.player.position = Position(col_to_x(25), row_to_y(31))
         self._init_player_skills()
 
     def _init_player_skills(self):
@@ -311,857 +406,1119 @@ class GameWorld:
             tiles[entrance_row][c] = T_GATE
 
     def _init_all_npcs(self):
+        from .data_loader import load_npcs
+        loaded = load_npcs()
+        if loaded:
+            self.npcs = loaded
+            return
         npcs = [
             NPC(id=47, name="平阿四", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="忠厚老实", description="平安客栈掌柜，消息灵通",
                 level=5, strength=8, dexterity=8, intelligence=12, constitution=10,
                 hp=80, max_hp=80, mp=40, max_mp=40, attack=10, defense=5, damage=5, money=200, exp_reward=30,
                 sell_items=["item_baozi", "item_chicken", "item_wine"],
-                position=yx_to_xy(8, 8), has_quests=True),
+                position=yx_to_xy(15, 28), has_quests=True),
             NPC(id=35, name="店小二", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="机灵勤快", description="客栈伙计",
                 level=3, strength=6, dexterity=10, intelligence=8, constitution=6,
                 hp=50, max_hp=50, mp=20, max_mp=20, attack=5, defense=3, damage=3, money=50, exp_reward=15,
-                position=yx_to_xy(10, 9), has_quests=False),
+                position=yx_to_xy(16, 25), has_quests=False),
             NPC(id=37, name="阎商", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="精明利落", description="盐商，精打细算",
                 level=5, strength=6, dexterity=8, intelligence=15, constitution=6,
                 hp=60, max_hp=60, mp=30, max_mp=30, attack=8, defense=4, damage=4, money=500, exp_reward=25,
                 sell_items=["item_dan"],
-                position=yx_to_xy(30, 8), has_quests=True),
+                position=yx_to_xy(22, 14), has_quests=True),
             NPC(id=11, name="葛朗台", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="吝啬刻薄", description="钱庄掌柜",
                 level=8, strength=5, dexterity=6, intelligence=18, constitution=8,
                 hp=70, max_hp=70, mp=40, max_mp=40, attack=6, defense=6, damage=4, money=5000, exp_reward=20,
-                position=yx_to_xy(19, 7), has_quests=True),
+                position=yx_to_xy(30, 21), has_quests=True),
             NPC(id=1, name="阿青", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="天真善良", description="越女剑传人，卖豆腐为生",
                 level=15, strength=16, dexterity=24, intelligence=25, constitution=21,
                 hp=370, max_hp=370, mp=200, max_mp=200, attack=30, defense=15, damage=12, money=1000, exp_reward=50,
                 sell_items=["item_white_doufu", "item_green_doufu"],
-                position=yx_to_xy(44, 9), has_quests=True),
+                position=yx_to_xy(8, 14), has_quests=True),
             NPC(id=5, name="厨师", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="豪爽热情", description="酒楼大厨",
                 level=5, strength=28, dexterity=21, intelligence=24, constitution=21,
                 hp=320, max_hp=320, mp=0, max_mp=0, attack=15, defense=8, damage=8, money=100, exp_reward=15,
-                position=yx_to_xy(38, 9), has_quests=True),
+                position=yx_to_xy(15, 25), has_quests=True),
             NPC(id=34, name="屠夫", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="粗犷豪放", description="卖肉的屠夫",
                 level=6, strength=30, dexterity=15, intelligence=10, constitution=25,
                 hp=350, max_hp=350, mp=0, max_mp=0, attack=18, defense=10, damage=10, money=200, exp_reward=20,
                 sell_items=["item_meat", "item_chicken"],
-                position=yx_to_xy(40, 17), has_quests=False),
+                position=yx_to_xy(22, 18), has_quests=False),
             NPC(id=9, name="卖花女", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="温柔可人", description="卖花的姑娘",
                 level=2, strength=5, dexterity=10, intelligence=12, constitution=6,
                 hp=30, max_hp=30, mp=10, max_mp=10, attack=3, defense=2, damage=1, money=80, exp_reward=8,
                 sell_items=["item_red_flower", "item_tea_flower"],
-                position=yx_to_xy(19, 17), has_quests=False),
+                position=yx_to_xy(22, 24), has_quests=False),
             NPC(id=27, name="小商贩", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="热情吆喝", description="街边小贩",
                 level=2, strength=8, dexterity=10, intelligence=10, constitution=8,
                 hp=30, max_hp=30, mp=10, max_mp=10, attack=3, defense=2, damage=2, money=50, exp_reward=8,
                 sell_items=["item_tang_hulu"],
-                position=yx_to_xy(25, 19), has_quests=False),
+                position=yx_to_xy(23, 16), has_quests=False),
             NPC(id=26, name="平一指", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="医术高明", description="名医，杀一人医一人",
                 level=10, strength=8, dexterity=12, intelligence=20, constitution=10,
                 hp=100, max_hp=100, mp=60, max_mp=60, attack=8, defense=5, damage=3, money=300, exp_reward=30,
                 sell_items=["item_yao", "item_shengji", "item_dan"],
-                position=yx_to_xy(38, 17), has_quests=True),
+                position=yx_to_xy(30, 16), has_quests=True),
             NPC(id=19, name="何铁手", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="阴险毒辣", description="五毒教主，师从袁承志",
                 level=20, strength=18, dexterity=22, intelligence=20, constitution=16,
                 hp=400, max_hp=400, mp=200, max_mp=200, attack=35, defense=15, damage=15, money=2000, exp_reward=80,
                 sell_items=["item_blade", "item_dagger", "item_whip", "item_hetun_blade"],
-                position=yx_to_xy(52, 9), has_quests=True),
+                position=yx_to_xy(16, 21), has_quests=True),
             NPC(id=20, name="何喜", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="悠闲自在", description="渔夫，喜欢钓鱼",
                 level=3, strength=10, dexterity=8, intelligence=8, constitution=10,
                 hp=40, max_hp=40, mp=10, max_mp=10, attack=4, defense=3, damage=2, money=30, exp_reward=8,
                 sell_items=["item_diaogan", "item_fish"],
-                position=yx_to_xy(5, 2), has_quests=True),
+                position=yx_to_xy(4, 30), has_quests=True),
             NPC(id=29, name="小裁缝", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="心灵手巧", description="裁缝铺小师傅",
                 level=4, strength=6, dexterity=14, intelligence=10, constitution=6,
                 hp=40, max_hp=40, mp=20, max_mp=20, attack=4, defense=3, damage=2, money=100, exp_reward=10,
                 sell_items=["item_cloth", "item_fine_cloth"],
-                position=yx_to_xy(19, 17), has_quests=False),
+                position=yx_to_xy(8, 18), has_quests=False),
             NPC(id=30, name="何裁缝", npc_type=NpcType.TRADER, faction=Faction.NONE,
                 personality="老练细心", description="做了一辈子衣服的老裁缝",
                 level=6, strength=6, dexterity=10, intelligence=12, constitution=8,
                 hp=50, max_hp=50, mp=20, max_mp=20, attack=4, defense=3, damage=2, money=150, exp_reward=12,
                 sell_items=["item_cloth", "item_fine_cloth", "item_silk_cloth"],
-                position=yx_to_xy(20, 16), has_quests=True),
+                position=yx_to_xy(9, 19), has_quests=True),
             NPC(id=3, name="捕快", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="刚正不阿", description="平安镇捕快",
                 level=12, strength=27, dexterity=25, intelligence=28, constitution=29,
                 hp=370, max_hp=370, mp=200, max_mp=200, attack=25, defense=15, damage=10, money=1500, exp_reward=40,
-                position=yx_to_xy(25, 30), has_quests=True),
+                position=yx_to_xy(40, 25), has_quests=True),
             NPC(id=33, name="巡捕", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="尽职尽责", description="城里巡逻官",
                 level=14, strength=25, dexterity=25, intelligence=28, constitution=27,
                 hp=350, max_hp=350, mp=200, max_mp=200, attack=22, defense=14, damage=9, money=1200, exp_reward=35,
-                position=yx_to_xy(35, 30), has_quests=False),
+                position=yx_to_xy(39, 26), has_quests=False),
             NPC(id=14, name="衙役", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="威严守纪", description="衙门守卫",
                 level=10, strength=22, dexterity=20, intelligence=15, constitution=22,
                 hp=300, max_hp=300, mp=100, max_mp=100, attack=18, defense=12, damage=8, money=500, exp_reward=25,
-                position=yx_to_xy(30, 30), has_quests=False),
+                position=yx_to_xy(41, 24), has_quests=False),
             NPC(id=31, name="老夫子", npc_type=NpcType.MASTER, faction=Faction.NONE,
                 personality="博学多才", description="私塾先生，读书识字180级",
                 level=20, strength=8, dexterity=6, intelligence=30, constitution=8,
                 hp=200, max_hp=200, mp=300, max_mp=300, attack=5, defense=5, damage=2, money=0, exp_reward=100,
-                position=yx_to_xy(7, 26), is_master=True,
+                position=yx_to_xy(9, 28), is_master=True,
                 teach_skills=["kf_literate"], has_quests=True),
             NPC(id=6, name="村长", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="德高望重", description="平安镇村长",
                 level=10, strength=29, dexterity=25, intelligence=21, constitution=21,
                 hp=320, max_hp=320, mp=0, max_mp=0, attack=15, defense=10, damage=8, money=100, exp_reward=30,
-                position=yx_to_xy(25, 25), has_quests=True),
+                position=yx_to_xy(37, 18), has_quests=True),
             NPC(id=15, name="老婆婆", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="慈祥温和", description="住了几十年的老居民",
                 level=3, strength=6, dexterity=8, intelligence=10, constitution=8,
                 hp=40, max_hp=40, mp=10, max_mp=10, attack=3, defense=2, damage=1, money=20, exp_reward=8,
-                position=yx_to_xy(15, 25), has_quests=False),
+                position=yx_to_xy(8, 22), has_quests=False),
             NPC(id=10, name="妇人", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="忧心忡忡", description="富家妇人，常丢东西",
                 level=2, strength=5, dexterity=6, intelligence=10, constitution=6,
                 hp=30, max_hp=30, mp=10, max_mp=10, attack=2, defense=1, damage=1, money=500, exp_reward=8,
-                position=yx_to_xy(22, 18), has_quests=True),
+                position=yx_to_xy(37, 19), has_quests=True),
             NPC(id=13, name="公子哥", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="趾高气扬", description="富家公子，爱吃白豆腐",
                 level=3, strength=8, dexterity=10, intelligence=12, constitution=8,
                 hp=50, max_hp=50, mp=20, max_mp=20, attack=5, defense=3, damage=3, money=2000, exp_reward=10,
-                position=yx_to_xy(35, 17), has_quests=True),
+                position=yx_to_xy(23, 22), has_quests=True),
             NPC(id=28, name="书童", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="文质彬彬", description="私塾学童，想学武",
                 level=3, strength=5, dexterity=8, intelligence=20, constitution=5,
                 hp=30, max_hp=30, mp=20, max_mp=20, attack=3, defense=2, damage=1, money=20, exp_reward=10,
-                position=yx_to_xy(9, 26), has_quests=True),
+                position=yx_to_xy(8, 28), has_quests=True),
             NPC(id=2, name="小童", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="天真活泼", description="镇上的小孩，爱吃糖葫芦",
                 level=1, strength=5, dexterity=8, intelligence=6, constitution=5,
                 hp=20, max_hp=20, mp=0, max_mp=0, attack=2, defense=1, damage=1, money=5, exp_reward=3,
-                position=yx_to_xy(22, 26), has_quests=True),
+                position=yx_to_xy(9, 23), has_quests=True),
             NPC(id=16, name="过路人", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="疲惫迷茫", description="不知从何而来的旅人",
                 level=1, strength=6, dexterity=6, intelligence=8, constitution=6,
                 hp=25, max_hp=25, mp=5, max_mp=5, attack=2, defense=1, damage=1, money=30, exp_reward=5,
-                position=yx_to_xy(40, 25), has_quests=False),
+                position=yx_to_xy(22, 26), has_quests=False),
             NPC(id=17, name="茅十七", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="江湖老练", description="茅十八的哥哥",
                 level=12, strength=20, dexterity=25, intelligence=15, constitution=18,
                 hp=280, max_hp=280, mp=80, max_mp=80, attack=20, defense=12, damage=8, money=200, exp_reward=40,
-                position=yx_to_xy(45, 25), has_quests=True),
+                position=yx_to_xy(30, 31), has_quests=True),
 
             NPC(id=48, name="韦扬", npc_type=NpcType.MASTER, faction=Faction.BAGUA,
                 personality="威严深沉", description="八卦门掌门，混元一气250级",
                 level=40, strength=25, dexterity=22, intelligence=20, constitution=25,
                 hp=800, max_hp=800, mp=500, max_mp=500, attack=90, defense=50, damage=35, money=0, exp_reward=1500,
-                position=yx_to_xy(60, 8), is_master=True,
+                position=yx_to_xy(61, 5), is_master=True,
                 teach_skills=["kf_bagua_blade", "kf_bagua_palm", "kf_bazhen", "kf_hunyuan", "kf_youlong"],
                 has_quests=True),
             NPC(id=44, name="简明", npc_type=NpcType.MASTER, faction=Faction.BAGUA,
                 personality="刚毅果决", description="八卦门大师兄，八卦刀出神入化",
                 level=25, strength=20, dexterity=18, intelligence=15, constitution=18,
                 hp=500, max_hp=500, mp=250, max_mp=250, attack=50, defense=30, damage=20, money=0, exp_reward=500,
-                position=yx_to_xy(62, 10), is_master=True,
+                position=yx_to_xy(62, 8), is_master=True,
                 teach_skills=["kf_bagua_blade", "kf_bagua_palm"],
                 has_quests=False),
             NPC(id=43, name="简杰", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="沉稳内敛", description="八卦门二师兄，八阵图高手",
                 level=22, strength=18, dexterity=16, intelligence=18, constitution=16,
                 hp=420, max_hp=420, mp=200, max_mp=200, attack=40, defense=25, damage=16, money=50, exp_reward=350,
-                position=yx_to_xy(58, 10), has_quests=False),
+                position=yx_to_xy(60, 7), has_quests=False),
             NPC(id=45, name="简英", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="英气勃发", description="八卦门三师兄",
                 level=20, strength=16, dexterity=18, intelligence=14, constitution=16,
                 hp=380, max_hp=380, mp=180, max_mp=180, attack=35, defense=22, damage=14, money=30, exp_reward=280,
-                position=yx_to_xy(63, 9), has_quests=False),
+                position=yx_to_xy(63, 7), has_quests=False),
             NPC(id=46, name="鲍振", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="勤勉好学", description="八卦门弟子，刀法不错",
                 level=12, strength=14, dexterity=12, intelligence=10, constitution=14,
                 hp=250, max_hp=250, mp=100, max_mp=100, attack=22, defense=14, damage=10, money=20, exp_reward=120,
-                position=yx_to_xy(60, 12), has_quests=False),
+                position=yx_to_xy(61, 9), has_quests=False),
             NPC(id=49, name="武师教头", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="严厉刚正", description="八卦门武师教头",
                 level=15, strength=18, dexterity=16, intelligence=12, constitution=18,
                 hp=320, max_hp=320, mp=120, max_mp=120, attack=28, defense=18, damage=12, money=50, exp_reward=180,
-                position=yx_to_xy(61, 11), has_quests=False),
+                position=yx_to_xy(62, 10), has_quests=False),
             NPC(id=50, name="春花娘", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="温柔坚韧", description="八卦门女弟子",
                 level=10, strength=10, dexterity=14, intelligence=12, constitution=10,
                 hp=200, max_hp=200, mp=80, max_mp=80, attack=15, defense=10, damage=6, money=30, exp_reward=60,
-                position=yx_to_xy(57, 11), has_quests=False),
+                position=yx_to_xy(60, 9), has_quests=False),
             NPC(id=51, name="护院武师", npc_type=NpcType.NORMAL, faction=Faction.BAGUA,
                 personality="老实忠厚", description="八卦门护院",
                 level=8, strength=14, dexterity=10, intelligence=8, constitution=14,
                 hp=180, max_hp=180, mp=60, max_mp=60, attack=14, defense=10, damage=6, money=20, exp_reward=40,
-                position=yx_to_xy(56, 8), has_quests=False),
+                position=yx_to_xy(59, 5), has_quests=False),
 
             NPC(id=57, name="清照", npc_type=NpcType.MASTER, faction=Faction.FLOWER,
                 personality="清雅脱俗", description="花间派掌门，三花聚顶250级",
                 level=40, strength=15, dexterity=28, intelligence=25, constitution=18,
                 hp=700, max_hp=700, mp=600, max_mp=600, attack=75, defense=40, damage=30, money=0, exp_reward=1500,
-                position=yx_to_xy(60, 20), is_master=True,
+                position=yx_to_xy(64, 20), is_master=True,
                 teach_skills=["kf_huafei", "kf_huatuan", "kf_liu", "kf_meihua", "kf_sanhua"],
                 has_quests=True),
             NPC(id=53, name="红拂女", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="英姿飒爽", description="花间派弟子，花团锦簇高手",
                 level=18, strength=14, dexterity=22, intelligence=16, constitution=14,
                 hp=300, max_hp=300, mp=150, max_mp=150, attack=30, defense=18, damage=12, money=100, exp_reward=200,
-                position=yx_to_xy(62, 22), has_quests=False),
+                position=yx_to_xy(63, 21), has_quests=False),
             NPC(id=55, name="公孙大娘", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="端庄大方", description="百花之母的传人",
                 level=22, strength=16, dexterity=20, intelligence=18, constitution=16,
                 hp=400, max_hp=400, mp=200, max_mp=200, attack=38, defense=22, damage=15, money=80, exp_reward=300,
-                position=yx_to_xy(58, 22), has_quests=False),
+                position=yx_to_xy(57, 22), has_quests=False),
             NPC(id=56, name="青红", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="热情似火", description="花间派大弟子",
                 level=20, strength=14, dexterity=20, intelligence=16, constitution=14,
                 hp=350, max_hp=350, mp=180, max_mp=180, attack=32, defense=20, damage=13, money=60, exp_reward=250,
-                position=yx_to_xy(64, 22), has_quests=False),
+                position=yx_to_xy(65, 23), has_quests=False),
             NPC(id=58, name="绿珠", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="温婉可人", description="花间派弟子，经平一指调教",
                 level=16, strength=12, dexterity=18, intelligence=14, constitution=12,
                 hp=260, max_hp=260, mp=130, max_mp=130, attack=25, defense=16, damage=10, money=40, exp_reward=160,
-                position=yx_to_xy(60, 24), has_quests=False),
+                position=yx_to_xy(63, 22), has_quests=False),
             NPC(id=59, name="雪涛", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="冷静沉着", description="花间派弟子",
                 level=15, strength=12, dexterity=16, intelligence=14, constitution=12,
                 hp=240, max_hp=240, mp=120, max_mp=120, attack=22, defense=14, damage=9, money=30, exp_reward=140,
-                position=yx_to_xy(62, 24), has_quests=False),
+                position=yx_to_xy(65, 25), has_quests=False),
             NPC(id=60, name="隐娘", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="神秘莫测", description="花间派神秘弟子",
                 level=20, strength=14, dexterity=22, intelligence=16, constitution=14,
                 hp=340, max_hp=340, mp=170, max_mp=170, attack=30, defense=18, damage=12, money=0, exp_reward=220,
-                position=yx_to_xy(56, 20), has_quests=True),
+                position=yx_to_xy(57, 20), has_quests=True),
             NPC(id=61, name="王辞", npc_type=NpcType.NORMAL, faction=Faction.FLOWER,
                 personality="才貌双全", description="花间派弟子，容貌180级",
                 level=18, strength=12, dexterity=18, intelligence=20, constitution=12,
                 hp=280, max_hp=280, mp=160, max_mp=160, attack=26, defense=16, damage=10, money=50, exp_reward=180,
-                position=yx_to_xy(58, 24), has_quests=False),
+                position=yx_to_xy(60, 26), has_quests=False),
 
             NPC(id=79, name="于红儒", npc_type=NpcType.MASTER, faction=Faction.HONGLIAN,
                 personality="刚烈如火", description="红莲教掌门，同击术250级",
                 level=40, strength=28, dexterity=18, intelligence=15, constitution=28,
                 hp=900, max_hp=900, mp=400, max_mp=400, attack=85, defense=55, damage=35, money=0, exp_reward=1500,
-                position=yx_to_xy(60, 35), is_master=True,
+                position=yx_to_xy(61, 38), is_master=True,
                 teach_skills=["kf_hexiang", "kf_jiaoyi", "kf_pifeng", "kf_taizu", "kf_tongji"],
                 has_quests=True),
             NPC(id=72, name="方长老", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="老谋深算", description="红莲教管事长老",
                 level=22, strength=18, dexterity=15, intelligence=18, constitution=18,
                 hp=400, max_hp=400, mp=200, max_mp=200, attack=35, defense=25, damage=15, money=200, exp_reward=300,
-                position=yx_to_xy(62, 37), has_quests=True),
+                position=yx_to_xy(63, 38), has_quests=True),
             NPC(id=73, name="韩长老", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="愤世嫉俗", description="原在朝廷为官，后投奔红莲教",
                 level=18, strength=14, dexterity=14, intelligence=16, constitution=14,
                 hp=300, max_hp=300, mp=150, max_mp=150, attack=25, defense=18, damage=10, money=100, exp_reward=180,
-                position=yx_to_xy(58, 37), has_quests=False),
+                position=yx_to_xy(60, 39), has_quests=False),
             NPC(id=74, name="楚红灯", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="暴躁易怒", description="红莲教弟子，满脸怒气",
                 level=16, strength=16, dexterity=12, intelligence=10, constitution=16,
                 hp=280, max_hp=280, mp=120, max_mp=120, attack=24, defense=16, damage=10, money=50, exp_reward=150,
-                position=yx_to_xy(64, 37), has_quests=False),
+                position=yx_to_xy(64, 40), has_quests=False),
             NPC(id=75, name="崇儿", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="刚毅坚定", description="红莲教女弟子，武功不凡",
                 level=20, strength=16, dexterity=20, intelligence=14, constitution=16,
                 hp=360, max_hp=360, mp=180, max_mp=180, attack=32, defense=20, damage=13, money=30, exp_reward=240,
-                position=yx_to_xy(60, 37), has_quests=False),
+                position=yx_to_xy(62, 41), has_quests=False),
             NPC(id=76, name="唐四儿", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="坚韧不拔", description="独臂英雄",
                 level=18, strength=16, dexterity=18, intelligence=14, constitution=16,
                 hp=320, max_hp=320, mp=150, max_mp=150, attack=28, defense=18, damage=12, money=40, exp_reward=200,
-                position=yx_to_xy(56, 35), has_quests=False),
+                position=yx_to_xy(59, 39), has_quests=False),
             NPC(id=77, name="白衣教众", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="忠诚", description="红莲教白衣教众",
                 level=8, strength=10, dexterity=8, intelligence=8, constitution=10,
                 hp=150, max_hp=150, mp=50, max_mp=50, attack=12, defense=8, damage=5, money=10, exp_reward=30,
-                position=yx_to_xy(58, 35), has_quests=False),
+                position=yx_to_xy(60, 38), has_quests=False),
             NPC(id=78, name="红衣教众", npc_type=NpcType.NORMAL, faction=Faction.HONGLIAN,
                 personality="狂热", description="红莲教红衣教众",
                 level=10, strength=12, dexterity=10, intelligence=8, constitution=12,
                 hp=180, max_hp=180, mp=60, max_mp=60, attack=15, defense=10, damage=6, money=15, exp_reward=40,
-                position=yx_to_xy(64, 35), has_quests=False),
+                position=yx_to_xy(63, 42), has_quests=False),
 
             NPC(id=92, name="钟央", npc_type=NpcType.MASTER, faction=Faction.NAJA,
                 personality="沉默寡言", description="那迦派掌门，忍术250级",
                 level=40, strength=22, dexterity=25, intelligence=22, constitution=20,
                 hp=750, max_hp=750, mp=500, max_mp=500, attack=80, defense=45, damage=30, money=0, exp_reward=1500,
-                position=yx_to_xy(80, 8), is_master=True,
+                position=yx_to_xy(79, 6), is_master=True,
                 teach_skills=["kf_renshu", "kf_wufa", "kf_wuying", "kf_yidao"],
                 has_quests=True),
             NPC(id=80, name="十三卫", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="冷酷无情", description="那迦派高手，负责暗杀",
                 level=20, strength=18, dexterity=20, intelligence=12, constitution=16,
                 hp=350, max_hp=350, mp=150, max_mp=150, attack=35, defense=20, damage=15, money=50, exp_reward=250,
-                position=yx_to_xy(82, 10), has_quests=False),
+                position=yx_to_xy(80, 8), has_quests=False),
             NPC(id=81, name="美奈子", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="沉静如水", description="那迦派女弟子",
                 level=18, strength=14, dexterity=18, intelligence=16, constitution=14,
                 hp=300, max_hp=300, mp=160, max_mp=160, attack=28, defense=16, damage=12, money=30, exp_reward=180,
-                position=yx_to_xy(78, 10), has_quests=False),
+                position=yx_to_xy(78, 5), has_quests=False),
             NPC(id=82, name="藤王", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="桀骜不驯", description="那迦派弟子",
                 level=16, strength=16, dexterity=16, intelligence=12, constitution=14,
                 hp=280, max_hp=280, mp=130, max_mp=130, attack=26, defense=16, damage=11, money=40, exp_reward=160,
-                position=yx_to_xy(84, 10), has_quests=False),
+                position=yx_to_xy(82, 8), has_quests=False),
             NPC(id=83, name="游敬", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="沉默寡言", description="那迦派弟子",
                 level=18, strength=16, dexterity=18, intelligence=14, constitution=16,
                 hp=320, max_hp=320, mp=150, max_mp=150, attack=28, defense=18, damage=12, money=30, exp_reward=190,
-                position=yx_to_xy(80, 12), has_quests=False),
+                position=yx_to_xy(79, 10), has_quests=False),
             NPC(id=84, name="天井", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="机敏灵活", description="那迦派弟子",
                 level=14, strength=14, dexterity=16, intelligence=12, constitution=14,
                 hp=240, max_hp=240, mp=110, max_mp=110, attack=22, defense=14, damage=9, money=20, exp_reward=120,
-                position=yx_to_xy(82, 12), has_quests=False),
+                position=yx_to_xy(81, 11), has_quests=False),
             NPC(id=85, name="孙三", npc_type=NpcType.NORMAL, faction=Faction.NAJA,
                 personality="精明干练", description="那迦派弟子",
                 level=14, strength=14, dexterity=14, intelligence=14, constitution=14,
                 hp=240, max_hp=240, mp=110, max_mp=110, attack=22, defense=14, damage=9, money=20, exp_reward=120,
-                position=yx_to_xy(78, 12), has_quests=False),
+                position=yx_to_xy(80, 12), has_quests=False),
             NPC(id=86, name="浪人甲", npc_type=NpcType.NORMAL, faction=Faction.NONE,
                 personality="落魄失意", description="没能进入那迦派的浪人",
                 level=8, strength=12, dexterity=14, intelligence=8, constitution=10,
                 hp=160, max_hp=160, mp=50, max_mp=50, attack=14, defense=8, damage=5, money=10, exp_reward=40,
-                position=yx_to_xy(75, 5), has_quests=False),
+                position=yx_to_xy(73, 8), has_quests=False),
 
             NPC(id=99, name="清虚道人", npc_type=NpcType.MASTER, faction=Faction.TAIJI,
                 personality="仙风道骨", description="太极门掌门，太极功250级",
                 level=45, strength=20, dexterity=22, intelligence=28, constitution=22,
                 hp=850, max_hp=850, mp=700, max_mp=700, attack=85, defense=55, damage=30, money=0, exp_reward=2000,
-                position=yx_to_xy(80, 22), is_master=True,
+                position=yx_to_xy(79, 20), is_master=True,
                 teach_skills=["kf_taiji_sword", "kf_taiji_fist", "kf_taiji_force", "kf_wanliu", "kf_xuanxu"],
                 has_quests=True),
             NPC(id=95, name="古松道人", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="沉稳内敛", description="太极门师叔",
                 level=25, strength=18, dexterity=16, intelligence=20, constitution=18,
                 hp=450, max_hp=450, mp=250, max_mp=250, attack=40, defense=30, damage=15, money=0, exp_reward=400,
-                position=yx_to_xy(82, 24), has_quests=False),
+                position=yx_to_xy(81, 22), has_quests=False),
             NPC(id=96, name="仓月道人", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="深藏不露", description="太极门师叔",
                 level=22, strength=16, dexterity=18, intelligence=20, constitution=16,
                 hp=400, max_hp=400, mp=220, max_mp=220, attack=35, defense=25, damage=14, money=0, exp_reward=320,
-                position=yx_to_xy(78, 24), has_quests=False),
+                position=yx_to_xy(80, 20), has_quests=False),
             NPC(id=97, name="采药道人", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="淡泊名利", description="太极门前辈师叔",
                 level=18, strength=14, dexterity=16, intelligence=18, constitution=14,
                 hp=320, max_hp=320, mp=180, max_mp=180, attack=28, defense=18, damage=11, money=0, exp_reward=200,
-                position=yx_to_xy(84, 24), has_quests=False),
+                position=yx_to_xy(83, 24), has_quests=False),
             NPC(id=98, name="知客道人", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="和蔼可亲", description="太极门弟子",
                 level=14, strength=12, dexterity=14, intelligence=14, constitution=12,
                 hp=240, max_hp=240, mp=120, max_mp=120, attack=20, defense=14, damage=8, money=20, exp_reward=120,
-                position=yx_to_xy(80, 26), has_quests=False),
+                position=yx_to_xy(79, 24), has_quests=False),
             NPC(id=100, name="迎客道童", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="热情好客", description="太极门弟子",
                 level=10, strength=10, dexterity=12, intelligence=10, constitution=10,
                 hp=180, max_hp=180, mp=80, max_mp=80, attack=15, defense=10, damage=6, money=10, exp_reward=60,
-                position=yx_to_xy(82, 26), has_quests=False),
+                position=yx_to_xy(80, 25), has_quests=False),
             NPC(id=101, name="明月", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="憨厚老实", description="太极门弟子，傻乎乎的",
                 level=8, strength=8, dexterity=10, intelligence=8, constitution=10,
                 hp=150, max_hp=150, mp=60, max_mp=60, attack=12, defense=8, damage=5, money=5, exp_reward=40,
-                position=yx_to_xy(78, 26), has_quests=False),
+                position=yx_to_xy(81, 24), has_quests=False),
             NPC(id=102, name="清风", npc_type=NpcType.NORMAL, faction=Faction.TAIJI,
                 personality="勤勉好学", description="太极门入门弟子",
                 level=6, strength=6, dexterity=8, intelligence=8, constitution=6,
                 hp=100, max_hp=100, mp=40, max_mp=40, attack=8, defense=6, damage=3, money=5, exp_reward=20,
-                position=yx_to_xy(84, 26), has_quests=False),
+                position=yx_to_xy(83, 25), has_quests=False),
 
             NPC(id=108, name="白瑞德", npc_type=NpcType.MASTER, faction=Faction.XUESHAN,
                 personality="冷峻如冰", description="雪山派掌门，雪上霜250级",
                 level=42, strength=24, dexterity=26, intelligence=18, constitution=24,
                 hp=800, max_hp=800, mp=500, max_mp=500, attack=90, defense=45, damage=35, money=0, exp_reward=1800,
-                position=yx_to_xy(80, 40), is_master=True,
+                position=yx_to_xy(79, 39), is_master=True,
                 teach_skills=["kf_taxue", "kf_xueshang", "kf_xueshan_sword", "kf_xueying"],
                 has_quests=True),
             NPC(id=109, name="史婆婆", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="严厉慈爱", description="白瑞德的妻子",
                 level=22, strength=18, dexterity=18, intelligence=16, constitution=18,
                 hp=380, max_hp=380, mp=200, max_mp=200, attack=35, defense=22, damage=14, money=30, exp_reward=300,
-                position=yx_to_xy(82, 42), has_quests=False),
+                position=yx_to_xy(81, 42), has_quests=False),
             NPC(id=110, name="万剑", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="锐气逼人", description="雪山派大弟子",
                 level=20, strength=18, dexterity=20, intelligence=14, constitution=18,
                 hp=360, max_hp=360, mp=180, max_mp=180, attack=32, defense=20, damage=13, money=20, exp_reward=250,
-                position=yx_to_xy(78, 42), has_quests=False),
+                position=yx_to_xy(80, 38), has_quests=False),
             NPC(id=111, name="万刃", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="刚毅果敢", description="雪山派巡山总管",
                 level=18, strength=16, dexterity=16, intelligence=12, constitution=16,
                 hp=320, max_hp=320, mp=150, max_mp=150, attack=28, defense=18, damage=12, money=15, exp_reward=200,
-                position=yx_to_xy(84, 42), has_quests=False),
+                position=yx_to_xy(82, 38), has_quests=False),
             NPC(id=112, name="万重", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="稳重踏实", description="雪山派弟子",
                 level=16, strength=14, dexterity=14, intelligence=12, constitution=16,
                 hp=280, max_hp=280, mp=130, max_mp=130, attack=24, defense=16, damage=10, money=10, exp_reward=160,
-                position=yx_to_xy(80, 44), has_quests=False),
+                position=yx_to_xy(79, 44), has_quests=False),
             NPC(id=113, name="万一", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="谨慎小心", description="雪山派弟子",
                 level=16, strength=14, dexterity=16, intelligence=12, constitution=14,
                 hp=270, max_hp=270, mp=130, max_mp=130, attack=24, defense=15, damage=10, money=10, exp_reward=160,
-                position=yx_to_xy(82, 44), has_quests=False),
+                position=yx_to_xy(81, 44), has_quests=False),
             NPC(id=107, name="阿秀", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="温柔坚韧", description="雪山派女弟子，史婆婆的弟子",
                 level=14, strength=10, dexterity=16, intelligence=14, constitution=10,
                 hp=220, max_hp=220, mp=110, max_mp=110, attack=20, defense=12, damage=8, money=15, exp_reward=100,
-                position=yx_to_xy(78, 44), has_quests=False),
+                position=yx_to_xy(80, 42), has_quests=False),
             NPC(id=114, name="雪千柔", npc_type=NpcType.NORMAL, faction=Faction.XUESHAN,
                 personality="柔弱似水", description="雪山派女弟子",
                 level=8, strength=8, dexterity=10, intelligence=10, constitution=8,
                 hp=140, max_hp=140, mp=60, max_mp=60, attack=10, defense=8, damage=4, money=10, exp_reward=40,
-                position=yx_to_xy(84, 44), has_quests=False),
+                position=yx_to_xy(83, 44), has_quests=False),
 
             NPC(id=21, name="流氓", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="欺软怕硬", description="镇上的小混混",
                 level=4, strength=12, dexterity=10, intelligence=5, constitution=10,
                 hp=60, max_hp=60, mp=0, max_mp=0, attack=8, defense=3, damage=5, money=30, exp_reward=15,
-                position=yx_to_xy(12, 19), has_quests=False),
+                position=yx_to_xy(46, 44), has_quests=False),
             NPC(id=22, name="流氓头", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="凶神恶煞", description="流氓头子",
                 level=7, strength=16, dexterity=12, intelligence=8, constitution=14,
                 hp=100, max_hp=100, mp=20, max_mp=20, attack=15, defense=6, damage=8, money=100, exp_reward=30,
-                position=yx_to_xy(8, 19), has_quests=False),
+                position=yx_to_xy(48, 46), has_quests=False),
             NPC(id=8, name="独角大盗", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="残暴无情", description="臭名昭著的大盗",
                 level=12, strength=33, dexterity=18, intelligence=20, constitution=22,
                 hp=320, max_hp=320, mp=0, max_mp=0, attack=25, defense=12, damage=15, money=10000, exp_reward=80,
-                position=yx_to_xy(45, 55), has_quests=False),
+                position=yx_to_xy(50, 55), has_quests=False),
             NPC(id=4, name="采花大盗", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="阴险狡诈", description="采花大盗，轻功了得",
                 level=15, strength=18, dexterity=28, intelligence=22, constitution=24,
                 hp=320, max_hp=320, mp=0, max_mp=0, attack=22, defense=10, damage=12, money=10000, exp_reward=100,
-                position=yx_to_xy(48, 58), has_quests=False),
+                position=yx_to_xy(52, 58), has_quests=False),
             NPC(id=18, name="黑衣大盗", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="冷酷无情", description="神秘黑衣人，来去无踪",
                 level=18, strength=22, dexterity=25, intelligence=18, constitution=20,
                 hp=400, max_hp=400, mp=100, max_mp=100, attack=30, defense=15, damage=18, money=5000, exp_reward=120,
-                position=yx_to_xy(50, 62), has_quests=False),
+                position=yx_to_xy(54, 62), has_quests=False),
             NPC(id=23, name="土匪甲", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="凶悍蛮横", description="雪山脚下的土匪",
                 level=10, strength=20, dexterity=12, intelligence=8, constitution=16,
                 hp=200, max_hp=200, mp=0, max_mp=0, attack=18, defense=8, damage=10, money=500, exp_reward=50,
-                position=yx_to_xy(70, 50), has_quests=False),
+                position=yx_to_xy(74, 50), has_quests=False),
             NPC(id=24, name="土匪头目", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="残暴嗜血", description="土匪头目",
                 level=15, strength=24, dexterity=16, intelligence=12, constitution=20,
                 hp=350, max_hp=350, mp=50, max_mp=50, attack=28, defense=14, damage=15, money=2000, exp_reward=100,
-                position=yx_to_xy(72, 52), has_quests=False),
+                position=yx_to_xy(76, 52), has_quests=False),
             NPC(id=25, name="雪豹", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="凶猛野兽", description="雪山上的猛兽",
                 level=12, strength=22, dexterity=20, intelligence=5, constitution=20,
                 hp=280, max_hp=280, mp=0, max_mp=0, attack=22, defense=10, damage=12, money=0, exp_reward=60,
-                position=yx_to_xy(84, 47), has_quests=False),
+                position=yx_to_xy(84, 48), has_quests=False),
 
             NPC(id=7, name="大侠", npc_type=NpcType.MASTER, faction=Faction.NONE,
                 personality="侠肝义胆", description="武功高强的游侠，追查宝藏",
                 level=35, strength=20, dexterity=20, intelligence=26, constitution=21,
                 hp=620, max_hp=620, mp=1200, max_mp=1200, attack=80, defense=40, damage=30, money=0, exp_reward=1000,
-                position=yx_to_xy(35, 55), is_master=True,
+                position=yx_to_xy(40, 55), is_master=True,
                 teach_skills=["kf_basic_bare", "kf_basic_sword", "kf_basic_blade", "kf_basic_club"],
                 has_quests=True),
             NPC(id=12, name="道德和尚", npc_type=NpcType.MASTER, faction=Faction.NONE,
                 personality="慈悲为怀", description="少林高僧，善恶一念间",
                 level=25, strength=20, dexterity=15, intelligence=30, constitution=25,
                 hp=500, max_hp=500, mp=300, max_mp=300, attack=50, defense=40, damage=20, money=0, exp_reward=500,
-                position=yx_to_xy(7, 20), is_master=True,
+                position=yx_to_xy(8, 20), is_master=True,
                 teach_skills=["kf_basic_force", "kf_basic_parry"], has_quests=True),
             NPC(id=32, name="李白", npc_type=NpcType.MASTER, faction=Faction.NONE,
                 personality="豪放不羁", description="诗仙剑客，剑法超群",
                 level=30, strength=20, dexterity=25, intelligence=30, constitution=20,
                 hp=600, max_hp=600, mp=400, max_mp=400, attack=70, defense=35, damage=25, money=0, exp_reward=800,
-                position=yx_to_xy(35, 48), is_master=True,
+                position=yx_to_xy(40, 48), is_master=True,
                 teach_skills=["kf_basic_sword", "kf_huafei"], has_quests=True),
 
             NPC(id=120, name="神秘人", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="神秘莫测", description="手持屠龙刀的神秘人，集多门派武功于一身",
                 level=50, strength=30, dexterity=25, intelligence=28, constitution=28,
                 hp=2000, max_hp=2000, mp=1500, max_mp=1500, attack=120, defense=60, damage=50, money=0, exp_reward=5000,
-                position=yx_to_xy(50, 70), has_quests=True),
+                position=yx_to_xy(55, 70), has_quests=True),
             NPC(id=121, name="绣花女", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="冷艳绝伦", description="使用绣花针的神秘女子，兼修太极和花间武功",
                 level=55, strength=22, dexterity=35, intelligence=30, constitution=22,
                 hp=1800, max_hp=1800, mp=2000, max_mp=2000, attack=110, defense=55, damage=45, money=0, exp_reward=6000,
-                position=yx_to_xy(55, 72), has_quests=True),
+                position=yx_to_xy(58, 72), has_quests=True),
             NPC(id=122, name="魔化和尚", npc_type=NpcType.ENEMY, faction=Faction.NONE,
                 personality="癫狂邪恶", description="道德和尚的黑暗面，兼修雪山和太极武功",
                 level=60, strength=35, dexterity=28, intelligence=32, constitution=35,
                 hp=2500, max_hp=2500, mp=2000, max_mp=2000, attack=140, defense=70, damage=60, money=0, exp_reward=8000,
-                position=yx_to_xy(45, 72), has_quests=True),
+                position=yx_to_xy(48, 72), has_quests=True),
         ]
         self.npcs = list(npcs)
+        for npc in self.npcs:
+            npc._death_time = 0
 
     def _init_all_items(self):
+        from .data_loader import load_items
+        loaded = load_items()
+        if loaded:
+            self.items = loaded
+            return
         items = [
             Item(id="item_baozi", name="包子", type=ItemType.CONSUMABLE, price=5, description="一笼热气腾腾的大包子", effects={"hp": 20, "food": 30}),
-            Item(id="item_chicken", name="烧鸡", type=ItemType.CONSUMABLE, price=12, description="一只香喷喷的烧鸡", effects={"hp": 35, "food": 40}),
-            Item(id="item_meat", name="鲜肉", type=ItemType.CONSUMABLE, price=8, description="上好的鲜肉", effects={"hp": 25, "food": 30}),
-            Item(id="item_tang_hulu", name="糖葫芦", type=ItemType.CONSUMABLE, price=3, description="一串可口的糖葫芦", effects={"hp": 10}),
-            Item(id="item_white_doufu", name="白豆腐", type=ItemType.CONSUMABLE, price=3, description="白白嫩嫩的豆腐", effects={"hp": 10}),
-            Item(id="item_green_doufu", name="臭豆腐", type=ItemType.CONSUMABLE, price=5, description="闻着臭吃着香", effects={"hp": 15}),
-            Item(id="item_butter_tea", name="酥油茶", type=ItemType.CONSUMABLE, price=10, description="雪山特产，滋补品", effects={"hp": 20, "mp": 10}),
-            Item(id="item_wine", name="美酒", type=ItemType.CONSUMABLE, price=10, description="香醇的美酒", effects={"hp": 10, "mp": 10}),
-            Item(id="item_yao", name="药", type=ItemType.CONSUMABLE, price=15, description="普通草药", effects={"hp": 30}),
-            Item(id="item_shengji", name="生肌散", type=ItemType.CONSUMABLE, price=40, description="疗伤良药", effects={"hp": 60}),
-            Item(id="item_dan", name="丹", type=ItemType.CONSUMABLE, price=100, description="珍贵丹药", effects={"hp": 150, "mp": 80}),
-            Item(id="item_herb", name="草药", type=ItemType.CONSUMABLE, price=15, description="新鲜草药", effects={"hp": 30}),
-            Item(id="item_potion_hp", name="金疮药", type=ItemType.CONSUMABLE, price=50, description="疗伤圣药", effects={"hp": 100}),
-            Item(id="item_potion_mp", name="内力丹", type=ItemType.CONSUMABLE, price=80, description="恢复内力的丹药", effects={"mp": 50}),
-            Item(id="item_water", name="清水", type=ItemType.CONSUMABLE, price=3, description="普通的清水", effects={}),
-            Item(id="item_red_flower", name="红花", type=ItemType.CONSUMABLE, price=5, description="鲜艳的红花", effects={}),
-            Item(id="item_tea_flower", name="茶花", type=ItemType.CONSUMABLE, price=8, description="美丽的茶花", effects={}),
-            Item(id="item_fish", name="鱼", type=ItemType.CONSUMABLE, price=5, description="新鲜的鱼", effects={"hp": 15, "food": 20}),
-            Item(id="item_blade", name="刀", type=ItemType.WEAPON, price=200, description="普通的刀", effects={"attack": 10}),
-            Item(id="item_dagger", name="匕首", type=ItemType.WEAPON, price=150, description="锋利的匕首", effects={"attack": 8}),
-            Item(id="item_whip", name="鞭", type=ItemType.WEAPON, price=180, description="皮鞭", effects={"attack": 9}),
-            Item(id="item_long_sword", name="长剑", type=ItemType.WEAPON, price=250, description="铁制长剑", effects={"attack": 12}),
-            Item(id="item_kitchen_knife", name="菜刀", type=ItemType.WEAPON, price=50, description="厨师的菜刀", effects={"attack": 6}),
-            Item(id="item_gui_blade", name="鬼头刀", type=ItemType.WEAPON, price=800, description="凶悍的鬼头大刀", effects={"attack": 20}),
-            Item(id="item_gold_blade", name="金刀", type=ItemType.WEAPON, price=1500, description="金光闪闪的宝刀", effects={"attack": 25}),
-            Item(id="item_qingfeng_sword", name="清风剑", type=ItemType.WEAPON, price=2000, description="轻灵飘逸的宝剑", effects={"attack": 28}),
-            Item(id="item_tie_sword", name="铁剑", type=ItemType.WEAPON, price=300, description="精铁打造的长剑", effects={"attack": 15}),
-            Item(id="item_tie_guai", name="铁拐", type=ItemType.WEAPON, price=350, description="铁制拐杖", effects={"attack": 14}),
-            Item(id="item_gang_zhang", name="钢杖", type=ItemType.WEAPON, price=400, description="精钢禅杖", effects={"attack": 16}),
-            Item(id="item_hetun_blade", name="河豚刀", type=ItemType.WEAPON, price=1200, description="剧毒之刀", effects={"attack": 22}),
-            Item(id="item_flower_whip", name="花鞭", type=ItemType.WEAPON, price=600, description="花间派独门软鞭", effects={"attack": 18}),
-            Item(id="item_fuchen", name="拂尘", type=ItemType.WEAPON, price=500, description="道家拂尘", effects={"attack": 14}),
-            Item(id="item_fan", name="扇子", type=ItemType.WEAPON, price=200, description="铁骨折扇", effects={"attack": 10}),
-            Item(id="item_flower_fan", name="花扇", type=ItemType.WEAPON, price=800, description="花间派独门兵器", effects={"attack": 16}),
-            Item(id="item_xiao", name="箫", type=ItemType.WEAPON, price=300, description="碧玉洞箫", effects={"attack": 12}),
-            Item(id="item_needle", name="针", type=ItemType.WEAPON, price=100, description="银针暗器", effects={"attack": 8}),
-            Item(id="item_rope", name="绳", type=ItemType.WEAPON, price=50, description="普通绳索", effects={"attack": 4}),
-            Item(id="item_staff", name="杖", type=ItemType.WEAPON, price=250, description="木杖", effects={"attack": 10}),
-            Item(id="item_chufe_sword", name="楚飞剑", type=ItemType.WEAPON, price=2500, description="名匠所铸宝剑", effects={"attack": 30}),
-            Item(id="item_ningbi_sword", name="凝碧剑", type=ItemType.WEAPON, price=3000, description="碧绿如玉的宝剑", effects={"attack": 32}),
-            Item(id="item_xi_jian", name="细剑", type=ItemType.WEAPON, price=1800, description="纤细锋利的剑", effects={"attack": 26}),
-            Item(id="item_red_fuchen", name="红拂尘", type=ItemType.WEAPON, price=700, description="花间派拂尘", effects={"attack": 18}),
-            Item(id="item_tulong", name="屠龙刀", type=ItemType.WEAPON, price=50000, description="号令天下的神兵", effects={"attack": 50}),
-            Item(id="item_xiuhua", name="绣花针", type=ItemType.WEAPON, price=30000, description="看似普通却锋利无匹", effects={"attack": 45}),
-            Item(id="item_cloth", name="布衣", type=ItemType.ARMOR, price=50, description="普通粗布衣服", effects={"defense": 5}),
-            Item(id="item_fine_cloth", name="细布", type=ItemType.ARMOR, price=120, description="精制细布衣服", effects={"defense": 8}),
-            Item(id="item_black_cloth", name="黑衣", type=ItemType.ARMOR, price=200, description="夜行衣", effects={"defense": 10}),
-            Item(id="item_pink_cloth", name="粉衣", type=ItemType.ARMOR, price=150, description="粉色丝绸衣", effects={"defense": 7}),
-            Item(id="item_night_cloth", name="夜行衣", type=ItemType.ARMOR, price=300, description="黑色夜行衣", effects={"defense": 12}),
-            Item(id="item_taoist_cloth", name="道袍", type=ItemType.ARMOR, price=400, description="太极门道袍", effects={"defense": 15}),
-            Item(id="item_martial_cloth", name="武服", type=ItemType.ARMOR, price=350, description="武士劲装", effects={"defense": 13}),
-            Item(id="item_baipao", name="白袍", type=ItemType.ARMOR, price=500, description="雪白长袍", effects={"defense": 16}),
-            Item(id="item_choupao", name="绸袍", type=ItemType.ARMOR, price=600, description="丝绸长袍", effects={"defense": 18}),
-            Item(id="item_snow_baipao", name="雪山白袍", type=ItemType.ARMOR, price=800, description="雪山派独门白袍", effects={"defense": 22}),
-            Item(id="item_pifeng", name="披风", type=ItemType.ARMOR, price=450, description="红莲教披风", effects={"defense": 14}),
-            Item(id="item_gold_armor", name="金甲", type=ItemType.ARMOR, price=3000, description="金丝软甲", effects={"defense": 30}),
-            Item(id="item_silver_armor", name="银甲", type=ItemType.ARMOR, price=2000, description="银丝软甲", effects={"defense": 25}),
-            Item(id="item_xiangmo_pao", name="降魔袍", type=ItemType.ARMOR, price=1500, description="少林降魔袍", effects={"defense": 24}),
-            Item(id="item_nihong_yuyi", name="霓虹羽衣", type=ItemType.ARMOR, price=5000, description="花间派至宝", effects={"defense": 35}),
-            Item(id="item_baopi", name="豹皮", type=ItemType.ARMOR, price=300, description="雪豹皮甲", effects={"defense": 12}),
-            Item(id="item_silk_cloth", name="丝绸", type=ItemType.ARMOR, price=250, description="上等丝绸衣", effects={"defense": 10}),
-            Item(id="item_fancy_skirt", name="罗裙", type=ItemType.ARMOR, price=400, description="精美罗裙", effects={"defense": 12}),
-            Item(id="item_skirt", name="裙子", type=ItemType.ARMOR, price=200, description="普通裙子", effects={"defense": 6}),
-            Item(id="item_fcloth", name="女装", type=ItemType.ARMOR, price=350, description="精致女装", effects={"defense": 11}),
-            Item(id="item_fshoes", name="丝鞋", type=ItemType.ARMOR, price=150, description="丝绸鞋", effects={"defense": 3}),
-            Item(id="item_shoes", name="花鞋", type=ItemType.ARMOR, price=80, description="绣花鞋", effects={"defense": 2}),
-            Item(id="item_beixin", name="背心", type=ItemType.ARMOR, price=100, description="皮背心", effects={"defense": 6}),
-            Item(id="item_glasses", name="眼镜", type=ItemType.ARMOR, price=60, description="老花眼镜", effects={"defense": 1}),
-            Item(id="item_eye_patch", name="眼罩", type=ItemType.ARMOR, price=50, description="黑色眼罩", effects={"defense": 1}),
-            Item(id="item_hand_book", name="拳经", type=ItemType.BOOK, price=500, description="拳脚功夫秘籍", effects={}),
-            Item(id="item_blade_book", name="刀谱", type=ItemType.BOOK, price=600, description="刀法秘籍", effects={}),
-            Item(id="item_force_book", name="内功心法", type=ItemType.BOOK, price=800, description="内功修炼秘籍", effects={}),
-            Item(id="item_yellow_paper", name="黄纸", type=ItemType.BOOK, price=100, description="泛黄的古纸", effects={}),
-            Item(id="item_diaogan", name="钓竿", type=ItemType.MATERIAL, price=30, description="竹制钓竿", effects={}),
-            Item(id="item_brush", name="毛笔", type=ItemType.MATERIAL, price=20, description="狼毫毛笔", effects={}),
-            Item(id="item_yulou", name="鱼篓", type=ItemType.MATERIAL, price=25, description="竹编鱼篓", effects={}),
-            Item(id="item_meijiu", name="美酒", type=ItemType.MATERIAL, price=50, description="陈年佳酿", effects={}),
-            Item(id="item_baodian", name="宝典", type=ItemType.BOOK, price=5000, description="武林至宝，记载绝世武功", effects={}),
-            Item(id="item_sanjiao", name="三角", type=ItemType.MATERIAL, price=15, description="铁制三角", effects={}),
-            Item(id="item_skin_belt", name="皮带", type=ItemType.ARMOR, price=80, description="牛皮腰带", effects={"defense": 2}),
         ]
         self.items = {item.id: item for item in items}
 
     def _init_default_map(self):
         tiles = [[T_GRASS for _ in range(MAP_W)] for _ in range(MAP_H)]
 
-        for x in range(MAP_W):
-            tiles[39][x] = T_DIRT_ROAD
-            tiles[40][x] = T_DIRT_ROAD
-        for y in range(MAP_H):
-            tiles[y][24] = T_DIRT_ROAD
-            tiles[y][25] = T_DIRT_ROAD
+        def road_h(row, c1, c2, width=2):
+            for r in range(row, row + width):
+                if 0 <= r < MAP_H:
+                    for c in range(c1, c2):
+                        if 0 <= c < MAP_W:
+                            tiles[r][c] = T_STONE_ROAD
 
-        for y in range(20, 50):
-            tiles[y][12] = T_STONE_ROAD
-            tiles[y][13] = T_STONE_ROAD
-        for y in range(20, 50):
-            tiles[y][36] = T_STONE_ROAD
-            tiles[y][37] = T_STONE_ROAD
-        for x in range(12, 38):
-            tiles[20][x] = T_STONE_ROAD
-            tiles[21][x] = T_STONE_ROAD
+        def road_v(col, r1, r2, width=2):
+            for c in range(col, col + width):
+                if 0 <= c < MAP_W:
+                    for r in range(r1, r2):
+                        if 0 <= r < MAP_H:
+                            tiles[r][c] = T_STONE_ROAD
 
-        for y in range(MAP_H):
-            tiles[y][0] = T_WATER
-            tiles[y][1] = T_WATER
-        tiles[39][0] = T_BRIDGE
-        tiles[39][1] = T_BRIDGE
-        tiles[40][0] = T_BRIDGE
-        tiles[40][1] = T_BRIDGE
+        def dirt_road_h(row, c1, c2, width=2):
+            for r in range(row, row + width):
+                if 0 <= r < MAP_H:
+                    for c in range(c1, c2):
+                        if 0 <= c < MAP_W:
+                            tiles[r][c] = T_ROAD_DIRT
 
-        for y in range(0, 4):
-            for x in range(2, 7):
-                tiles[y][x] = T_DOCK
+        def dirt_road_v(col, r1, r2, width=2):
+            for c in range(col, col + width):
+                if 0 <= c < MAP_W:
+                    for r in range(r1, r2):
+                        if 0 <= r < MAP_H:
+                            tiles[r][c] = T_ROAD_DIRT
 
-        self._place_building(tiles, 5, 12, 4, 13, T_INN, 12, [8, 9], T_ROOF_RED)
-        for y in range(9, 14):
-            for x in range(4, 14):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_GARDEN
-        tiles[10][8] = T_WELL
-        tiles[11][10] = T_FLOWER_BED
+        def fill(r1, r2, c1, c2, tid):
+            for r in range(r1, r2):
+                for c in range(c1, c2):
+                    if 0 <= r < MAP_H and 0 <= c < MAP_W:
+                        tiles[r][c] = tid
 
-        self._place_building(tiles, 5, 9, 16, 21, T_SHOP, 9, [18], T_ROOF_BLUE)
-        self._place_building(tiles, 5, 12, 27, 34, T_SHOP, 12, [30, 31], T_ROOF_RED)
-        self._place_building(tiles, 5, 9, 36, 41, T_SHOP, 9, [38], T_ROOF_BLUE)
-        self._place_building(tiles, 5, 10, 42, 47, T_SHOP, 10, [44, 45], T_ROOF_RED)
+        def place_shop(r1, r2, c1, c2, counter_tid, entrance_row, entrance_cols, roof=T_ROOF_BLUE):
+            self._place_building(tiles, r1, r2, c1, c2, T_SHOP, entrance_row, entrance_cols, roof)
+            mid_r = (r1 + r2) // 2
+            mid_c = (c1 + c2) // 2
+            tiles[mid_r][mid_c] = counter_tid
+            if mid_r + 1 <= r2 - 1:
+                tiles[mid_r + 1][mid_c] = counter_tid
 
-        for y in range(0, 4):
-            for x in range(8, 14):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
-        for y in range(0, 5):
-            for x in range(42, 50):
-                tiles[y][x] = T_HILL
-        for y in range(2, 6):
-            for x in range(38, 42):
-                tiles[y][x] = T_WATER
+        def place_house(r1, r2, c1, c2, entrance_row, entrance_cols, roof=T_ROOF_RED):
+            self._place_building(tiles, r1, r2, c1, c2, T_INN, entrance_row, entrance_cols, roof)
+            mid_r = (r1 + r2) // 2
+            mid_c = (c1 + c2) // 2
+            tiles[mid_r][c1 + 1] = T_DESK_WOOD
+            tiles[mid_r][c2 - 1] = T_BENCH_WOOD
 
-        self._place_building(tiles, 15, 22, 4, 10, T_TEMPLE, 15, [7], T_ROOF_GOLD)
-        tiles[18][7] = T_ALTAR
-        tiles[20][7] = T_CARPET
-        self._place_building(tiles, 15, 21, 16, 21, T_SHOP, 15, [18], T_ROOF_RED)
-        self._place_building(tiles, 15, 21, 27, 34, T_SHOP, 15, [30, 31], T_ROOF_BLUE)
-        tiles[18][30] = T_TABLE
-        tiles[19][33] = T_CHEST
-        self._place_building(tiles, 15, 21, 36, 41, T_SHOP, 15, [38], T_ROOF_RED)
-        tiles[18][38] = T_ANVIL
+        # ===== 西侧河流 =====
+        fill(0, MAP_H, 0, 3, T_WATER)
+        fill(25, 40, 3, 5, T_LAKE)
 
-        self._place_building(tiles, 24, 32, 4, 10, T_TEMPLE, 24, [7], T_ROOF_GOLD)
-        tiles[28][7] = T_ALTAR
-        for y in range(26, 31):
-            tiles[y][7] = T_CARPET
-        tiles[27][5] = T_BOOKSHELF
-        tiles[27][9] = T_BOOKSHELF
+        # ===== 平安镇 (col 5-48, row 10-50) =====
 
-        self._place_building(tiles, 24, 32, 16, 21, T_SHOP, 24, [18], T_ROOF_BLUE)
-        self._place_building(tiles, 24, 32, 27, 34, T_SHOP, 24, [30, 31], T_ROOF_RED)
-        tiles[28][30] = T_TRAINING
-        tiles[28][32] = T_TRAINING
-        tiles[30][33] = T_CHEST
+        # --- 中央大街 (东西向) ---
+        road_h(30, 5, 48, 3)
+        tiles[31][25] = T_WELL
+        tiles[30][10] = T_SIGN
+        tiles[30][44] = T_SIGN
+        tiles[31][47] = T_SIGN
 
-        self._place_building(tiles, 24, 32, 36, 41, T_SHOP, 24, [38], T_ROOF_BLUE)
-        tiles[28][38] = T_BOOKSHELF
-        tiles[28][40] = T_TABLE
+        # --- 市场街 / Road1 (南北向, col 20-25) ---
+        road_v(22, 11, 30, 4)
 
-        for y in range(26, 30):
-            for x in range(42, 48):
-                tiles[y][x] = T_BAMBOO
+        # 杂货铺 (Shop1)
+        place_shop(12, 16, 13, 19, T_COUNTER_WOOD, 16, [16], T_ROOF_BLUE)
+        tiles[14][15] = T_SHELF_WOOD
+        tiles[14][17] = T_SHELF_WOOD
 
-        for y in range(33, 40):
-            for x in range(4, 11):
-                tiles[y][x] = T_DARK_GRASS
-        for y in range(33, 40):
-            for x in range(12, 18):
-                tiles[y][x] = T_RICE_PADDY
-        for y in range(33, 40):
-            for x in range(22, 28):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_GARDEN
-        tiles[36][24] = T_POND
-        tiles[35][25] = T_FLOWER_BED
+        # 药铺 (Shop2)
+        place_shop(12, 16, 27, 33, T_COUNTER_HERB, 16, [30], T_ROOF_BLUE)
+        tiles[14][28] = T_SHELF_HERB
+        tiles[14][32] = T_SHELF_HERB
 
-        tiles[25][25] = T_SIGN
-        tiles[21][25] = T_SIGN
-        tiles[37][25] = T_SIGN
-        tiles[25][13] = T_SIGN
-        tiles[25][37] = T_SIGN
-        tiles[12][25] = T_CAMPFIRE
-        tiles[32][25] = T_CAMPFIRE
+        # 兵器铺 (Shop3)
+        place_shop(17, 21, 13, 19, T_COUNTER_WEAPON, 21, [16], T_ROOF_RED)
+        tiles[19][15] = T_SHELF_WOOD
+        tiles[19][17] = T_SHELF_WOOD
 
-        for y in range(5, 15):
-            tiles[y][50] = T_STONE_ROAD
-            tiles[y][51] = T_STONE_ROAD
-        for y in range(5, 15):
-            tiles[y][68] = T_STONE_ROAD
-            tiles[y][69] = T_STONE_ROAD
+        # 钱庄 (Shop4)
+        place_shop(17, 21, 27, 33, T_COUNTER_MONEY, 21, [30], T_ROOF_GOLD)
+        tiles[19][28] = T_SHELF_WOOD
+        tiles[19][32] = T_SHELF_WOOD
 
-        self._place_building(tiles, 5, 14, 54, 66, T_TEMPLE, 14, [59, 60], T_ROOF_RED)
-        tiles[8][58] = T_TRAINING
-        tiles[8][62] = T_TRAINING
-        tiles[10][64] = T_CHEST
-        tiles[12][58] = T_BANNER
-        tiles[12][62] = T_BANNER
+        # 客栈 (Shop5)
+        place_shop(22, 27, 13, 19, T_COUNTER_INN, 27, [15, 16], T_ROOF_RED)
+        tiles[24][14] = T_BENCH_LONG
+        tiles[24][17] = T_BENCH_LONG
+        tiles[25][15] = T_DESK_LARGE
+        tiles[25][16] = T_DESK_LARGE
 
-        for y in range(0, 5):
-            for x in range(52, 68):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
-        for y in range(5, 15):
-            for x in range(52, 68):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_DARK_GRASS
+        # 民居2 (Dwell2)
+        self._place_building(tiles, 22, 27, 27, 33, T_DWELL, 27, [30], T_ROOF_BLUE)
+        tiles[24][29] = T_DESK_WOOD
+        tiles[24][31] = T_BENCH_WOOD
 
-        for y in range(15, 28):
-            tiles[y][50] = T_STONE_ROAD
-            tiles[y][51] = T_STONE_ROAD
-        for y in range(15, 28):
-            tiles[y][68] = T_STONE_ROAD
-            tiles[y][69] = T_STONE_ROAD
+        # 市场街水平连接路 (建筑入口 → 市场街)
+        road_h(16, 16, 22, 1)
+        road_h(16, 25, 30, 1)
+        road_h(21, 16, 22, 1)
+        road_h(21, 25, 30, 1)
+        road_h(27, 15, 22, 1)
+        road_h(27, 25, 30, 1)
 
-        self._place_building(tiles, 15, 28, 54, 66, T_TEMPLE, 15, [59, 60], T_ROOF_BLUE)
-        tiles[18][58] = T_TRAINING
-        tiles[18][62] = T_TRAINING
-        tiles[20][64] = T_CHEST
-        tiles[22][58] = T_FLOWER_BED
-        tiles[22][62] = T_FLOWER_BED
-        for y in range(16, 27):
-            for x in range(54, 67):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_GARDEN
-        tiles[24][60] = T_POND
+        # 市场街装饰柱
+        for r in range(12, 29, 3):
+            tiles[r][21] = T_PILLAR
+            tiles[r][25] = T_PILLAR
 
-        for y in range(28, 42):
-            tiles[y][50] = T_STONE_ROAD
-            tiles[y][51] = T_STONE_ROAD
-        for y in range(28, 42):
-            tiles[y][68] = T_STONE_ROAD
-            tiles[y][69] = T_STONE_ROAD
+        # --- 衙门街 / Road2 (南北向, col 38-42) ---
+        road_v(40, 22, 30, 3)
+        self._place_building(tiles, 22, 28, 36, 44, T_TEMPLE, 28, [39, 40], T_ROOF_RED)
+        tiles[24][38] = T_DESK_LARGE
+        tiles[24][42] = T_DESK_LARGE
+        tiles[25][37] = T_SHELF_HERB
+        tiles[25][43] = T_SHELF_HERB
+        tiles[26][40] = T_BENCH_LONG
+        road_h(28, 36, 40, 1)
+        road_h(28, 42, 44, 1)
 
-        self._place_building(tiles, 28, 40, 54, 66, T_TEMPLE, 28, [59, 60], T_ROOF_RED)
-        tiles[32][58] = T_TRAINING
-        tiles[32][62] = T_TRAINING
-        tiles[34][64] = T_CHEST
-        tiles[36][58] = T_ALTAR
-        tiles[36][62] = T_BANNER
-        for y in range(30, 39):
-            tiles[y][60] = T_CARPET
+        # --- 民居区 (西侧) ---
+        # House1 (阿青/卖豆腐)
+        place_house(11, 15, 5, 11, 15, [8], T_ROOF_RED)
+        tiles[12][6] = T_FLOWER_RED
+        tiles[12][10] = T_FLOWER_RED
+        tiles[13][8] = T_BENCH_WOOD
+        road_h(15, 8, 22, 1)
 
-        for y in range(5, 15):
-            tiles[y][74] = T_STONE_ROAD
-            tiles[y][75] = T_STONE_ROAD
-        for y in range(5, 15):
-            tiles[y][90] = T_STONE_ROAD
-            tiles[y][91] = T_STONE_ROAD
+        # House1A (裁缝铺)
+        place_house(16, 20, 5, 11, 20, [8], T_ROOF_BLUE)
+        tiles[17][6] = T_FLOWER_PINK
+        tiles[17][10] = T_FLOWER_PINK
+        tiles[18][8] = T_BENCH_WOOD
+        road_h(20, 8, 22, 1)
 
-        self._place_building(tiles, 5, 14, 76, 88, T_TEMPLE, 14, [81, 82], T_ROOF_GOLD)
-        tiles[8][80] = T_TRAINING
-        tiles[8][84] = T_TRAINING
-        tiles[10][86] = T_CHEST
-        tiles[12][80] = T_TORCH
-        tiles[12][84] = T_TORCH
-        for y in range(6, 13):
-            tiles[y][82] = T_CARPET
+        # House1B (老婆婆/小童)
+        place_house(21, 25, 5, 11, 25, [8], T_ROOF_RED)
+        tiles[22][6] = T_BENCH_WOOD
+        tiles[22][10] = T_DESK_WOOD
+        tiles[23][8] = T_WALL_WOOD
+        road_h(25, 8, 22, 1)
 
-        for y in range(15, 28):
-            tiles[y][74] = T_STONE_ROAD
-            tiles[y][75] = T_STONE_ROAD
-        for y in range(15, 28):
-            tiles[y][90] = T_STONE_ROAD
-            tiles[y][91] = T_STONE_ROAD
+        # House2 (客栈后院)
+        self._place_building(tiles, 11, 15, 34, 40, T_INN, 15, [37], T_ROOF_RED)
+        tiles[12][36] = T_BED
+        tiles[12][38] = T_SHELF_WOOD
+        tiles[13][37] = T_CHEST
+        road_h(15, 25, 37, 1)
 
-        self._place_building(tiles, 15, 28, 76, 88, T_TEMPLE, 15, [81, 82], T_ROOF_GOLD)
-        tiles[18][80] = T_ALTAR
-        tiles[18][84] = T_BOOKSHELF
-        tiles[20][86] = T_CHEST
-        tiles[22][80] = T_TORCH
-        tiles[22][84] = T_TORCH
-        for y in range(16, 27):
-            tiles[y][82] = T_CARPET
+        # House2A (妇人/村长)
+        place_house(16, 20, 34, 40, 20, [37], T_ROOF_BLUE)
+        tiles[18][36] = T_DESK_WOOD
+        tiles[18][38] = T_BENCH_WOOD
+        road_h(20, 25, 37, 1)
 
-        for y in range(35, 50):
-            tiles[y][74] = T_STONE_ROAD
-            tiles[y][75] = T_STONE_ROAD
+        # --- 武馆 ---
+        self._place_building(tiles, 24, 29, 5, 13, T_TEMPLE, 24, [8, 9], T_ROOF_GOLD)
+        tiles[25][7] = T_SCULPTURE_WEAPON
+        tiles[25][11] = T_SCULPTURE_WEAPON
+        tiles[26][9] = T_STAGE
+        tiles[27][7] = T_DESK_WOOD
+        tiles[27][11] = T_BENCH_LONG
+        tiles[28][9] = T_CARPET
+        fill(27, 29, 6, 12, T_CARPET)
+        road_h(24, 8, 22, 1)
 
-        self._place_building(tiles, 35, 48, 76, 88, T_TEMPLE, 35, [81, 82], T_ROOF_RED)
-        tiles[38][80] = T_TRAINING
+        # --- 花园 ---
+        fill(23, 26, 5, 12, T_GARDEN)
+        tiles[24][6] = T_FLOWER_RED
+        tiles[24][8] = T_FLOWER_PINK
+        tiles[24][10] = T_FLOWER_WHITE
+        tiles[25][7] = T_FLOWER_SPECIAL1
+        tiles[25][9] = T_FLOWER_SPECIAL2
+        tiles[23][7] = T_PLANT_GREEN
+        tiles[23][10] = T_PLANT_GREEN
+
+        # --- 码头 ---
+        fill(28, 35, 3, 6, T_DOCK)
+        tiles[31][3] = T_BRIDGE
+        tiles[31][4] = T_BRIDGE
+        tiles[32][3] = T_BRIDGE
+        tiles[32][4] = T_BRIDGE
+
+        # --- 南部民居 ---
+        place_house(35, 39, 6, 12, 35, [9], T_ROOF_RED)
+        place_house(35, 39, 14, 20, 35, [17], T_ROOF_BLUE)
+        place_house(35, 39, 22, 28, 35, [25], T_ROOF_RED)
+        road_h(34, 6, 29, 2)
+        road_v(9, 34, 39, 2)
+        road_v(17, 34, 39, 2)
+        road_v(25, 34, 39, 2)
+
+        # --- 南部农田 ---
+        fill(42, 50, 6, 16, T_RICE_PADDY)
+        fill(42, 50, 16, 26, T_DARK_GRASS)
+        tiles[46][21] = T_POND
+        road_v(23, 39, 50, 2)
+
+        # --- 铁匠铺 ---
+        self._place_building(tiles, 35, 39, 30, 35, T_SHOP, 35, [32], T_ROOF_BLUE)
+        tiles[37][32] = T_ANVIL
+        tiles[37][33] = T_SHELF_WOOD
+        road_h(35, 25, 32, 1)
+
+        # --- 平一指医馆 ---
+        self._place_building(tiles, 35, 39, 37, 43, T_SHOP, 35, [40], T_ROOF_BLUE)
+        tiles[37][39] = T_COUNTER_HERB
+        tiles[37][41] = T_SHELF_HERB
+        road_h(35, 40, 44, 1)
+
+        # ===== 连接道路：平安镇 → 各门派 =====
+        # 东西向主路
+        road_h(30, 48, 55, 3)
+
+        # 通往八卦门/花间派
+        road_v(53, 8, 18, 3)
+        road_h(10, 53, 60, 3)
+        road_v(53, 18, 28, 3)
+        road_h(20, 53, 60, 3)
+
+        # 通往红莲教
+        road_v(53, 30, 40, 3)
+        road_h(36, 53, 60, 3)
+
+        # 通往那迦/太极
+        road_h(30, 55, 72, 3)
+        road_v(70, 8, 18, 3)
+        road_h(10, 70, 76, 3)
+        road_v(70, 18, 30, 3)
+        road_h(20, 70, 76, 3)
+
+        # 通往雪山
+        road_v(70, 35, 50, 3)
+        road_h(40, 70, 76, 3)
+
+        # ===== 小径 (Path) 装饰 =====
+        # Path2 区域 (col 48-54, row 18-28) - 装饰在道路两侧
+        tiles[18][49] = T_TREE_WILLOW
+        tiles[19][55] = T_TREE_WILLOW
+        tiles[21][49] = T_PLANT_GREEN
+        tiles[22][55] = T_PLANT_GREEN
+        tiles[24][49] = T_TREE_PINE
+        tiles[25][55] = T_TREE_PINE
+        tiles[27][49] = T_BRICK
+        for r in range(19, 28):
+            tiles[r][48] = T_PLANT_GREEN
+
+        # Path1 区域 (col 48-54, row 30-40) - 装饰在道路两侧
+        tiles[30][49] = T_TREE_PINE
+        tiles[31][55] = T_TREE_PINE
+        tiles[33][49] = T_STONE_MEDIUM
+        tiles[34][55] = T_STONE_MEDIUM
+        tiles[36][49] = T_TREE_WILLOW
+        tiles[37][55] = T_TREE_WILLOW
+        tiles[39][49] = T_PLANT_GREEN
+        tiles[39][55] = T_STONE_SMALL
+
+        # Path3 区域 (col 54-60, row 30-40) - 装饰在道路两侧
+        tiles[31][56] = T_STONE_MEDIUM
+        tiles[32][56] = T_STONE_MEDIUM
+        tiles[34][56] = T_PLANT_GREEN
+        tiles[35][56] = T_PLANT_GREEN
+        tiles[37][56] = T_PLANT_GREEN
+        tiles[38][56] = T_PLANT_GREEN
+
+        # Path5 区域 (col 48-54, row 40-50) - 装饰在道路两侧
+        tiles[41][49] = T_TREE_WILLOW
+        tiles[42][55] = T_HILL_MEDIUM
+        tiles[44][49] = T_TREE_PINE
+        tiles[45][55] = T_PLANT_GREEN
+        tiles[47][49] = T_PLANT_GREEN
+        tiles[48][55] = T_STONE_SMALL
+
+        # Path6 区域 (col 54-60, row 8-18) → 八卦门 - 装饰在道路两侧
+        for r in range(9, 17):
+            tiles[r][54] = T_PLANT_GREEN
+            tiles[r][59] = T_PLANT_GREEN
+        tiles[9][56] = T_TREE_PINE
+        tiles[13][56] = T_TREE_PINE
+        tiles[11][56] = T_PLANT_DARK
+
+        # Path7 区域 (col 54-60, row 40-50) → 花间派 - 装饰在道路两侧
+        tiles[41][55] = T_PLANT_GREEN
+        tiles[42][55] = T_PLANT_GREEN
+        tiles[43][55] = T_PLANT_GREEN
+        tiles[44][55] = T_PLANT_GREEN
+        tiles[45][55] = T_PLANT_GREEN
+        tiles[46][55] = T_PLANT_GREEN
+        tiles[47][55] = T_PLANT_GREEN
+        tiles[48][55] = T_PLANT_GREEN
+
+        # Path4 区域 (col 66-72, row 8-18) → 那迦派 - 湖泊移到道路外
+        for r in range(9, 17):
+            tiles[r][66] = T_PLANT_GREEN
+        tiles[10][68] = T_PLANT_GREEN
+        tiles[12][69] = T_PLANT_GREEN
+        tiles[14][67] = T_PLANT_GREEN
+        fill(10, 14, 87, 92, T_LAKE)
+
+        # Path9 区域 (col 70-76, row 40-50) → 雪山派
+        tiles[41][72] = T_STONE_MEDIUM
+        tiles[42][74] = T_STONE_MEDIUM
+        tiles[43][71] = T_HILL_SNOW
+        tiles[44][73] = T_PLANT_SNOW
+        tiles[45][72] = T_PLANT_SNOW
+        tiles[46][74] = T_PLANT_SNOW
+        tiles[47][71] = T_PLANT_SNOW
+        tiles[48][73] = T_HILL_SNOW
+
+        # ===== 八卦门 (col 60-70, row 3-16) =====
+        fill(3, 17, 56, 72, T_DARK_GRASS)
+        self._place_building(tiles, 3, 12, 61, 69, T_TEMPLE, 3, [64, 65], T_ROOF_RED)
+        tiles[5][62] = T_TRAINING
+        tiles[5][68] = T_TRAINING
+        tiles[6][64] = T_PILLAR
+        tiles[6][65] = T_PILLAR
+        tiles[7][62] = T_SHELF_BOOK
+        tiles[7][68] = T_SHELF_BOOK
+        tiles[8][64] = T_CHEST
+        tiles[9][62] = T_PLANT_DARK
+        tiles[9][68] = T_PLANT_DARK
+        tiles[10][63] = T_BANNER
+        tiles[10][67] = T_BANNER
+        tiles[11][64] = T_CARPET
+        tiles[11][65] = T_CARPET
+        for r in range(4, 11):
+            tiles[r][61] = T_PLANT_GREEN
+            tiles[r][69] = T_PLANT_GREEN
+        tiles[13][62] = T_PLANT_DARK
+        tiles[13][68] = T_PLANT_DARK
+        tiles[14][64] = T_SCULPTURE_LION
+        tiles[14][65] = T_SCULPTURE_LION
+        tiles[15][63] = T_FLOWER_RED
+        tiles[15][67] = T_FLOWER_RED
+        road_v(64, 12, 18, 2)
+
+        # ===== 花间派 (col 60-70, row 18-28) =====
+        fill(18, 28, 56, 72, T_GARDEN)
+        fill(21, 25, 61, 65, T_LAKE)
+        self._place_building(tiles, 18, 25, 66, 70, T_TEMPLE, 18, [68], T_ROOF_BLUE)
+        tiles[20][68] = T_FLOWER_SPECIAL1
+        tiles[21][67] = T_FLOWER_SPECIAL2
+        tiles[21][69] = T_FLOWER_SPECIAL1
+        tiles[22][68] = T_DESK_WOOD
+        tiles[23][67] = T_FLOWER_SPECIAL2
+        tiles[23][69] = T_FLOWER_SPECIAL2
+        tiles[24][68] = T_CHEST
+        tiles[26][61] = T_FLOWER_SPECIAL1
+        tiles[26][63] = T_FLOWER_SPECIAL2
+        tiles[26][65] = T_FLOWER_SPECIAL1
+        tiles[27][62] = T_FLOWER_RED
+        tiles[27][64] = T_FLOWER_PINK
+        tiles[27][66] = T_FLOWER_WHITE
+        for r in range(19, 27):
+            tiles[r][56] = T_FLOWER_SPECIAL2
+            tiles[r][71] = T_FLOWER_SPECIAL1
+        road_v(68, 25, 28, 2)
+
+        # ===== 红莲教 (col 60-70, row 33-48) =====
+        fill(33, 48, 56, 72, T_DARK_GRASS)
+        tiles[33][61] = T_HILL_LARGE
+        tiles[34][63] = T_HILL_MEDIUM
+        tiles[34][68] = T_TREE_WILLOW
+        tiles[35][61] = T_TREE_WILLOW
+        tiles[35][65] = T_TREE_WILLOW
+        tiles[35][69] = T_STONE_MEDIUM
+        tiles[36][62] = T_STONE_SMALL
+        tiles[36][66] = T_STONE_MEDIUM
+        self._place_building(tiles, 37, 44, 61, 69, T_TEMPLE, 37, [64, 65], T_ROOF_RED)
+        tiles[38][62] = T_TRAINING
+        tiles[38][68] = T_TRAINING
+        tiles[39][64] = T_ALTAR
+        tiles[40][63] = T_BANNER
+        tiles[40][66] = T_BANNER
+        for r in range(38, 43):
+            tiles[r][64] = T_CARPET
+            tiles[r][65] = T_CARPET
+        tiles[42][64] = T_CHEST
+        tiles[42][65] = T_CHEST
+        tiles[45][62] = T_STONE_SMALL
+        tiles[45][68] = T_STONE_SMALL
+        tiles[46][61] = T_HILL_MEDIUM
+        tiles[46][69] = T_TREE_WILLOW
+        tiles[47][64] = T_FLOWER_RED
+        tiles[47][65] = T_FLOWER_RED
+        road_v(64, 44, 48, 2)
+
+        # ===== 那迦派 (col 72-88, row 3-16) =====
+        fill(3, 17, 72, 88, T_SAND)
+        self._place_building(tiles, 3, 12, 74, 86, T_TEMPLE, 3, [79, 80], T_ROOF_GOLD)
+        tiles[5][76] = T_TRAINING
+        tiles[5][84] = T_TRAINING
+        tiles[6][78] = T_SCULPTURE_LION
+        tiles[6][82] = T_SCULPTURE_LION
+        tiles[7][79] = T_CHEST
+        tiles[7][80] = T_CHEST
+        tiles[8][76] = T_TREE_DEAD
+        tiles[8][84] = T_TREE_DEAD
+        tiles[9][78] = T_PILLAR
+        tiles[9][82] = T_PILLAR
+        for r in range(4, 11):
+            tiles[r][79] = T_CARPET
+            tiles[r][80] = T_CARPET
+        tiles[10][77] = T_TORCH
+        tiles[10][83] = T_TORCH
+        tiles[11][76] = T_TREE_PINE
+        tiles[11][84] = T_TREE_PINE
+        tiles[12][78] = T_SHELF_BOOK
+        tiles[12][82] = T_SHELF_BOOK
+        tiles[13][79] = T_SCULPTURE_LION
+        tiles[13][80] = T_SCULPTURE_LION
+        tiles[14][76] = T_STONE_MEDIUM
+        tiles[14][84] = T_STONE_MEDIUM
+        tiles[15][78] = T_TREE_DEAD
+        tiles[15][82] = T_TREE_DEAD
+        road_v(79, 12, 18, 2)
+
+        # ===== 太极门 (col 72-88, row 18-30) =====
+        fill(18, 30, 72, 88, T_DARK_GRASS)
+        self._place_building(tiles, 18, 27, 74, 86, T_TEMPLE, 18, [79, 80], T_ROOF_GOLD)
+        tiles[20][76] = T_ALTAR
+        tiles[20][84] = T_SHELF_BOOK
+        tiles[21][78] = T_BARS
+        tiles[21][82] = T_BARS
+        tiles[22][79] = T_CHEST
+        tiles[22][80] = T_CHEST
+        tiles[23][76] = T_TORCH
+        tiles[23][84] = T_TORCH
+        for r in range(19, 26):
+            tiles[r][79] = T_CARPET
+            tiles[r][80] = T_CARPET
+        tiles[24][78] = T_DESK_LARGE
+        tiles[24][82] = T_BENCH_STONE
+        tiles[25][76] = T_PLANT_COLD
+        tiles[25][84] = T_PLANT_COLD
+        tiles[26][78] = T_BOTTLE
+        tiles[26][82] = T_BOOK_OBJ
+        tiles[28][76] = T_BARS
+        tiles[28][84] = T_BARS
+        tiles[29][79] = T_STONE_MEDIUM
+        tiles[29][80] = T_STONE_MEDIUM
+        road_v(79, 27, 30, 2)
+
+        # ===== 雪山派 (col 72-88, row 35-55) =====
+        fill(35, 55, 72, 90, T_SNOW)
+        self._place_building(tiles, 36, 46, 74, 86, T_TEMPLE, 36, [79, 80], T_ROOF_RED)
+        tiles[38][76] = T_TRAINING
         tiles[38][84] = T_TRAINING
-        tiles[40][86] = T_CHEST
-        tiles[42][80] = T_TORCH
-        tiles[42][84] = T_TORCH
-        for y in range(36, 47):
-            for x in range(76, 89):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_SNOW
+        tiles[39][78] = T_BARS
+        tiles[39][82] = T_BARS
+        tiles[40][79] = T_CHEST
+        tiles[40][80] = T_CHEST
+        tiles[41][76] = T_PLANT_SNOW
+        tiles[41][84] = T_PLANT_SNOW
+        tiles[42][78] = T_WALL_STONE
+        tiles[42][82] = T_WALL_STONE
+        tiles[43][79] = T_SHELF_HERB
+        tiles[43][80] = T_SHELF_HERB
+        tiles[44][76] = T_TORCH
+        tiles[44][84] = T_TORCH
+        tiles[45][78] = T_STONE_MEDIUM
+        tiles[45][82] = T_STONE_MEDIUM
+        tiles[46][79] = T_FLOWER_WHITE
+        tiles[46][80] = T_FLOWER_WHITE
+        tiles[47][76] = T_HILL_SNOW
+        tiles[47][84] = T_HILL_SNOW
+        tiles[48][78] = T_STONE_SMALL
+        tiles[48][82] = T_STONE_SMALL
+        tiles[49][75] = T_STONE_LARGE
+        tiles[49][85] = T_STONE_LARGE
+        tiles[50][79] = T_PLANT_SNOW
+        tiles[50][80] = T_PLANT_SNOW
+        tiles[51][77] = T_HILL_SNOW
+        tiles[51][83] = T_HILL_SNOW
+        tiles[52][79] = T_STONE_MEDIUM
+        tiles[52][80] = T_STONE_MEDIUM
+        tiles[53][76] = T_ICE
+        tiles[53][84] = T_ICE
+        road_v(79, 46, 55, 2)
 
-        for y in range(50, 60):
-            for x in range(76, 90):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_SNOW
-        for y in range(55, 60):
-            for x in range(80, 88):
-                tiles[y][x] = T_SNOW
+        # ===== 野外区域 =====
+        # 北部森林
+        fill(0, 5, 8, 20, T_FOREST)
+        fill(0, 5, 42, 52, T_FOREST)
+        fill(0, 3, 67, 72, T_FOREST)
+        fill(0, 3, 88, 100, T_FOREST)
 
-        for y in range(42, 55):
-            for x in range(40, 55):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_DARK_GRASS
-        for y in range(45, 55):
-            for x in range(45, 55):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
+        # 东北野外
+        fill(0, 3, 88, 100, T_FOREST)
+        fill(3, 8, 90, 100, T_FOREST)
 
-        for y in range(55, 70):
-            for x in range(40, 60):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
-        for y in range(60, 68):
-            for x in range(45, 55):
-                tiles[y][x] = T_CAVE
+        # 中部野外
+        fill(42, 55, 40, 55, T_DARK_GRASS)
+        fill(45, 55, 45, 55, T_FOREST)
 
-        for y in range(55, 70):
-            for x in range(60, 75):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_HILL
-        for y in range(62, 70):
-            for x in range(65, 72):
-                tiles[y][x] = T_SAND
+        # 南部野外
+        fill(55, 70, 40, 60, T_FOREST)
+        fill(60, 68, 45, 55, T_CAVE)
+        fill(55, 70, 60, 72, T_HILL_LARGE)
+        fill(62, 70, 65, 72, T_SAND)
 
-        for y in range(68, 78):
-            for x in range(40, 60):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
-        for y in range(70, 76):
-            for x in range(44, 56):
-                tiles[y][x] = T_RUIN
+        # 东南野外
+        fill(68, 78, 40, 60, T_FOREST)
+        fill(70, 76, 44, 56, T_RUIN)
 
-        for y in range(0, 5):
-            for x in range(52, 58):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
-        for y in range(0, 5):
-            for x in range(68, 76):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_FOREST
+        # 西南野外
+        fill(56, 65, 0, 5, T_FOREST)
+        fill(50, 60, 5, 15, T_DARK_GRASS)
+        fill(52, 58, 8, 14, T_MUSHROOM)
 
-        for y in range(56, 60):
-            for x in range(0, 8):
-                tiles[y][x] = T_FOREST
-        for y in range(56, 60):
-            for x in range(92, 100):
-                tiles[y][x] = T_FOREST
+        # 东部野外
+        fill(56, 65, 90, 100, T_FOREST)
+        fill(42, 50, 90, 100, T_SAND)
 
-        for y in range(42, 50):
-            for x in range(56, 66):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_DARK_GRASS
-        for y in range(44, 50):
-            for x in range(58, 64):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_MUSHROOM
+        # 沼泽
+        fill(60, 70, 5, 15, T_SWAMP)
 
-        for y in range(42, 50):
-            for x in range(90, 100):
-                if tiles[y][x] == T_GRASS:
-                    tiles[y][x] = T_SAND
+        # 野外装饰
+        tiles[45][48] = T_TREE_PINE
+        tiles[46][50] = T_TREE_WILLOW
+        tiles[47][52] = T_TREE_PINE
+        tiles[48][46] = T_HILL_MEDIUM
+        tiles[49][48] = T_STONE_LARGE
+        tiles[50][50] = T_TREE_DEAD
+        tiles[51][46] = T_TREE_WILLOW
+        tiles[52][48] = T_HILL_SMALL
+        tiles[53][50] = T_STONE_MEDIUM
+        tiles[55][42] = T_TREE_PINE
+        tiles[56][44] = T_TREE_PINE
+        tiles[57][46] = T_STONE_SMALL
+        tiles[58][42] = T_TREE_DEAD
+        tiles[59][44] = T_HILL_MEDIUM
+        tiles[60][46] = T_TREE_WILLOW
+        tiles[62][48] = T_STONE_LARGE
+        tiles[63][50] = T_TREE_PINE
+        tiles[65][42] = T_HILL_LARGE
+        tiles[66][44] = T_TREE_DEAD
+        tiles[68][46] = T_STONE_MEDIUM
+
+        # 河边装饰
+        tiles[5][5] = T_TREE_WILLOW
+        tiles[10][5] = T_TREE_WILLOW
+        tiles[15][5] = T_PLANT_GREEN
+        tiles[20][5] = T_TREE_PINE
+        tiles[40][5] = T_TREE_PINE
+        tiles[45][5] = T_PLANT_GREEN
+        tiles[50][4] = T_FISH
+        tiles[55][4] = T_FISH
+
+        # ===== 最终道路重铺 (确保所有路径畅通) =====
+        # 主路
+        road_h(30, 5, 48, 3)
+        # 市场街
+        road_v(22, 11, 30, 4)
+        # 衙门街
+        road_v(40, 22, 30, 3)
+        # 连接路: 建筑 → 市场街
+        road_h(16, 16, 22, 1)
+        road_h(16, 25, 30, 1)
+        road_h(21, 16, 22, 1)
+        road_h(21, 25, 30, 1)
+        road_h(27, 15, 22, 1)
+        road_h(27, 25, 30, 1)
+        # 连接路: 民居 → 市场街
+        road_h(15, 8, 22, 1)
+        road_h(20, 8, 22, 1)
+        road_h(25, 8, 22, 1)
+        road_h(15, 25, 37, 1)
+        road_h(20, 25, 37, 1)
+        # 武馆连接
+        road_h(24, 8, 22, 1)
+        # 衙门连接
+        road_h(28, 36, 40, 1)
+        road_h(28, 42, 44, 1)
+        # 南部道路
+        road_h(34, 6, 29, 2)
+        road_v(9, 34, 39, 2)
+        road_v(17, 34, 39, 2)
+        road_v(25, 34, 39, 2)
+        # 铁匠铺/医馆连接
+        road_h(35, 25, 32, 1)
+        road_h(35, 40, 44, 1)
+        # 东西向主路延伸
+        road_h(30, 48, 55, 3)
+        # 八卦门连接 (穿过建筑到入口)
+        road_v(53, 8, 18, 3)
+        road_h(10, 53, 65, 3)
+        road_v(53, 18, 28, 3)
+        road_h(20, 53, 69, 3)
+        # 红莲教连接
+        road_v(53, 30, 40, 3)
+        road_h(36, 53, 65, 3)
+        # 那迦/太极连接
+        road_h(30, 55, 72, 3)
+        road_v(70, 8, 18, 3)
+        road_h(10, 70, 80, 3)
+        road_v(70, 18, 30, 3)
+        road_h(20, 70, 80, 3)
+        # 雪山连接
+        road_v(70, 35, 50, 3)
+        road_h(40, 70, 80, 3)
+        # 门派内部道路
+        road_v(64, 12, 18, 2)
+        road_v(68, 25, 28, 2)
+        road_v(64, 44, 48, 2)
+        road_v(79, 12, 18, 2)
+        road_v(79, 27, 30, 2)
+        road_v(79, 46, 55, 2)
 
         self.current_map = Map(
             id="map_wuxia_world",
@@ -1177,47 +1534,123 @@ class GameWorld:
             return
         self.game_time += delta_time
         self.game_hour = (8 + int(self.game_time // 3600)) % 24
-        if self.game_hour == 8 and self.game_time > 3600:
+        if self.game_hour == 8 and self._prev_hour == 7:
             self.game_day += 1
+            self.world_event_engine.reset_daily_check()
+            self._check_world_events()
+            self._check_expired_events()
+        self._prev_hour = self.game_hour
         self.player.update_food_water(delta_time)
+        self.player.play_time += delta_time
         self._update_npc_patrol(delta_time)
+        self.perform_system.update_cooldowns(delta_time)
+        self._update_inner_force_regen(delta_time)
+        self._update_meditation(delta_time)
+
+    def _check_world_events(self):
+        flags = {f: True for f in getattr(self.player, '_story_flags', [])}
+        triggered = self.world_event_engine.check_and_trigger(self.game_day, flags)
+        for event in triggered:
+            dispatch(EventType.WORLD_EVENT_TRIGGERED, event)
+
+    def _check_expired_events(self):
+        expired = self.world_event_engine.check_expired_phases(self.game_day)
+        for event in expired:
+            dispatch(EventType.WORLD_EVENT_PHASE_CHANGED, event)
+
+    def _update_inner_force_regen(self, delta_time: float):
+        if self.combat_system.is_in_combat():
+            return
+        regen = self.cultivation_system.get_inner_force_regen(self.player)
+        if regen > 0 and self.player.mp < self.player.max_mp:
+            self.player.mp = min(self.player.max_mp, self.player.mp + regen * delta_time * 0.1)
+
+    def _update_meditation(self, delta_time: float):
+        if self.combat_system.is_in_combat():
+            return
+        if self.player.mp < 10:
+            return
+        result = self.cultivation_system.update_meditation(self.player, delta_time)
+        if result and result.get("leveled"):
+            pass
 
     def _update_npc_patrol(self, delta_time):
+        if self.current_map is None:
+            return
         import random
+        cam_x = self.player.position.x
+        cam_y = self.player.position.y
+        active_range = 1500
         for npc in self.npcs:
+            dx = npc.position.x - cam_x
+            dy = npc.position.y - cam_y
+            if dx * dx + dy * dy > active_range * active_range:
+                continue
             if not hasattr(npc, '_patrol_timer'):
                 npc._patrol_timer = random.uniform(0, 5)
                 npc._patrol_origin = Position(npc.position.x, npc.position.y)
                 npc._patrol_target = None
+                npc._patrol_state = "idle"
             npc._patrol_timer -= delta_time
             if npc._patrol_timer <= 0:
-                npc._patrol_timer = random.uniform(3, 8)
-                if npc.npc_type.value == "enemy":
-                    radius = 60
-                elif npc.npc_type.value == "master":
-                    radius = 20
-                else:
-                    radius = 40
-                ox, oy = npc._patrol_origin.x, npc._patrol_origin.y
-                angle = random.uniform(0, 2 * math.pi)
-                dist = random.uniform(0, radius)
-                nx = ox + math.cos(angle) * dist
-                ny = oy + math.sin(angle) * dist
-                col = int(nx // TS)
-                row = MAP_H - 1 - int(ny // TS)
-                if 0 <= row < MAP_H and 0 <= col < MAP_W:
-                    if self.current_map.tiles[row][col] in WALKABLE:
-                        npc._patrol_target = Position(nx, ny)
+                npc._patrol_timer = self._get_npc_next_action_delay(npc)
+                self._choose_npc_patrol_target(npc)
             if npc._patrol_target:
                 dx = npc._patrol_target.x - npc.position.x
                 dy = npc._patrol_target.y - npc.position.y
                 dist = math.sqrt(dx * dx + dy * dy)
+                speed = self._get_npc_speed(npc) * delta_time
                 if dist > 2:
-                    speed = 30 * delta_time
                     npc.position.x += (dx / dist) * speed
                     npc.position.y += (dy / dist) * speed
                 else:
                     npc._patrol_target = None
+
+    def _get_npc_next_action_delay(self, npc: NPC) -> float:
+        if npc.npc_type == NpcType.ENEMY:
+            return random.uniform(1.5, 4)
+        elif npc.npc_type == NpcType.TRADER:
+            return random.uniform(5, 12)
+        elif npc.npc_type == NpcType.MASTER:
+            return random.uniform(4, 10)
+        else:
+            return random.uniform(3, 8)
+
+    def _get_npc_speed(self, npc: NPC) -> float:
+        if npc.npc_type == NpcType.ENEMY:
+            return 40
+        elif npc.npc_type == NpcType.TRADER:
+            return 20
+        elif npc.npc_type == NpcType.MASTER:
+            return 25
+        else:
+            return 30
+
+    def _choose_npc_patrol_target(self, npc: NPC):
+        ox, oy = npc._patrol_origin.x, npc._patrol_origin.y
+        if npc.npc_type == NpcType.ENEMY:
+            radius = 80
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(20, radius)
+        elif npc.npc_type == NpcType.TRADER:
+            radius = 25
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(0, radius)
+        elif npc.npc_type == NpcType.MASTER:
+            radius = 20
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(0, radius)
+        else:
+            radius = 40
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(0, radius)
+        nx = ox + math.cos(angle) * dist
+        ny = oy + math.sin(angle) * dist
+        col = int(nx // TS)
+        row = MAP_H - 1 - int(ny // TS)
+        if 0 <= row < MAP_H and 0 <= col < MAP_W:
+            if self.current_map.tiles[row][col] in WALKABLE:
+                npc._patrol_target = Position(nx, ny)
 
     def use_item(self, player: Player, item_id: str) -> str:
         item = self.items.get(item_id)
@@ -1239,17 +1672,37 @@ class GameWorld:
     def get_item_by_id(self, item_id: str) -> Optional[Item]:
         return self.items.get(item_id)
 
-    def get_nearby_npc(self, position: Position, radius: float = 80) -> Optional[NPC]:
+    def get_nearby_npc(self, position: Position, radius: float = 150) -> Optional[NPC]:
+        nearest = None
+        nearest_dist = radius
         for npc in self.npcs:
-            if npc.npc_type.value != "enemy" and npc.position.distance_to(position) <= radius:
-                return npc
-        return None
+            if npc.npc_type.value == "enemy":
+                continue
+            dist = npc.position.distance_to(position)
+            if dist <= nearest_dist:
+                nearest = npc
+                nearest_dist = dist
+        return nearest
 
-    def get_nearby_enemy(self, position: Position, radius: float = 80) -> Optional[NPC]:
+    def get_nearby_enemy(self, position: Position, radius: float = 150) -> Optional[NPC]:
+        nearest = None
+        nearest_dist = radius
         for npc in self.npcs:
-            if npc.npc_type.value == "enemy" and npc.position.distance_to(position) <= radius:
-                return npc
-        return None
+            if npc.npc_type.value != "enemy":
+                continue
+            if hasattr(npc, '_death_time') and npc._death_time > 0:
+                if self.game_time - npc._death_time < 120:
+                    continue
+                npc.hp = npc.max_hp
+                npc.mp = npc.max_mp
+                npc._death_time = 0
+            if npc.hp <= 0:
+                continue
+            dist = npc.position.distance_to(position)
+            if dist <= nearest_dist:
+                nearest = npc
+                nearest_dist = dist
+        return nearest
 
     def start_combat(self, player: Player, enemy: NPC) -> str:
         combat = self.combat_system.start_combat(player, enemy)
@@ -1297,9 +1750,232 @@ class GameWorld:
         pass
 
     def can_walk(self, wx, wy):
+        if self.current_map is None:
+            return False
         col = int(wx // TS)
         row = MAP_H - 1 - int(wy // TS)
         if col < 0 or col >= MAP_W or row < 0 or row >= MAP_H:
             return False
         tid = self.current_map.tiles[row][col]
         return tid in WALKABLE
+
+    def buy_item(self, player: Player, item_id: str, seller_npc: NPC = None) -> Dict:
+        item = self.items.get(item_id)
+        if not item:
+            return {"success": False, "message": "物品不存在"}
+
+        seller_faction = seller_npc.faction if seller_npc else Faction.NONE
+        rep_modifier = self.reputation_system.get_modifier(player, seller_faction, "shop_discount")
+
+        result = self.economy_system.buy_item(player, item, seller_faction, rep_modifier)
+        return result
+
+    def sell_item(self, player: Player, item_id: str, buyer_npc: NPC = None) -> Dict:
+        if item_id not in player.inventory or player.inventory[item_id] <= 0:
+            return {"success": False, "message": "你没有这个物品"}
+
+        item = self.items.get(item_id)
+        if not item:
+            return {"success": False, "message": "物品信息不存在"}
+
+        buyer_faction = buyer_npc.faction if buyer_npc else Faction.NONE
+        rep_modifier = self.reputation_system.get_modifier(player, buyer_faction, "sell_markup")
+
+        result = self.economy_system.sell_item(player, item, buyer_faction, rep_modifier)
+        return result
+
+    def equip_item(self, player: Player, item_id: str) -> Dict:
+        return self.equipment_system.equip_item(player, item_id, self.items)
+
+    def unequip_item(self, player: Player, slot: str) -> Dict:
+        return self.equipment_system.unequip_item(player, slot, self.items)
+
+    def train_skill(self, player: Player, skill_id: str, master_npc: NPC) -> Dict:
+        return self.cultivation_system.train_with_master(player, skill_id, master_npc)
+
+    def attempt_breakthrough(self, player: Player, skill_id: str, use_pot: int = 0) -> Dict:
+        return self.cultivation_system.attempt_breakthrough(player, skill_id, use_pot)
+
+    def use_pot_for_skill(self, player: Player, skill_id: str, pot_amount: int) -> Dict:
+        return self.cultivation_system.use_pot_for_skill(player, skill_id, pot_amount)
+
+    def join_faction(self, player: Player, faction: Faction) -> Dict:
+        if player.faction != Faction.NONE:
+            return {"success": False, "message": f"你已是{FACTION_NAMES.get(player.faction, '未知门派')}弟子"}
+
+        if not self.reputation_system.can_join_faction(player, faction):
+            return {"success": False, "message": f"你在{FACTION_NAMES.get(faction, '未知门派')}的声望不足，无法加入"}
+
+        player.faction = faction
+        self.reputation_system.on_join_faction(player, faction)
+
+        faction_skills = FACTION_SKILLS.get(faction, [])
+        for skill_id in faction_skills:
+            if not any(s.id == skill_id for s in player.skills):
+                if skill_id in ALL_SKILLS:
+                    new_skill = Skill(
+                        id=ALL_SKILLS[skill_id].id,
+                        name=ALL_SKILLS[skill_id].name,
+                        type=ALL_SKILLS[skill_id].type,
+                        level=1, exp=0,
+                        damage=ALL_SKILLS[skill_id].damage,
+                        accuracy=ALL_SKILLS[skill_id].accuracy,
+                    )
+                    player.skills.append(new_skill)
+
+        dispatch(EventType.PLAYER_JOINED_FACTION, {
+            "faction": faction.value,
+            "faction_name": FACTION_NAMES.get(faction, '未知门派'),
+        })
+
+        return {
+            "success": True,
+            "message": f"你加入了{FACTION_NAMES.get(faction, '未知门派')}！习得了门派武功",
+            "faction": faction.value,
+            "new_skills": faction_skills,
+        }
+
+    def betray_faction(self, player: Player) -> Dict:
+        if player.faction == Faction.NONE:
+            return {"success": False, "message": "你没有门派"}
+
+        old_faction = player.faction
+        self.reputation_system.on_betray_faction(player, old_faction)
+        player.faction = Faction.NONE
+
+        dispatch(EventType.PLAYER_BETRAYED_FACTION, {
+            "old_faction": old_faction.value,
+            "old_faction_name": FACTION_NAMES.get(old_faction, '未知门派'),
+        })
+
+        return {
+            "success": True,
+            "message": f"你背叛了{FACTION_NAMES.get(old_faction, '未知门派')}！声望大幅下降",
+        }
+
+    def inn_rest(self, player: Player) -> Dict:
+        return self.economy_system.inn_rest(player)
+
+    def donate_to_faction(self, player: Player, faction: Faction, amount: int) -> Dict:
+        result = self.economy_system.donate_to_faction(player, faction, amount)
+        if result["success"]:
+            rep_gain = result["rep_gain"]
+            self.reputation_system.add_reputation(player, faction, rep_gain)
+        return result
+
+    def get_player_status(self, player: Player) -> Dict:
+        rep_info = self.reputation_system.get_all_reputations(player)
+        cult_info = self.cultivation_system.get_player_cultivation_info(player)
+        equip_stats = self.equipment_system.get_equipment_stats(player, self.items)
+
+        return {
+            "reputation": rep_info,
+            "cultivation": cult_info,
+            "equipment": equip_stats,
+            "money": player.money,
+            "level": player.level,
+            "faction": FACTION_NAMES.get(player.faction, '未知门派'),
+            "kills": player.total_kills,
+            "deaths": player.total_deaths,
+            "play_time": player.play_time,
+        }
+
+    def get_romance_storylines(self) -> List[Dict]:
+        storylines = self.script_db.get_romance_storylines()
+        return [{"id": s.id, "title": s.title, "character": s.character,
+                 "description": s.description, "prerequisites": s.prerequisites}
+                for s in storylines]
+
+    def get_cross_faction_storylines(self) -> List[Dict]:
+        storylines = self.script_db.get_cross_faction_storylines()
+        return [{"id": s.id, "title": s.title, "factions": s.factions,
+                 "description": s.description, "prerequisites": s.prerequisites}
+                for s in storylines]
+
+    def get_prequel_storylines(self) -> List[Dict]:
+        storylines = self.script_db.get_prequel_storylines()
+        return [{"id": s.id, "title": s.title, "description": s.description,
+                 "prerequisites": s.prerequisites}
+                for s in storylines]
+
+    def get_dark_storylines(self) -> List[Dict]:
+        storylines = self.script_db.get_dark_storylines()
+        return [{"id": s.id, "title": s.title, "description": s.description,
+                 "prerequisites": s.prerequisites}
+                for s in storylines]
+
+    def get_active_world_events(self) -> List[Dict]:
+        return self.world_event_engine.get_active_events()
+
+    def get_storyline_node(self, storyline_id: str, node_id: str) -> Optional[Dict]:
+        storyline = self.script_db.get_storyline(storyline_id)
+        if not storyline:
+            return None
+        node = storyline.nodes.get(node_id)
+        return serialize_node(node) if node else None
+
+    def advance_storyline(self, storyline_id: str, current_node_id: str, player: Player) -> Dict:
+        storyline = self.script_db.get_storyline(storyline_id)
+        if not storyline:
+            return {"success": False, "message": "剧情不存在"}
+        current_node = storyline.nodes.get(current_node_id)
+        if not current_node:
+            return {"success": False, "message": "当前节点不存在"}
+
+        apply_story_flags(player, current_node.set_flags)
+        apply_reward(player, current_node.reward)
+
+        next_id = current_node.next
+        if not next_id:
+            event_type = STORYLINE_TYPE_EVENT_MAP.get(
+                storyline.storyline_type, EventType.STORY_NODE_ENTERED
+            )
+            dispatch(event_type, {"storyline_id": storyline_id, "node_id": current_node_id})
+            return {"success": True, "message": "剧情完成", "completed": True}
+
+        next_node = storyline.nodes.get(next_id)
+        return {
+            "success": True,
+            "message": "剧情推进",
+            "next_node_id": next_id,
+            "next_node": serialize_node(next_node) if next_node else None,
+        }
+
+    def make_storyline_choice(self, storyline_id: str, current_node_id: str,
+                              choice_index: int, player: Player) -> Dict:
+        storyline = self.script_db.get_storyline(storyline_id)
+        if not storyline:
+            return {"success": False, "message": "剧情不存在"}
+        current_node = storyline.nodes.get(current_node_id)
+        if not current_node or current_node.node_type != "choice":
+            return {"success": False, "message": "当前节点无法选择"}
+        if choice_index < 0 or choice_index >= len(current_node.choices):
+            return {"success": False, "message": "无效选择"}
+
+        choice = current_node.choices[choice_index]
+        if "morality_change" in choice:
+            player.daode += choice["morality_change"]
+
+        apply_story_flags(player, current_node.set_flags)
+
+        next_id = choice.get("next", "")
+        if not next_id:
+            return {"success": True, "message": "选择完成", "completed": True}
+
+        next_node = storyline.nodes.get(next_id)
+        return {
+            "success": True,
+            "message": "选择已做出",
+            "next_node_id": next_id,
+            "next_node": serialize_node(next_node) if next_node else None,
+        }
+
+    def advance_world_event(self, event_id: str, player: Player) -> Dict:
+        node = self.world_event_engine.get_event_node(event_id)
+        if not node:
+            return {"success": False, "message": "事件不存在或已结束"}
+        next_phase = node.next
+        return self.world_event_engine.advance_event(event_id, next_phase, self.game_day, player)
+
+    def make_world_event_choice(self, event_id: str, choice_index: int, player: Player) -> Dict:
+        return self.world_event_engine.make_choice(event_id, choice_index, self.game_day, player)
