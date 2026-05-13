@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 
 
 class Faction(Enum):
@@ -239,18 +239,30 @@ class Player:
             if "hp" in item.effects:
                 heal = min(item.effects["hp"], self.max_hp - self.hp)
                 self.hp += heal
-                result += f"使用{item.name}，恢复了{heal}点生命值\n"
+                if heal > 0:
+                    result += f"恢复了{heal}点生命值\n"
             if "mp" in item.effects:
                 restore = min(item.effects["mp"], self.max_mp - self.mp)
                 self.mp += restore
-                result += f"使用{item.name}，恢复了{restore}点内力\n"
+                if restore > 0:
+                    result += f"恢复了{restore}点内力\n"
             if "food" in item.effects:
+                old_food = self.food
                 self.food = min(100, self.food + item.effects["food"])
-                result += f"使用{item.name}，恢复了{item.effects['food']}点饱食度\n"
+                gained = self.food - old_food
+                if gained > 0:
+                    result += f"恢复了{gained}点饱食度\n"
             if "water" in item.effects:
+                old_water = self.water
                 self.water = min(100, self.water + item.effects["water"])
-                result += f"使用{item.name}，恢复了{item.effects['water']}点水分\n"
+                gained = self.water - old_water
+                if gained > 0:
+                    result += f"恢复了{gained}点水分\n"
             self.remove_item(item.id)
+            if result:
+                result = f"使用{item.name}，" + result
+            else:
+                result = f"使用了{item.name}，但没有效果"
         return result.strip()
 
 
@@ -347,3 +359,5 @@ class Map:
     npcs: List[int] = field(default_factory=list)
     exits: Dict[str, Position] = field(default_factory=dict)
     description: str = ""
+    zone_type: str = "wild"
+    transitions: Dict[str, Tuple[str, Position]] = field(default_factory=dict)

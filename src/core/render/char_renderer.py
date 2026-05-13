@@ -1579,3 +1579,23 @@ def draw_character(sx, sy, name="player", facing="down", is_player=False,
     )
     for layer in _LAYERS:
         layer.render(ctx)
+    _draw_ink_outline(ctx)
+
+
+def _draw_ink_outline(ctx: CharContext):
+    sc = ctx.sc
+    ink_color = (45, 40, 35, 50)
+    cx, cy = ctx.sx, ctx.sy
+    body_top = cy + 2 * sc + ctx.breathe
+    head_y = cy + 22 * sc + ctx.breathe
+    hr = 10 * sc
+    arcade.draw_circle_outline(cx, head_y, hr + 1, ink_color, 1.5)
+    body_w = 10 * sc
+    body_h = 16 * sc
+    by_top = body_top - 2 * sc
+    by_bot = body_top + body_h
+    arcade.draw_lrbt_rectangle_outline(
+        cx - body_w // 2 - 1, cx + body_w // 2 + 1,
+        by_top, by_bot,
+        ink_color, 1.5
+    )

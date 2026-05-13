@@ -7,39 +7,41 @@ from .draw_utils import (SW, SH, get_anim_time, lighten, darken, alpha,
 from .char_renderer import FACTION_COLORS
 
 
-def draw_hud(player: Player, game_time: float = 0):
+def draw_hud(player: Player, game_time: float = 0, current_map=None):
     hud_h = 82
     _draw_hud_background(hud_h)
     _draw_avatar(hud_h, player)
     _draw_name_info(hud_h, player)
     _draw_bars(hud_h, player)
+    _draw_survival_bars(hud_h, player)
     _draw_info_icons(hud_h, player)
     _draw_attributes(hud_h, player)
+    _draw_zone_indicator(hud_h, current_map)
     _draw_hints(hud_h)
     _draw_skill_bar(hud_h, player)
 
 
 def _draw_hud_background(hud_h):
-    draw_gradient_rect(0, 0, SW, hud_h, (22, 28, 48), (10, 14, 28), 8)
-    arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, hud_h), (15, 20, 38, 60))
-    arcade.draw_line(0, hud_h - 4, SW, hud_h - 4, (255, 200, 100, 8), 1)
-    arcade.draw_line(0, hud_h - 2, SW, hud_h - 2, (255, 200, 100, 15), 1)
-    arcade.draw_rect_filled(arcade.LBWH(0, hud_h - 1, SW, 2), (255, 200, 100, 50))
+    draw_gradient_rect(0, 0, SW, hud_h, (55, 48, 38), (35, 30, 22), 8)
+    arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, hud_h), (40, 35, 28, 80))
+    arcade.draw_line(0, hud_h - 4, SW, hud_h - 4, (180, 155, 100, 8), 1)
+    arcade.draw_line(0, hud_h - 2, SW, hud_h - 2, (180, 155, 100, 15), 1)
+    arcade.draw_rect_filled(arcade.LBWH(0, hud_h - 1, SW, 2), (180, 155, 100, 50))
     for i in range(2):
         a = 30 - i * 12
-        arcade.draw_rect_outline(arcade.LBWH(i, i, SW - i * 2, hud_h - i * 2), (255, 200, 100, a), 1)
-    arcade.draw_line(0, 3, SW, 3, (100, 120, 160, 15), 1)
+        arcade.draw_rect_outline(arcade.LBWH(i, i, SW - i * 2, hud_h - i * 2), (180, 155, 100, a), 1)
+    arcade.draw_line(0, 3, SW, 3, (120, 105, 80, 15), 1)
 
 
 def _draw_avatar(hud_h, player):
     ax, ay, asz = 14, hud_h - 42, 48
-    draw_gradient_rect(ax - 2, ay - 2, asz + 4, asz + 4, (25, 32, 55), (15, 20, 38), 3)
-    draw_gradient_rect(ax, ay, asz, asz, (35, 42, 65), (20, 25, 42), 4)
+    draw_gradient_rect(ax - 2, ay - 2, asz + 4, asz + 4, (60, 52, 42), (40, 35, 28), 3)
+    draw_gradient_rect(ax, ay, asz, asz, (75, 65, 52), (50, 42, 32), 4)
     arcade.draw_rect_filled(arcade.LBWH(ax + asz * 0.5, ay + asz * 0.5, asz * 0.5, asz * 0.5),
-                            alpha(lighten((35, 42, 65), 10), 30))
+                            alpha(lighten((75, 65, 52), 10), 30))
     for i in range(3):
         a = 80 - i * 25
-        arcade.draw_rect_outline(arcade.LBWH(ax - i, ay - i, asz + i * 2, asz + i * 2), (255, 200, 100, a), 1)
+        arcade.draw_rect_outline(arcade.LBWH(ax - i, ay - i, asz + i * 2, asz + i * 2), (180, 155, 100, a), 1)
     skin = CHAR_PALETTE["skin"][0]
     hair = CHAR_PALETTE["hair_black"]
     cloth = CHAR_PALETTE.get("cloth_blue", CHAR_PALETTE["cloth_blue"])
@@ -111,6 +113,28 @@ def _draw_info_icons(hud_h, player):
         draw_text(val, ix + 40, iy, color, 13, "left", "center")
 
 
+def _draw_survival_bars(hud_h, player):
+    bx = 190
+    bw = 100
+    bh = 10
+    food = getattr(player, 'food', 100)
+    water = getattr(player, 'water', 100)
+    food_y = hud_h - 58
+    water_y = hud_h - 72
+
+    for label, val, y, c_full, c_low in [
+        ("食", food, food_y, (180, 140, 60), (180, 80, 40)),
+        ("水", water, water_y, (80, 140, 200), (140, 60, 60)),
+    ]:
+        draw_text(label, bx - 14, y + bh // 2, (140, 130, 110), 10, "center", "center")
+        arcade.draw_rect_filled(arcade.LBWH(bx, y, bw, bh), (20, 18, 15))
+        fill = max(1, int(bw * val / 100))
+        c = c_full if val > 30 else c_low
+        draw_gradient_rect(bx, y, fill, bh, lighten(c, 20), darken(c, 10), 2)
+        arcade.draw_rect_outline(arcade.LBWH(bx, y, bw, bh), (80, 70, 55), 1)
+        draw_text(f"{int(val)}", bx + bw + 8, y + bh // 2, (160, 150, 130), 9, "left", "center")
+
+
 def _draw_attributes(hud_h, player):
     ax = 550
     attrs = [
@@ -125,6 +149,26 @@ def _draw_attributes(hud_h, player):
         arcade.draw_rect_outline(arcade.LBWH(x - 2, hud_h - 24, 48, 18), (*color, 20), 1)
         draw_text(label, x + 2, hud_h - 15, (100, 100, 110), 10, "left", "center")
         draw_text(f"{val}", x + 16, hud_h - 15, color, 14, "left", "center")
+
+
+def _draw_zone_indicator(hud_h, current_map):
+    if not current_map:
+        return
+    zone_name = current_map.name
+    zone_type = current_map.zone_type
+    type_icons = {
+        "city": "城", "town": "镇", "sect": "门", "wild": "野"
+    }
+    icon = type_icons.get(zone_type, "")
+    zx = SW - 15
+    zy = hud_h - 40
+    tw = len(zone_name) * 12 + 50
+    zx_start = zx - tw
+    draw_gradient_rect(zx_start, zy - 10, tw, 20, (50, 42, 32, 180), (35, 30, 22, 180), 3)
+    arcade.draw_rect_outline(arcade.LBWH(zx_start, zy - 10, tw, 20), (180, 155, 100, 40), 1)
+    if icon:
+        draw_text(f"〔{icon}〕", zx_start + 8, zy, (160, 140, 100), 11, "left", "center")
+    draw_text(zone_name, zx_start + 30, zy, (200, 180, 130), 13, "left", "center")
 
 
 def _draw_hints(hud_h):

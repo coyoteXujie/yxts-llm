@@ -172,9 +172,15 @@ def _draw_hill(draw, px, py, c, detail, accent, hill_type):
     else:
         pts = [(cx, cy - 24), (cx - 22, cy), (cx + 22, cy)]
     draw.polygon(pts, fill=(*c, 255))
-    draw.line([pts[0], pts[2]], fill=(*darken(c, 15), 255), width=1)
+    mid_pts = [(pts[0][0], pts[0][1] + (pts[1][1] - pts[0][1]) // 3),
+               (pts[1][0] + (pts[0][0] - pts[1][0]) // 3, pts[1][1] - (pts[1][1] - pts[0][1]) // 6),
+               (pts[2][0] + (pts[0][0] - pts[2][0]) // 3, pts[2][1] - (pts[2][1] - pts[0][1]) // 6)]
+    draw.polygon(mid_pts, fill=(*lighten(c, 12), 255))
+    draw.line([pts[0], pts[2]], fill=(*darken(c, 20), 255), width=1)
+    draw.line([pts[0], pts[1]], fill=(*darken(c, 15), 255), width=1)
     if hill_type == 96:
-        draw.polygon([(cx, cy - 28), (cx - 10, cy - 18), (cx + 10, cy - 18)], fill=(240, 245, 255))
+        draw.polygon([(cx, cy - 28), (cx - 10, cy - 18), (cx + 10, cy - 18)], fill=(235, 240, 250))
+        draw.polygon([(cx, cy - 28), (cx - 5, cy - 22), (cx + 5, cy - 22)], fill=(245, 248, 255))
 
 
 def _draw_stone(draw, px, py, c, detail, accent, stone_type):
@@ -189,6 +195,57 @@ def _draw_stone(draw, px, py, c, detail, accent, stone_type):
         draw.ellipse([cx - 18, cy - 14, cx + 18, cy + 14], fill=(*c, 255))
         draw.ellipse([cx - 12, cy - 16, cx + 12, cy - 2], fill=(*lighten(c, 10), 255))
         draw.line([cx - 8, cy - 4, cx + 6, cy + 6], fill=(*darken(c, 15), 255), width=1)
+
+
+def _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_tiles, map_h):
+    SOFT_TERRAIN = WATER_TIDS | {0, 5, 6, 11, 39, 43} | FLOWER_TIDS | PLANT_TIDS
+    HARD_TERRAIN = WALL_TIDS | BUILDING_TIDS | {7, 8, 20, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104}
+    EDGE_BLEND_PX = 6
+
+    for local_ty in range(cy_tiles):
+        global_ty = chunk_ty * CHUNK_SIZE + local_ty
+        if global_ty >= len(game_map.tiles):
+            break
+        row = game_map.tiles[global_ty]
+        for local_tx in range(cx_tiles):
+            global_tx = chunk_tx * CHUNK_SIZE + local_tx
+            if global_tx >= len(row):
+                break
+            tid = row[global_tx]
+            if tid in HARD_TERRAIN:
+                continue
+            px = local_tx * TS
+            py = (cy_tiles - 1 - local_ty) * TS
+            c = _get_tile_color(tid)
+
+            neighbors = []
+            if global_ty > 0 and global_ty - 1 < len(game_map.tiles):
+                neighbors.append(("top", game_map.tiles[global_ty - 1][global_tx] if global_tx < len(game_map.tiles[global_ty - 1]) else tid))
+            if global_ty + 1 < len(game_map.tiles) and global_tx < len(game_map.tiles[global_ty + 1]):
+                neighbors.append(("bottom", game_map.tiles[global_ty + 1][global_tx]))
+            if global_tx > 0:
+                neighbors.append(("left", row[global_tx - 1]))
+            if global_tx + 1 < len(row):
+                neighbors.append(("right", row[global_tx + 1]))
+
+            for direction, ntid in neighbors:
+                if ntid == tid or ntid in HARD_TERRAIN:
+                    continue
+                nc = _get_tile_color(ntid)
+                blend_c = (
+                    (c[0] + nc[0]) // 2,
+                    (c[1] + nc[1]) // 2,
+                    (c[2] + nc[2]) // 2,
+                    80
+                )
+                if direction == "top":
+                    draw.rectangle([px, py, px + TS, py + EDGE_BLEND_PX], fill=blend_c)
+                elif direction == "bottom":
+                    draw.rectangle([px, py + TS - EDGE_BLEND_PX, px + TS, py + TS], fill=blend_c)
+                elif direction == "left":
+                    draw.rectangle([px, py, px + EDGE_BLEND_PX, py + TS], fill=blend_c)
+                elif direction == "right":
+                    draw.rectangle([px + TS - EDGE_BLEND_PX, py, px + TS, py + TS], fill=blend_c)
 
 
 def _draw_wall_variant(draw, px, py, c, detail, accent, wall_type):
@@ -234,6 +291,14 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
                 py = (cy_tiles - 1 - local_ty) * TS
 
                 draw.rectangle([px, py, px + TS, py + TS], fill=(*c, 255))
+
+                rng = random.Random(global_tx * 9973 + global_ty * 1013)
+                jitter = rng.randint(-6, 6)
+                if jitter != 0:
+                    jc = (max(0, min(255, c[0] + jitter)),
+                          max(0, min(255, c[1] + jitter)),
+                          max(0, min(255, c[2] + jitter)))
+                    draw.rectangle([px + 1, py + 1, px + TS - 1, py + TS - 1], fill=(*jc, 255))
 
                 palette = TILE_PALETTE.get(tid) or TILE_PALETTE.get(0) or {"detail": (100, 100, 100), "accent": (150, 150, 150)}
                 detail = palette["detail"]
@@ -295,8 +360,33 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
                     bc = BUILDING_COLORS.get("default", BUILDING_COLORS["default"])
                     if tid == 90:
                         bc = {"wall": (135, 108, 68), "roof": (120, 90, 50), "door": (100, 70, 40)}
-                    draw.rectangle([px + 4, py + 4, px + TS - 4, py + TS - 4], fill=(*bc["wall"], 255))
-                    draw.rectangle([px + 4, py + int(TS * 0.6), px + TS - 4, py + TS - 4], fill=(*bc["roof"], 255))
+                    wall_c = bc["wall"]
+                    roof_c = bc["roof"]
+                    door_c = bc.get("door", (100, 70, 40))
+                    draw.rectangle([px + 2, py + 2, px + TS - 2, py + TS - 2], fill=(*wall_c, 255))
+                    draw.rectangle([px + 2, py + int(TS * 0.55), px + TS - 2, py + TS - 2], fill=(*roof_c, 255))
+                    roof_top = py + int(TS * 0.55)
+                    draw.polygon([(px - 2, roof_top + 3), (px + TS // 2, roof_top - 8), (px + TS + 2, roof_top + 3)],
+                                  fill=(*darken(roof_c, 15), 255))
+                    draw.line([(px - 2, roof_top + 3), (px + TS // 2, roof_top - 8)], fill=(*darken(roof_c, 30), 255), width=1)
+                    draw.line([(px + TS + 2, roof_top + 3), (px + TS // 2, roof_top - 8)], fill=(*darken(roof_c, 30), 255), width=1)
+                    draw.line([(px - 2, roof_top + 3), (px + TS + 2, roof_top + 3)], fill=(*darken(roof_c, 25), 255), width=2)
+                    pillar_c = (150, 60, 40)
+                    draw.rectangle([px + 4, roof_top + 3, px + 7, py + TS - 4], fill=(*pillar_c, 255))
+                    draw.rectangle([px + TS - 7, roof_top + 3, px + TS - 4, py + TS - 4], fill=(*pillar_c, 255))
+                    door_w = TS // 4
+                    door_x = px + TS // 2 - door_w // 2
+                    door_y = roof_top + 5
+                    draw.rectangle([door_x, door_y, door_x + door_w, py + TS - 4], fill=(*door_c, 255))
+                    draw.arc([door_x, door_y - 4, door_x + door_w, door_y + 4], 180, 360, fill=(*darken(door_c, 20), 255), width=1)
+                    win_c = (200, 210, 230)
+                    win_s = TS // 7
+                    for wx_off in [-TS // 4, TS // 4]:
+                        wx = px + TS // 2 + wx_off - win_s // 2
+                        wy = roof_top + TS // 5
+                        draw.rectangle([wx, wy, wx + win_s, wy + win_s], fill=(*win_c, 220))
+                        draw.line([wx + win_s // 2, wy, wx + win_s // 2, wy + win_s], fill=(*darken(win_c, 40), 220), width=1)
+                        draw.line([wx, wy + win_s // 2, wx + win_s, wy + win_s // 2], fill=(*darken(win_c, 40), 220), width=1)
 
                 elif tid == 50:
                     cx_p = px + TS // 2
@@ -316,8 +406,11 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
 
                 elif tid == 84:
                     cx_b = px + TS // 2
-                    draw.polygon([(cx_b - 4, py + 18), (cx_b + 4, py + 18), (cx_b + 3, py + 30), (cx_b - 3, py + 30)], fill=(*c, 255))
-                    draw.ellipse([cx_b - 5, py + 14, cx_b + 5, py + 22], fill=(*accent, 255))
+                    draw.rectangle([px + 2, py + TS // 2, px + TS - 2, py + TS - 2], fill=(160, 145, 120))
+                    draw.arc([px + 4, py + TS // 4, px + TS - 4, py + TS // 2 + 8], 180, 360, fill=(140, 125, 100), width=3)
+                    for rail_x in [px + 8, px + TS - 8]:
+                        draw.rectangle([rail_x - 1, py + TS // 4 - 4, rail_x + 1, py + TS // 2], fill=(120, 105, 80))
+                    draw.line([px + 6, py + TS // 2 - 2, px + TS - 6, py + TS // 2 - 2], fill=(130, 115, 90), width=1)
 
                 elif tid == 85:
                     draw.rectangle([px + 14, py + 16, px + TS - 14, py + TS - 10], fill=(*c, 255))
@@ -509,7 +602,10 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
                 if tid in BUILDING_TIDS:
                     draw_soft_shadow(draw, px + TS // 2, py + TS + 2, TS - 8, 8, alpha=35)
 
-        img = apply_texture_noise(img, intensity=0.05, seed=chunk_tx * 1000 + chunk_ty)
+        _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_tiles, map_h)
+
+        img = apply_texture_noise(img, intensity=0.04, seed=chunk_tx * 1000 + chunk_ty)
+        img = img.filter(ImageFilter.GaussianBlur(radius=1.2))
         texture = arcade.Texture(img)
         return texture, img_w, img_h
     except ImportError:
@@ -589,3 +685,5 @@ def _draw_lighting_overlay(camera_x, camera_y):
 
 def invalidate_chunk_cache():
     _chunk_cache.clear()
+    from . import minimap_renderer as mm
+    mm._minimap_dirty = True

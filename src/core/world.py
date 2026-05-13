@@ -338,10 +338,47 @@ def yx_to_xy(col, row):
     return Position(col_to_x(col), row_to_y(row))
 
 
+def zone_col_to_x(col):
+    return col * TS + TS // 2
+
+
+def zone_row_to_y(row, zone_h):
+    return (zone_h - 1 - row) * TS + TS // 2
+
+
+def zone_yx_to_xy(col, row, zone_h):
+    return Position(zone_col_to_x(col), zone_row_to_y(row, zone_h))
+
+
+ZONE_NAMES = {
+    "luoyang": "洛阳城",
+    "chang_an": "长安城",
+    "lin_an": "临安城",
+    "jiangling": "江陵城",
+    "chengdu": "成都城",
+    "qinghe": "清河镇",
+    "fengxiang": "凤翔镇",
+    "shuangliu": "双流镇",
+    "yuhang": "余杭镇",
+    "bagua_sect": "八卦门",
+    "flower_sect": "百花谷",
+    "honglian_sect": "红莲教",
+    "naja_sect": "那迦派",
+    "taiji_sect": "太极门",
+    "xueshan_sect": "雪山派",
+    "xiaoyao_sect": "逍遥宫",
+    "north_wild": "北方荒野",
+    "central_wild": "中原野外",
+    "south_wild": "南方密林",
+    "west_wild": "西部沙漠",
+}
+
+
 class GameWorld:
     def __init__(self):
         self.player: Player = Player()
-        self.current_map: Optional[Map] = None
+        self.zones: Dict[str, Map] = {}
+        self.current_zone_id: str = "luoyang"
         self.npcs: List[NPC] = []
         self.items: Dict[str, Item] = {}
         self.game_time: float = 0.0
@@ -362,18 +399,44 @@ class GameWorld:
         self.script_db = get_script_db()
 
         self._init_all_items()
-        self._init_default_map()
+        self._init_all_zones()
         self._init_all_npcs()
+        self._assign_npcs_to_zones()
 
         self.combat_system.set_performs_db(PERFORMS)
         self.combat_system.set_items_db(self.items)
 
-        self.player.position = Position(col_to_x(25), row_to_y(31))
+        cmap = self.zones[self.current_zone_id]
+        self.player.position = Position(zone_col_to_x(20), zone_row_to_y(20, cmap.height))
         self._init_player_skills()
+
+    @property
+    def current_map(self) -> Optional[Map]:
+        return self.zones.get(self.current_zone_id)
+
+    def change_zone(self, zone_id: str, entry_point: Position):
+        if zone_id not in self.zones:
+            return
+        self.current_zone_id = zone_id
+        self.player.position.x = entry_point.x
+        self.player.position.y = entry_point.y
+        cmap = self.current_map
+        if cmap:
+            for npc in self.npcs:
+                if hasattr(npc, '_patrol_origin'):
+                    del npc._patrol_origin
+                if hasattr(npc, '_patrol_target'):
+                    npc._patrol_target = None
+                if hasattr(npc, '_patrol_timer'):
+                    del npc._patrol_timer
+                if hasattr(npc, '_patrol_state'):
+                    del npc._patrol_state
 
     def set_player(self, player: Player):
         self.player = player
-        self.player.position = Position(col_to_x(25), row_to_y(31))
+        cmap = self.zones.get(self.current_zone_id)
+        if cmap:
+            self.player.position = Position(zone_col_to_x(20), zone_row_to_y(20, cmap.height))
         self._init_player_skills()
 
     def _init_player_skills(self):
@@ -896,6 +959,70 @@ class GameWorld:
         for npc in self.npcs:
             npc._death_time = 0
 
+    def _assign_npcs_to_zones(self):
+        from .data_loader import load_npcs
+        loaded = load_npcs()
+        if loaded:
+            self.npcs = loaded
+            for npc in self.npcs:
+                npc._death_time = 0
+
+        NPC_ZONE_MAP = {
+            "平阿四": ("luoyang", 7, 5), "店小二": ("luoyang", 7, 7),
+            "阎商": ("luoyang", 14, 5), "葛朗台": ("luoyang", 25, 5),
+            "阿青": ("luoyang", 14, 24), "厨师": ("luoyang", 7, 24),
+            "屠夫": ("luoyang", 14, 24), "卖花女": ("luoyang", 24, 24),
+            "小商贩": ("luoyang", 16, 24), "平一指": ("luoyang", 16, 5),
+            "何铁手": ("luoyang", 14, 16), "何喜": ("lin_an", 13, 5),
+            "小裁缝": ("chengdu", 14, 5), "何裁缝": ("chengdu", 14, 24),
+            "捕快": ("chang_an", 25, 5), "巡捕": ("chang_an", 25, 24),
+            "衙役": ("chang_an", 25, 24), "老夫子": ("luoyang", 25, 15),
+            "村长": ("qinghe", 14, 10), "老婆婆": ("luoyang", 24, 5),
+            "妇人": ("qinghe", 14, 5), "公子哥": ("luoyang", 24, 25),
+            "书童": ("luoyang", 25, 15), "小童": ("luoyang", 24, 10),
+            "过路人": ("fengxiang", 10, 10), "茅十七": ("jiangling", 15, 10),
+            "韦扬": ("bagua_sect", 8, 12), "简明": ("bagua_sect", 6, 8),
+            "简杰": ("bagua_sect", 6, 7), "简英": ("bagua_sect", 6, 16),
+            "鲍振": ("bagua_sect", 9, 8), "武师教头": ("bagua_sect", 9, 16),
+            "春花娘": ("bagua_sect", 9, 7), "护院武师": ("bagua_sect", 3, 7),
+            "清照": ("flower_sect", 6, 17), "红拂女": ("flower_sect", 8, 17),
+            "公孙大娘": ("flower_sect", 6, 8), "青红": ("flower_sect", 8, 20),
+            "绿珠": ("flower_sect", 8, 10), "雪涛": ("flower_sect", 10, 20),
+            "隐娘": ("flower_sect", 6, 10), "王辞": ("flower_sect", 10, 8),
+            "于红儒": ("honglian_sect", 8, 12), "方长老": ("honglian_sect", 6, 8),
+            "韩长老": ("honglian_sect", 6, 16), "楚红灯": ("honglian_sect", 10, 8),
+            "崇儿": ("honglian_sect", 10, 16), "唐四儿": ("honglian_sect", 10, 10),
+            "白衣教众": ("honglian_sect", 14, 8), "红衣教众": ("honglian_sect", 14, 16),
+            "钟央": ("naja_sect", 8, 12), "十三卫": ("naja_sect", 6, 8),
+            "美奈子": ("naja_sect", 6, 16), "藤王": ("naja_sect", 10, 8),
+            "游敬": ("naja_sect", 10, 16), "天井": ("naja_sect", 14, 8),
+            "孙三": ("naja_sect", 14, 16), "浪人甲": ("north_wild", 15, 15),
+            "清虚道人": ("taiji_sect", 8, 12), "古松道人": ("taiji_sect", 6, 8),
+            "仓月道人": ("taiji_sect", 6, 16), "采药道人": ("taiji_sect", 10, 8),
+            "知客道人": ("taiji_sect", 10, 16), "迎客道童": ("taiji_sect", 14, 8),
+            "明月": ("taiji_sect", 14, 16), "清风": ("taiji_sect", 18, 8),
+            "白瑞德": ("xueshan_sect", 8, 12), "史婆婆": ("xueshan_sect", 6, 8),
+            "万剑": ("xueshan_sect", 6, 16), "万刃": ("xueshan_sect", 10, 8),
+            "万重": ("xueshan_sect", 10, 16), "万一": ("xueshan_sect", 14, 8),
+            "阿秀": ("xueshan_sect", 14, 16), "雪千柔": ("xueshan_sect", 18, 8),
+            "流氓": ("central_wild", 15, 15), "流氓头": ("central_wild", 18, 18),
+            "独角大盗": ("south_wild", 15, 15), "采花大盗": ("south_wild", 12, 12),
+            "黑衣大盗": ("south_wild", 18, 18), "土匪甲": ("west_wild", 15, 15),
+            "土匪头目": ("west_wild", 18, 18), "雪豹": ("north_wild", 20, 20),
+            "大侠": ("central_wild", 15, 15), "道德和尚": ("luoyang", 5, 5),
+            "李白": ("chang_an", 5, 5), "神秘人": ("west_wild", 20, 20),
+            "绣花女": ("south_wild", 20, 20), "魔化和尚": ("west_wild", 15, 10),
+        }
+
+        for npc in self.npcs:
+            info = NPC_ZONE_MAP.get(npc.name)
+            if info:
+                zone_id, row, col = info
+                zm = self.zones.get(zone_id)
+                if zm:
+                    npc.position = zone_yx_to_xy(col, row, zm.height)
+                    npc.location = ZONE_NAMES.get(zone_id, zone_id)
+
     def _init_all_items(self):
         from .data_loader import load_items
         loaded = load_items()
@@ -907,627 +1034,781 @@ class GameWorld:
         ]
         self.items = {item.id: item for item in items}
 
-    def _init_default_map(self):
-        tiles = [[T_GRASS for _ in range(MAP_W)] for _ in range(MAP_H)]
+    def _init_all_zones(self):
+        self.zones = {}
 
-        def road_h(row, c1, c2, width=2):
-            for r in range(row, row + width):
-                if 0 <= r < MAP_H:
-                    for c in range(c1, c2):
-                        if 0 <= c < MAP_W:
-                            tiles[r][c] = T_STONE_ROAD
+        def mk(w, h, base=T_GRASS):
+            return [[base for _ in range(w)] for _ in range(h)]
 
-        def road_v(col, r1, r2, width=2):
-            for c in range(col, col + width):
-                if 0 <= c < MAP_W:
-                    for r in range(r1, r2):
-                        if 0 <= r < MAP_H:
-                            tiles[r][c] = T_STONE_ROAD
+        def wborder(t, w, h, wt=T_WALL_STONE):
+            for c in range(w):
+                t[0][c] = wt
+                t[h - 1][c] = wt
+            for r in range(h):
+                t[r][0] = wt
+                t[r][w - 1] = wt
 
-        def dirt_road_h(row, c1, c2, width=2):
-            for r in range(row, row + width):
-                if 0 <= r < MAP_H:
-                    for c in range(c1, c2):
-                        if 0 <= c < MAP_W:
-                            tiles[r][c] = T_ROAD_DIRT
+        def zfill(t, r1, r2, c1, c2, tid, w, h):
+            for r in range(max(0, r1), min(h, r2)):
+                for c in range(max(0, c1), min(w, c2)):
+                    t[r][c] = tid
 
-        def dirt_road_v(col, r1, r2, width=2):
-            for c in range(col, col + width):
-                if 0 <= c < MAP_W:
-                    for r in range(r1, r2):
-                        if 0 <= r < MAP_H:
-                            tiles[r][c] = T_ROAD_DIRT
+        def zgate_h(t, row, col):
+            t[row][col] = T_GATE
+            t[row][col + 1] = T_GATE
 
-        def fill(r1, r2, c1, c2, tid):
-            for r in range(r1, r2):
-                for c in range(c1, c2):
-                    if 0 <= r < MAP_H and 0 <= c < MAP_W:
-                        tiles[r][c] = tid
+        def zgate_v(t, row, col):
+            t[row][col] = T_GATE
+            t[row + 1][col] = T_GATE
 
-        def place_shop(r1, r2, c1, c2, counter_tid, entrance_row, entrance_cols, roof=T_ROOF_BLUE):
-            self._place_building(tiles, r1, r2, c1, c2, T_SHOP, entrance_row, entrance_cols, roof)
-            mid_r = (r1 + r2) // 2
-            mid_c = (c1 + c2) // 2
-            tiles[mid_r][mid_c] = counter_tid
-            if mid_r + 1 <= r2 - 1:
-                tiles[mid_r + 1][mid_c] = counter_tid
+        def zroad_h(t, row, c1, c2, w, tid=T_STONE_ROAD, wd=2):
+            for r in range(row, min(row + wd, h)):
+                for c in range(max(0, c1), min(w, c2)):
+                    t[r][c] = tid
 
-        def place_house(r1, r2, c1, c2, entrance_row, entrance_cols, roof=T_ROOF_RED):
-            self._place_building(tiles, r1, r2, c1, c2, T_INN, entrance_row, entrance_cols, roof)
-            mid_r = (r1 + r2) // 2
-            mid_c = (c1 + c2) // 2
-            tiles[mid_r][c1 + 1] = T_DESK_WOOD
-            tiles[mid_r][c2 - 1] = T_BENCH_WOOD
+        def zroad_v(t, col, r1, r2, h, tid=T_STONE_ROAD, wd=2):
+            for c in range(col, min(col + wd, w)):
+                for r in range(max(0, r1), min(h, r2)):
+                    t[r][c] = tid
 
-        # ===== 西侧河流 =====
-        fill(0, MAP_H, 0, 3, T_WATER)
-        fill(25, 40, 3, 5, T_LAKE)
+        # ========== luoyang 洛阳城 (40x40) ==========
+        w, h = 40, 40
+        t = mk(w, h)
+        wborder(t, w, h)
+        zgate_h(t, 0, 19)
+        zgate_h(t, h - 1, 19)
+        zgate_v(t, 19, 0)
+        zgate_v(t, 19, w - 1)
+        zfill(t, 18, 22, 1, w - 1, T_STONE_ROAD, w, h)
+        zfill(t, 1, h - 1, 18, 22, T_STONE_ROAD, w, h)
+        self._place_building(t, 3, 8, 3, 10, T_INN, 8, [5, 6], T_ROOF_RED)
+        t[5][5] = T_BENCH_LONG
+        t[5][8] = T_TABLE
+        t[6][6] = T_BED
+        self._place_building(t, 3, 8, 13, 18, T_TEMPLE, 8, [15, 16], T_ROOF_GOLD)
+        t[5][15] = T_DESK_LARGE
+        t[6][16] = T_BANNER
+        self._place_building(t, 3, 8, 22, 30, T_SHOP, 8, [25, 26], T_ROOF_BLUE)
+        t[5][24] = T_COUNTER_WOOD
+        t[5][28] = T_SHELF_WOOD
+        self._place_building(t, 10, 16, 3, 10, T_SHOP, 16, [5, 6], T_ROOF_BLUE)
+        t[12][5] = T_COUNTER_HERB
+        t[12][8] = T_SHELF_HERB
+        self._place_building(t, 10, 16, 22, 30, T_SHOP, 10, [25, 26], T_ROOF_BLUE)
+        t[12][24] = T_COUNTER_WEAPON
+        t[12][28] = T_SHELF_WOOD
+        self._place_building(t, 22, 28, 3, 10, T_DWELL, 22, [5, 6], T_ROOF_RED)
+        t[24][5] = T_DESK_WOOD
+        t[24][8] = T_BENCH_WOOD
+        self._place_building(t, 22, 28, 22, 30, T_DWELL, 22, [25, 26], T_ROOF_RED)
+        t[24][25] = T_DESK_WOOD
+        t[24][28] = T_BENCH_WOOD
+        self._place_building(t, 22, 28, 13, 18, T_TEMPLE, 28, [15, 16], T_ROOF_RED)
+        t[24][15] = T_DESK_LARGE
+        t[26][15] = T_BENCH_LONG
+        zfill(t, 30, 37, 5, 15, T_GARDEN, w, h)
+        zfill(t, 30, 37, 25, 35, T_COURTYARD, w, h)
+        t[33][8] = T_FLOWER_RED
+        t[33][12] = T_FLOWER_PINK
+        t[33][28] = T_WELL
+        t[33][32] = T_POND
+        t[20][10] = T_SIGN
+        t[20][30] = T_SIGN
+        self.zones["luoyang"] = Map(id="luoyang", name="洛阳城", width=w, height=h, tiles=t, zone_type="city", description="大唐东都，繁华似锦")
 
-        # ===== 平安镇 (col 5-48, row 10-50) =====
+        # ========== chang_an 长安城 (40x40) ==========
+        w, h = 40, 40
+        t = mk(w, h)
+        wborder(t, w, h)
+        zgate_h(t, 0, 19)
+        zgate_h(t, h - 1, 19)
+        zgate_v(t, 19, 0)
+        zgate_v(t, 19, w - 1)
+        zfill(t, 18, 22, 1, w - 1, T_STONE_ROAD, w, h)
+        zfill(t, 1, h - 1, 18, 22, T_STONE_ROAD, w, h)
+        self._place_building(t, 3, 10, 3, 12, T_TEMPLE, 10, [6, 7], T_ROOF_GOLD)
+        t[5][5] = T_THRONE
+        t[6][6] = T_PILLAR
+        t[6][9] = T_PILLAR
+        t[8][5] = T_BANNER
+        t[8][10] = T_BANNER
+        self._place_building(t, 3, 8, 22, 30, T_SHOP, 8, [25, 26], T_ROOF_BLUE)
+        t[5][24] = T_COUNTER_WOOD
+        t[5][28] = T_SHELF_WOOD
+        self._place_building(t, 12, 17, 3, 10, T_INN, 17, [5, 6], T_ROOF_RED)
+        t[14][5] = T_COUNTER_INN
+        t[14][8] = T_BENCH_LONG
+        self._place_building(t, 12, 17, 22, 30, T_SHOP, 12, [25, 26], T_ROOF_BLUE)
+        t[14][24] = T_COUNTER_HERB
+        t[14][28] = T_SHELF_HERB
+        self._place_building(t, 22, 28, 3, 10, T_DWELL, 22, [5, 6], T_ROOF_RED)
+        self._place_building(t, 22, 28, 22, 30, T_DWELL, 22, [25, 26], T_ROOF_RED)
+        zfill(t, 30, 37, 5, 15, T_GARDEN, w, h)
+        t[33][8] = T_FLOWER_RED
+        t[33][12] = T_FLOWER_WHITE
+        zfill(t, 30, 37, 25, 35, T_COURTYARD, w, h)
+        t[33][28] = T_WELL
+        t[20][10] = T_SIGN
+        self.zones["chang_an"] = Map(id="chang_an", name="长安城", width=w, height=h, tiles=t, zone_type="city", description="大唐西京，皇城巍峨")
 
-        # --- 中央大街 (东西向) ---
-        road_h(30, 5, 48, 3)
-        tiles[31][25] = T_WELL
-        tiles[30][10] = T_SIGN
-        tiles[30][44] = T_SIGN
-        tiles[31][47] = T_SIGN
+        # ========== lin_an 临安城 (35x35) ==========
+        w, h = 35, 35
+        t = mk(w, h)
+        wborder(t, w, h)
+        zgate_h(t, 0, 16)
+        zgate_h(t, h - 1, 16)
+        zgate_v(t, 16, 0)
+        zgate_v(t, 16, w - 1)
+        zfill(t, 15, 19, 1, w - 1, T_STONE_ROAD, w, h)
+        zfill(t, 1, h - 1, 15, 19, T_STONE_ROAD, w, h)
+        zfill(t, 5, 10, 3, 8, T_WATER, w, h)
+        zfill(t, 10, 14, 3, 8, T_LAKE, w, h)
+        t[8][5] = T_BRIDGE
+        t[9][5] = T_BRIDGE
+        t[12][5] = T_DOCK
+        self._place_building(t, 3, 8, 20, 28, T_SHOP, 8, [23, 24], T_ROOF_BLUE)
+        t[5][22] = T_COUNTER_WOOD
+        t[5][26] = T_SHELF_WOOD
+        self._place_building(t, 10, 15, 20, 28, T_INN, 15, [23, 24], T_ROOF_RED)
+        t[12][22] = T_COUNTER_INN
+        t[12][26] = T_BENCH_LONG
+        self._place_building(t, 20, 26, 3, 10, T_DWELL, 20, [5, 6], T_ROOF_RED)
+        self._place_building(t, 20, 26, 20, 28, T_TEMPLE, 20, [23, 24], T_ROOF_GOLD)
+        t[22][23] = T_DESK_LARGE
+        t[24][23] = T_ALTAR
+        zfill(t, 27, 33, 5, 14, T_GARDEN, w, h)
+        t[30][8] = T_FLOWER_PINK
+        t[30][12] = T_FLOWER_SPECIAL1
+        t[17][8] = T_SIGN
+        self.zones["lin_an"] = Map(id="lin_an", name="临安城", width=w, height=h, tiles=t, zone_type="city", description="江南水乡，烟雨朦胧")
 
-        # --- 市场街 / Road1 (南北向, col 20-25) ---
-        road_v(22, 11, 30, 4)
+        # ========== jiangling 江陵城 (35x35) ==========
+        w, h = 35, 35
+        t = mk(w, h)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 16)
+        zgate_h(t, h - 1, 16)
+        zgate_v(t, 16, 0)
+        zgate_v(t, 16, w - 1)
+        zfill(t, 15, 19, 1, w - 1, T_STONE_ROAD, w, h)
+        zfill(t, 1, h - 1, 15, 19, T_STONE_ROAD, w, h)
+        self._place_building(t, 3, 10, 3, 12, T_TEMPLE, 10, [6, 7], T_ROOF_RED)
+        t[5][5] = T_DESK_LARGE
+        t[6][6] = T_BANNER
+        t[6][9] = T_BANNER
+        t[8][5] = T_SCULPTURE_LION
+        t[8][10] = T_SCULPTURE_LION
+        self._place_building(t, 3, 8, 20, 28, T_SHOP, 8, [23, 24], T_ROOF_BLUE)
+        t[5][22] = T_COUNTER_WEAPON
+        t[5][26] = T_SHELF_WOOD
+        self._place_building(t, 12, 17, 3, 10, T_INN, 17, [5, 6], T_ROOF_RED)
+        t[14][5] = T_COUNTER_INN
+        self._place_building(t, 12, 17, 20, 28, T_SHOP, 12, [23, 24], T_ROOF_BLUE)
+        t[14][22] = T_COUNTER_HERB
+        self._place_building(t, 20, 26, 3, 10, T_DWELL, 20, [5, 6], T_ROOF_RED)
+        self._place_building(t, 20, 26, 20, 28, T_DWELL, 20, [23, 24], T_ROOF_RED)
+        zfill(t, 27, 33, 5, 14, T_COURTYARD, w, h)
+        zfill(t, 27, 33, 20, 30, T_COURTYARD, w, h)
+        t[30][8] = T_ANVIL
+        t[30][25] = T_WELL
+        self.zones["jiangling"] = Map(id="jiangling", name="江陵城", width=w, height=h, tiles=t, zone_type="city", description="军事重镇，固若金汤")
 
-        # 杂货铺 (Shop1)
-        place_shop(12, 16, 13, 19, T_COUNTER_WOOD, 16, [16], T_ROOF_BLUE)
-        tiles[14][15] = T_SHELF_WOOD
-        tiles[14][17] = T_SHELF_WOOD
+        # ========== chengdu 成都城 (35x35) ==========
+        w, h = 35, 35
+        t = mk(w, h)
+        wborder(t, w, h)
+        zgate_h(t, 0, 16)
+        zgate_h(t, h - 1, 16)
+        zgate_v(t, 16, 0)
+        zgate_v(t, 16, w - 1)
+        zfill(t, 15, 19, 1, w - 1, T_STONE_ROAD, w, h)
+        zfill(t, 1, h - 1, 15, 19, T_STONE_ROAD, w, h)
+        self._place_building(t, 3, 8, 3, 10, T_INN, 8, [5, 6], T_ROOF_RED)
+        t[5][5] = T_COUNTER_INN
+        t[5][8] = T_BENCH_LONG
+        self._place_building(t, 3, 8, 20, 28, T_SHOP, 8, [23, 24], T_ROOF_BLUE)
+        t[5][22] = T_COUNTER_HERB
+        t[5][26] = T_SHELF_HERB
+        self._place_building(t, 10, 16, 3, 10, T_SHOP, 16, [5, 6], T_ROOF_BLUE)
+        t[12][5] = T_COUNTER_WOOD
+        self._place_building(t, 10, 16, 20, 28, T_TEMPLE, 10, [23, 24], T_ROOF_GOLD)
+        t[12][23] = T_DESK_LARGE
+        t[14][23] = T_ALTAR
+        self._place_building(t, 20, 26, 3, 10, T_DWELL, 20, [5, 6], T_ROOF_RED)
+        self._place_building(t, 20, 26, 20, 28, T_DWELL, 20, [23, 24], T_ROOF_RED)
+        zfill(t, 27, 33, 3, 14, T_GARDEN, w, h)
+        t[30][5] = T_FLOWER_SPECIAL1
+        t[30][10] = T_FLOWER_SPECIAL2
+        zfill(t, 27, 33, 20, 30, T_RICE_PADDY, w, h)
+        t[17][10] = T_SIGN
+        self.zones["chengdu"] = Map(id="chengdu", name="成都城", width=w, height=h, tiles=t, zone_type="city", description="蜀地天府，物产丰饶")
 
-        # 药铺 (Shop2)
-        place_shop(12, 16, 27, 33, T_COUNTER_HERB, 16, [30], T_ROOF_BLUE)
-        tiles[14][28] = T_SHELF_HERB
-        tiles[14][32] = T_SHELF_HERB
+        # ========== qinghe 清河镇 (20x20) ==========
+        w, h = 20, 20
+        t = mk(w, h)
+        for c in range(w):
+            t[0][c] = T_FENCE
+            t[h - 1][c] = T_FENCE
+        for r in range(h):
+            t[r][0] = T_FENCE
+            t[r][w - 1] = T_FENCE
+        zgate_h(t, 0, 9)
+        zgate_h(t, h - 1, 9)
+        zfill(t, 9, 11, 1, w - 1, T_ROAD_DIRT, w, h)
+        zfill(t, 1, h - 1, 9, 11, T_ROAD_DIRT, w, h)
+        self._place_building(t, 2, 6, 2, 6, T_INN, 6, [3, 4], T_ROOF_RED)
+        t[4][3] = T_COUNTER_INN
+        self._place_building(t, 2, 6, 13, 18, T_SHOP, 6, [15], T_ROOF_BLUE)
+        t[4][15] = T_COUNTER_WOOD
+        self._place_building(t, 12, 16, 2, 6, T_DWELL, 12, [3, 4], T_ROOF_RED)
+        self._place_building(t, 12, 16, 13, 18, T_DWELL, 12, [15], T_ROOF_BLUE)
+        t[17][5] = T_WELL
+        t[17][14] = T_TREE_WILLOW
+        t[3][10] = T_SIGN
+        self.zones["qinghe"] = Map(id="qinghe", name="清河镇", width=w, height=h, tiles=t, zone_type="town", description="洛阳北郊的小镇，连接城与野")
 
-        # 兵器铺 (Shop3)
-        place_shop(17, 21, 13, 19, T_COUNTER_WEAPON, 21, [16], T_ROOF_RED)
-        tiles[19][15] = T_SHELF_WOOD
-        tiles[19][17] = T_SHELF_WOOD
+        # ========== fengxiang 凤翔镇 (20x20) ==========
+        w, h = 20, 20
+        t = mk(w, h)
+        for c in range(w):
+            t[0][c] = T_FENCE
+            t[h - 1][c] = T_FENCE
+        for r in range(h):
+            t[r][0] = T_FENCE
+            t[r][w - 1] = T_FENCE
+        zgate_h(t, 0, 9)
+        zgate_h(t, h - 1, 9)
+        zfill(t, 9, 11, 1, w - 1, T_ROAD_DIRT, w, h)
+        zfill(t, 1, h - 1, 9, 11, T_ROAD_DIRT, w, h)
+        self._place_building(t, 2, 6, 2, 6, T_SHOP, 6, [3, 4], T_ROOF_BLUE)
+        t[4][3] = T_COUNTER_HERB
+        self._place_building(t, 2, 6, 13, 18, T_INN, 6, [15], T_ROOF_RED)
+        t[4][15] = T_COUNTER_INN
+        self._place_building(t, 12, 16, 2, 6, T_DWELL, 12, [3, 4], T_ROOF_RED)
+        self._place_building(t, 12, 16, 13, 18, T_DWELL, 12, [15], T_ROOF_BLUE)
+        t[17][5] = T_TREE_PINE
+        t[17][14] = T_WELL
+        self.zones["fengxiang"] = Map(id="fengxiang", name="凤翔镇", width=w, height=h, tiles=t, zone_type="town", description="长安南郊的小镇，通往中原")
 
-        # 钱庄 (Shop4)
-        place_shop(17, 21, 27, 33, T_COUNTER_MONEY, 21, [30], T_ROOF_GOLD)
-        tiles[19][28] = T_SHELF_WOOD
-        tiles[19][32] = T_SHELF_WOOD
+        # ========== shuangliu 双流镇 (20x20) ==========
+        w, h = 20, 20
+        t = mk(w, h)
+        for c in range(w):
+            t[0][c] = T_FENCE
+            t[h - 1][c] = T_FENCE
+        for r in range(h):
+            t[r][0] = T_FENCE
+            t[r][w - 1] = T_FENCE
+        zgate_v(t, 9, 0)
+        zgate_v(t, 9, w - 1)
+        zgate_h(t, 0, 9)
+        zfill(t, 9, 11, 1, w - 1, T_ROAD_DIRT, w, h)
+        zfill(t, 1, h - 1, 9, 11, T_ROAD_DIRT, w, h)
+        self._place_building(t, 2, 6, 2, 6, T_SHOP, 6, [3, 4], T_ROOF_BLUE)
+        t[4][3] = T_COUNTER_WOOD
+        self._place_building(t, 2, 6, 13, 18, T_DWELL, 6, [15], T_ROOF_RED)
+        self._place_building(t, 12, 16, 2, 6, T_INN, 12, [3, 4], T_ROOF_RED)
+        t[14][3] = T_COUNTER_INN
+        self._place_building(t, 12, 16, 13, 18, T_DWELL, 12, [15], T_ROOF_BLUE)
+        t[17][10] = T_WELL
+        self.zones["shuangliu"] = Map(id="shuangliu", name="双流镇", width=w, height=h, tiles=t, zone_type="town", description="成都附近的小镇，通往沙漠")
 
-        # 客栈 (Shop5)
-        place_shop(22, 27, 13, 19, T_COUNTER_INN, 27, [15, 16], T_ROOF_RED)
-        tiles[24][14] = T_BENCH_LONG
-        tiles[24][17] = T_BENCH_LONG
-        tiles[25][15] = T_DESK_LARGE
-        tiles[25][16] = T_DESK_LARGE
+        # ========== yuhang 余杭镇 (20x20) ==========
+        w, h = 20, 20
+        t = mk(w, h)
+        for c in range(w):
+            t[0][c] = T_FENCE
+            t[h - 1][c] = T_FENCE
+        for r in range(h):
+            t[r][0] = T_FENCE
+            t[r][w - 1] = T_FENCE
+        zgate_h(t, h - 1, 9)
+        zgate_v(t, 9, 0)
+        zfill(t, 9, 11, 1, w - 1, T_ROAD_DIRT, w, h)
+        zfill(t, 1, h - 1, 9, 11, T_ROAD_DIRT, w, h)
+        zfill(t, 2, 6, 2, 6, T_WATER, w, h)
+        t[4][3] = T_BRIDGE
+        t[5][3] = T_BRIDGE
+        self._place_building(t, 2, 6, 13, 18, T_SHOP, 6, [15], T_ROOF_BLUE)
+        t[4][15] = T_COUNTER_WOOD
+        self._place_building(t, 12, 16, 2, 6, T_INN, 12, [3, 4], T_ROOF_RED)
+        t[14][3] = T_COUNTER_INN
+        self._place_building(t, 12, 16, 13, 18, T_DWELL, 12, [15], T_ROOF_BLUE)
+        t[17][10] = T_WELL
+        t[3][10] = T_TREE_WILLOW
+        self.zones["yuhang"] = Map(id="yuhang", name="余杭镇", width=w, height=h, tiles=t, zone_type="town", description="临安北郊水乡小镇")
 
-        # 民居2 (Dwell2)
-        self._place_building(tiles, 22, 27, 27, 33, T_DWELL, 27, [30], T_ROOF_BLUE)
-        tiles[24][29] = T_DESK_WOOD
-        tiles[24][31] = T_BENCH_WOOD
+        # ========== bagua_sect 八卦门 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_DARK_GRASS)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_RED)
+        t[6][7] = T_TRAINING
+        t[6][17] = T_TRAINING
+        t[8][11] = T_PILLAR
+        t[8][13] = T_PILLAR
+        t[9][8] = T_BANNER
+        t[9][16] = T_BANNER
+        t[10][11] = T_CARPET
+        t[10][12] = T_CARPET
+        t[11][7] = T_SHELF_BOOK
+        t[11][17] = T_SHELF_BOOK
+        t[13][9] = T_SCULPTURE_LION
+        t[13][15] = T_SCULPTURE_LION
+        t[14][11] = T_CHEST
+        t[14][12] = T_CHEST
+        t[16][7] = T_PLANT_DARK
+        t[16][17] = T_PLANT_DARK
+        t[18][11] = T_FLOWER_RED
+        t[18][13] = T_FLOWER_RED
+        for r in range(5, 20):
+            t[r][5] = T_PLANT_GREEN
+            t[r][20] = T_PLANT_GREEN
+        self.zones["bagua_sect"] = Map(id="bagua_sect", name="八卦门", width=w, height=h, tiles=t, zone_type="sect", description="八卦门派，混元一气")
 
-        # 市场街水平连接路 (建筑入口 → 市场街)
-        road_h(16, 16, 22, 1)
-        road_h(16, 25, 30, 1)
-        road_h(21, 16, 22, 1)
-        road_h(21, 25, 30, 1)
-        road_h(27, 15, 22, 1)
-        road_h(27, 25, 30, 1)
+        # ========== flower_sect 百花谷 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_GARDEN)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        zfill(t, 8, 12, 7, 12, T_LAKE, w, h)
+        t[10][9] = T_BRIDGE
+        t[11][9] = T_BRIDGE
+        self._place_building(t, 4, 10, 14, 22, T_TEMPLE, 4, [17], T_ROOF_BLUE)
+        t[6][16] = T_FLOWER_SPECIAL1
+        t[6][19] = T_FLOWER_SPECIAL2
+        t[7][17] = T_DESK_WOOD
+        t[8][17] = T_CHEST
+        t[13][7] = T_FLOWER_SPECIAL1
+        t[13][10] = T_FLOWER_SPECIAL2
+        t[13][14] = T_FLOWER_SPECIAL1
+        t[15][8] = T_FLOWER_RED
+        t[15][11] = T_FLOWER_PINK
+        t[15][16] = T_FLOWER_WHITE
+        t[17][7] = T_FLOWER_SPECIAL2
+        t[17][17] = T_FLOWER_SPECIAL1
+        t[19][9] = T_FLOWER_RED
+        t[19][15] = T_FLOWER_PINK
+        t[21][11] = T_FLOWER_SPECIAL1
+        t[21][13] = T_FLOWER_SPECIAL2
+        for r in range(5, 22):
+            t[r][5] = T_FLOWER_SPECIAL2
+            t[r][20] = T_FLOWER_SPECIAL1
+        self.zones["flower_sect"] = Map(id="flower_sect", name="百花谷", width=w, height=h, tiles=t, zone_type="sect", description="百花之谷，花飞剑法")
 
-        # 市场街装饰柱
-        for r in range(12, 29, 3):
-            tiles[r][21] = T_PILLAR
-            tiles[r][25] = T_PILLAR
+        # ========== honglian_sect 红莲教 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_DARK_GRASS)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_RED)
+        t[6][7] = T_TRAINING
+        t[6][17] = T_TRAINING
+        t[8][11] = T_ALTAR
+        t[8][12] = T_ALTAR
+        t[9][9] = T_BANNER
+        t[9][14] = T_BANNER
+        for r in range(7, 11):
+            t[r][11] = T_CARPET
+            t[r][12] = T_CARPET
+        t[11][11] = T_CHEST
+        t[11][12] = T_CHEST
+        t[13][7] = T_STONE_SMALL
+        t[13][17] = T_STONE_SMALL
+        t[15][9] = T_HILL_MEDIUM
+        t[15][15] = T_TREE_WILLOW
+        t[17][11] = T_FLOWER_RED
+        t[17][12] = T_FLOWER_RED
+        t[19][7] = T_TORCH
+        t[19][17] = T_TORCH
+        t[21][11] = T_PLANT_DARK
+        t[21][13] = T_PLANT_DARK
+        self.zones["honglian_sect"] = Map(id="honglian_sect", name="红莲教", width=w, height=h, tiles=t, zone_type="sect", description="红莲圣教，义字当先")
 
-        # --- 衙门街 / Road2 (南北向, col 38-42) ---
-        road_v(40, 22, 30, 3)
-        self._place_building(tiles, 22, 28, 36, 44, T_TEMPLE, 28, [39, 40], T_ROOF_RED)
-        tiles[24][38] = T_DESK_LARGE
-        tiles[24][42] = T_DESK_LARGE
-        tiles[25][37] = T_SHELF_HERB
-        tiles[25][43] = T_SHELF_HERB
-        tiles[26][40] = T_BENCH_LONG
-        road_h(28, 36, 40, 1)
-        road_h(28, 42, 44, 1)
+        # ========== naja_sect 那迦派 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_SAND)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_GOLD)
+        t[6][7] = T_TRAINING
+        t[6][17] = T_TRAINING
+        t[7][9] = T_SCULPTURE_LION
+        t[7][15] = T_SCULPTURE_LION
+        t[8][11] = T_CHEST
+        t[8][12] = T_CHEST
+        for r in range(5, 11):
+            t[r][11] = T_CARPET
+            t[r][12] = T_CARPET
+        t[10][9] = T_TORCH
+        t[10][15] = T_TORCH
+        t[11][7] = T_PILLAR
+        t[11][17] = T_PILLAR
+        t[13][9] = T_SHELF_BOOK
+        t[13][15] = T_SHELF_BOOK
+        t[15][7] = T_TREE_DEAD
+        t[15][17] = T_TREE_DEAD
+        t[17][11] = T_STONE_MEDIUM
+        t[17][12] = T_STONE_MEDIUM
+        t[19][9] = T_TREE_PINE
+        t[19][15] = T_TREE_PINE
+        t[21][11] = T_STONE_SMALL
+        t[21][13] = T_STONE_SMALL
+        self.zones["naja_sect"] = Map(id="naja_sect", name="那迦派", width=w, height=h, tiles=t, zone_type="sect", description="那迦隐派，忍术无双")
 
-        # --- 民居区 (西侧) ---
-        # House1 (阿青/卖豆腐)
-        place_house(11, 15, 5, 11, 15, [8], T_ROOF_RED)
-        tiles[12][6] = T_FLOWER_RED
-        tiles[12][10] = T_FLOWER_RED
-        tiles[13][8] = T_BENCH_WOOD
-        road_h(15, 8, 22, 1)
+        # ========== taiji_sect 太极门 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_DARK_GRASS)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_GOLD)
+        t[6][7] = T_ALTAR
+        t[6][17] = T_SHELF_BOOK
+        t[7][9] = T_BARS
+        t[7][15] = T_BARS
+        t[8][11] = T_CHEST
+        t[8][12] = T_CHEST
+        for r in range(5, 11):
+            t[r][11] = T_CARPET
+            t[r][12] = T_CARPET
+        t[10][9] = T_DESK_LARGE
+        t[10][15] = T_BENCH_STONE
+        t[11][7] = T_TORCH
+        t[11][17] = T_TORCH
+        t[13][9] = T_PLANT_COLD
+        t[13][15] = T_PLANT_COLD
+        t[15][7] = T_BOTTLE
+        t[15][17] = T_BOOK_OBJ
+        t[17][9] = T_BARS
+        t[17][15] = T_BARS
+        t[19][11] = T_STONE_MEDIUM
+        t[19][12] = T_STONE_MEDIUM
+        t[21][7] = T_PLANT_COLD
+        t[21][17] = T_PLANT_COLD
+        self.zones["taiji_sect"] = Map(id="taiji_sect", name="太极门", width=w, height=h, tiles=t, zone_type="sect", description="太极道门，阴阳调和")
 
-        # House1A (裁缝铺)
-        place_house(16, 20, 5, 11, 20, [8], T_ROOF_BLUE)
-        tiles[17][6] = T_FLOWER_PINK
-        tiles[17][10] = T_FLOWER_PINK
-        tiles[18][8] = T_BENCH_WOOD
-        road_h(20, 8, 22, 1)
+        # ========== xueshan_sect 雪山派 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_SNOW)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_RED)
+        t[6][7] = T_TRAINING
+        t[6][17] = T_TRAINING
+        t[7][9] = T_BARS
+        t[7][15] = T_BARS
+        t[8][11] = T_CHEST
+        t[8][12] = T_CHEST
+        t[9][7] = T_PLANT_SNOW
+        t[9][17] = T_PLANT_SNOW
+        t[10][9] = T_WALL_STONE
+        t[10][15] = T_WALL_STONE
+        t[11][11] = T_SHELF_HERB
+        t[11][12] = T_SHELF_HERB
+        t[13][7] = T_TORCH
+        t[13][17] = T_TORCH
+        t[14][9] = T_STONE_MEDIUM
+        t[14][15] = T_STONE_MEDIUM
+        t[15][11] = T_FLOWER_WHITE
+        t[15][12] = T_FLOWER_WHITE
+        t[17][7] = T_HILL_SNOW
+        t[17][17] = T_HILL_SNOW
+        t[19][9] = T_STONE_SMALL
+        t[19][15] = T_STONE_SMALL
+        t[21][7] = T_ICE
+        t[21][17] = T_ICE
+        self.zones["xueshan_sect"] = Map(id="xueshan_sect", name="雪山派", width=w, height=h, tiles=t, zone_type="sect", description="雪山之巅，寒冰剑气")
 
-        # House1B (老婆婆/小童)
-        place_house(21, 25, 5, 11, 25, [8], T_ROOF_RED)
-        tiles[22][6] = T_BENCH_WOOD
-        tiles[22][10] = T_DESK_WOOD
-        tiles[23][8] = T_WALL_WOOD
-        road_h(25, 8, 22, 1)
+        # ========== xiaoyao_sect 逍遥宫 (25x25) ==========
+        w, h = 25, 25
+        t = mk(w, h, T_DARK_GRASS)
+        wborder(t, w, h, T_WALL_STONE)
+        zgate_h(t, 0, 11)
+        zfill(t, 1, h - 1, 11, 14, T_STONE_ROAD, w, h)
+        self._place_building(t, 4, 12, 5, 20, T_TEMPLE, 4, [11, 12], T_ROOF_GOLD)
+        t[6][7] = T_TRAINING
+        t[6][17] = T_TRAINING
+        t[7][9] = T_PILLAR
+        t[7][15] = T_PILLAR
+        t[8][11] = T_CARPET
+        t[8][12] = T_CARPET
+        t[9][7] = T_BANNER
+        t[9][17] = T_BANNER
+        t[10][11] = T_CHEST
+        t[10][12] = T_CHEST
+        t[11][9] = T_DESK_LARGE
+        t[11][15] = T_BENCH_STONE
+        zfill(t, 13, 16, 7, 12, T_POND, w, h)
+        t[14][9] = T_BRIDGE
+        t[15][9] = T_BRIDGE
+        t[17][7] = T_BAMBOO
+        t[17][17] = T_BAMBOO
+        t[19][9] = T_TREE_WILLOW
+        t[19][15] = T_TREE_WILLOW
+        t[21][11] = T_FLOWER_SPECIAL1
+        t[21][13] = T_FLOWER_SPECIAL2
+        self.zones["xiaoyao_sect"] = Map(id="xiaoyao_sect", name="逍遥宫", width=w, height=h, tiles=t, zone_type="sect", description="逍遥仙宫，凌波微步")
 
-        # House2 (客栈后院)
-        self._place_building(tiles, 11, 15, 34, 40, T_INN, 15, [37], T_ROOF_RED)
-        tiles[12][36] = T_BED
-        tiles[12][38] = T_SHELF_WOOD
-        tiles[13][37] = T_CHEST
-        road_h(15, 25, 37, 1)
+        # ========== north_wild 北方荒野 (30x30) ==========
+        w, h = 30, 30
+        t = mk(w, h, T_FOREST)
+        zfill(t, 0, 5, 0, w, T_FOREST, w, h)
+        zfill(t, h - 5, h, 0, w, T_DARK_GRASS, w, h)
+        zfill(t, 0, h, 0, 5, T_FOREST, w, h)
+        zfill(t, 0, h, w - 5, w, T_FOREST, w, h)
+        zfill(t, 8, 22, 8, 22, T_GRASS, w, h)
+        zfill(t, 10, 20, 10, 20, T_DARK_GRASS, w, h)
+        zfill(t, 13, 17, 13, 17, T_ROAD_DIRT, w, h)
+        t[0][14] = T_GATE
+        t[0][15] = T_GATE
+        t[h - 1][14] = T_GATE
+        t[h - 1][15] = T_GATE
+        t[14][w - 1] = T_GATE
+        t[15][w - 1] = T_GATE
+        t[14][0] = T_GATE
+        t[15][0] = T_GATE
+        t[5][10] = T_TREE_PINE
+        t[5][20] = T_TREE_PINE
+        t[8][15] = T_HILL_MEDIUM
+        t[12][8] = T_STONE_LARGE
+        t[12][22] = T_STONE_MEDIUM
+        t[18][10] = T_TREE_WILLOW
+        t[18][20] = T_TREE_DEAD
+        t[22][12] = T_HILL_SMALL
+        t[22][18] = T_STONE_SMALL
+        t[25][8] = T_TREE_PINE
+        t[25][22] = T_TREE_PINE
+        self.zones["north_wild"] = Map(id="north_wild", name="北方荒野", width=w, height=h, tiles=t, zone_type="wild", description="北方莽莽，林海雪原")
 
-        # House2A (妇人/村长)
-        place_house(16, 20, 34, 40, 20, [37], T_ROOF_BLUE)
-        tiles[18][36] = T_DESK_WOOD
-        tiles[18][38] = T_BENCH_WOOD
-        road_h(20, 25, 37, 1)
+        # ========== central_wild 中原野外 (30x30) ==========
+        w, h = 30, 30
+        t = mk(w, h, T_GRASS)
+        zfill(t, 0, 5, 0, w, T_DARK_GRASS, w, h)
+        zfill(t, h - 5, h, 0, w, T_DARK_GRASS, w, h)
+        zfill(t, 5, 25, 5, 25, T_GRASS, w, h)
+        zfill(t, 10, 20, 10, 20, T_DARK_GRASS, w, h)
+        zfill(t, 13, 17, 12, 18, T_ROAD_DIRT, w, h)
+        t[0][14] = T_GATE
+        t[0][15] = T_GATE
+        t[h - 1][14] = T_GATE
+        t[h - 1][15] = T_GATE
+        t[14][0] = T_GATE
+        t[15][0] = T_GATE
+        t[14][w - 1] = T_GATE
+        t[15][w - 1] = T_GATE
+        t[5][8] = T_RUIN
+        t[5][9] = T_RUIN
+        t[8][20] = T_TREE_PINE
+        t[10][5] = T_STONE_MEDIUM
+        t[12][15] = T_HILL_MEDIUM
+        t[15][10] = T_TREE_WILLOW
+        t[15][20] = T_STONE_SMALL
+        t[18][8] = T_RUIN
+        t[18][9] = T_RUIN
+        t[20][18] = T_HILL_SMALL
+        t[22][12] = T_TREE_PINE
+        t[25][10] = T_STONE_LARGE
+        self.zones["central_wild"] = Map(id="central_wild", name="中原野外", width=w, height=h, tiles=t, zone_type="wild", description="中原大地，草原废墟")
 
-        # --- 武馆 ---
-        self._place_building(tiles, 24, 29, 5, 13, T_TEMPLE, 24, [8, 9], T_ROOF_GOLD)
-        tiles[25][7] = T_SCULPTURE_WEAPON
-        tiles[25][11] = T_SCULPTURE_WEAPON
-        tiles[26][9] = T_STAGE
-        tiles[27][7] = T_DESK_WOOD
-        tiles[27][11] = T_BENCH_LONG
-        tiles[28][9] = T_CARPET
-        fill(27, 29, 6, 12, T_CARPET)
-        road_h(24, 8, 22, 1)
+        # ========== south_wild 南方密林 (30x30) ==========
+        w, h = 30, 30
+        t = mk(w, h, T_FOREST)
+        zfill(t, 5, 25, 5, 25, T_FOREST, w, h)
+        zfill(t, 10, 20, 10, 20, T_GRASS, w, h)
+        zfill(t, 13, 17, 13, 17, T_ROAD_DIRT, w, h)
+        zfill(t, 20, 25, 5, 12, T_SWAMP, w, h)
+        t[0][14] = T_GATE
+        t[0][15] = T_GATE
+        t[h - 1][14] = T_GATE
+        t[h - 1][15] = T_GATE
+        t[14][0] = T_GATE
+        t[15][0] = T_GATE
+        t[14][w - 1] = T_GATE
+        t[15][w - 1] = T_GATE
+        t[5][8] = T_CAVE
+        t[8][22] = T_TREE_WILLOW
+        t[10][12] = T_MUSHROOM
+        t[12][18] = T_STONE_MEDIUM
+        t[15][10] = T_TREE_PINE
+        t[15][20] = T_MUSHROOM
+        t[18][8] = T_CAVE
+        t[22][15] = T_SWAMP
+        t[25][10] = T_TREE_DEAD
+        t[25][20] = T_HILL_MEDIUM
+        self.zones["south_wild"] = Map(id="south_wild", name="南方密林", width=w, height=h, tiles=t, zone_type="wild", description="南方瘴气，密林沼泽")
 
-        # --- 花园 ---
-        fill(23, 26, 5, 12, T_GARDEN)
-        tiles[24][6] = T_FLOWER_RED
-        tiles[24][8] = T_FLOWER_PINK
-        tiles[24][10] = T_FLOWER_WHITE
-        tiles[25][7] = T_FLOWER_SPECIAL1
-        tiles[25][9] = T_FLOWER_SPECIAL2
-        tiles[23][7] = T_PLANT_GREEN
-        tiles[23][10] = T_PLANT_GREEN
+        # ========== west_wild 西部沙漠 (30x30) ==========
+        w, h = 30, 30
+        t = mk(w, h, T_SAND)
+        zfill(t, 5, 25, 5, 25, T_SAND, w, h)
+        zfill(t, 10, 20, 10, 20, T_SAND, w, h)
+        zfill(t, 13, 17, 12, 18, T_ROAD_DIRT, w, h)
+        zfill(t, 3, 8, 20, 27, T_LAKE, w, h)
+        t[0][14] = T_GATE
+        t[0][15] = T_GATE
+        t[h - 1][14] = T_GATE
+        t[h - 1][15] = T_GATE
+        t[14][0] = T_GATE
+        t[15][0] = T_GATE
+        t[14][w - 1] = T_GATE
+        t[15][w - 1] = T_GATE
+        t[5][8] = T_HILL_LARGE
+        t[8][22] = T_STONE_MEDIUM
+        t[10][12] = T_HILL_MEDIUM
+        t[12][18] = T_STONE_SMALL
+        t[15][8] = T_STONE_SMALL
+        t[15][22] = T_HILL_SMALL
+        t[18][10] = T_STONE_LARGE
+        t[20][20] = T_HILL_MEDIUM
+        t[22][5] = T_STONE_MEDIUM
+        t[25][15] = T_HILL_LARGE
+        self.zones["west_wild"] = Map(id="west_wild", name="西部沙漠", width=w, height=h, tiles=t, zone_type="wild", description="西部大漠，黄沙漫天")
 
-        # --- 码头 ---
-        fill(28, 35, 3, 6, T_DOCK)
-        tiles[31][3] = T_BRIDGE
-        tiles[31][4] = T_BRIDGE
-        tiles[32][3] = T_BRIDGE
-        tiles[32][4] = T_BRIDGE
+        # ========== 设置 transitions ==========
+        z = self.zones
 
-        # --- 南部民居 ---
-        place_house(35, 39, 6, 12, 35, [9], T_ROOF_RED)
-        place_house(35, 39, 14, 20, 35, [17], T_ROOF_BLUE)
-        place_house(35, 39, 22, 28, 35, [25], T_ROOF_RED)
-        road_h(34, 6, 29, 2)
-        road_v(9, 34, 39, 2)
-        road_v(17, 34, 39, 2)
-        road_v(25, 34, 39, 2)
+        def zpos(zone_id, row, col):
+            zm = z[zone_id]
+            return Position(zone_col_to_x(col), zone_row_to_y(row, zm.height))
 
-        # --- 南部农田 ---
-        fill(42, 50, 6, 16, T_RICE_PADDY)
-        fill(42, 50, 16, 26, T_DARK_GRASS)
-        tiles[46][21] = T_POND
-        road_v(23, 39, 50, 2)
+        # luoyang: south→qinghe, west→central_wild
+        z["luoyang"].exits["south"] = zpos("luoyang", 39, 20)
+        z["luoyang"].transitions["south"] = ("qinghe", zpos("qinghe", 1, 10))
+        z["luoyang"].exits["west"] = zpos("luoyang", 20, 0)
+        z["luoyang"].transitions["west"] = ("central_wild", zpos("central_wild", 15, 1))
 
-        # --- 铁匠铺 ---
-        self._place_building(tiles, 35, 39, 30, 35, T_SHOP, 35, [32], T_ROOF_BLUE)
-        tiles[37][32] = T_ANVIL
-        tiles[37][33] = T_SHELF_WOOD
-        road_h(35, 25, 32, 1)
+        # chang_an: south→fengxiang, east→central_wild
+        z["chang_an"].exits["south"] = zpos("chang_an", 39, 20)
+        z["chang_an"].transitions["south"] = ("fengxiang", zpos("fengxiang", 1, 10))
+        z["chang_an"].exits["east"] = zpos("chang_an", 20, 39)
+        z["chang_an"].transitions["east"] = ("central_wild", zpos("central_wild", 15, 28))
 
-        # --- 平一指医馆 ---
-        self._place_building(tiles, 35, 39, 37, 43, T_SHOP, 35, [40], T_ROOF_BLUE)
-        tiles[37][39] = T_COUNTER_HERB
-        tiles[37][41] = T_SHELF_HERB
-        road_h(35, 40, 44, 1)
+        # lin_an: north→yuhang, west→south_wild
+        z["lin_an"].exits["north"] = zpos("lin_an", 0, 17)
+        z["lin_an"].transitions["north"] = ("yuhang", zpos("yuhang", 18, 10))
+        z["lin_an"].exits["west"] = zpos("lin_an", 17, 0)
+        z["lin_an"].transitions["west"] = ("south_wild", zpos("south_wild", 15, 28))
 
-        # ===== 连接道路：平安镇 → 各门派 =====
-        # 东西向主路
-        road_h(30, 48, 55, 3)
+        # jiangling: north→central_wild, south→south_wild
+        z["jiangling"].exits["north"] = zpos("jiangling", 0, 17)
+        z["jiangling"].transitions["north"] = ("central_wild", zpos("central_wild", 28, 15))
+        z["jiangling"].exits["south"] = zpos("jiangling", 34, 17)
+        z["jiangling"].transitions["south"] = ("south_wild", zpos("south_wild", 1, 15))
 
-        # 通往八卦门/花间派
-        road_v(53, 8, 18, 3)
-        road_h(10, 53, 60, 3)
-        road_v(53, 18, 28, 3)
-        road_h(20, 53, 60, 3)
+        # chengdu: east→shuangliu, north→west_wild
+        z["chengdu"].exits["east"] = zpos("chengdu", 17, 34)
+        z["chengdu"].transitions["east"] = ("shuangliu", zpos("shuangliu", 10, 1))
+        z["chengdu"].exits["north"] = zpos("chengdu", 0, 17)
+        z["chengdu"].transitions["north"] = ("west_wild", zpos("west_wild", 28, 15))
 
-        # 通往红莲教
-        road_v(53, 30, 40, 3)
-        road_h(36, 53, 60, 3)
+        # qinghe: north→luoyang, south→north_wild
+        z["qinghe"].exits["north"] = zpos("qinghe", 0, 10)
+        z["qinghe"].transitions["north"] = ("luoyang", zpos("luoyang", 38, 20))
+        z["qinghe"].exits["south"] = zpos("qinghe", 19, 10)
+        z["qinghe"].transitions["south"] = ("north_wild", zpos("north_wild", 1, 15))
 
-        # 通往那迦/太极
-        road_h(30, 55, 72, 3)
-        road_v(70, 8, 18, 3)
-        road_h(10, 70, 76, 3)
-        road_v(70, 18, 30, 3)
-        road_h(20, 70, 76, 3)
+        # fengxiang: north→chang_an, south→central_wild
+        z["fengxiang"].exits["north"] = zpos("fengxiang", 0, 10)
+        z["fengxiang"].transitions["north"] = ("chang_an", zpos("chang_an", 38, 20))
+        z["fengxiang"].exits["south"] = zpos("fengxiang", 19, 10)
+        z["fengxiang"].transitions["south"] = ("central_wild", zpos("central_wild", 1, 15))
 
-        # 通往雪山
-        road_v(70, 35, 50, 3)
-        road_h(40, 70, 76, 3)
+        # shuangliu: west→chengdu, north→west_wild
+        z["shuangliu"].exits["west"] = zpos("shuangliu", 10, 0)
+        z["shuangliu"].transitions["west"] = ("chengdu", zpos("chengdu", 17, 33))
+        z["shuangliu"].exits["north"] = zpos("shuangliu", 0, 10)
+        z["shuangliu"].transitions["north"] = ("west_wild", zpos("west_wild", 28, 15))
 
-        # ===== 小径 (Path) 装饰 =====
-        # Path2 区域 (col 48-54, row 18-28) - 装饰在道路两侧
-        tiles[18][49] = T_TREE_WILLOW
-        tiles[19][55] = T_TREE_WILLOW
-        tiles[21][49] = T_PLANT_GREEN
-        tiles[22][55] = T_PLANT_GREEN
-        tiles[24][49] = T_TREE_PINE
-        tiles[25][55] = T_TREE_PINE
-        tiles[27][49] = T_BRICK
-        for r in range(19, 28):
-            tiles[r][48] = T_PLANT_GREEN
+        # yuhang: south→lin_an, west→south_wild
+        z["yuhang"].exits["south"] = zpos("yuhang", 19, 10)
+        z["yuhang"].transitions["south"] = ("lin_an", zpos("lin_an", 1, 17))
+        z["yuhang"].exits["west"] = zpos("yuhang", 10, 0)
+        z["yuhang"].transitions["west"] = ("south_wild", zpos("south_wild", 15, 28))
 
-        # Path1 区域 (col 48-54, row 30-40) - 装饰在道路两侧
-        tiles[30][49] = T_TREE_PINE
-        tiles[31][55] = T_TREE_PINE
-        tiles[33][49] = T_STONE_MEDIUM
-        tiles[34][55] = T_STONE_MEDIUM
-        tiles[36][49] = T_TREE_WILLOW
-        tiles[37][55] = T_TREE_WILLOW
-        tiles[39][49] = T_PLANT_GREEN
-        tiles[39][55] = T_STONE_SMALL
+        # bagua_sect: gate→north_wild
+        z["bagua_sect"].exits["gate"] = zpos("bagua_sect", 0, 12)
+        z["bagua_sect"].transitions["gate"] = ("north_wild", zpos("north_wild", 28, 15))
 
-        # Path3 区域 (col 54-60, row 30-40) - 装饰在道路两侧
-        tiles[31][56] = T_STONE_MEDIUM
-        tiles[32][56] = T_STONE_MEDIUM
-        tiles[34][56] = T_PLANT_GREEN
-        tiles[35][56] = T_PLANT_GREEN
-        tiles[37][56] = T_PLANT_GREEN
-        tiles[38][56] = T_PLANT_GREEN
+        # flower_sect: gate→south_wild
+        z["flower_sect"].exits["gate"] = zpos("flower_sect", 0, 12)
+        z["flower_sect"].transitions["gate"] = ("south_wild", zpos("south_wild", 28, 15))
 
-        # Path5 区域 (col 48-54, row 40-50) - 装饰在道路两侧
-        tiles[41][49] = T_TREE_WILLOW
-        tiles[42][55] = T_HILL_MEDIUM
-        tiles[44][49] = T_TREE_PINE
-        tiles[45][55] = T_PLANT_GREEN
-        tiles[47][49] = T_PLANT_GREEN
-        tiles[48][55] = T_STONE_SMALL
+        # honglian_sect: gate→south_wild, back→central_wild
+        z["honglian_sect"].exits["gate"] = zpos("honglian_sect", 0, 12)
+        z["honglian_sect"].transitions["gate"] = ("south_wild", zpos("south_wild", 1, 15))
+        z["honglian_sect"].exits["back"] = zpos("honglian_sect", 14, 12)
+        z["honglian_sect"].transitions["back"] = ("central_wild", zpos("central_wild", 28, 15))
 
-        # Path6 区域 (col 54-60, row 8-18) → 八卦门 - 装饰在道路两侧
-        for r in range(9, 17):
-            tiles[r][54] = T_PLANT_GREEN
-            tiles[r][59] = T_PLANT_GREEN
-        tiles[9][56] = T_TREE_PINE
-        tiles[13][56] = T_TREE_PINE
-        tiles[11][56] = T_PLANT_DARK
+        # naja_sect: gate→north_wild
+        z["naja_sect"].exits["gate"] = zpos("naja_sect", 0, 12)
+        z["naja_sect"].transitions["gate"] = ("north_wild", zpos("north_wild", 15, 28))
 
-        # Path7 区域 (col 54-60, row 40-50) → 花间派 - 装饰在道路两侧
-        tiles[41][55] = T_PLANT_GREEN
-        tiles[42][55] = T_PLANT_GREEN
-        tiles[43][55] = T_PLANT_GREEN
-        tiles[44][55] = T_PLANT_GREEN
-        tiles[45][55] = T_PLANT_GREEN
-        tiles[46][55] = T_PLANT_GREEN
-        tiles[47][55] = T_PLANT_GREEN
-        tiles[48][55] = T_PLANT_GREEN
+        # taiji_sect: gate→west_wild
+        z["taiji_sect"].exits["gate"] = zpos("taiji_sect", 0, 12)
+        z["taiji_sect"].transitions["gate"] = ("west_wild", zpos("west_wild", 1, 15))
 
-        # Path4 区域 (col 66-72, row 8-18) → 那迦派 - 湖泊移到道路外
-        for r in range(9, 17):
-            tiles[r][66] = T_PLANT_GREEN
-        tiles[10][68] = T_PLANT_GREEN
-        tiles[12][69] = T_PLANT_GREEN
-        tiles[14][67] = T_PLANT_GREEN
-        fill(10, 14, 87, 92, T_LAKE)
+        # xueshan_sect: gate→west_wild
+        z["xueshan_sect"].exits["gate"] = zpos("xueshan_sect", 0, 12)
+        z["xueshan_sect"].transitions["gate"] = ("west_wild", zpos("west_wild", 15, 1))
 
-        # Path9 区域 (col 70-76, row 40-50) → 雪山派
-        tiles[41][72] = T_STONE_MEDIUM
-        tiles[42][74] = T_STONE_MEDIUM
-        tiles[43][71] = T_HILL_SNOW
-        tiles[44][73] = T_PLANT_SNOW
-        tiles[45][72] = T_PLANT_SNOW
-        tiles[46][74] = T_PLANT_SNOW
-        tiles[47][71] = T_PLANT_SNOW
-        tiles[48][73] = T_HILL_SNOW
+        # xiaoyao_sect: gate→north_wild
+        z["xiaoyao_sect"].exits["gate"] = zpos("xiaoyao_sect", 0, 12)
+        z["xiaoyao_sect"].transitions["gate"] = ("north_wild", zpos("north_wild", 15, 1))
 
-        # ===== 八卦门 (col 60-70, row 3-16) =====
-        fill(3, 17, 56, 72, T_DARK_GRASS)
-        self._place_building(tiles, 3, 12, 61, 69, T_TEMPLE, 3, [64, 65], T_ROOF_RED)
-        tiles[5][62] = T_TRAINING
-        tiles[5][68] = T_TRAINING
-        tiles[6][64] = T_PILLAR
-        tiles[6][65] = T_PILLAR
-        tiles[7][62] = T_SHELF_BOOK
-        tiles[7][68] = T_SHELF_BOOK
-        tiles[8][64] = T_CHEST
-        tiles[9][62] = T_PLANT_DARK
-        tiles[9][68] = T_PLANT_DARK
-        tiles[10][63] = T_BANNER
-        tiles[10][67] = T_BANNER
-        tiles[11][64] = T_CARPET
-        tiles[11][65] = T_CARPET
-        for r in range(4, 11):
-            tiles[r][61] = T_PLANT_GREEN
-            tiles[r][69] = T_PLANT_GREEN
-        tiles[13][62] = T_PLANT_DARK
-        tiles[13][68] = T_PLANT_DARK
-        tiles[14][64] = T_SCULPTURE_LION
-        tiles[14][65] = T_SCULPTURE_LION
-        tiles[15][63] = T_FLOWER_RED
-        tiles[15][67] = T_FLOWER_RED
-        road_v(64, 12, 18, 2)
+        # north_wild: south→qinghe, bagua→bagua_sect, naja→naja_sect, xiaoyao→xiaoyao_sect, central→central_wild
+        z["north_wild"].exits["south"] = zpos("north_wild", 29, 15)
+        z["north_wild"].transitions["south"] = ("qinghe", zpos("qinghe", 18, 10))
+        z["north_wild"].exits["bagua"] = zpos("north_wild", 28, 15)
+        z["north_wild"].transitions["bagua"] = ("bagua_sect", zpos("bagua_sect", 1, 12))
+        z["north_wild"].exits["naja"] = zpos("north_wild", 15, 29)
+        z["north_wild"].transitions["naja"] = ("naja_sect", zpos("naja_sect", 1, 12))
+        z["north_wild"].exits["xiaoyao"] = zpos("north_wild", 15, 0)
+        z["north_wild"].transitions["xiaoyao"] = ("xiaoyao_sect", zpos("xiaoyao_sect", 1, 12))
+        z["north_wild"].exits["central"] = zpos("north_wild", 0, 15)
+        z["north_wild"].transitions["central"] = ("central_wild", zpos("central_wild", 1, 15))
 
-        # ===== 花间派 (col 60-70, row 18-28) =====
-        fill(18, 28, 56, 72, T_GARDEN)
-        fill(21, 25, 61, 65, T_LAKE)
-        self._place_building(tiles, 18, 25, 66, 70, T_TEMPLE, 18, [68], T_ROOF_BLUE)
-        tiles[20][68] = T_FLOWER_SPECIAL1
-        tiles[21][67] = T_FLOWER_SPECIAL2
-        tiles[21][69] = T_FLOWER_SPECIAL1
-        tiles[22][68] = T_DESK_WOOD
-        tiles[23][67] = T_FLOWER_SPECIAL2
-        tiles[23][69] = T_FLOWER_SPECIAL2
-        tiles[24][68] = T_CHEST
-        tiles[26][61] = T_FLOWER_SPECIAL1
-        tiles[26][63] = T_FLOWER_SPECIAL2
-        tiles[26][65] = T_FLOWER_SPECIAL1
-        tiles[27][62] = T_FLOWER_RED
-        tiles[27][64] = T_FLOWER_PINK
-        tiles[27][66] = T_FLOWER_WHITE
-        for r in range(19, 27):
-            tiles[r][56] = T_FLOWER_SPECIAL2
-            tiles[r][71] = T_FLOWER_SPECIAL1
-        road_v(68, 25, 28, 2)
+        # central_wild: north→fengxiang, east→luoyang, west→chang_an, south→jiangling, honglian→honglian_sect, north_wild→north_wild
+        z["central_wild"].exits["north"] = zpos("central_wild", 0, 15)
+        z["central_wild"].transitions["north"] = ("fengxiang", zpos("fengxiang", 18, 10))
+        z["central_wild"].exits["east"] = zpos("central_wild", 15, 29)
+        z["central_wild"].transitions["east"] = ("luoyang", zpos("luoyang", 20, 1))
+        z["central_wild"].exits["west"] = zpos("central_wild", 15, 0)
+        z["central_wild"].transitions["west"] = ("chang_an", zpos("chang_an", 20, 38))
+        z["central_wild"].exits["south"] = zpos("central_wild", 29, 15)
+        z["central_wild"].transitions["south"] = ("jiangling", zpos("jiangling", 1, 17))
+        z["central_wild"].exits["honglian"] = zpos("central_wild", 29, 15)
+        z["central_wild"].transitions["honglian"] = ("honglian_sect", zpos("honglian_sect", 1, 12))
+        z["central_wild"].exits["north_wild"] = zpos("central_wild", 0, 15)
+        z["central_wild"].transitions["north_wild"] = ("north_wild", zpos("north_wild", 28, 15))
 
-        # ===== 红莲教 (col 60-70, row 33-48) =====
-        fill(33, 48, 56, 72, T_DARK_GRASS)
-        tiles[33][61] = T_HILL_LARGE
-        tiles[34][63] = T_HILL_MEDIUM
-        tiles[34][68] = T_TREE_WILLOW
-        tiles[35][61] = T_TREE_WILLOW
-        tiles[35][65] = T_TREE_WILLOW
-        tiles[35][69] = T_STONE_MEDIUM
-        tiles[36][62] = T_STONE_SMALL
-        tiles[36][66] = T_STONE_MEDIUM
-        self._place_building(tiles, 37, 44, 61, 69, T_TEMPLE, 37, [64, 65], T_ROOF_RED)
-        tiles[38][62] = T_TRAINING
-        tiles[38][68] = T_TRAINING
-        tiles[39][64] = T_ALTAR
-        tiles[40][63] = T_BANNER
-        tiles[40][66] = T_BANNER
-        for r in range(38, 43):
-            tiles[r][64] = T_CARPET
-            tiles[r][65] = T_CARPET
-        tiles[42][64] = T_CHEST
-        tiles[42][65] = T_CHEST
-        tiles[45][62] = T_STONE_SMALL
-        tiles[45][68] = T_STONE_SMALL
-        tiles[46][61] = T_HILL_MEDIUM
-        tiles[46][69] = T_TREE_WILLOW
-        tiles[47][64] = T_FLOWER_RED
-        tiles[47][65] = T_FLOWER_RED
-        road_v(64, 44, 48, 2)
+        # south_wild: north→jiangling, east→lin_an, flower→flower_sect, honglian→honglian_sect, yuhang→yuhang
+        z["south_wild"].exits["north"] = zpos("south_wild", 0, 15)
+        z["south_wild"].transitions["north"] = ("jiangling", zpos("jiangling", 33, 17))
+        z["south_wild"].exits["east"] = zpos("south_wild", 15, 29)
+        z["south_wild"].transitions["east"] = ("lin_an", zpos("lin_an", 17, 1))
+        z["south_wild"].exits["flower"] = zpos("south_wild", 0, 15)
+        z["south_wild"].transitions["flower"] = ("flower_sect", zpos("flower_sect", 1, 12))
+        z["south_wild"].exits["honglian"] = zpos("south_wild", 0, 15)
+        z["south_wild"].transitions["honglian"] = ("honglian_sect", zpos("honglian_sect", 1, 12))
+        z["south_wild"].exits["yuhang"] = zpos("south_wild", 15, 0)
+        z["south_wild"].transitions["yuhang"] = ("yuhang", zpos("yuhang", 10, 19))
 
-        # ===== 那迦派 (col 72-88, row 3-16) =====
-        fill(3, 17, 72, 88, T_SAND)
-        self._place_building(tiles, 3, 12, 74, 86, T_TEMPLE, 3, [79, 80], T_ROOF_GOLD)
-        tiles[5][76] = T_TRAINING
-        tiles[5][84] = T_TRAINING
-        tiles[6][78] = T_SCULPTURE_LION
-        tiles[6][82] = T_SCULPTURE_LION
-        tiles[7][79] = T_CHEST
-        tiles[7][80] = T_CHEST
-        tiles[8][76] = T_TREE_DEAD
-        tiles[8][84] = T_TREE_DEAD
-        tiles[9][78] = T_PILLAR
-        tiles[9][82] = T_PILLAR
-        for r in range(4, 11):
-            tiles[r][79] = T_CARPET
-            tiles[r][80] = T_CARPET
-        tiles[10][77] = T_TORCH
-        tiles[10][83] = T_TORCH
-        tiles[11][76] = T_TREE_PINE
-        tiles[11][84] = T_TREE_PINE
-        tiles[12][78] = T_SHELF_BOOK
-        tiles[12][82] = T_SHELF_BOOK
-        tiles[13][79] = T_SCULPTURE_LION
-        tiles[13][80] = T_SCULPTURE_LION
-        tiles[14][76] = T_STONE_MEDIUM
-        tiles[14][84] = T_STONE_MEDIUM
-        tiles[15][78] = T_TREE_DEAD
-        tiles[15][82] = T_TREE_DEAD
-        road_v(79, 12, 18, 2)
-
-        # ===== 太极门 (col 72-88, row 18-30) =====
-        fill(18, 30, 72, 88, T_DARK_GRASS)
-        self._place_building(tiles, 18, 27, 74, 86, T_TEMPLE, 18, [79, 80], T_ROOF_GOLD)
-        tiles[20][76] = T_ALTAR
-        tiles[20][84] = T_SHELF_BOOK
-        tiles[21][78] = T_BARS
-        tiles[21][82] = T_BARS
-        tiles[22][79] = T_CHEST
-        tiles[22][80] = T_CHEST
-        tiles[23][76] = T_TORCH
-        tiles[23][84] = T_TORCH
-        for r in range(19, 26):
-            tiles[r][79] = T_CARPET
-            tiles[r][80] = T_CARPET
-        tiles[24][78] = T_DESK_LARGE
-        tiles[24][82] = T_BENCH_STONE
-        tiles[25][76] = T_PLANT_COLD
-        tiles[25][84] = T_PLANT_COLD
-        tiles[26][78] = T_BOTTLE
-        tiles[26][82] = T_BOOK_OBJ
-        tiles[28][76] = T_BARS
-        tiles[28][84] = T_BARS
-        tiles[29][79] = T_STONE_MEDIUM
-        tiles[29][80] = T_STONE_MEDIUM
-        road_v(79, 27, 30, 2)
-
-        # ===== 雪山派 (col 72-88, row 35-55) =====
-        fill(35, 55, 72, 90, T_SNOW)
-        self._place_building(tiles, 36, 46, 74, 86, T_TEMPLE, 36, [79, 80], T_ROOF_RED)
-        tiles[38][76] = T_TRAINING
-        tiles[38][84] = T_TRAINING
-        tiles[39][78] = T_BARS
-        tiles[39][82] = T_BARS
-        tiles[40][79] = T_CHEST
-        tiles[40][80] = T_CHEST
-        tiles[41][76] = T_PLANT_SNOW
-        tiles[41][84] = T_PLANT_SNOW
-        tiles[42][78] = T_WALL_STONE
-        tiles[42][82] = T_WALL_STONE
-        tiles[43][79] = T_SHELF_HERB
-        tiles[43][80] = T_SHELF_HERB
-        tiles[44][76] = T_TORCH
-        tiles[44][84] = T_TORCH
-        tiles[45][78] = T_STONE_MEDIUM
-        tiles[45][82] = T_STONE_MEDIUM
-        tiles[46][79] = T_FLOWER_WHITE
-        tiles[46][80] = T_FLOWER_WHITE
-        tiles[47][76] = T_HILL_SNOW
-        tiles[47][84] = T_HILL_SNOW
-        tiles[48][78] = T_STONE_SMALL
-        tiles[48][82] = T_STONE_SMALL
-        tiles[49][75] = T_STONE_LARGE
-        tiles[49][85] = T_STONE_LARGE
-        tiles[50][79] = T_PLANT_SNOW
-        tiles[50][80] = T_PLANT_SNOW
-        tiles[51][77] = T_HILL_SNOW
-        tiles[51][83] = T_HILL_SNOW
-        tiles[52][79] = T_STONE_MEDIUM
-        tiles[52][80] = T_STONE_MEDIUM
-        tiles[53][76] = T_ICE
-        tiles[53][84] = T_ICE
-        road_v(79, 46, 55, 2)
-
-        # ===== 野外区域 =====
-        # 北部森林
-        fill(0, 5, 8, 20, T_FOREST)
-        fill(0, 5, 42, 52, T_FOREST)
-        fill(0, 3, 67, 72, T_FOREST)
-        fill(0, 3, 88, 100, T_FOREST)
-
-        # 东北野外
-        fill(0, 3, 88, 100, T_FOREST)
-        fill(3, 8, 90, 100, T_FOREST)
-
-        # 中部野外
-        fill(42, 55, 40, 55, T_DARK_GRASS)
-        fill(45, 55, 45, 55, T_FOREST)
-
-        # 南部野外
-        fill(55, 70, 40, 60, T_FOREST)
-        fill(60, 68, 45, 55, T_CAVE)
-        fill(55, 70, 60, 72, T_HILL_LARGE)
-        fill(62, 70, 65, 72, T_SAND)
-
-        # 东南野外
-        fill(68, 78, 40, 60, T_FOREST)
-        fill(70, 76, 44, 56, T_RUIN)
-
-        # 西南野外
-        fill(56, 65, 0, 5, T_FOREST)
-        fill(50, 60, 5, 15, T_DARK_GRASS)
-        fill(52, 58, 8, 14, T_MUSHROOM)
-
-        # 东部野外
-        fill(56, 65, 90, 100, T_FOREST)
-        fill(42, 50, 90, 100, T_SAND)
-
-        # 沼泽
-        fill(60, 70, 5, 15, T_SWAMP)
-
-        # 野外装饰
-        tiles[45][48] = T_TREE_PINE
-        tiles[46][50] = T_TREE_WILLOW
-        tiles[47][52] = T_TREE_PINE
-        tiles[48][46] = T_HILL_MEDIUM
-        tiles[49][48] = T_STONE_LARGE
-        tiles[50][50] = T_TREE_DEAD
-        tiles[51][46] = T_TREE_WILLOW
-        tiles[52][48] = T_HILL_SMALL
-        tiles[53][50] = T_STONE_MEDIUM
-        tiles[55][42] = T_TREE_PINE
-        tiles[56][44] = T_TREE_PINE
-        tiles[57][46] = T_STONE_SMALL
-        tiles[58][42] = T_TREE_DEAD
-        tiles[59][44] = T_HILL_MEDIUM
-        tiles[60][46] = T_TREE_WILLOW
-        tiles[62][48] = T_STONE_LARGE
-        tiles[63][50] = T_TREE_PINE
-        tiles[65][42] = T_HILL_LARGE
-        tiles[66][44] = T_TREE_DEAD
-        tiles[68][46] = T_STONE_MEDIUM
-
-        # 河边装饰
-        tiles[5][5] = T_TREE_WILLOW
-        tiles[10][5] = T_TREE_WILLOW
-        tiles[15][5] = T_PLANT_GREEN
-        tiles[20][5] = T_TREE_PINE
-        tiles[40][5] = T_TREE_PINE
-        tiles[45][5] = T_PLANT_GREEN
-        tiles[50][4] = T_FISH
-        tiles[55][4] = T_FISH
-
-        # ===== 最终道路重铺 (确保所有路径畅通) =====
-        # 主路
-        road_h(30, 5, 48, 3)
-        # 市场街
-        road_v(22, 11, 30, 4)
-        # 衙门街
-        road_v(40, 22, 30, 3)
-        # 连接路: 建筑 → 市场街
-        road_h(16, 16, 22, 1)
-        road_h(16, 25, 30, 1)
-        road_h(21, 16, 22, 1)
-        road_h(21, 25, 30, 1)
-        road_h(27, 15, 22, 1)
-        road_h(27, 25, 30, 1)
-        # 连接路: 民居 → 市场街
-        road_h(15, 8, 22, 1)
-        road_h(20, 8, 22, 1)
-        road_h(25, 8, 22, 1)
-        road_h(15, 25, 37, 1)
-        road_h(20, 25, 37, 1)
-        # 武馆连接
-        road_h(24, 8, 22, 1)
-        # 衙门连接
-        road_h(28, 36, 40, 1)
-        road_h(28, 42, 44, 1)
-        # 南部道路
-        road_h(34, 6, 29, 2)
-        road_v(9, 34, 39, 2)
-        road_v(17, 34, 39, 2)
-        road_v(25, 34, 39, 2)
-        # 铁匠铺/医馆连接
-        road_h(35, 25, 32, 1)
-        road_h(35, 40, 44, 1)
-        # 东西向主路延伸
-        road_h(30, 48, 55, 3)
-        # 八卦门连接 (穿过建筑到入口)
-        road_v(53, 8, 18, 3)
-        road_h(10, 53, 65, 3)
-        road_v(53, 18, 28, 3)
-        road_h(20, 53, 69, 3)
-        # 红莲教连接
-        road_v(53, 30, 40, 3)
-        road_h(36, 53, 65, 3)
-        # 那迦/太极连接
-        road_h(30, 55, 72, 3)
-        road_v(70, 8, 18, 3)
-        road_h(10, 70, 80, 3)
-        road_v(70, 18, 30, 3)
-        road_h(20, 70, 80, 3)
-        # 雪山连接
-        road_v(70, 35, 50, 3)
-        road_h(40, 70, 80, 3)
-        # 门派内部道路
-        road_v(64, 12, 18, 2)
-        road_v(68, 25, 28, 2)
-        road_v(64, 44, 48, 2)
-        road_v(79, 12, 18, 2)
-        road_v(79, 27, 30, 2)
-        road_v(79, 46, 55, 2)
-
-        self.current_map = Map(
-            id="map_wuxia_world",
-            name="武侠世界",
-            width=MAP_W,
-            height=MAP_H,
-            tiles=tiles,
-            description="一个宏大的武侠世界，八大门派鼎立，江湖风云变幻"
-        )
+        # west_wild: south→chengdu, taiji→taiji_sect, xueshan→xueshan_sect, east→shuangliu
+        z["west_wild"].exits["south"] = zpos("west_wild", 29, 15)
+        z["west_wild"].transitions["south"] = ("chengdu", zpos("chengdu", 1, 17))
+        z["west_wild"].exits["taiji"] = zpos("west_wild", 0, 15)
+        z["west_wild"].transitions["taiji"] = ("taiji_sect", zpos("taiji_sect", 1, 12))
+        z["west_wild"].exits["xueshan"] = zpos("west_wild", 15, 0)
+        z["west_wild"].transitions["xueshan"] = ("xueshan_sect", zpos("xueshan_sect", 1, 12))
+        z["west_wild"].exits["east"] = zpos("west_wild", 15, 29)
+        z["west_wild"].transitions["east"] = ("shuangliu", zpos("shuangliu", 1, 10))
 
     def update(self, delta_time: float):
         if self.is_paused:
@@ -1646,10 +1927,13 @@ class GameWorld:
             dist = random.uniform(0, radius)
         nx = ox + math.cos(angle) * dist
         ny = oy + math.sin(angle) * dist
+        cmap = self.current_map
+        if cmap is None:
+            return
         col = int(nx // TS)
-        row = MAP_H - 1 - int(ny // TS)
-        if 0 <= row < MAP_H and 0 <= col < MAP_W:
-            if self.current_map.tiles[row][col] in WALKABLE:
+        row = cmap.height - 1 - int(ny // TS)
+        if 0 <= row < cmap.height and 0 <= col < cmap.width:
+            if cmap.tiles[row][col] in WALKABLE:
                 npc._patrol_target = Position(nx, ny)
 
     def use_item(self, player: Player, item_id: str) -> str:
@@ -1752,11 +2036,12 @@ class GameWorld:
     def can_walk(self, wx, wy):
         if self.current_map is None:
             return False
+        cmap = self.current_map
         col = int(wx // TS)
-        row = MAP_H - 1 - int(wy // TS)
-        if col < 0 or col >= MAP_W or row < 0 or row >= MAP_H:
+        row = cmap.height - 1 - int(wy // TS)
+        if col < 0 or col >= cmap.width or row < 0 or row >= cmap.height:
             return False
-        tid = self.current_map.tiles[row][col]
+        tid = cmap.tiles[row][col]
         return tid in WALKABLE
 
     def buy_item(self, player: Player, item_id: str, seller_npc: NPC = None) -> Dict:

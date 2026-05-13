@@ -18,7 +18,7 @@ SH = GAME_CONFIG["screen_height"]
 class GameWindow(arcade.Window):
     def __init__(self):
         super().__init__(SW, SH, GAME_CONFIG["screen_title"], resizable=False)
-        arcade.set_background_color((18, 22, 38))
+        arcade.set_background_color((35, 32, 28))
 
         self.game_world = GameWorld()
         self.current_npc: Optional[NPC] = None
@@ -55,6 +55,7 @@ class GameWindow(arcade.Window):
         self.attribute_points = 20
         self.selected_attr = 0
         self.focus_target = "name"
+        self.char_creation_msg = ""
         self.blink_timer = 0.0
         self.float_anim = 0.0
         self.faction_scroll = 0
@@ -77,6 +78,8 @@ class GameWindow(arcade.Window):
         self._combat_enemy = None
         self._combat_log = []
         self._shop_items = []
+        self._show_tutorial = True
+        self._zone_name_timer = 0
 
         self.font = "Arial"
 
@@ -105,6 +108,9 @@ class GameWindow(arcade.Window):
             renderer.set_hurt_flash(self._hurt_flash_val)
 
         self.vfx.update(delta_time)
+
+        if self._zone_name_timer > 0:
+            self._zone_name_timer -= delta_time
 
         from .render.post_process import get_advanced_lights, get_env_particles, get_post_processor
         get_advanced_lights().update(delta_time)
@@ -141,6 +147,7 @@ class GameWindow(arcade.Window):
                 if self.game_world.can_walk(new_x, new_y):
                     p.position.x = new_x
                     p.position.y = new_y
+                    self._check_zone_transition()
 
             self.nearby_timer += delta_time
             if self.nearby_timer > 0.3:
@@ -164,6 +171,30 @@ class GameWindow(arcade.Window):
         else:
             self.interaction_prompt = ""
             self.interaction_npc = None
+
+    def _check_zone_transition(self):
+        cmap = self.game_world.current_map
+        if not cmap or not cmap.transitions:
+            return
+        p = self.game_world.player
+        p_col = int(p.position.x // TS)
+        p_row = cmap.height - 1 - int(p.position.y // TS)
+        for exit_name, exit_pos in cmap.exits.items():
+            e_col = int(exit_pos.x // TS)
+            e_row = cmap.height - 1 - int(exit_pos.y // TS)
+            if abs(p_col - e_col) <= 1 and abs(p_row - e_row) <= 1:
+                trans = cmap.transitions.get(exit_name)
+                if trans:
+                    target_zone_id, target_pos = trans
+                    self.game_world.change_zone(target_zone_id, target_pos)
+                    self.camera_x = p.position.x
+                    self.camera_y = p.position.y
+                    from .render.tile_renderer import invalidate_chunk_cache
+                    invalidate_chunk_cache()
+                    zone_name = self.game_world.current_map.name if self.game_world.current_map else ""
+                    self._zone_name_timer = 3.0
+                    self.show_dialog = False
+                    return
 
     def _update_particles(self, dt):
         new_particles = []
@@ -195,19 +226,19 @@ class GameWindow(arcade.Window):
         arcade.draw_rect_outline(arcade.LBWH(l, b, w, h), c, t)
 
     def _draw_menu(self):
-        self._R(0, 0, SW, SH, (12, 16, 28))
+        self._R(0, 0, SW, SH, (30, 28, 22))
 
         for i in range(60):
             x = (i * 137.5 + self.blink_timer * 8) % SW
             y = (i * 97.3 + math.sin(self.blink_timer * 0.5 + i * 0.3) * 20) % SH
-            alpha = int(40 + 30 * (0.5 + 0.5 * math.sin(self.blink_timer * 1.5 + i)))
-            arcade.draw_circle_filled(x, y, 1.5, (200, 180, 120, alpha))
+            alpha = int(30 + 20 * (0.5 + 0.5 * math.sin(self.blink_timer * 1.5 + i)))
+            arcade.draw_circle_filled(x, y, 1.5, (180, 155, 100, alpha))
 
         for i in range(5):
             mx = 100 + i * 250
             my = 200 + math.sin(self.blink_timer * 0.8 + i) * 30
-            alpha = int(15 + 10 * math.sin(self.blink_timer + i))
-            arcade.draw_circle_filled(mx, my, 40, (255, 200, 100, alpha))
+            alpha = int(10 + 8 * math.sin(self.blink_timer + i))
+            arcade.draw_circle_filled(mx, my, 40, (180, 155, 100, alpha))
 
         title_y = 560
         glow = int(20 + 15 * math.sin(self.blink_timer * 2))
@@ -216,7 +247,7 @@ class GameWindow(arcade.Window):
         arcade.draw_text("白金英雄坛说", SW // 2, title_y, COLORS["accent"], 58,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
-        arcade.draw_text("天命所归 · 仗剑江湖", SW // 2, 500, (180, 160, 120), 22,
+        arcade.draw_text("天命所归 · 仗剑江湖", SW // 2, 500, (160, 140, 100), 22,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
         lw = 300
@@ -229,7 +260,7 @@ class GameWindow(arcade.Window):
             y = my - i * 80
             if i == self.menu_selection:
                 bw, bh = 280, 50
-                self._R(SW // 2 - bw // 2, y - bh // 2, bw, bh, (35, 45, 70, 200))
+                self._R(SW // 2 - bw // 2, y - bh // 2, bw, bh, (50, 42, 32, 200))
                 self._RO(SW // 2 - bw // 2, y - bh // 2, bw, bh, COLORS["accent"], 2)
                 bounce = math.sin(self.blink_timer * 4) * 3
                 arcade.draw_triangle_filled(SW // 2 - bw // 2 - 20, y + bounce,
@@ -238,14 +269,14 @@ class GameWindow(arcade.Window):
                 arcade.draw_text(item, SW // 2, y, COLORS["accent"], 28,
                                  font_name=self.font, anchor_x="center", anchor_y="center")
             else:
-                arcade.draw_text(item, SW // 2, y, (120, 120, 140), 24,
+                arcade.draw_text(item, SW // 2, y, (120, 110, 90), 24,
                                  font_name=self.font, anchor_x="center", anchor_y="center")
 
-        arcade.draw_text("v2.0 · 2026 Remaster", SW // 2, 30, (60, 60, 80), 13,
+        arcade.draw_text("v2.0 · 2026 水墨重制", SW // 2, 30, (80, 70, 55), 13,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
     def _draw_char_creation(self):
-        self._R(0, 0, SW, SH, (10, 14, 24))
+        self._R(0, 0, SW, SH, (28, 26, 20))
         self._R(0, SH - 3, SW, 3, COLORS["accent"])
 
         arcade.draw_text("创建角色", SW // 2, SH - 32, COLORS["accent"], 28,
@@ -307,7 +338,7 @@ class GameWindow(arcade.Window):
         self._RO(nbox_x, nbox_y, nbox_w, nbox_h, nbrd, 2 if nfocused else 1)
 
         dname = self.char_name if self.char_name else "点击此处输入姓名"
-        nc_color = COLORS["accent"] if self.char_name else (108, 108, 128)
+        nc_color = COLORS["accent"] if self.char_name else (120, 110, 90)
         arcade.draw_text(dname, pcx, nbox_y + nbox_h // 2, nc_color, 15,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
@@ -398,20 +429,20 @@ class GameWindow(arcade.Window):
             sel_box_h = a_row_h - 22
             sel_box_y = cy - sel_box_h / 2
             if is_selected:
-                self._R(right_px + 18, sel_box_y, right_pw - 36, sel_box_h, (24, 38, 62, 195))
-                self._RO(right_px + 18, sel_box_y, right_pw - 36, sel_box_h, (72, 92, 142), 2)
+                self._R(right_px + 18, sel_box_y, right_pw - 36, sel_box_h, (45, 38, 28, 195))
+                self._RO(right_px + 18, sel_box_y, right_pw - 36, sel_box_h, (160, 140, 100), 2)
 
             txt_color = COLORS["accent"] if is_selected else (192, 192, 192)
             arcade.draw_text(f"【{attr_names[idx]}】", right_px + 34, cy + 7, txt_color, 19,
                              font_name=self.font, anchor_x="left", anchor_y="center")
-            arcade.draw_text(attr_descs[idx], right_px + 34, cy - 14, (108, 108, 128), 12,
+            arcade.draw_text(attr_descs[idx], right_px + 34, cy - 14, (120, 110, 90), 12,
                              font_name=self.font, anchor_x="left", anchor_y="center")
 
             bar_w, bar_h = 130, 16
             bar_x = right_px + right_pw - bar_w - 125
             bar_y = cy
-            self._R(bar_x, bar_y - bar_h / 2, bar_w, bar_h, (15, 15, 25))
-            self._RO(bar_x, bar_y - bar_h / 2, bar_w, bar_h, (42, 42, 56), 1)
+            self._R(bar_x, bar_y - bar_h / 2, bar_w, bar_h, (20, 18, 14))
+            self._RO(bar_x, bar_y - bar_h / 2, bar_w, bar_h, (80, 70, 55), 1)
 
             fill_w = ((aval - 10) / 20) * bar_w
             if is_selected:
@@ -430,8 +461,8 @@ class GameWindow(arcade.Window):
         pts_x = margin
         pts_y = 10
         has_pts = self.attribute_points > 0
-        self._R(pts_x, pts_y, pts_w, pts_h, (24, 50, 24) if has_pts else (50, 20, 20))
-        self._RO(pts_x, pts_y, pts_w, pts_h, (68, 162, 68) if has_pts else (162, 68, 68), 2)
+        self._R(pts_x, pts_y, pts_w, pts_h, (35, 50, 28) if has_pts else (55, 25, 20))
+        self._RO(pts_x, pts_y, pts_w, pts_h, (120, 160, 80) if has_pts else (180, 80, 60), 2)
         arcade.draw_text(f"剩余点数: {self.attribute_points}", pts_x + pts_w // 2, pts_y + pts_h // 2,
                          COLORS["gold"] if has_pts else (198, 92, 92), 16,
                          font_name=self.font, anchor_x="center", anchor_y="center")
@@ -445,7 +476,7 @@ class GameWindow(arcade.Window):
             arcade.draw_text(hk, hint_x, hint_y, (193, 173, 113), 12,
                              font_name=self.font, anchor_x="left", anchor_y="bottom")
             hint_x += 32
-            arcade.draw_text(hd, hint_x, hint_y, (103, 103, 123), 12,
+            arcade.draw_text(hd, hint_x, hint_y, (110, 100, 80), 12,
                              font_name=self.font, anchor_x="left", anchor_y="bottom")
             hint_x += 102
 
@@ -455,11 +486,16 @@ class GameWindow(arcade.Window):
                          (176, 166, 146), 13, font_name=self.font,
                          anchor_x="right", anchor_y="center")
 
+        if self.char_creation_msg:
+            msg_y = pts_y + pts_h + 12
+            arcade.draw_text(self.char_creation_msg, margin, msg_y, (220, 80, 80), 15,
+                             font_name=self.font, anchor_x="left", anchor_y="top")
+
     def _draw_panel(self, px, py, pw, ph, ttl):
-        self._R(px, py, pw, ph, (12, 16, 28, 245))
-        self._RO(px, py, pw, ph, (58, 68, 95), 2)
-        arcade.draw_line(px + 14, py + ph - 11, px + pw - 14, py + ph - 11, (44, 52, 72), 1)
-        arcade.draw_text(ttl, px + pw // 2, py + ph - 27, (175, 165, 145), 17,
+        self._R(px, py, pw, ph, (25, 22, 18, 245))
+        self._RO(px, py, pw, ph, (120, 105, 80), 2)
+        arcade.draw_line(px + 14, py + ph - 11, px + pw - 14, py + ph - 11, (80, 70, 55), 1)
+        arcade.draw_text(ttl, px + pw // 2, py + ph - 27, (180, 160, 120), 17,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
     def _draw_game(self):
@@ -525,7 +561,7 @@ class GameWindow(arcade.Window):
         post.draw_all(day_progress)
 
         if p:
-            renderer.draw_hud(p, self.game_world.game_time)
+            renderer.draw_hud(p, self.game_world.game_time, self.game_world.current_map)
 
         if self.interaction_prompt and not self.show_dialog:
             self._draw_interaction_prompt()
@@ -579,6 +615,56 @@ class GameWindow(arcade.Window):
                                  14, font_name=self.font,
                                  anchor_x="center", anchor_y="center")
 
+        if getattr(self, '_show_tutorial', False) and p:
+            self._draw_tutorial()
+
+        if self._zone_name_timer > 0 and self.game_world.current_map:
+            self._draw_zone_name()
+
+    def _draw_zone_name(self):
+        cmap = self.game_world.current_map
+        if not cmap:
+            return
+        zone_name = cmap.name
+        zone_type = cmap.zone_type
+        type_labels = {
+            "city": "城", "town": "镇", "sect": "宗门", "wild": "野外"
+        }
+        type_label = type_labels.get(zone_type, "")
+        alpha = min(1.0, self._zone_name_timer / 0.5) if self._zone_name_timer < 0.5 else 1.0
+        alpha_int = int(255 * alpha)
+
+        banner_w = 500
+        banner_h = 80
+        bx = SW // 2 - banner_w // 2
+        by = SH // 2 - banner_h // 2 - 100
+
+        self._R(bx, by, banner_w, banner_h, (20, 18, 14, int(220 * alpha)))
+        self._RO(bx, by, banner_w, banner_h, (180, 155, 100, alpha_int), 2)
+
+        deco_y_top = by + 8
+        deco_y_bot = by + banner_h - 8
+        deco_x_left = bx + 20
+        deco_x_right = bx + banner_w - 20
+        line_color = (140, 120, 80, alpha_int)
+        arcade.draw_line(deco_x_left, deco_y_top, deco_x_right, deco_y_top, line_color, 1)
+        arcade.draw_line(deco_x_left, deco_y_bot, deco_x_right, deco_y_bot, line_color, 1)
+
+        if type_label:
+            arcade.draw_text(f"〔{type_label}〕", SW // 2, by + banner_h - 22,
+                             (160, 140, 100, alpha_int), 14, font_name=self.font,
+                             anchor_x="center", anchor_y="center")
+
+        arcade.draw_text(zone_name, SW // 2, by + banner_h // 2 + 4,
+                         (230, 210, 160, alpha_int), 28, font_name=self.font,
+                         anchor_x="center", anchor_y="center")
+
+        desc = cmap.description
+        if desc:
+            arcade.draw_text(desc, SW // 2, by + 18,
+                             (140, 130, 110, alpha_int), 12, font_name=self.font,
+                             anchor_x="center", anchor_y="center")
+
     def _draw_interaction_prompt(self):
         pw = len(self.interaction_prompt) * 12 + 40
         ph = 36
@@ -591,6 +677,42 @@ class GameWindow(arcade.Window):
         pulse = int(200 + 55 * math.sin(self.blink_timer * 3))
         arcade.draw_text(self.interaction_prompt, SW // 2, py + ph // 2,
                          (pulse, pulse, min(255, pulse + 50)), 15,
+                         font_name=self.font, anchor_x="center", anchor_y="center")
+
+    def _draw_tutorial(self):
+        tw, th = 420, 380
+        tx = SW // 2 - tw // 2
+        ty = SH // 2 - th // 2 + 40
+
+        self._R(tx, ty, tw, th, (30, 28, 22, 240))
+        self._RO(tx, ty, tw, th, (180, 155, 100), 2)
+        arcade.draw_line(tx + 14, ty + th - 40, tx + tw - 14, ty + th - 40, (120, 105, 80), 1)
+        arcade.draw_text("江湖指南", tx + tw // 2, ty + th - 22, (200, 180, 130), 22,
+                         font_name=self.font, anchor_x="center", anchor_y="center")
+
+        guides = [
+            ("移动", "W/A/S/D 或 方向键"),
+            ("对话", "靠近NPC后按 T"),
+            ("攻击", "靠近敌人后按 F"),
+            ("背包", "按 B 打开/关闭"),
+            ("武功", "按 K 查看技能"),
+            ("使用物品", "按 E 使用背包中第一个消耗品"),
+            ("客栈休息", "按 R 恢复生命和内力"),
+            ("购买商品", "对话选查看商品后按数字键购买"),
+            ("战斗操作", "1攻击 2技能 3防御 4逃跑 5物品"),
+            ("小地图", "按 M 开关"),
+            ("声望/装备", "按 P / G 查看"),
+        ]
+
+        iy = ty + th - 65
+        for label, desc in guides:
+            arcade.draw_text(f"【{label}】", tx + 25, iy, (200, 180, 130), 13,
+                             font_name=self.font, anchor_x="left", anchor_y="center")
+            arcade.draw_text(desc, tx + 110, iy, (160, 155, 140), 12,
+                             font_name=self.font, anchor_x="left", anchor_y="center")
+            iy -= 26
+
+        arcade.draw_text("按 H 关闭此指南", tx + tw // 2, ty + 12, (120, 110, 90), 12,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
     def _draw_inventory(self, p):
@@ -719,7 +841,10 @@ class GameWindow(arcade.Window):
             elif key == arcade.key.ENTER:
                 if not self.char_name:
                     self.char_name = "无名侠客"
-                self._create_player()
+                if self.attribute_points > 0:
+                    self.char_creation_msg = f"还有 {self.attribute_points} 点属性未分配！请用左右键加完属性点"
+                else:
+                    self._create_player()
             elif key == arcade.key.ESCAPE:
                 self.game_state = "menu"
         elif self.game_state == "playing":
@@ -881,6 +1006,8 @@ class GameWindow(arcade.Window):
                 self._show_reputation()
             elif key == arcade.key.G:
                 self._show_equipment()
+            elif key == arcade.key.H:
+                self._show_tutorial = not self._show_tutorial
             elif key == arcade.key.ESCAPE:
                 self.game_state = "menu"
             elif key == arcade.key.SPACE:
@@ -1220,16 +1347,20 @@ class GameWindow(arcade.Window):
         info = combat.get_combat_info()
         e = self._combat_enemy
         p = self.game_world.player
-        hp_bar_len = 20
-        p_hp_fill = int(info["player_hp"] / info["player_max_hp"] * hp_bar_len) if info["player_max_hp"] > 0 else 0
-        e_hp_fill = int(info["enemy_hp"] / info["enemy_max_hp"] * hp_bar_len) if info["enemy_max_hp"] > 0 else 0
-        p_hp_bar = "█" * p_hp_fill + "░" * (hp_bar_len - p_hp_fill)
-        e_hp_bar = "█" * e_hp_fill + "░" * (hp_bar_len - e_hp_fill)
+
+        p_hp_pct = info["player_hp"] / info["player_max_hp"] if info["player_max_hp"] > 0 else 0
+        e_hp_pct = info["enemy_hp"] / info["enemy_max_hp"] if info["enemy_max_hp"] > 0 else 0
+        p_mp_pct = info["player_mp"] / info["player_max_mp"] if info["player_max_mp"] > 0 else 0
+
+        p_hp_c = (60,180,60) if p_hp_pct > 0.5 else ((180,180,40) if p_hp_pct > 0.25 else (200,50,50))
+        e_hp_c = (60,180,60) if e_hp_pct > 0.5 else ((180,180,40) if e_hp_pct > 0.25 else (200,50,50))
 
         self.dialog_text = (
-            f"【{p.name}】 HP:{p_hp_bar} {info['player_hp']}/{info['player_max_hp']}  "
-            f"MP:{info['player_mp']}/{info['player_max_mp']}\n"
-            f"【{e.name}】 HP:{e_hp_bar} {info['enemy_hp']}/{info['enemy_max_hp']}\n"
+            f"【{p.name}】\n"
+            f"  HP {info['player_hp']}/{info['player_max_hp']}  "
+            f"MP {info['player_mp']}/{info['player_max_mp']}\n"
+            f"【{e.name}】\n"
+            f"  HP {info['enemy_hp']}/{info['enemy_max_hp']}\n"
             f"回合:{info['round']}  姿态:{info['stance_name']}  连击:{info['combo_count']}\n\n"
             f"1.攻击  2.技能  3.防御  4.逃跑  5.物品"
         )
@@ -1238,6 +1369,48 @@ class GameWindow(arcade.Window):
         self.show_dialog = True
         self.dialogue_options = ["攻击", "技能", "防御", "逃跑", "物品"]
         self._in_combat = True
+        self._combat_bars = {
+            "p_hp_pct": p_hp_pct, "p_hp_c": p_hp_c,
+            "p_mp_pct": p_mp_pct,
+            "e_hp_pct": e_hp_pct, "e_hp_c": e_hp_c,
+        }
+
+    def _show_combat_ui_with_log(self):
+        combat = self.game_world.combat_system
+        if not combat.is_in_combat():
+            return
+        info = combat.get_combat_info()
+        e = self._combat_enemy
+        p = self.game_world.player
+
+        p_hp_pct = info["player_hp"] / info["player_max_hp"] if info["player_max_hp"] > 0 else 0
+        e_hp_pct = info["enemy_hp"] / info["enemy_max_hp"] if info["enemy_max_hp"] > 0 else 0
+        p_mp_pct = info["player_mp"] / info["player_max_mp"] if info["player_max_mp"] > 0 else 0
+
+        p_hp_c = (60,180,60) if p_hp_pct > 0.5 else ((180,180,40) if p_hp_pct > 0.25 else (200,50,50))
+        e_hp_c = (60,180,60) if e_hp_pct > 0.5 else ((180,180,40) if e_hp_pct > 0.25 else (200,50,50))
+
+        log_text = "\n".join(getattr(self, '_combat_log', [])[-3:])
+
+        self.dialog_text = (
+            f"【{p.name}】\n"
+            f"  HP {info['player_hp']}/{info['player_max_hp']}  "
+            f"MP {info['player_mp']}/{info['player_max_mp']}\n"
+            f"【{e.name}】\n"
+            f"  HP {info['enemy_hp']}/{info['enemy_max_hp']}\n"
+            f"回合:{info['round']}  姿态:{info['stance_name']}  连击:{info['combo_count']}\n\n"
+            f"{log_text}\n\n"
+            f"1.攻击  2.技能  3.防御  4.逃跑  5.物品"
+        )
+        self.dialog_title = f"⚔ 战斗 VS {e.name}"
+        self.dialog_type = "combat"
+        self.show_dialog = True
+        self.dialogue_options = ["攻击", "技能", "防御", "逃跑", "物品"]
+        self._combat_bars = {
+            "p_hp_pct": p_hp_pct, "p_hp_c": p_hp_c,
+            "p_mp_pct": p_mp_pct,
+            "e_hp_pct": e_hp_pct, "e_hp_c": e_hp_c,
+        }
 
     def _combat_action(self, action: str):
         combat = self.game_world.combat_system
@@ -1338,34 +1511,6 @@ class GameWindow(arcade.Window):
             if len(self._combat_log) > 5:
                 self._combat_log = self._combat_log[-5:]
 
-    def _show_combat_ui_with_log(self):
-        combat = self.game_world.combat_system
-        if not combat.is_in_combat():
-            return
-        info = combat.get_combat_info()
-        e = self._combat_enemy
-        p = self.game_world.player
-        hp_bar_len = 20
-        p_hp_fill = int(info["player_hp"] / info["player_max_hp"] * hp_bar_len) if info["player_max_hp"] > 0 else 0
-        e_hp_fill = int(info["enemy_hp"] / info["enemy_max_hp"] * hp_bar_len) if info["enemy_max_hp"] > 0 else 0
-        p_hp_bar = "█" * p_hp_fill + "░" * (hp_bar_len - p_hp_fill)
-        e_hp_bar = "█" * e_hp_fill + "░" * (hp_bar_len - e_hp_fill)
-
-        log_text = "\n".join(getattr(self, '_combat_log', [])[-3:])
-
-        self.dialog_text = (
-            f"【{p.name}】 HP:{p_hp_bar} {info['player_hp']}/{info['player_max_hp']}  "
-            f"MP:{info['player_mp']}/{info['player_max_mp']}\n"
-            f"【{e.name}】 HP:{e_hp_bar} {info['enemy_hp']}/{info['enemy_max_hp']}\n"
-            f"回合:{info['round']}  姿态:{info['stance_name']}  连击:{info['combo_count']}\n\n"
-            f"{log_text}\n\n"
-            f"1.攻击  2.技能  3.防御  4.逃跑  5.物品"
-        )
-        self.dialog_title = f"⚔ 战斗 VS {e.name}"
-        self.dialog_type = "combat"
-        self.show_dialog = True
-        self.dialogue_options = ["攻击", "技能", "防御", "逃跑", "物品"]
-
     def _handle_combat_victory(self, result: Dict):
         p = self.game_world.player
         msg = f"胜利！{self._combat_enemy.name}被击败！\n"
@@ -1377,10 +1522,10 @@ class GameWindow(arcade.Window):
         self.dialog_type = "info"
         self.show_dialog = True
         self._in_combat = False
-        self._combat_enemy = None
         self._combat_log = []
-        self.game_world.combat_system.end_combat()
         self._mark_enemy_dead(self._combat_enemy)
+        self.game_world.combat_system.end_combat()
+        self._combat_enemy = None
 
     def _handle_combat_defeat(self, result: Dict):
         p = self.game_world.player
@@ -1398,7 +1543,8 @@ class GameWindow(arcade.Window):
         self.game_world.combat_system.end_combat()
 
     def _mark_enemy_dead(self, enemy):
-        if enemy and hasattr(enemy, '_death_time'):
+        if enemy:
+            enemy.hp = 0
             enemy._death_time = self.game_world.game_time
 
     def _buy_shop_item(self, idx: int):
