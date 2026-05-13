@@ -71,21 +71,14 @@ class AdvancedLightSystem:
 
             pulse = 1.0 + 0.05 * math.sin(self._time * 2 + hash(id(light)) % 100 * 0.01)
             effective_intensity = light.intensity * pulse
+            c = light.color[:3]
 
-            layers = 8
-            for i in range(layers):
-                t = i / layers
-                r = light.radius * (1 - t * 0.6)
-                a = int(effective_intensity * 30 * (1 - t * t))
+            for i in range(3):
+                t = i / 3
+                r = light.radius * (1 - t * 0.5)
+                a = int(effective_intensity * 25 * (1 - t * t))
                 a = max(0, min(255, a))
-                c = light.color[:3]
                 arcade.draw_circle_filled(sx, sy, r, (c[0], c[1], c[2], a))
-
-            core_r = light.radius * 0.15
-            core_a = int(effective_intensity * 80)
-            core_a = max(0, min(255, core_a))
-            bright = tuple(min(255, c + 60) for c in light.color[:3])
-            arcade.draw_circle_filled(sx, sy, core_r, (bright[0], bright[1], bright[2], core_a))
 
     def _draw_god_rays(self, cam_x: float, cam_y: float, day_progress: float):
         if not 0.2 < day_progress < 0.8:
@@ -129,23 +122,87 @@ class PostProcessor:
             cls._instance._bloom_enabled = True
             cls._instance._color_grading = True
             cls._instance._vignette_enabled = True
-            cls._instance._bloom_intensity = 0.12
-            cls._instance._warm_shift = 6
-            cls._instance._saturation = 1.15
-            cls._instance._brightness = 1.08
-            cls._instance._contrast = 1.1
-            cls._instance._vignette_intensity = 0.4
-            cls._instance._chromatic_aberration = 0.5
+            cls._instance._bloom_intensity = 0.06
+            cls._instance._warm_shift = 12
+            cls._instance._saturation = 0.85
+            cls._instance._brightness = 1.02
+            cls._instance._contrast = 1.05
+            cls._instance._vignette_intensity = 0.5
+            cls._instance._chromatic_aberration = 0.3
             cls._instance._time = 0
+            cls._instance._paper_texture_enabled = True
+            cls._instance._ink_diffusion_enabled = True
+            cls._instance._ink_wash_grading = True
         return cls._instance
 
     def update(self, dt: float):
         self._time += dt
 
     def draw_all(self, day_progress: float = 0.5):
-        self._draw_color_grading(day_progress)
-        self._draw_bloom()
-        self._draw_vignette()
+        if self._ink_wash_grading:
+            if day_progress < 0.25:
+                t = 1.0 - day_progress / 0.25
+                night_a = int(25 * t)
+                arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (15, 18, 30, night_a))
+            elif day_progress > 0.75:
+                t = (day_progress - 0.75) / 0.25
+                night_a = int(25 * t)
+                arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (15, 18, 30, night_a))
+            if 0.2 < day_progress < 0.35:
+                dawn_t = (day_progress - 0.2) / 0.15
+                dawn_a = int(12 * (1 - abs(dawn_t - 0.5) * 2))
+                arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (30, 18, 10, dawn_a))
+            if 0.65 < day_progress < 0.8:
+                dusk_t = (day_progress - 0.65) / 0.15
+                dusk_a = int(15 * (1 - abs(dusk_t - 0.5) * 2))
+                arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (35, 18, 8, dusk_a))
+
+        if self._paper_texture_enabled:
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (235, 225, 195, 18))
+
+        if self._vignette_enabled:
+            self._draw_vignette()
+
+    def _draw_ink_wash_grading(self, day_progress: float):
+        if not self._ink_wash_grading:
+            return
+        ink_a = 8
+        arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (25, 22, 18, ink_a))
+        if day_progress < 0.25:
+            t = 1.0 - day_progress / 0.25
+            night_a = int(25 * t)
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (15, 18, 30, night_a))
+        elif day_progress > 0.75:
+            t = (day_progress - 0.75) / 0.25
+            night_a = int(25 * t)
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (15, 18, 30, night_a))
+        if 0.2 < day_progress < 0.35:
+            dawn_t = (day_progress - 0.2) / 0.15
+            dawn_a = int(12 * (1 - abs(dawn_t - 0.5) * 2))
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (30, 18, 10, dawn_a))
+        if 0.65 < day_progress < 0.8:
+            dusk_t = (day_progress - 0.65) / 0.15
+            dusk_a = int(15 * (1 - abs(dusk_t - 0.5) * 2))
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (35, 18, 8, dusk_a))
+
+    def _draw_paper_texture(self):
+        if not self._paper_texture_enabled:
+            return
+        paper_a = 18
+        arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (235, 225, 195, paper_a))
+        import random
+        rng = random.Random(42)
+        for _ in range(12):
+            fx = rng.randint(0, SW)
+            fy = rng.randint(0, SH)
+            fw = rng.randint(80, 300)
+            fh = rng.randint(2, 6)
+            fa = rng.randint(3, 8)
+            arcade.draw_lrbt_rectangle_filled(fx, fx + fw, fy, fy + fh, (220, 210, 180, fa))
+
+    def _draw_ink_diffusion(self):
+        if not self._ink_diffusion_enabled:
+            return
 
     def _draw_color_grading(self, day_progress: float):
         if not self._color_grading:
@@ -153,19 +210,19 @@ class PostProcessor:
 
         if day_progress < 0.25:
             dawn_t = day_progress / 0.25
-            warm = int(15 * (1 - dawn_t))
-            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (warm, warm // 3, 0, warm))
+            warm = int(8 * (1 - dawn_t))
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (warm, warm // 2, 0, warm))
         elif day_progress > 0.75:
             dusk_t = (day_progress - 0.75) / 0.25
-            warm = int(12 * dusk_t)
-            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (warm, warm // 4, 0, warm))
+            warm = int(8 * dusk_t)
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (warm, warm // 3, 0, warm))
 
         if self._warm_shift > 0:
-            a = min(8, self._warm_shift)
-            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (a, a // 3, 0, a))
+            a = min(10, self._warm_shift)
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (a, a // 2, 0, a))
 
         if self._brightness > 1.0:
-            b = int((self._brightness - 1.0) * 15)
+            b = int((self._brightness - 1.0) * 8)
             arcade.draw_lrbt_rectangle_filled(0, SW, 0, SH, (b, b, b, b))
 
     def _draw_bloom(self):
@@ -236,6 +293,22 @@ class EnvironmentParticles:
                 'radius': random.randint(60, 150), 'alpha': random.randint(8, 20),
                 'vx': random.uniform(-0.2, 0.2), 'phase': random.random() * 6.28,
             })
+        for _ in range(6):
+            self._fog_patches.append({
+                'x': random.randint(0, sw), 'y': random.randint(0, sh),
+                'radius': random.randint(100, 250), 'alpha': random.randint(5, 12),
+                'vx': random.uniform(-0.15, 0.15), 'phase': random.random() * 6.28,
+            })
+        for _ in range(12):
+            self._leaves.append({
+                'x': random.randint(0, sw), 'y': random.randint(-50, sh),
+                'vx': random.uniform(-0.3, 0.3), 'vy': random.uniform(0.2, 0.5),
+                'rot': random.random() * 6.28, 'rot_speed': random.uniform(-0.03, 0.03),
+                'size': random.randint(2, 4), 'color': random.choice([
+                    (220, 180, 190), (240, 200, 210), (200, 160, 170), (230, 190, 200),
+                    (210, 170, 180), (250, 210, 220),
+                ]),
+            })
 
     def update(self, dt: float, day_progress: float = 0.5):
         self._time += dt
@@ -270,11 +343,10 @@ class EnvironmentParticles:
         if is_night:
             for f in self._fireflies:
                 glow = 0.5 + 0.5 * math.sin(f['phase'] * 3)
-                a = int(180 * glow)
+                a = int(160 * glow)
                 r = f['radius'] * (0.8 + 0.4 * glow)
-                arcade.draw_circle_filled(f['x'], f['y'], r + 4, (200, 255, 100, int(a * 0.2)))
-                arcade.draw_circle_filled(f['x'], f['y'], r, (220, 255, 150, a))
-                arcade.draw_circle_filled(f['x'], f['y'], r * 0.5, (255, 255, 200, min(255, a + 50)))
+                arcade.draw_circle_filled(f['x'], f['y'], r + 2, (200, 255, 100, int(a * 0.3)))
+                arcade.draw_circle_filled(f['x'], f['y'], r, (230, 255, 160, a))
 
         for leaf in self._leaves:
             c = leaf['color']
@@ -288,8 +360,12 @@ class EnvironmentParticles:
         for fog in self._fog_patches:
             pulse = 0.8 + 0.2 * math.sin(fog['phase'])
             a = int(fog['alpha'] * pulse)
+            a = max(0, min(255, a))
             r = fog['radius']
-            arcade.draw_circle_filled(fog['x'], fog['y'], r, (200, 210, 220, a))
+            offset_x = math.sin(self._time * 0.1 + fog['phase']) * 10
+            arcade.draw_ellipse_filled(fog['x'] + offset_x, fog['y'],
+                                        r, r // 3,
+                                        (210, 205, 195, a))
 
 
 def get_advanced_lights() -> AdvancedLightSystem:

@@ -9,9 +9,9 @@ _timer = 0.0
 _hurt_flash = 0.0
 
 TYPE_COLORS = {
-    "npc": (255, 200, 100), "combat": (255, 80, 80),
-    "quest": (100, 200, 255), "info": (150, 180, 200),
-    "encounter": (200, 100, 255),
+    "npc": (180, 155, 100), "combat": (190, 85, 75),
+    "quest": (120, 160, 180), "info": (150, 140, 125),
+    "encounter": (160, 120, 150),
 }
 
 
@@ -51,9 +51,9 @@ def draw_dialog(text: str, sw: int, sh: int, title: str = "对话", dialog_type:
     arcade.draw_rect_filled(arcade.LBWH(x + 8, y - 8, bw, bh), (0, 0, 0, 40))
     arcade.draw_rect_filled(arcade.LBWH(x + 5, y - 5, bw, bh), (0, 0, 0, 25))
 
-    draw_gradient_rect(x, y, bw, bh, (22, 28, 48), (12, 16, 32), 8)
-    arcade.draw_rect_filled(arcade.LBWH(x, y, bw, bh), (18, 22, 40, 40))
-    arcade.draw_rect_filled(arcade.LBWH(x + bw * 0.5, y, bw * 0.5, bh), alpha(lighten((22, 28, 48), 5), 20))
+    draw_gradient_rect(x, y, bw, bh, (55, 48, 38), (35, 30, 22), 8)
+    arcade.draw_rect_filled(arcade.LBWH(x, y, bw, bh), (40, 35, 28, 50))
+    arcade.draw_rect_filled(arcade.LBWH(x + bw * 0.5, y, bw * 0.5, bh), alpha(lighten((55, 48, 38), 5), 20))
 
     for i in range(4):
         a = 35 - i * 9
@@ -100,10 +100,10 @@ def _draw_dialog_avatar(x, y, bh, hh, bc, dtype):
     asz = 36
     ax = x + 16
     ay = y + bh - hh // 2 - 2
-    draw_gradient_rect(ax - 2, ay - asz // 2 - 2, asz + 4, asz + 4, (25, 32, 55), (15, 20, 38), 3)
-    draw_gradient_rect(ax, ay - asz // 2, asz, asz, (35, 42, 65), (20, 25, 42), 4)
+    draw_gradient_rect(ax - 2, ay - asz // 2 - 2, asz + 4, asz + 4, (60, 52, 42), (40, 35, 28), 3)
+    draw_gradient_rect(ax, ay - asz // 2, asz, asz, (75, 65, 52), (50, 42, 32), 4)
     arcade.draw_rect_filled(arcade.LBWH(ax + asz * 0.5, ay - asz // 2, asz * 0.5, asz),
-                            alpha(lighten((35, 42, 65), 8), 25))
+                            alpha(lighten((75, 65, 52), 8), 25))
     for i in range(2):
         a = 100 - i * 35
         arcade.draw_rect_outline(arcade.LBWH(ax - i, ay - asz // 2 - i, asz + i * 2, asz + i * 2), (*bc, a), 1)
