@@ -7,15 +7,16 @@ from .draw_utils import (SW, SH, get_anim_time, lighten, darken, alpha,
 from .char_renderer import FACTION_COLORS
 
 
-def draw_hud(player: Player, game_time: float = 0, current_map=None):
-    hud_h = 82
+def draw_hud(player: Player, game_time: float = 0, current_map=None,
+             atmosphere=None, reputation=None, economy=None):
+    hud_h = 100
     _draw_hud_background(hud_h)
     _draw_avatar(hud_h, player)
     _draw_name_info(hud_h, player)
     _draw_bars(hud_h, player)
     _draw_survival_bars(hud_h, player)
-    _draw_info_icons(hud_h, player)
-    _draw_attributes(hud_h, player)
+    _draw_atmosphere(hud_h, atmosphere)
+    _draw_reputation(hud_h, reputation, economy)
     _draw_zone_indicator(hud_h, current_map)
     _draw_hints(hud_h)
     _draw_skill_bar(hud_h, player)
@@ -97,7 +98,39 @@ def _draw_bar(x, y, w, h, current, maximum, c_high, c_mid, c_low, bg, border, la
     draw_text(f"{label} {current}/{maximum}", x + w / 2, y + h / 2, (255, 255, 255), 10, "center", "center")
 
 
-def _draw_info_icons(hud_h, player):
+def _draw_atmosphere(hud_h, atmosphere):
+    """绘制时辰天气"""
+    if atmosphere is None:
+        return
+    # 时间
+    time_text = atmosphere.get_status_text()
+    draw_text(time_text, SW - 240, hud_h - 16, (220, 210, 180), 12, "left", "center")
+    # 天气图标颜色
+    weather_colors = {
+        "晴朗": (255, 220, 100), "多云": (200, 200, 210),
+        "细雨": (150, 180, 220), "暴雨": (100, 130, 200),
+        "飞雪": (240, 240, 255), "大雪": (220, 230, 255),
+        "狂风": (200, 180, 150), "迷雾": (180, 180, 190),
+        "雷雨": (120, 100, 180)
+    }
+    weather = atmosphere.weather.get_weather_name() if hasattr(atmosphere, 'weather') else ""
+    wc = weather_colors.get(weather, (200, 200, 200))
+    arcade.draw_circle_filled(SW - 260, hud_h - 10, 4, (*wc, 200))
+
+
+def _draw_reputation(hud_h, reputation, economy):
+    """绘制声望和金钱"""
+    gold = economy.gold if economy else 0
+    fame = reputation.fame if reputation else 0
+    # 金钱
+    draw_text(f"银两: {gold}", SW - 380, hud_h - 40, (220, 200, 100), 12, "left", "center")
+    # 声望
+    draw_text(f"声望: {fame}", SW - 380, hud_h - 60, (200, 180, 220), 11, "left", "center")
+    # 正邪
+    if reputation:
+        alignment = reputation.alignment
+        align_color = (100, 200, 100) if alignment > 0 else ((200, 100, 100) if alignment < 0 else (180, 180, 180))
+        draw_text(f"正邪: {alignment:+d}", SW - 280, hud_h - 60, align_color, 11, "left", "center")
     ix = 430
     icons = [
         ("银两", f"{player.money}", COLORS["gold"], (255, 215, 0, 25)),
