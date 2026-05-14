@@ -5,11 +5,18 @@ from typing import Optional, List, Dict
 from .config import GAME_CONFIG, COLORS, UI_CONFIG, VISUAL_CONFIG
 from . import render as renderer
 from .vfx import VFXManager
-from .world import GameWorld, MAP_W, MAP_H, WALKABLE, TS, col_to_x, row_to_y, FACTION_NAMES
+from .enhanced_world import get_enhanced_world, CITY_IDS, TOWN_IDS, WILD_IDS, SECT_IDS
+from .world import MAP_W, MAP_H, WALKABLE, TS, col_to_x, row_to_y, FACTION_NAMES
 from .entities import Player, NPC, Faction, NpcType, QuestType, Quest, Skill
 from .quest import get_quest_manager
 from .npc_brain import DialogueState, get_npc_brain_manager
 from .encounter import get_encounter_manager, Encounter
+from .atmosphere import AtmosphereManager
+from .combat_system import HybridCombatSystem, Combatant, EncounterSystem, ActionType
+from .systems.cultivation_system import CultivationSystem
+from .systems.economy_system import EconomySystem, ReputationSystem
+from .systems.story_system import StoryEngine
+from .systems.equipment_system import CraftingSystem, Inventory
 
 SW = GAME_CONFIG["screen_width"]
 SH = GAME_CONFIG["screen_height"]
@@ -20,7 +27,7 @@ class GameWindow(arcade.Window):
         super().__init__(SW, SH, GAME_CONFIG["screen_title"], resizable=False)
         arcade.set_background_color((35, 32, 28))
 
-        self.game_world = GameWorld()
+        self.game_world = get_enhanced_world()
         self.current_npc: Optional[NPC] = None
         self.camera_x = self.game_world.player.position.x
         self.camera_y = self.game_world.player.position.y
@@ -69,17 +76,44 @@ class GameWindow(arcade.Window):
         self.inv_scroll = 0
         self.show_skill_panel = False
         self.skill_scroll = 0
+        self.show_journal = False
+        self.show_shop = False
+        self.show_craft = False
 
         self.particles = []
-        self.time_of_day = 0.0
         self.vfx = VFXManager(SW, SH)
         self._hurt_flash_val = 0.0
-        self._in_combat = False
-        self._combat_enemy = None
-        self._combat_log = []
         self._shop_items = []
         self._show_tutorial = True
         self._zone_name_timer = 0
+
+        # === 新系统 ===
+        self.atmosphere = AtmosphereManager(SW, SH)
+        self.combat_system = HybridCombatSystem()
+        self.encounter_system = EncounterSystem(base_encounter_rate=0.02)
+        self.cultivation = CultivationSystem()
+        self.economy = EconomySystem()
+        self.reputation = ReputationSystem()
+        self.story = StoryEngine()
+        self.crafting = CraftingSystem()
+        self.player_inventory = Inventory()
+
+        # 战斗状态
+        self._in_combat = False
+        self._combat_phase = "none"
+        self._combat_log = []
+        self._combat_menu_idx = 0
+        self._combat_skill_idx = 0
+        self._combat_enemy_idx = 0
+        self._combat_rewards = None
+        self._combat_anim_timer = 0.0
+
+        # 剧情状态
+        self._story_active = False
+        self._story_choice_idx = 0
+
+        # 遇敌冷却
+        self._encounter_cooldown = 0.0
 
         self.font = "Arial"
 
@@ -98,10 +132,16 @@ class GameWindow(arcade.Window):
     def on_update(self, delta_time):
         self.blink_timer += delta_time
         self.float_anim += delta_time
-        self.time_of_day += delta_time * 0.01
 
         renderer.set_anim_time(self.blink_timer)
         renderer.update_dialog_anim(delta_time)
+
+        # === 新系统更新 ===
+        self.atmosphere.update(delta_time)
+        if self._encounter_cooldown > 0:
+            self._encounter_cooldown -= delta_time
+        if self._combat_anim_timer > 0:
+            self._combat_anim_timer -= delta_time
 
         if self._hurt_flash_val > 0:
             self._hurt_flash_val = max(0, self._hurt_flash_val - delta_time * 3)
@@ -153,6 +193,19 @@ class GameWindow(arcade.Window):
             if self.nearby_timer > 0.3:
                 self.nearby_timer = 0
                 self._update_interaction_prompt()
+
+            # === 遇敌检测 ===
+            if not self._in_combat and self._encounter_cooldown <= 0:
+                zone_type = self.game_world.current_map.zone_type if self.game_world.current_map else "city"
+                player_level = self.game_world.player.level if self.game_world.player else 1
+                enemies = self.encounter_system.check_encounter(zone_type, delta_time, player_level)
+                if enemies:
+                    self._start_combat(enemies)
+
+            # === 战斗AI ===
+            if self._in_combat and self.combat_system.phase.value == "ENEMY_TURN":
+                self.combat_system.enemy_ai_action()
+                self._combat_anim_timer = 0.5
 
             self._update_particles(delta_time)
 
@@ -499,6 +552,10 @@ class GameWindow(arcade.Window):
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
     def _draw_game(self):
+        if self._in_combat:
+            self._draw_combat()
+            return
+
         p = self.game_world.player
         cam = self.game_world.current_map
         if p and cam:
@@ -561,7 +618,8 @@ class GameWindow(arcade.Window):
         post.draw_all(day_progress)
 
         if p:
-            renderer.draw_hud(p, self.game_world.game_time, self.game_world.current_map)
+            renderer.draw_hud(p, self.game_world.game_time, self.game_world.current_map,
+                            self.atmosphere, self.reputation, self.economy)
 
         if self.interaction_prompt and not self.show_dialog:
             self._draw_interaction_prompt()
@@ -875,6 +933,34 @@ class GameWindow(arcade.Window):
                     return
                 return
 
+            if self._in_combat:
+                cs = self.combat_system
+                if key == arcade.key.UP:
+                    if self._combat_menu_idx == 1:
+                        self._combat_skill_idx = max(0, self._combat_skill_idx - 1)
+                    else:
+                        self._combat_menu_idx = max(0, self._combat_menu_idx - 1)
+                elif key == arcade.key.DOWN:
+                    if self._combat_menu_idx == 1:
+                        self._combat_skill_idx += 1
+                    else:
+                        self._combat_menu_idx = min(3, self._combat_menu_idx + 1)
+                elif key == arcade.key.ENTER or key == arcade.key.SPACE:
+                    if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+                        self._in_combat = False
+                        self._combat_rewards = None
+                    elif cs.phase.value == "PLAYER_TURN":
+                        actions = ["attack", "skill", "defend", "flee"]
+                        if self._combat_menu_idx < len(actions):
+                            self._combat_action(actions[self._combat_menu_idx])
+                elif key == arcade.key.LEFT:
+                    self._combat_enemy_idx = max(0, self._combat_enemy_idx - 1)
+                elif key == arcade.key.RIGHT:
+                    alive = [e for e in cs.enemies if e.is_alive]
+                    if alive:
+                        self._combat_enemy_idx = min(len(alive)-1, self._combat_enemy_idx + 1)
+                return
+
             if self.encounter_display:
                 if key == arcade.key.Y:
                     self._accept_encounter()
@@ -987,13 +1073,22 @@ class GameWindow(arcade.Window):
             elif key == arcade.key.T:
                 self.talk_to_npc()
             elif key == arcade.key.F:
-                self.attack_npc()
+                if self._in_combat:
+                    self._combat_action("attack")
+                else:
+                    self.attack_npc()
             elif key == arcade.key.B:
                 self.show_inventory = not self.show_inventory
                 self.show_skill_panel = False
+                self.show_journal = False
             elif key == arcade.key.K:
                 self.show_skill_panel = not self.show_skill_panel
                 self.show_inventory = False
+                self.show_journal = False
+            elif key == arcade.key.J:
+                self.show_journal = not self.show_journal
+                self.show_inventory = False
+                self.show_skill_panel = False
             elif key == arcade.key.Q:
                 self.show_quests()
             elif key == arcade.key.M:
@@ -1661,6 +1756,177 @@ class GameWindow(arcade.Window):
         self.dialog_title = "装备"
         self.dialog_type = "info"
         self.show_dialog = True
+
+    # ==================== 战斗系统 ====================
+
+    def _start_combat(self, enemies_data):
+        """开始战斗"""
+        player = self.game_world.player
+        if not player:
+            return
+        pc = Combatant(
+            name=player.name, max_hp=player.max_hp, hp=player.hp,
+            max_mp=player.max_mp, mp=player.mp,
+            attack=player.attack, defense=player.defense,
+            speed=getattr(player, 'speed', 10),
+            is_player=True, faction=getattr(player, 'faction', '').value,
+            skills=list(self.cultivation.skills.keys())[:4] if self.cultivation.skills else ["basic_attack"]
+        )
+        enemies = [
+            Combatant(
+                name=e["name"], max_hp=e["max_hp"], hp=e["hp"],
+                max_mp=e["max_mp"], mp=e["mp"],
+                attack=e["attack"], defense=e["defense"], speed=e["speed"],
+                is_player=False
+            )
+            for e in enemies_data
+        ]
+        self.combat_system.start_battle(pc, enemies)
+        self._in_combat = True
+        self._combat_phase = "player"
+        self._combat_log = self.combat_system.battle_log[:]
+        self._combat_menu_idx = 0
+        self._combat_rewards = None
+
+    def _combat_action(self, action_type="attack"):
+        """玩家战斗行动"""
+        if not self._in_combat:
+            return
+        cs = self.combat_system
+        if cs.phase.value != "PLAYER_TURN":
+            return
+
+        atype = {"attack": ActionType.ATTACK, "skill": ActionType.SKILL,
+                 "defend": ActionType.DEFEND, "flee": ActionType.FLEE}.get(action_type, ActionType.ATTACK)
+
+        skill_id = "basic_attack"
+        if action_type == "skill" and cs.player:
+            skills = list(self.cultivation.skills.keys())
+            if skills:
+                skill_id = skills[min(self._combat_skill_idx, len(skills)-1)]
+
+        target = None
+        if cs.enemies:
+            target = cs.enemies[min(self._combat_enemy_idx, len(cs.enemies)-1)]
+
+        cs.player_action(atype, target, skill_id)
+        self._combat_log = cs.battle_log[:]
+
+        # 检查结束
+        if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+            self._end_combat()
+
+    def _end_combat(self):
+        cs = self.combat_system
+        if cs.phase.value == "VICTORY":
+            rewards = cs.get_battle_rewards()
+            self._combat_rewards = rewards
+            player = self.game_world.player
+            if player:
+                player.exp += rewards.get("exp", 0)
+                player.hp = min(player.max_hp, player.hp)
+                player.mp = min(player.max_mp, player.mp)
+            self.economy.gold += rewards.get("gold", 0)
+            self.reputation.add_fame(rewards.get("exp", 0) // 2)
+        else:
+            self._combat_rewards = None
+            player = self.game_world.player
+            if player:
+                player.hp = max(1, player.hp // 2)
+        self._in_combat = False
+        self._combat_phase = "none"
+        self._encounter_cooldown = 5.0
+
+    def _draw_combat(self):
+        """绘制战斗界面"""
+        cs = self.combat_system
+        # 战斗背景
+        arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (20, 18, 15, 240))
+
+        # 敌人区域
+        if cs.enemies:
+            ex = SW - 250
+            ey = SH - 300
+            for i, enemy in enumerate(cs.enemies):
+                if not enemy.is_alive:
+                    continue
+                arcade.draw_text(enemy.name, ex, ey + 80 - i * 120, COLORS["accent"], 18, font_name=self.font)
+                arcade.draw_text(f"HP:{enemy.hp}/{enemy.max_hp}", ex, ey + 55 - i * 120,
+                               (220, 80, 80), 14, font_name=self.font)
+                if i == self._combat_enemy_idx:
+                    arcade.draw_triangle_filled(ex - 20, ey + 80 - i * 120 + 10,
+                                                ex - 30, ey + 80 - i * 120,
+                                                ex - 30, ey + 80 - i * 120 + 20, COLORS["accent"])
+
+        # 玩家区域
+        if cs.player:
+            px, py = 80, SH - 300
+            arcade.draw_text(cs.player.name, px, py + 80, COLORS["accent"], 18, font_name=self.font)
+            arcade.draw_text(f"HP:{cs.player.hp}/{cs.player.max_hp}  MP:{cs.player.mp}/{cs.player.max_mp}",
+                           px, py + 55, (80, 200, 80), 14, font_name=self.font)
+
+        # 战斗日志
+        log_h = 140
+        arcade.draw_rect_filled(arcade.LBWH(50, 200, SW - 100, log_h), (25, 23, 20, 200))
+        arcade.draw_rect_outline(arcade.LBWH(50, 200, SW - 100, log_h), (100, 90, 70), 1)
+        ly = 320
+        for log in self._combat_log[-4:]:
+            arcade.draw_text(log[:60], 60, ly, (200, 200, 200), 13, font_name=self.font)
+            ly -= 22
+
+        # 战斗菜单
+        menu_w, menu_h = 200, 160
+        mx, my = 50, 50
+        arcade.draw_rect_filled(arcade.LBWH(mx, my, menu_w, menu_h), (30, 28, 24, 220))
+        arcade.draw_rect_outline(arcade.LBWH(mx, my, menu_w, menu_h), COLORS["accent"], 2)
+        actions = ["攻击", "武学", "防御", "逃跑"]
+        for i, act in enumerate(actions):
+            y = my + menu_h - 30 - i * 32
+            if i == self._combat_menu_idx:
+                arcade.draw_text(f"> {act}", mx + 12, y, COLORS["accent"], 16, font_name=self.font)
+            else:
+                arcade.draw_text(act, mx + 12, y, (160, 150, 130), 14, font_name=self.font)
+
+        # 武学子菜单
+        if self._combat_menu_idx == 1 and cs.player:
+            skills = list(self.cultivation.skills.keys())[:6]
+            if skills:
+                smx, smy = mx + menu_w + 10, my
+                arcade.draw_rect_filled(arcade.LBWH(smx, smy, 250, menu_h), (30, 28, 24, 220))
+                for i, sid in enumerate(skills):
+                    from .combat_system import SKILLS_DATABASE
+                    sk = SKILLS_DATABASE.get(sid)
+                    if sk:
+                        y = smy + menu_h - 30 - i * 28
+                        text = f"{sk.name_zh} (内力:{sk.mp_cost})"
+                        if i == self._combat_skill_idx:
+                            arcade.draw_text(f"> {text}", smx + 8, y, COLORS["accent"], 14, font_name=self.font)
+                        else:
+                            arcade.draw_text(text, smx + 8, y, (150, 140, 120), 12, font_name=self.font)
+
+        # 回合指示
+        phase_text = {"PLAYER_TURN": "你的回合", "ENEMY_TURN": "敌人回合",
+                     "VICTORY": "胜利!", "DEFEAT": "失败...", "FLEE": "逃跑!"}
+        phase = phase_text.get(cs.phase.value, "")
+        arcade.draw_text(phase, SW - 150, 50, COLORS["accent"], 18, font_name=self.font, anchor_x="center")
+
+        # 奖励
+        if self._combat_rewards and cs.phase.value == "VICTORY":
+            rw = self._combat_rewards
+            arcade.draw_text(f"经验+{rw.get('exp',0)}  银两+{rw.get('gold',0)}",
+                           SW//2, SH-40, (200, 220, 120), 16,
+                           font_name=self.font, anchor_x="center")
+            arcade.draw_text("按空格继续", SW//2, SH-70, (150, 150, 150), 13,
+                           font_name=self.font, anchor_x="center")
+
+    def _combat_input(self, key, modifiers):
+        """战斗中的键盘输入"""
+        cs = self.combat_system
+
+        if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+            if key == arcade.key.SPACE or key == arcade.key.ENTER:
+                self._in_combat = False
+                self._combat_rewards = None
 
 
 def run_game():

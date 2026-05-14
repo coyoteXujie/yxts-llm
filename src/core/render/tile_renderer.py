@@ -198,9 +198,12 @@ def _draw_stone(draw, px, py, c, detail, accent, stone_type):
 
 
 def _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_tiles, map_h):
-    SOFT_TERRAIN = WATER_TIDS | {0, 5, 6, 11, 39, 43} | FLOWER_TIDS | PLANT_TIDS
+    """Draw smooth transitions between terrain types"""
+    SOFT_TERRAIN = {0, 5, 6, 11, 39, 43, 1, 10, 106}
+    WATER_TERRAIN = {2, 27, 32, 105}
     HARD_TERRAIN = WALL_TIDS | BUILDING_TIDS | {7, 8, 20, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104}
-    EDGE_BLEND_PX = 6
+    EDGE_BLEND_PX = 8
+    WATER_BLEND_PX = 6
 
     for local_ty in range(cy_tiles):
         global_ty = chunk_ty * CHUNK_SIZE + local_ty
@@ -218,11 +221,13 @@ def _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_t
             py = (cy_tiles - 1 - local_ty) * TS
             c = _get_tile_color(tid)
 
+            is_water = tid in WATER_TERRAIN
+
             neighbors = []
-            if global_ty > 0 and global_ty - 1 < len(game_map.tiles):
+            if global_ty > 0:
                 neighbors.append(("top", game_map.tiles[global_ty - 1][global_tx] if global_tx < len(game_map.tiles[global_ty - 1]) else tid))
-            if global_ty + 1 < len(game_map.tiles) and global_tx < len(game_map.tiles[global_ty + 1]):
-                neighbors.append(("bottom", game_map.tiles[global_ty + 1][global_tx]))
+            if global_ty + 1 < len(game_map.tiles):
+                neighbors.append(("bottom", game_map.tiles[global_ty + 1][global_tx] if global_tx < len(game_map.tiles[global_ty + 1]) else tid))
             if global_tx > 0:
                 neighbors.append(("left", row[global_tx - 1]))
             if global_tx + 1 < len(row):
@@ -231,21 +236,83 @@ def _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_t
             for direction, ntid in neighbors:
                 if ntid == tid or ntid in HARD_TERRAIN:
                     continue
-                nc = _get_tile_color(ntid)
-                blend_c = (
-                    (c[0] + nc[0]) // 2,
-                    (c[1] + nc[1]) // 2,
-                    (c[2] + nc[2]) // 2,
-                    80
-                )
-                if direction == "top":
-                    draw.rectangle([px, py, px + TS, py + EDGE_BLEND_PX], fill=blend_c)
-                elif direction == "bottom":
-                    draw.rectangle([px, py + TS - EDGE_BLEND_PX, px + TS, py + TS], fill=blend_c)
-                elif direction == "left":
-                    draw.rectangle([px, py, px + EDGE_BLEND_PX, py + TS], fill=blend_c)
-                elif direction == "right":
-                    draw.rectangle([px + TS - EDGE_BLEND_PX, py, px + TS, py + TS], fill=blend_c)
+                n_is_water = ntid in WATER_TERRAIN
+
+                # 特殊处理水面到草地的过渡 - 渐变效果
+                if is_water != n_is_water:
+                    blend_px = WATER_BLEND_PX
+                    if is_water:  # 当前是水，邻居是陆地
+                        land_c = _get_tile_color(0)  # 草色
+                        for i in range(blend_px):
+                            alpha = int(200 * (1 - i / blend_px))
+                            if direction == "top":
+                                draw.rectangle([px, py + TS - blend_px + i, px + TS, py + TS - blend_px + i + 1],
+                                              fill=(*land_c, alpha))
+                            elif direction == "bottom":
+                                draw.rectangle([px, py + i, px + TS, py + i + 1],
+                                              fill=(*land_c, alpha))
+                            elif direction == "left":
+                                draw.rectangle([px + TS - blend_px + i, py, px + TS - blend_px + i + 1, py + TS],
+                                              fill=(*land_c, alpha))
+                            elif direction == "right":
+                                draw.rectangle([px + i, py, px + i + 1, py + TS],
+                                              fill=(*land_c, alpha))
+                    else:  # 当前是陆地，邻居是水
+                        water_c = _get_tile_color(2)  # 水色
+                        for i in range(blend_px):
+                            alpha = int(150 * (1 - i / blend_px))
+                            if direction == "top":
+                                draw.rectangle([px, py, px + TS, py + i + 1], fill=(*water_c, alpha))
+                            elif direction == "bottom":
+                                draw.rectangle([px, py + TS - i - 1, px + TS, py + TS], fill=(*water_c, alpha))
+                            elif direction == "left":
+                                draw.rectangle([px, py, px + i + 1, py + TS], fill=(*water_c, alpha))
+                            elif direction == "right":
+                                draw.rectangle([px + TS - i - 1, py, px + TS, py + TS], fill=(*water_c, alpha))
+                    continue
+
+                # 道路到草地的过渡
+                if (tid in {10, 1, 106} and ntid == 0) or (tid == 0 and ntid in {10, 1, 106}):
+                    blend_px = EDGE_BLEND_PX
+                    nc = _get_tile_color(ntid)
+                    for i in range(blend_px):
+                        alpha = int(120 * (1 - i / blend_px))
+                        blend_c = (
+                            (c[0] + nc[0]) // 2,
+                            (c[1] + nc[1]) // 2,
+                            (c[2] + nc[2]) // 2,
+                            alpha
+                        )
+                        if direction == "top":
+                            draw.rectangle([px, py + TS - blend_px + i, px + TS, py + TS - blend_px + i + 1], fill=blend_c)
+                        elif direction == "bottom":
+                            draw.rectangle([px, py + i, px + TS, py + i + 1], fill=blend_c)
+                        elif direction == "left":
+                            draw.rectangle([px + TS - blend_px + i, py, px + TS - blend_px + i + 1, py + TS], fill=blend_c)
+                        elif direction == "right":
+                            draw.rectangle([px + i, py, px + i + 1, py + TS], fill=blend_c)
+                    continue
+
+                # 一般软地形混合
+                if tid in SOFT_TERRAIN and ntid in SOFT_TERRAIN:
+                    nc = _get_tile_color(ntid)
+                    blend_px = EDGE_BLEND_PX
+                    for i in range(blend_px):
+                        alpha = int(100 * (1 - i / blend_px))
+                        blend_c = (
+                            (c[0] + nc[0]) // 2,
+                            (c[1] + nc[1]) // 2,
+                            (c[2] + nc[2]) // 2,
+                            alpha
+                        )
+                        if direction == "top":
+                            draw.rectangle([px, py + TS - blend_px + i, px + TS, py + TS - blend_px + i + 1], fill=blend_c)
+                        elif direction == "bottom":
+                            draw.rectangle([px, py + i, px + TS, py + i + 1], fill=blend_c)
+                        elif direction == "left":
+                            draw.rectangle([px + TS - blend_px + i, py, px + TS - blend_px + i + 1, py + TS], fill=blend_c)
+                        elif direction == "right":
+                            draw.rectangle([px + i, py, px + i + 1, py + TS], fill=blend_c)
 
 
 def _draw_wall_variant(draw, px, py, c, detail, accent, wall_type):
@@ -265,7 +332,7 @@ def _draw_wall_variant(draw, px, py, c, detail, accent, wall_type):
 
 def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
     try:
-        from PIL import Image, ImageDraw
+        from PIL import Image, ImageDraw, ImageFilter
         cx_tiles = min(CHUNK_SIZE, len(game_map.tiles[0]) - chunk_tx * CHUNK_SIZE)
         cy_tiles = min(CHUNK_SIZE, len(game_map.tiles) - chunk_ty * CHUNK_SIZE)
         if cx_tiles <= 0 or cy_tiles <= 0:
@@ -570,16 +637,109 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
                         for sx in range(px + 2 + offset, px + TS - 2, 10):
                             draw.rectangle([sx, sy, sx + 8, sy + 8], outline=(*darken(c, 8), 120), width=1)
 
-                elif tid == 7:
-                    draw.rectangle([px, py, px + TS, py + TS], fill=(100, 80, 60))
-                    for by in range(py + 4, py + TS - 2, 8):
-                        draw.line([px + 2, by, px + TS - 2, by], fill=(120, 100, 70), width=1)
-                    draw.line([px + TS // 2, py + 2, px + TS // 2, py + TS - 2], fill=(80, 60, 40), width=2)
+                elif tid == 7:  # Bridge - 木质桥梁
+                    plank_c = (140, 115, 80)
+                    rail_c = (100, 78, 50)
+                    shadow_c = (70, 55, 35)
+                    # 桥面阴影
+                    draw.rectangle([px + 2, py + TS // 2 - 2, px + TS - 2, py + TS - 2], fill=(*shadow_c, 100))
+                    # 横向木板
+                    for by in range(py + TS // 2, py + TS - 2, 6):
+                        shade = 1.0 - abs((by - py - TS // 2) / (TS // 2) - 0.5) * 0.3
+                        bc = tuple(int(plank_c[i] * shade) for i in range(3))
+                        draw.rectangle([px + 3, by, px + TS - 3, by + 4], fill=(*bc, 255))
+                        # 木板纹理
+                        draw.line([px + 4, by + 2, px + TS - 4, by + 2], fill=(*darken(plank_c, 15), 100), width=1)
+                    # 桥面纵向中缝
+                    draw.line([px + TS // 2, py + TS // 2, px + TS // 2, py + TS - 2], fill=(*darken(plank_c, 20), 180), width=2)
+                    # 栏杆柱
+                    for bx in range(px + 4, px + TS - 2, TS // 3):
+                        draw.rectangle([bx - 1, py + TS // 2 - 2, bx + 1, py + TS // 2 + 6], fill=(*rail_c, 255))
+                    # 栏杆横梁
+                    draw.line([px + 4, py + TS // 2 - 1, px + TS - 4, py + TS // 2 - 1], fill=(*lighten(rail_c, 15), 255), width=2)
+                    # 桥下水面
+                    water_c = (60, 100, 160, 120)
+                    for wy in range(py, py + TS // 2, 4):
+                        for wx in range(px, px + TS, 8):
+                            draw.rectangle([wx, wy, wx + 8, wy + 4], fill=water_c)
 
-                elif tid == 20:
-                    draw.rectangle([px + 4, py + 4, px + TS - 4, py + TS - 4], fill=(*c, 255))
-                    draw.rectangle([px + 8, py + 8, px + TS - 8, py + TS - 8], fill=(*lighten(c, 20), 255))
-                    draw.rectangle([px + 12, py + 6, px + TS - 12, py + 10], fill=(*accent, 255))
+                elif tid == 10:  # Stone Road - 石板路 (青石铺就)
+                    # 基底
+                    draw.rectangle([px, py, px + TS, py + TS], fill=(*c, 255))
+                    # 不规则石板纹理
+                    rng_road = random.Random(global_tx * 7777 + global_ty * 3337)
+                    stone_color1 = lighten(c, 12)
+                    stone_color2 = darken(c, 8)
+                    stone_color3 = (c[0] + 8, c[1] + 5, c[2] - 5)
+                    # 石板分块 - 用不规则的矩形模拟青石板
+                    for _ in range(6):
+                        sx = px + rng_road.randint(2, TS - 16)
+                        sy = py + rng_road.randint(2, TS - 16)
+                        sw = rng_road.randint(10, 20)
+                        sh = rng_road.randint(8, 14)
+                        sc = rng_road.choice([stone_color1, stone_color2, stone_color3])
+                        draw.rectangle([sx, sy, sx + sw, sy + sh], fill=(*sc, 200))
+                        # 石板边缘深色缝隙
+                        draw.rectangle([sx, sy, sx + sw, sy + sh], outline=(*darken(c, 15), 120), width=1)
+                    # 路面纹理(细碎石)
+                    for _ in range(8):
+                        gx = px + rng_road.randint(3, TS - 4)
+                        gy = py + rng_road.randint(3, TS - 4)
+                        gs = rng_road.choice([lighten(c, 20), darken(c, 12)])
+                        draw.rectangle([gx, gy, gx + 2, gy + 2], fill=(*gs, 150))
+                    # 路面中线(若有)
+                    if global_tx % 3 == 0:
+                        draw.line([px + TS // 2, py + 2, px + TS // 2, py + TS - 2], fill=(*darken(c, 10), 60), width=1)
+
+                elif tid == 106:  # Dirt Road (新土路)
+                    draw.rectangle([px, py, px + TS, py + TS], fill=(*c, 255))
+                    rng_dirt = random.Random(global_tx * 5551 + global_ty * 2221)
+                    # 泥土纹理
+                    for _ in range(10):
+                        dx = px + rng_dirt.randint(2, TS - 4)
+                        dy = py + rng_dirt.randint(2, TS - 4)
+                        dc = rng_dirt.choice([lighten(c, 10), darken(c, 8), (*c, 255)])
+                        draw.rectangle([dx, dy, dx + 4, dy + 4], fill=(*dc[:3], 130))
+                    # 车辙印
+                    draw.line([px + TS // 3, py + 2, px + TS // 3, py + TS - 2], fill=(*darken(c, 18), 100), width=3)
+                    draw.line([px + 2 * TS // 3, py + 2, px + 2 * TS // 3, py + TS - 2], fill=(*darken(c, 18), 100), width=3)
+
+                elif tid == 1:  # Dirt Road (old)
+                    draw.rectangle([px, py, px + TS, py + TS], fill=(*c, 255))
+                    rng_dr = random.Random(global_tx * 1123 + global_ty * 4567)
+                    for _ in range(12):
+                        dx = px + rng_dr.randint(2, TS - 4)
+                        dy = py + rng_dr.randint(2, TS - 4)
+                        draw.rectangle([dx, dy, dx + 3, dy + 3], fill=(*detail[:3], 120))
+
+                elif tid == 20:  # Gate - 城门/院门
+                    # 宏伟城门
+                    gate_w = TS // 2
+                    gate_h = TS - 12
+                    gate_x = px + TS // 2 - gate_w // 2
+                    gate_y = py + 6
+                    # 门洞
+                    draw.rectangle([gate_x, gate_y, gate_x + gate_w, gate_y + gate_h], fill=(40, 30, 20))
+                    # 门框
+                    for i in range(3):
+                        a = 255 - i * 50
+                        draw.rectangle([gate_x - i - 2, gate_y - i - 2, gate_x + gate_w + i + 2, gate_y + gate_h + i + 2],
+                                      outline=(*lighten(c, 15), a), width=1)
+                    # 穹顶弧线
+                    draw.arc([gate_x - 4, gate_y - gate_h // 5, gate_x + gate_w + 4, gate_y + gate_h // 4], 180, 360,
+                            fill=(*accent, 255), width=3)
+                    # 门钉
+                    for gdx in range(gate_x + 6, gate_x + gate_w - 4, 8):
+                        for gdy in range(gate_y + 6, gate_y + gate_h - 6, 10):
+                            draw.ellipse([gdx, gdy, gdx + 3, gdy + 3], fill=(200, 180, 50))
+                    # 门槛
+                    draw.rectangle([gate_x - 2, gate_y + gate_h, gate_x + gate_w + 2, gate_y + gate_h + 4],
+                                  fill=(*darken(c, 15), 255))
+                    # 门环
+                    ring_x = gate_x + gate_w // 2
+                    ring_y = gate_y + gate_h // 3
+                    draw.ellipse([ring_x - 4, ring_y - 4, ring_x + 4, ring_y + 4], fill=(200, 170, 60))
+                    draw.ellipse([ring_x - 2, ring_y - 2, ring_x + 2, ring_y + 2], fill=(180, 150, 40))
 
                 elif tid == 33:
                     draw.rectangle([px + 8, py + 8, px + TS - 8, py + TS - 8], fill=(*c, 255))
@@ -660,14 +820,32 @@ def _draw_building_labels(camera_x, camera_y, game_map):
     for label in labels:
         lx, ly, text = label[0], label[1], label[2]
         fk = label[3] if len(label) > 3 else "default"
+        building_type = label[4] if len(label) > 4 else ""
         wx, wy = map_to_world(lx, ly, len(game_map.tiles))
         sx, sy = world_to_screen(wx, wy + 1.5, camera_x, camera_y)
         if 0 <= sx <= SW and 0 <= sy <= SH:
             bc = BUILDING_COLORS.get(fk, BUILDING_COLORS["default"])
-            tw, th = len(text) * 10 + 24, 22
-            arcade.draw_rect_filled(arcade.LBWH(sx - tw / 2, sy - th / 2, tw, th), (*bc["roof"][:3], 220))
-            arcade.draw_rect_outline(arcade.LBWH(sx - tw / 2, sy - th / 2, tw, th), (*bc["wall"], 230), 1)
-            draw_text(text, sx, sy, (255, 255, 255), 12, "center", "center")
+            tw, th = len(text) * 12 + 20, 26
+            # 背景
+            arcade.draw_rect_filled(arcade.LBWH(sx - tw / 2, sy - th / 2, tw, th), 
+                                   (bc["wall"][0] // 2, bc["wall"][1] // 2, bc["wall"][2] // 2, 230))
+            arcade.draw_rect_outline(arcade.LBWH(sx - tw / 2, sy - th / 2, tw, th), 
+                                    (*bc["roof"][:3], 240), 2)
+            # 类型小图标颜色
+            type_colors = {
+                "tavern": (200, 160, 80),
+                "blacksmith": (140, 140, 160),
+                "tailor": (160, 120, 180),
+                "herbalist": (80, 160, 100),
+                "temple": (220, 200, 80),
+                "training": (180, 100, 60),
+                "market": (100, 180, 200),
+                "residence": (160, 150, 120),
+            }
+            dot_c = type_colors.get(building_type, bc["roof"][:3])
+            arcade.draw_circle_filled(sx - tw / 2 + 8, sy, 4, (*dot_c, 240))
+            arcade.draw_circle_outline(sx - tw / 2 + 8, sy, 4, (255, 255, 255, 180), 1)
+            draw_text(text, sx + 2, sy, (240, 235, 215), 11, "center", "center")
 
 
 def _draw_lighting_overlay(camera_x, camera_y):

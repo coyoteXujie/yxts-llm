@@ -361,3 +361,4 @@ class Map:
     description: str = ""
     zone_type: str = "wild"
     transitions: Dict[str, Tuple[str, Position]] = field(default_factory=dict)
+    labels: List = field(default_factory=list)
