@@ -7,6 +7,8 @@ signal combat_finished(result: Dictionary)
 
 var enemy: Dictionary = {}
 var log_lines: Array[String] = []
+var combat_events: Array[Dictionary] = []
+var event_index := 0
 var active := false
 
 func start(enemy_data: Dictionary) -> void:
@@ -14,6 +16,8 @@ func start(enemy_data: Dictionary) -> void:
 	enemy["hp"] = int(enemy.get("hp", enemy.get("max_hp", 50)))
 	enemy["max_hp"] = int(enemy.get("max_hp", enemy.get("hp", 50)))
 	log_lines = ["%s 拦住了去路。" % str(enemy.get("name", "敌人"))]
+	combat_events.clear()
+	event_index = 0
 	active = true
 	GameState.set_mode(GameState.Mode.COMBAT)
 	combat_started.emit(enemy)
@@ -37,6 +41,8 @@ func player_attack(skill_id: String = "normal") -> void:
 			GameState.restore_mp(12)
 			GameState.heal_player(8)
 			_append_log("你调匀内息，恢复少许气血。")
+			_record_event("player", "heal", 8, "气血 +8")
+			_record_event("player", "mp", 12, "内力 +12")
 			_enemy_turn()
 			return
 		_:
@@ -69,6 +75,7 @@ func player_attack(skill_id: String = "normal") -> void:
 		_append_log("你使出%s Lv.%d，造成 %d 点伤害。" % [skill_name, level, damage])
 	else:
 		_append_log("你使出%s，造成 %d 点伤害。" % [skill_name, damage])
+	_record_event("enemy", "damage", damage, "-%d" % damage, skill_name)
 
 	if int(enemy.get("hp", 0)) <= 0:
 		_finish(true)
@@ -90,6 +97,7 @@ func snapshot() -> Dictionary:
 	return {
 		"enemy": enemy,
 		"log": log_lines.duplicate(),
+		"events": combat_events.duplicate(true),
 		"active": active
 	}
 
@@ -101,6 +109,7 @@ func _enemy_turn() -> void:
 	var damage: int = int(max(1, enemy_attack + randi_range(0, 5) - int(player_defense * 0.4)))
 	var actual: int = GameState.damage_player(damage)
 	_append_log("%s 反击，造成 %d 点伤害。" % [str(enemy.get("name", "敌人")), actual])
+	_record_event("player", "damage", actual, "-%d" % actual, str(enemy.get("name", "敌人")))
 
 	if int(GameState.player.get("hp", 0)) <= 0:
 		_finish(false)
@@ -135,3 +144,16 @@ func _append_log(text: String) -> void:
 	log_lines.append(text)
 	while log_lines.size() > 6:
 		log_lines.pop_front()
+
+func _record_event(target: String, kind: String, amount: int, label: String, source: String = "") -> void:
+	event_index += 1
+	combat_events.append({
+		"id": event_index,
+		"target": target,
+		"kind": kind,
+		"amount": amount,
+		"label": label,
+		"source": source
+	})
+	while combat_events.size() > 8:
+		combat_events.pop_front()
