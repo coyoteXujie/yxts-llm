@@ -1,0 +1,201 @@
+[gd_scene format=3 uid="uid://bkf41wcjbo2sy"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="SongshanPeak" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="PeakGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2750.0
+offset_top = -2750.0
+offset_right = 2750.0
+offset_bottom = 2750.0
+color = Color(0.30, 0.28, 0.25, 1)
+
+[node name="PathWest" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -2750.0
+offset_top = -30.0
+offset_right = -400.0
+offset_bottom = 30.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -30.0
+offset_top = 400.0
+offset_right = 30.0
+offset_bottom = 2750.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = 400.0
+offset_top = -30.0
+offset_right = 2750.0
+offset_bottom = 30.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="Mountain1" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = -1200.0
+offset_top = -1500.0
+offset_right = -800.0
+offset_bottom = -800.0
+color = Color(0.35, 0.32, 0.28, 1)
+
+[node name="Mountain2" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = 900.0
+offset_top = -1600.0
+offset_right = 1300.0
+offset_bottom = -900.0
+color = Color(0.35, 0.32, 0.28, 1)
+
+[node name="Mountain3" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = -600.0
+offset_top = -2000.0
+offset_right = -200.0
+offset_bottom = -1500.0
+color = Color(0.35, 0.32, 0.28, 1)
+
+[node name="PineTree1" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = -400.0
+offset_top = -600.0
+offset_right = -370.0
+offset_bottom = -500.0
+color = Color(0.15, 0.30, 0.12, 1)
+
+[node name="PineTree2" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = 500.0
+offset_top = -700.0
+offset_right = 530.0
+offset_bottom = -600.0
+color = Color(0.15, 0.30, 0.12, 1)
+
+[node name="PineTree3" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = -600.0
+offset_top = 300.0
+offset_right = -570.0
+offset_bottom = 200.0
+color = Color(0.15, 0.30, 0.12, 1)
+
+[node name="PineTree4" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = 700.0
+offset_top = 400.0
+offset_right = 730.0
+offset_bottom = 300.0
+color = Color(0.15, 0.30, 0.12, 1)
+
+[node name="PineTree5" type="ColorRect" parent="WorldLayer" unique_id=14]
+offset_left = 200.0
+offset_top = -800.0
+offset_right = 230.0
+offset_bottom = -700.0
+color = Color(0.15, 0.30, 0.12, 1)
+
+[node name="ShaolinTemple" type="ColorRect" parent="WorldLayer" unique_id=15]
+offset_left = -100.0
+offset_top = -1800.0
+offset_right = 100.0
+offset_bottom = -1600.0
+color = Color(0.40, 0.35, 0.30, 0.6)
+
+[node name="TemplePagoda" type="ColorRect" parent="WorldLayer" unique_id=16]
+offset_left = -30.0
+offset_top = -1900.0
+offset_right = 30.0
+offset_bottom = -1800.0
+color = Color(0.45, 0.40, 0.35, 0.5)
+
+[node name="Rock1" type="ColorRect" parent="WorldLayer" unique_id=17]
+offset_left = -500.0
+offset_top = -300.0
+offset_right = -440.0
+offset_bottom = -240.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="Rock2" type="ColorRect" parent="WorldLayer" unique_id=18]
+offset_left = 300.0
+offset_top = 100.0
+offset_right = 370.0
+offset_bottom = 170.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="Rock3" type="ColorRect" parent="WorldLayer" unique_id=19]
+offset_left = -300.0
+offset_top = 500.0
+offset_right = -240.0
+offset_bottom = 560.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="Cloud1" type="ColorRect" parent="WorldLayer" unique_id=20]
+offset_left = -800.0
+offset_top = -1400.0
+offset_right = -500.0
+offset_bottom = -1350.0
+color = Color(0.80, 0.80, 0.80, 0.25)
+
+[node name="Cloud2" type="ColorRect" parent="WorldLayer" unique_id=21]
+offset_left = 600.0
+offset_top = -1300.0
+offset_right = 900.0
+offset_bottom = -1250.0
+color = Color(0.80, 0.80, 0.80, 0.25)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=22]
+offset_left = -100.0
+offset_top = -400.0
+offset_right = 100.0
+offset_bottom = -350.0
+text = "嵩山峰顶"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.8, 0.75, 0.7, 0.5))
+add_theme_font_size_override("font_size", 24)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=23]
+
+[node name="NPC_wuseng" type="Node2D" parent="NPCLayer" unique_id=24]
+position = Vector2(-200, -300)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_wuseng" unique_id=25]
+script = ExtResource("2_npcsprite")
+npc_id = "songshan_wuseng"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_wuseng" unique_id=26]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_wuseng/InteractArea" unique_id=27]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_dengshan" type="Node2D" parent="NPCLayer" unique_id=28]
+position = Vector2(300, -600)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_dengshan" unique_id=29]
+script = ExtResource("2_npcsprite")
+npc_id = "songshan_dengshan"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_dengshan" unique_id=30]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_dengshan/InteractArea" unique_id=31]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_daoshi" type="Node2D" parent="NPCLayer" unique_id=32]
+position = Vector2(-500, 500)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_daoshi" unique_id=33]
+script = ExtResource("2_npcsprite")
+npc_id = "songshan_daoshi"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_daoshi" unique_id=34]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_daoshi/InteractArea" unique_id=35]
+shape = SubResource("CircleShape2D_player")

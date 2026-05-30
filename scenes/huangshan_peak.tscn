@@ -1,0 +1,145 @@
+[gd_scene format=3 uid="uid://d2b31o2uvtlpo"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="HuangshanPeak" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="PeakGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2750.0
+offset_top = -2750.0
+offset_right = 2750.0
+offset_bottom = 2750.0
+color = Color(0.32, 0.30, 0.28, 1)
+
+[node name="CloudSea" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -800.0
+offset_top = -600.0
+offset_right = 800.0
+offset_bottom = -200.0
+color = Color(0.75, 0.75, 0.78, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -30.0
+offset_top = -2750.0
+offset_right = 30.0
+offset_bottom = -400.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = -30.0
+offset_top = 400.0
+offset_right = 30.0
+offset_bottom = 2750.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = 400.0
+offset_top = -30.0
+offset_right = 2750.0
+offset_bottom = 30.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="YingkePine" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = -200.0
+offset_top = -150.0
+offset_right = -160.0
+offset_bottom = -50.0
+color = Color(0.20, 0.35, 0.18, 1)
+
+[node name="StrangeRock1" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = 300.0
+offset_top = -250.0
+offset_right = 360.0
+offset_bottom = -180.0
+color = Color(0.48, 0.45, 0.42, 1)
+
+[node name="StrangeRock2" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = -400.0
+offset_top = 100.0
+offset_right = -340.0
+offset_bottom = 170.0
+color = Color(0.48, 0.45, 0.42, 1)
+
+[node name="Pine1" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = 150.0
+offset_top = 200.0
+offset_right = 180.0
+offset_bottom = 100.0
+color = Color(0.20, 0.35, 0.18, 1)
+
+[node name="Pine2" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = -500.0
+offset_top = -300.0
+offset_right = -470.0
+offset_bottom = -200.0
+color = Color(0.20, 0.35, 0.18, 1)
+
+[node name="HotSpring" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = 500.0
+offset_top = 250.0
+offset_right = 580.0
+offset_bottom = 330.0
+color = Color(0.35, 0.45, 0.55, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=14]
+offset_left = -100.0
+offset_top = -400.0
+offset_right = 100.0
+offset_bottom = -350.0
+text = "黄山云海"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.70, 0.65, 0.55, 0.6))
+add_theme_font_size_override("font_size", 24)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=15]
+
+[node name="NPC_huashi" type="Node2D" parent="NPCLayer" unique_id=16]
+position = Vector2(-200, -150)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_huashi" unique_id=17]
+script = ExtResource("2_npcsprite")
+npc_id = "huangshan_huashi"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_huashi" unique_id=18]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_huashi/InteractArea" unique_id=19]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_dengshan" type="Node2D" parent="NPCLayer" unique_id=20]
+position = Vector2(180, 250)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_dengshan" unique_id=21]
+script = ExtResource("2_npcsprite")
+npc_id = "huangshan_dengshan"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_dengshan" unique_id=22]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_dengshan/InteractArea" unique_id=23]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_daoshi" type="Node2D" parent="NPCLayer" unique_id=24]
+position = Vector2(320, -220)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_daoshi" unique_id=25]
+script = ExtResource("2_npcsprite")
+npc_id = "huangshan_daoshi"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_daoshi" unique_id=26]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_daoshi/InteractArea" unique_id=27]
+shape = SubResource("CircleShape2D_player")

@@ -1,0 +1,126 @@
+[gd_scene format=3 uid="uid://coi1hnni3xl8m"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+[ext_resource type="Script" path="res://scripts/world/scene_tile_map.gd" id="3_tilemap"]
+[ext_resource type="Texture2D" path="res://assets/sprites/chinese_chars/char0_frame0.png" id="4_playertex"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="Main" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="SceneTileMap" type="Node2D" parent="WorldLayer" unique_id=3]
+script = ExtResource("3_tilemap")
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=4]
+z_index = 5
+y_sort_enabled = true
+
+# 核心剧情NPC - 分布在建筑附近
+[node name="LiMuxue" type="Node2D" parent="NPCLayer" unique_id=5]
+position = Vector2(-1200, -800)
+script = ExtResource("2_npcsprite")
+npc_id = "li_muxue"
+
+[node name="Xiaoyaozi" type="Node2D" parent="NPCLayer" unique_id=6]
+position = Vector2(-800, -1000)
+script = ExtResource("2_npcsprite")
+npc_id = "xiaoyaozi"
+
+[node name="Laofuzi" type="Node2D" parent="NPCLayer" unique_id=7]
+position = Vector2(800, -1100)
+script = ExtResource("2_npcsprite")
+npc_id = "laofuzi"
+
+[node name="Cunzhang" type="Node2D" parent="NPCLayer" unique_id=8]
+position = Vector2(1200, -900)
+script = ExtResource("2_npcsprite")
+npc_id = "cunzhang"
+
+# 商人 - 分布在道路两侧
+[node name="WangTiejiang" type="Node2D" parent="NPCLayer" unique_id=9]
+position = Vector2(-600, -200)
+script = ExtResource("2_npcsprite")
+npc_id = "wang_tiejiang"
+
+[node name="Hetieshou" type="Node2D" parent="NPCLayer" unique_id=10]
+position = Vector2(400, -200)
+script = ExtResource("2_npcsprite")
+npc_id = "hetieshou"
+
+[node name="Pingyizhi" type="Node2D" parent="NPCLayer" unique_id=11]
+position = Vector2(-400, 200)
+script = ExtResource("2_npcsprite")
+npc_id = "pingyizhi"
+
+[node name="Gelangtai" type="Node2D" parent="NPCLayer" unique_id=12]
+position = Vector2(600, 200)
+script = ExtResource("2_npcsprite")
+npc_id = "gelangtai"
+
+# 村民 - 分布在不同区域
+[node name="DaodeHeshang" type="Node2D" parent="NPCLayer" unique_id=13]
+position = Vector2(-1000, 400)
+script = ExtResource("2_npcsprite")
+npc_id = "daode_heshang"
+
+[node name="Hexi" type="Node2D" parent="NPCLayer" unique_id=14]
+position = Vector2(1000, 600)
+script = ExtResource("2_npcsprite")
+npc_id = "hexi"
+
+[node name="Yuweng" type="Node2D" parent="NPCLayer" unique_id=15]
+position = Vector2(-800, 1100)
+script = ExtResource("2_npcsprite")
+npc_id = "yuweng"
+
+[node name="Laopopo" type="Node2D" parent="NPCLayer" unique_id=16]
+position = Vector2(900, 1000)
+script = ExtResource("2_npcsprite")
+npc_id = "laopopo"
+
+# 守卫 - 城镇入口
+[node name="GateGuard" type="Node2D" parent="NPCLayer" unique_id=17]
+position = Vector2(-1500, 0)
+script = ExtResource("2_npcsprite")
+npc_id = "gate_guard"
+
+[node name="Patrol" type="Node2D" parent="NPCLayer" unique_id=18]
+position = Vector2(1500, 0)
+script = ExtResource("2_npcsprite")
+npc_id = "patrol"
+
+# 特殊NPC - 广场/边缘
+[node name="Beggar" type="Node2D" parent="NPCLayer" unique_id=19]
+position = Vector2(0, 800)
+script = ExtResource("2_npcsprite")
+npc_id = "beggar"
+
+[node name="Storyteller" type="Node2D" parent="NPCLayer" unique_id=20]
+position = Vector2(-200, 900)
+script = ExtResource("2_npcsprite")
+npc_id = "storyteller"
+
+[node name="Daxia" type="Node2D" parent="NPCLayer" unique_id=21]
+position = Vector2(1100, -400)
+script = ExtResource("2_npcsprite")
+npc_id = "daxia"
+
+[node name="PlayerLayer" type="Node2D" parent="." unique_id=22]
+z_index = 10
+
+[node name="Player" type="CharacterBody2D" parent="PlayerLayer" unique_id=23]
+position = Vector2(0, 0)
+
+[node name="PlayerSprite" type="Sprite2D" parent="PlayerLayer/Player" unique_id=24]
+scale = Vector2(2, 2)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayerLayer/Player" unique_id=25]
+shape = SubResource("CircleShape2D_player")
+
+[node name="Camera2D" type="Camera2D" parent="PlayerLayer/Player" unique_id=26]

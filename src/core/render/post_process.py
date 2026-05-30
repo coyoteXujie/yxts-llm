@@ -241,16 +241,19 @@ class PostProcessor:
     def _draw_vignette(self):
         if not self._vignette_enabled:
             return
-        cx, cy = SW // 2, SH // 2
-        max_r = math.sqrt(cx * cx + cy * cy)
+        intensity = self._vignette_intensity
+        edge_w = 80
         steps = 8
         for i in range(steps):
             t = i / steps
-            r = max_r * (0.4 + 0.6 * t)
-            a = int(self._vignette_intensity * 200 * t * t * t)
+            a = int(intensity * 120 * t * t)
             a = max(0, min(255, a))
-            thickness = max(1, int(max_r / steps * 1.5))
-            arcade.draw_circle_outline(cx, cy, r, (0, 0, 0, a), thickness)
+            inset = int(edge_w * (1 - t))
+            c = (0, 0, 0, a)
+            arcade.draw_lrbt_rectangle_filled(0, inset, 0, SH, c)
+            arcade.draw_lrbt_rectangle_filled(SW - inset, SW, 0, SH, c)
+            arcade.draw_lrbt_rectangle_filled(0, SW, 0, inset, c)
+            arcade.draw_lrbt_rectangle_filled(0, SW, SH - inset, SH, c)
 
 
 class EnvironmentParticles:

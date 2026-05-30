@@ -1,0 +1,4 @@
+﻿
+ERROR: Failed to create an autoload, script 'res://scripts/systems/reward_system.gd' is not compiling.
+
+

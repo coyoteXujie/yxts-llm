@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c9a96e"/>
+      <stop offset="100%" style="stop-color:#f0c040"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="url(#bg)" rx="16"/>
+  <g transform="translate(64,64)">
+    <polygon points="0,-40 35,0 20,35 -20,35 -35,0" fill="url(#gold)" stroke="#8b7355" stroke-width="2"/>
+    <polygon points="0,-25 22,0 12,22 -12,22 -22,0" fill="#1a1a2e"/>
+    <text x="0" y="6" font-family="serif" font-size="16" fill="url(#gold)" text-anchor="middle" dominant-baseline="middle">侠</text>
+  </g>
+  <circle cx="20" cy="20" r="8" fill="none" stroke="#c0392b" stroke-width="2"/>
+  <path d="M 28 20 L 100 20" stroke="#c0392b" stroke-width="2" stroke-dasharray="4,2"/>
+</svg>

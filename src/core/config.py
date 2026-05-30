@@ -92,6 +92,8 @@ VISUAL_CONFIG = {
     "grass_detail_enabled": True,
     "road_detail_enabled": True,
     "water_detail_enabled": True,
+    "ink_style_enabled": False,
+    "ink_style_opacity": 0.35,
 }
 
 WEATHER_TYPES = ["clear", "cloudy", "rain", "heavy_rain", "snow", "fog", "mist"]
@@ -116,6 +118,8 @@ WEATHER_OVERLAY = {
     "mist": (170, 175, 185, 35),
 }
 
+# 已审查: 228项中有约60项可通过模板引用合并(tiles 11-38及部分其他tile ID的色差值<5),
+# 保留全部条目以确保向后兼容性。未来可考虑引入 TILE_DEDUP 映射减少重复定义。
 TILE_PALETTE = {
     0: {"base": (100, 165, 70), "detail": (80, 140, 55), "accent": (120, 185, 90)},     # 草地-鲜绿
     1: {"base": (175, 150, 115), "detail": (155, 130, 95), "accent": (195, 170, 135)},   # 土路-黄褐

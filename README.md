@@ -1,191 +1,256 @@
-# 白金英雄坛说 - Python重写版
+# 侠影江湖 - Godot 4.4 项目
 
-![Python Version](https://img.shields.io/badge/Python-3.9+-blue)
-![Arcade Version](https://img.shields.io/badge/Arcade-3.0-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+## 项目概述
 
-基于汇编语言经典游戏《白金英雄坛说》的Python重写版，采用现代化2D图形界面，支持NPC与LLM智能对话，动态任务系统和完整的武侠世界体验。
+《侠影江湖》是一款基于 Godot 4.4 开发的宏大武侠开放世界 RPG 游戏。
 
-## 游戏特色
+### 技术栈
 
-### 🎮 精美2D图形界面
-- 现代游戏引擎渲染，支持60fps流畅运行
-- 多样化地图场景：草地、道路、水域、建筑、树木等
-- 精致的角色和NPC精灵设计
-- 友好的HUD界面和状态栏显示
+- **引擎**: Godot 4.4
+- **语言**: GDScript
+- **架构**: 高内聚、低耦合分层架构
 
-### 🗣️ NPC与LLM智能对话
-- 支持与游戏中的NPC进行自然语言对话
-- LLM驱动的动态对话生成
-- NPC根据身份和性格给出不同的回应
-
-### 📜 动态任务系统
-- 根据玩家等级和行动动态生成任务
-- 多种任务类型：收集、击杀、对话、探索、护送
-- 完成任务获得经验值、金钱和装备奖励
-
-### ⚔️ 完整战斗系统
-- 回合制战斗
-- 多种技能（拳脚、剑法、躲闪、内功、招架）
-- 物品使用（药品、食物）
-- 敌人追踪和战斗奖励
-
-### 🏠 武侠世界
-- 平安镇地图，可四处探索
-- 时间系统（天数和小时）
-- 多种NPC类型：村民、商人、师父、敌人
-- 门派和道德值系统
-
-## 安装与运行
-
-### 环境要求
-- **Python**: 3.9 或更高版本
-- **Arcade**: 3.0 或更高版本
-
-### 快速开始
-
-#### 🐧 Linux / macOS
-```bash
-# 克隆仓库
-git clone <repository-url>
-cd yxts-llm
-
-# 方式1：使用自动脚本（推荐）
-chmod +x run.sh
-./run.sh
-
-# 方式2：手动安装
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python3 main.py
-```
-
-#### 🪟 Windows
-```batch
-# 克隆仓库
-git clone <repository-url>
-cd yxts-llm
-
-# 方式1：使用自动脚本（推荐）
-双击 run.bat
-
-# 方式2：手动安装
-python -m venv venv
-venv\Scripts\activate.bat
-pip install -r requirements.txt
-python main.py
-```
-
-## 操作指南
-
-### 主菜单
-- **↑/↓**: 选择菜单项
-- **Enter**: 确认选择
-- **ESC**: 返回上级菜单
-
-### 游戏内操作
-| 按键 | 功能 |
-|------|------|
-| W / ↑ | 向北移动 |
-| S / ↓ | 向南移动 |
-| A / ← | 向西移动 |
-| D / → | 向东移动 |
-| T | 与附近NPC对话 |
-| F | 攻击附近敌人 |
-| B | 打开背包/商店 |
-| Q | 查看任务列表 |
-| ESC | 返回主菜单 |
-
-### 角色创建
-| 按键 | 功能 |
-|------|------|
-| 1 | 增加臂力 |
-| 2 | 增加身法 |
-| 3 | 增加悟性 |
-| 4 | 增加根骨 |
-| G | 切换性别 |
-| Enter | 确认创建角色 |
-
-## 游戏系统
-
-### 属性系统
-- **臂力**: 影响攻击力和负重量
-- **身法**: 影响闪避率和逃跑成功率
-- **悟性**: 影响技能学习效率和内力上限
-- **根骨**: 影响生命上限和防御力
-
-### 技能类型
-- 拳脚、剑法、躲闪、内功、招架、识字、容貌
-
-### 物品类型
-- 消耗品（食物、药品）
-- 装备（武器、防具）
-
-### 门派系统
-- 正派、邪派、中立
-- 道德值影响可加入的门派
+---
 
 ## 项目结构
 
 ```
-yxts-llm/
-├── main.py                    # 游戏入口
-├── assets/                    # 资源目录
-│   ├── tiles/                 # 瓦片资源
-│   ├── sprites/               # 精灵资源
-│   ├── ui/                    # UI资源
-│   └── fonts/                 # 字体资源
-└── src/core/
-    ├── config.py              # 游戏配置
-    ├── entities.py            # 核心实体类
-    ├── world.py               # 游戏世界管理
-    ├── game.py                # 主游戏逻辑
-    ├── combat.py              # 战斗系统
-    ├── quest.py               # 任务系统
-    ├── llm_client.py          # LLM客户端
-    ├── event.py               # 事件系统
-    ├── renderer.py            # 渲染器
-    └── window.py              # 游戏窗口
+E:\yxts-llm\
+├── project.godot              # Godot 项目配置
+├── icon.svg                  # 游戏图标
+│
+├── scripts/                 # 所有游戏代码
+│   ├── core/               # 核心框架
+│   │   ├── constants.gd    # 全局常量
+│   │   ├── utils.gd        # 工具函数
+│   │   ├── event_bus.gd    # 事件总线
+│   │   ├── save_system.gd  # 存档系统
+│   │   ├── data_registry.gd # 数据注册表
+│   │   └── state_machine.gd # 状态机
+│   │
+│   ├── components/          # 组件层
+│   │   ├── base_component.gd
+│   │   ├── health_component.gd
+│   │   ├── mana_component.gd
+│   │   ├── inventory_component.gd
+│   │   └── movement_component.gd
+│   │
+│   ├── entities/           # 实体层
+│   │   ├── game_entity.gd
+│   │   └── player_entity.gd
+│   │
+│   ├── world/             # 世界层
+│   │   └── world_manager.gd
+│   │
+│   ├── systems/           # 系统层
+│   │   ├── game_system.gd
+│   │   ├── combat_system.gd
+│   │   ├── dialogue_system.gd
+│   │   ├── quest_system.gd
+│   │   ├── cultivation_system.gd
+│   │   ├── economy_system.gd
+│   │   ├── atmosphere_system.gd
+│   │   ├── faction_system.gd
+│   │   ├── vfx_system.gd
+│   │   ├── encounter_system.gd
+│   │   └── world_event_engine.gd
+│   │
+│   └── ui/               # UI层
+│       └── hud.gd
+│
+├── scenes/                # 场景文件
+│   ├── main.tscn         # 主场景
+│   ├── main.gd           # 主脚本
+│   └── ui/
+│       ├── hud.tscn
+│       └── hud.gd
+│
+├── doc/                  # 设计文档
+│   ├── 01_worldview_and_factions.md
+│   ├── 02_map_design.md
+│   ├── 03_npc_design.md
+│   ├── 04_items_equipment.md
+│   ├── 05_story_quests.md
+│   ├── 06_system_architecture.md
+│   ├── 07_ui_design.md
+│   └── 08_asset_prompts.md
+│
+├── src/                  # 原始Pygame代码
+│   └── ...
+│
+├── doc/                  # 文档
+└── README.md              # 本文件
 ```
 
-## LLM配置
+---
 
-游戏支持使用LLM生成动态对话和任务。配置文件位于 `src/core/llm_client.py`。
+## Autoload 系统
 
-### 支持的LLM提供商
-- OpenAI GPT
-- DeepSeek
-- Mock模式（用于测试）
+项目包含 16 个 Autoload 单例：
 
-### 配置方法
-在 `src/core/llm_client.py` 中设置环境变量或直接修改配置。
+| 单例 | 用途 |
+|------|------|
+| `Constants` | 全局常量定义 |
+| `Utils` | 工具函数库 |
+| `EventBus` | 事件总线 |
+| `SaveSystem` | 存档系统 |
+| `DataRegistry` | 数据注册表 |
+| `GameSystem` | 游戏主系统 |
+| `WorldManager` | 世界管理 |
+| `CombatSystem` | 战斗系统 |
+| `DialogueSystem` | 对话系统 |
+| `CultivationSystem` | 修炼系统 |
+| `EconomySystem` | 经济系统 |
+| `AtmosphereSystem` | 氛围系统 |
+| `FactionSystem` | 派系系统 |
+| `VFXSystem` | 视觉效果 |
+| `EncounterSystem` | 遭遇系统 |
+| `WorldEventEngine` | 世界事件引擎 |
+| `QuestSystem` | 任务系统 |
 
-## 开发计划
+---
 
-- [x] 核心游戏架构
-- [x] 2D图形界面
-- [x] 玩家角色系统
-- [x] NPC系统
-- [x] 战斗系统
-- [x] 任务系统
-- [x] LLM集成
-- [ ] 音效系统
-- [ ] 存档/读档功能
-- [ ] 更多地图区域
-- [ ] 装备系统完善
-- [ ] 技能树系统
+## 核心系统
 
-## 贡献
+### 1. 游戏系统 (GameSystem)
+- 游戏状态管理
+- 主循环控制
+- 场景切换
 
-欢迎提交Issue和Pull Request！
+### 2. 战斗系统 (CombatSystem)
+- 回合制战斗
+- 技能释放
+- 伤害计算
 
-## 许可证
+### 3. 对话系统 (DialogueSystem)
+- 树形对话结构
+- 选择分支
+- 条件触发
 
-MIT License
+### 4. 修炼系统 (CultivationSystem)
+- 内功/外功/轻功
+- 经脉系统
+- 境界突破
+
+### 5. 经济系统 (EconomySystem)
+- 货币管理
+- 商店交易
+- 价格波动
+
+### 6. 氛围系统 (AtmosphereSystem)
+- 天气系统
+- 昼夜循环
+- 环境光照
+
+### 7. 派系系统 (FactionSystem)
+- 7大派系
+- 声望管理
+- 派系战争
+
+### 8. 视觉效果 (VFXSystem)
+- 粒子特效
+- 屏幕震动
+- 技能特效
+
+### 9. 遭遇系统 (EncounterSystem)
+- 随机事件
+- 宝箱/伏击
+- 商人遭遇
+
+### 10. 世界事件引擎 (WorldEventEngine)
+- 动态事件
+- 节日活动
+- 瘟疫/丰收
+
+---
+
+## 运行项目
+
+### 1. 导入项目
+1. 打开 Godot 4.4
+2. 点击 "Import"
+3. 选择 `E:\yxts-llm\project.godot`
+4. 点击 "Import & Edit"
+
+### 2. 运行游戏
+1. 在编辑器中点击 "Run" (F5)
+2. 或双击 `godot.exe` 打开项目后运行
+
+### 3. 快捷键
+
+| 按键 | 功能 |
+|------|------|
+| W/A/S/D | 移动 |
+| E | 交互 |
+| I | 背包 |
+| K | 技能 |
+| Q | 任务 |
+| M | 地图 |
+| J | 日志 |
+| C | 修炼 |
+| Esc | 菜单 |
+
+---
+
+## 设计文档
+
+详细的设计文档位于 `doc/` 目录：
+
+- **世界观与势力**: 5大城池、7大派系、历史背景
+- **地图设计**: 城池→小镇→野外区域
+- **NPC设计**: 60+核心NPC（含历史名人）
+- **物品装备**: 400+物品、武器、防具
+- **故事任务**: 主线5章+3结局、50+支线、30+奇遇
+- **系统架构**: 高内聚低耦合设计详解
+- **UI设计**: 14个界面、ASCII布局图
+- **美术资源**: 350+ AI绘图Prompt
+
+---
+
+## 架构设计
+
+### 分层架构
+
+```
+场景层 → UI层 → 系统层 → 世界层 → 实体层 → 组件层 → 核心层 → 数据层
+```
+
+### 通信方式
+
+- **向下通信**: 直接方法调用
+- **向上/横向通信**: EventBus 事件总线
+
+---
+
+## 性能优化
+
+- ✅ 组件化设计，按需加载
+- ✅ 事件驱动，避免轮询
+- ✅ 数据驱动，易于扩展
+- ✅ 分层架构，模块独立
+
+---
+
+## 开发进度
+
+| 模块 | 状态 |
+|------|------|
+| 核心系统 | ✅ 完成 |
+| 组件系统 | ✅ 完成 |
+| 业务系统 | ✅ 完成 |
+| UI系统 | ✅ 完成 |
+| 场景系统 | ✅ 完成 |
+| 美术资源 | ⏳ 进行中 |
+| 音效系统 | ⏳ 进行中 |
+| 剧情内容 | ✅ 完成 |
+
+---
 
 ## 致谢
 
-- 原版《白金英雄坛说》汇编代码
-- Arcade游戏引擎
-- 所有贡献者和测试者
+本项目参考了多款经典武侠游戏的设计理念，并融入了中国传统文化元素。
+
+---
+
+**版本**: 1.0.0  
+**更新**: 2024年

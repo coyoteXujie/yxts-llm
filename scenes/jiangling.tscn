@@ -1,0 +1,254 @@
+[gd_scene format=3 uid="uid://ef0ei100u17a"]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/chinese/chinese_npc_sprite.png" id="player_tex"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="Jiangling" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="CityGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2000.0
+offset_top = -2000.0
+offset_right = 2000.0
+offset_bottom = 2000.0
+color = Color(0.30, 0.32, 0.28, 1)
+
+[node name="YangtzeRiver" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -2000.0
+offset_top = 600.0
+offset_right = 2000.0
+offset_bottom = 800.0
+color = Color(0.18, 0.35, 0.55, 1)
+
+[node name="Canal" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -50.0
+offset_top = -2000.0
+offset_right = 50.0
+offset_bottom = 600.0
+color = Color(0.20, 0.38, 0.58, 1)
+
+[node name="WallNorth" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = -800.0
+offset_top = -500.0
+offset_right = 800.0
+offset_bottom = -460.0
+color = Color(0.45, 0.42, 0.38, 1)
+
+[node name="WallEast" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = 760.0
+offset_top = -500.0
+offset_right = 800.0
+offset_bottom = 300.0
+color = Color(0.45, 0.42, 0.38, 1)
+
+[node name="WallWest" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = -800.0
+offset_top = -500.0
+offset_right = -760.0
+offset_bottom = 300.0
+color = Color(0.45, 0.42, 0.38, 1)
+
+[node name="WallTower1" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = -820.0
+offset_top = -520.0
+offset_right = -760.0
+offset_bottom = -440.0
+color = Color(0.50, 0.47, 0.42, 1)
+
+[node name="WallTower2" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = 760.0
+offset_top = -520.0
+offset_right = 820.0
+offset_bottom = -440.0
+color = Color(0.50, 0.47, 0.42, 1)
+
+[node name="Dock" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = -150.0
+offset_top = 520.0
+offset_right = 150.0
+offset_bottom = 600.0
+color = Color(0.40, 0.35, 0.28, 1)
+
+[node name="DockPlatform" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = -120.0
+offset_top = 550.0
+offset_right = 120.0
+offset_bottom = 580.0
+color = Color(0.50, 0.40, 0.30, 1)
+
+[node name="MartialHall" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = 300.0
+offset_top = -300.0
+offset_right = 600.0
+offset_bottom = -100.0
+color = Color(0.45, 0.25, 0.20, 1)
+
+[node name="MartialHallRoof" type="ColorRect" parent="WorldLayer" unique_id=14]
+offset_left = 280.0
+offset_top = -320.0
+offset_right = 620.0
+offset_bottom = -300.0
+color = Color(0.30, 0.18, 0.12, 1)
+
+[node name="MarketBuilding" type="ColorRect" parent="WorldLayer" unique_id=15]
+offset_left = -600.0
+offset_top = -200.0
+offset_right = -300.0
+offset_bottom = 0.0
+color = Color(0.48, 0.38, 0.28, 1)
+
+[node name="MarketRoof" type="ColorRect" parent="WorldLayer" unique_id=16]
+offset_left = -620.0
+offset_top = -220.0
+offset_right = -280.0
+offset_bottom = -200.0
+color = Color(0.35, 0.28, 0.18, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=17]
+offset_left = 800.0
+offset_top = -30.0
+offset_right = 2000.0
+offset_bottom = 30.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=18]
+offset_left = -30.0
+offset_top = -2000.0
+offset_right = 30.0
+offset_bottom = -500.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="PathWest" type="ColorRect" parent="WorldLayer" unique_id=19]
+offset_left = -2000.0
+offset_top = -30.0
+offset_right = -800.0
+offset_bottom = 30.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=20]
+offset_left = -30.0
+offset_top = 800.0
+offset_right = 30.0
+offset_bottom = 2000.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="TaishouOffice" type="ColorRect" parent="WorldLayer" unique_id=21]
+offset_left = -400.0
+offset_top = -400.0
+offset_right = -100.0
+offset_bottom = -200.0
+color = Color(0.52, 0.35, 0.25, 1)
+
+[node name="TaishouRoof" type="ColorRect" parent="WorldLayer" unique_id=22]
+offset_left = -420.0
+offset_top = -420.0
+offset_right = -80.0
+offset_bottom = -400.0
+color = Color(0.28, 0.18, 0.12, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=23]
+offset_left = -100.0
+offset_top = -600.0
+offset_right = 100.0
+offset_bottom = -560.0
+text = "江陵城"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.85, 0.75, 0.60, 0.8))
+add_theme_font_size_override("font_size", 40)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=24]
+
+[node name="TaishouNPC" type="Node2D" parent="NPCLayer" unique_id=25]
+position = Vector2(-250, -300)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/TaishouNPC" unique_id=26]
+script = ExtResource("2_npcsprite")
+npc_id = "jiangling_taishou"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/TaishouNPC" unique_id=27]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/TaishouNPC/InteractArea" unique_id=28]
+shape = SubResource("CircleShape2D_player")
+
+[node name="ChuanfuNPC" type="Node2D" parent="NPCLayer" unique_id=29]
+position = Vector2(0, 550)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/ChuanfuNPC" unique_id=30]
+script = ExtResource("2_npcsprite")
+npc_id = "jiangling_chuanfu"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/ChuanfuNPC" unique_id=31]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/ChuanfuNPC/InteractArea" unique_id=32]
+shape = SubResource("CircleShape2D_player")
+
+[node name="JiaotouNPC" type="Node2D" parent="NPCLayer" unique_id=33]
+position = Vector2(450, -200)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/JiaotouNPC" unique_id=34]
+script = ExtResource("2_npcsprite")
+npc_id = "jiangling_jiaotou"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/JiaotouNPC" unique_id=35]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/JiaotouNPC/InteractArea" unique_id=36]
+shape = SubResource("CircleShape2D_player")
+
+[node name="ShangrenNPC" type="Node2D" parent="NPCLayer" unique_id=37]
+position = Vector2(-450, -100)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/ShangrenNPC" unique_id=38]
+script = ExtResource("2_npcsprite")
+npc_id = "jiangling_shangren"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/ShangrenNPC" unique_id=39]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/ShangrenNPC/InteractArea" unique_id=40]
+shape = SubResource("CircleShape2D_player")
+
+[node name="YuminNPC" type="Node2D" parent="NPCLayer" unique_id=41]
+position = Vector2(-200, 580)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/YuminNPC" unique_id=42]
+script = ExtResource("2_npcsprite")
+npc_id = "jiangling_yumin"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/YuminNPC" unique_id=43]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/YuminNPC/InteractArea" unique_id=44]
+shape = SubResource("CircleShape2D_player")
+
+[node name="PlayerLayer" type="Node2D" parent="." unique_id=45]
+z_index = 10
+
+[node name="Player" type="CharacterBody2D" parent="PlayerLayer" unique_id=46]
+position = Vector2(0, 600)
+
+[node name="Sprite" type="Sprite2D" parent="PlayerLayer/Player" unique_id=47]
+texture = ExtResource("player_tex")
+hframes = 4
+vframes = 4
+frame = 0
+scale = Vector2(1.5, 1.5)
+
+[node name="CollisionShape" type="CollisionShape2D" parent="PlayerLayer/Player" unique_id=48]
+shape = SubResource("CircleShape2D_player")

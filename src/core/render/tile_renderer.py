@@ -9,6 +9,7 @@ from .draw_utils import (SW, SH, TS, get_anim_time, map_to_world, world_to_scree
 from .texture_gen import (apply_texture_noise, draw_water_tile, draw_grass_detail,
                            draw_road_detail, draw_soft_shadow, draw_gradient_rect as pil_gradient)
 from .post_process import get_post_processor, get_advanced_lights
+from .ink_renderer import InkTextureGenerator
 
 WATER_TIDS = {2, 27, 105}
 TREE_TIDS = {4, 26, 51, 52, 53, 54}
@@ -763,6 +764,42 @@ def _render_chunk_to_texture(game_map, chunk_tx, chunk_ty, map_h):
                     draw_soft_shadow(draw, px + TS // 2, py + TS + 2, TS - 8, 8, alpha=35)
 
         _draw_terrain_transitions(draw, game_map, chunk_tx, chunk_ty, cx_tiles, cy_tiles, map_h)
+
+        # ── 水墨风格叠加层 ──
+        if VISUAL_CONFIG.get("ink_style_enabled", False):
+            ink_gen = InkTextureGenerator(tile_size=TS)
+            ink_opacity = VISUAL_CONFIG.get("ink_style_opacity", 0.35)
+            # tile type -> ink generator method mapping
+            _INK_DISPATCH = {
+                0:  ("grass",      ink_gen.generate_ink_grass),
+                2:  ("water",      ink_gen.generate_ink_water),
+                10: ("stone_road", ink_gen.generate_ink_stone_road),
+            }
+            for local_ty in range(cy_tiles):
+                global_ty = chunk_ty * CHUNK_SIZE + local_ty
+                if global_ty >= len(game_map.tiles):
+                    break
+                row = game_map.tiles[global_ty]
+                for local_tx in range(cx_tiles):
+                    global_tx = chunk_tx * CHUNK_SIZE + local_tx
+                    if global_tx >= len(row):
+                        break
+                    tid = row[global_tx]
+                    entry = _INK_DISPATCH.get(tid)
+                    if entry is None:
+                        continue
+                    _name, gen_fn = entry
+                    seed = global_tx * 1000 + global_ty
+                    ink_tex = gen_fn(seed=seed)
+                    if ink_tex is None:
+                        continue
+                    # 降低整体alpha到指定不透明度
+                    r_ch, g_ch, b_ch, a_ch = ink_tex.split()
+                    a_ch = a_ch.point(lambda v: int(v * ink_opacity))
+                    ink_tex = Image.merge('RGBA', (r_ch, g_ch, b_ch, a_ch))
+                    px = local_tx * TS
+                    py = (cy_tiles - 1 - local_ty) * TS
+                    img.paste(ink_tex, (px, py), ink_tex)
 
         img = apply_texture_noise(img, intensity=0.04, seed=chunk_tx * 1000 + chunk_ty)
         img = img.filter(ImageFilter.GaussianBlur(radius=1.2))

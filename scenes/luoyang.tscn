@@ -1,0 +1,317 @@
+[gd_scene format=3 uid="uid://dh3l3ivysjuaa"]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/chinese/chinese_npc_sprite.png" id="player_tex"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="LuoyangCity" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="StoneGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2500.0
+offset_top = -2500.0
+offset_right = 2500.0
+offset_bottom = 2500.0
+color = Color(0.42, 0.40, 0.38, 1)
+
+[node name="BattleDamage1" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -300.0
+offset_top = -400.0
+offset_right = -200.0
+offset_bottom = -320.0
+color = Color(0.25, 0.22, 0.20, 1)
+
+[node name="BattleDamage2" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = 500.0
+offset_top = 200.0
+offset_right = 650.0
+offset_bottom = 350.0
+color = Color(0.28, 0.25, 0.23, 1)
+
+[node name="BattleDamage3" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = -800.0
+offset_top = 600.0
+offset_right = -650.0
+offset_bottom = 750.0
+color = Color(0.26, 0.24, 0.22, 1)
+
+[node name="BattleDamage4" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = 400.0
+offset_top = -600.0
+offset_right = 550.0
+offset_bottom = -450.0
+color = Color(0.27, 0.24, 0.21, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = -40.0
+offset_top = 1200.0
+offset_right = 40.0
+offset_bottom = 2500.0
+color = Color(0.38, 0.36, 0.34, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = -40.0
+offset_top = -2500.0
+offset_right = 40.0
+offset_bottom = -1200.0
+color = Color(0.38, 0.36, 0.34, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = 1200.0
+offset_top = -40.0
+offset_right = 2500.0
+offset_bottom = 40.0
+color = Color(0.38, 0.36, 0.34, 1)
+
+[node name="PathWest" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = -2500.0
+offset_top = -40.0
+offset_right = -1200.0
+offset_bottom = 40.0
+color = Color(0.38, 0.36, 0.34, 1)
+
+[node name="BrokenWallNorth1" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = -600.0
+offset_top = -1000.0
+offset_right = -300.0
+offset_bottom = -950.0
+color = Color(0.50, 0.20, 0.15, 1)
+
+[node name="BrokenWallNorth2" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = 300.0
+offset_top = -1000.0
+offset_right = 700.0
+offset_bottom = -940.0
+color = Color(0.48, 0.18, 0.14, 1)
+
+[node name="BrokenWallEast1" type="ColorRect" parent="WorldLayer" unique_id=14]
+offset_left = 1000.0
+offset_top = -500.0
+offset_right = 1050.0
+offset_bottom = -200.0
+color = Color(0.52, 0.22, 0.16, 1)
+
+[node name="BrokenWallEast2" type="ColorRect" parent="WorldLayer" unique_id=15]
+offset_left = 1000.0
+offset_top = 200.0
+offset_right = 1060.0
+offset_bottom = 600.0
+color = Color(0.46, 0.19, 0.15, 1)
+
+[node name="BrokenWallWest1" type="ColorRect" parent="WorldLayer" unique_id=16]
+offset_left = -1050.0
+offset_top = -600.0
+offset_right = -1000.0
+offset_bottom = -250.0
+color = Color(0.50, 0.21, 0.16, 1)
+
+[node name="BrokenWallWest2" type="ColorRect" parent="WorldLayer" unique_id=17]
+offset_left = -1040.0
+offset_top = 150.0
+offset_right = -1000.0
+offset_bottom = 500.0
+color = Color(0.48, 0.18, 0.14, 1)
+
+[node name="MainStreet" type="ColorRect" parent="WorldLayer" unique_id=18]
+offset_left = -50.0
+offset_top = -800.0
+offset_right = 50.0
+offset_bottom = 1000.0
+color = Color(0.40, 0.37, 0.35, 1)
+
+[node name="CrossStreet1" type="ColorRect" parent="WorldLayer" unique_id=19]
+offset_left = -800.0
+offset_top = -50.0
+offset_right = 800.0
+offset_bottom = 50.0
+color = Color(0.40, 0.37, 0.35, 1)
+
+[node name="Shop1" type="ColorRect" parent="WorldLayer" unique_id=20]
+offset_left = -500.0
+offset_top = -400.0
+offset_right = -350.0
+offset_bottom = -250.0
+color = Color(0.45, 0.25, 0.18, 1)
+
+[node name="Shop1Roof" type="ColorRect" parent="WorldLayer" unique_id=21]
+offset_left = -510.0
+offset_top = -410.0
+offset_right = -340.0
+offset_bottom = -400.0
+color = Color(0.32, 0.18, 0.12, 1)
+
+[node name="Shop2" type="ColorRect" parent="WorldLayer" unique_id=22]
+offset_left = 350.0
+offset_top = -400.0
+offset_right = 500.0
+offset_bottom = -250.0
+color = Color(0.43, 0.24, 0.17, 1)
+
+[node name="Shop2Roof" type="ColorRect" parent="WorldLayer" unique_id=23]
+offset_left = 340.0
+offset_top = -410.0
+offset_right = 510.0
+offset_bottom = -400.0
+color = Color(0.33, 0.19, 0.13, 1)
+
+[node name="Shop3" type="ColorRect" parent="WorldLayer" unique_id=24]
+offset_left = -500.0
+offset_top = 250.0
+offset_right = -350.0
+offset_bottom = 400.0
+color = Color(0.44, 0.23, 0.16, 1)
+
+[node name="Shop3Roof" type="ColorRect" parent="WorldLayer" unique_id=25]
+offset_left = -510.0
+offset_top = 400.0
+offset_right = -340.0
+offset_bottom = 410.0
+color = Color(0.31, 0.17, 0.11, 1)
+
+[node name="Trench1" type="ColorRect" parent="WorldLayer" unique_id=26]
+offset_left = -200.0
+offset_top = 500.0
+offset_right = 200.0
+offset_bottom = 520.0
+color = Color(0.22, 0.20, 0.18, 1)
+
+[node name="Trench2" type="ColorRect" parent="WorldLayer" unique_id=27]
+offset_left = 300.0
+offset_top = -100.0
+offset_right = 320.0
+offset_bottom = 200.0
+color = Color(0.23, 0.21, 0.19, 1)
+
+[node name="Barricade1" type="ColorRect" parent="WorldLayer" unique_id=28]
+offset_left = -150.0
+offset_top = 480.0
+offset_right = -130.0
+offset_bottom = 540.0
+color = Color(0.35, 0.20, 0.15, 1)
+
+[node name="Barricade2" type="ColorRect" parent="WorldLayer" unique_id=29]
+offset_left = 130.0
+offset_top = 480.0
+offset_right = 150.0
+offset_bottom = 540.0
+color = Color(0.35, 0.20, 0.15, 1)
+
+[node name="Barricade3" type="ColorRect" parent="WorldLayer" unique_id=30]
+offset_left = 280.0
+offset_top = -150.0
+offset_right = 340.0
+offset_bottom = -130.0
+color = Color(0.34, 0.19, 0.14, 1)
+
+[node name="Barricade4" type="ColorRect" parent="WorldLayer" unique_id=31]
+offset_left = 280.0
+offset_top = 130.0
+offset_right = 340.0
+offset_bottom = 150.0
+color = Color(0.34, 0.19, 0.14, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=32]
+offset_left = -100.0
+offset_top = -1100.0
+offset_right = 100.0
+offset_bottom = -1060.0
+text = "洛阳城"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.85, 0.65, 0.45, 0.7))
+add_theme_font_size_override("font_size", 40)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=33]
+
+[node name="TaishouNPC" type="Node2D" parent="NPCLayer" unique_id=34]
+position = Vector2(0, -300)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/TaishouNPC" unique_id=35]
+script = ExtResource("2_npcsprite")
+npc_id = "luoyang_taishou"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/TaishouNPC" unique_id=36]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/TaishouNPC/InteractArea" unique_id=37]
+shape = SubResource("CircleShape2D_player")
+
+[node name="TiejiangNPC" type="Node2D" parent="NPCLayer" unique_id=38]
+position = Vector2(-400, -300)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/TiejiangNPC" unique_id=39]
+script = ExtResource("2_npcsprite")
+npc_id = "luoyang_tiejiang"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/TiejiangNPC" unique_id=40]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/TiejiangNPC/InteractArea" unique_id=41]
+shape = SubResource("CircleShape2D_player")
+
+[node name="ShangrenNPC" type="Node2D" parent="NPCLayer" unique_id=42]
+position = Vector2(400, -300)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/ShangrenNPC" unique_id=43]
+script = ExtResource("2_npcsprite")
+npc_id = "luoyang_shangren"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/ShangrenNPC" unique_id=44]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/ShangrenNPC/InteractArea" unique_id=45]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NanminNPC" type="Node2D" parent="NPCLayer" unique_id=46]
+position = Vector2(-300, 600)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NanminNPC" unique_id=47]
+script = ExtResource("2_npcsprite")
+npc_id = "luoyang_nanmin"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NanminNPC" unique_id=48]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NanminNPC/InteractArea" unique_id=49]
+shape = SubResource("CircleShape2D_player")
+
+[node name="ShibingNPC" type="Node2D" parent="NPCLayer" unique_id=50]
+position = Vector2(300, 500)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/ShibingNPC" unique_id=51]
+script = ExtResource("2_npcsprite")
+npc_id = "luoyang_shibing"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/ShibingNPC" unique_id=52]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/ShibingNPC/InteractArea" unique_id=53]
+shape = SubResource("CircleShape2D_player")
+
+[node name="PlayerLayer" type="Node2D" parent="." unique_id=54]
+z_index = 10
+
+[node name="Player" type="CharacterBody2D" parent="PlayerLayer" unique_id=55]
+position = Vector2(0, 800)
+
+[node name="Sprite" type="Sprite2D" parent="PlayerLayer/Player" unique_id=56]
+texture = ExtResource("player_tex")
+hframes = 4
+vframes = 4
+frame = 0
+scale = Vector2(1.5, 1.5)
+
+[node name="CollisionShape" type="CollisionShape2D" parent="PlayerLayer/Player" unique_id=57]
+shape = SubResource("CircleShape2D_player")

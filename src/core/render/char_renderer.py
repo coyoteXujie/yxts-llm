@@ -1529,16 +1529,7 @@ class MasterAuraLayer(RenderLayer):
 
 class NameLabelLayer(RenderLayer):
     def render(self, ctx: CharContext):
-        if ctx.is_player:
-            return
-        nw = len(ctx.name) * 10 + 10
-        ny = ctx.sy + 36 * ctx.sc + ctx.breathe
-        draw_gradient_rect(ctx.sx - nw // 2, ny - 8, nw, 16,
-                           (10, 15, 30, 140), (5, 8, 18, 120), 3)
-        arcade.draw_rect_outline(arcade.LBWH(ctx.sx - nw // 2, ny - 8, nw, 16),
-                                 (255, 255, 255, 25), 1)
-        arcade.draw_text(ctx.name, ctx.sx, ny, (255, 255, 255, 210), 10,
-                         font_name="SimHei", anchor_x="center", anchor_y="center")
+        pass
 
 
 class RimLightLayer(RenderLayer):

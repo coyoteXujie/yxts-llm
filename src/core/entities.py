@@ -1,118 +1,23 @@
-from enum import Enum
+# --- 基础导入 (Player/NPC/Quest/Map 仍然需要) ---
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any, Tuple
 
+# --- 共享类型导入 (从 shared_types.py, 单一真相来源) ---
+from .shared_types import (
+    Faction, NpcType, SkillType, ItemType, QuestType,
+    Position, Skill, Item,
+    FACTION_NAMES, SKILL_TYPE_NAMES,
+    CultivationSkillType, EquipmentSlot, ItemRarity, ShopType,
+)
 
-class Faction(Enum):
-    NONE = 0
-    BAGUA = 1
-    FLOWER = 2
-    HONGLIAN = 3
-    NAJA = 4
-    TAIJI = 5
-    XUESHAN = 6
-    XIAOYAO = 7
-
-
-class NpcType(Enum):
-    NORMAL = "normal"
-    MASTER = "master"
-    TRADER = "trader"
-    QUEST_GIVER = "quest_giver"
-    ENEMY = "enemy"
-
-
-class SkillType(Enum):
-    ATTACK = 0
-    SWORD = 1
-    BLADE = 2
-    FORCE = 3
-    DODGE = 4
-    PARRY = 5
-    STAFF = 6
-    WAND = 7
-    WHIP = 8
-    LITERACY = 9
-    LOOKS = 10
-
-
-class ItemType(Enum):
-    CONSUMABLE = "consumable"
-    WEAPON = "weapon"
-    ARMOR = "armor"
-    MATERIAL = "material"
-    BOOK = "book"
-    QUEST = "quest"
-
-
-class QuestType(Enum):
-    FETCH = "fetch"
-    KILL = "kill"
-    TALK = "talk"
-    EXPLORE = "explore"
-    DELIVER = "deliver"
-    GUARD = "guard"
-
-
-FACTION_NAMES = {
-    Faction.NONE: "无门无派",
-    Faction.BAGUA: "八卦门",
-    Faction.FLOWER: "花间派",
-    Faction.HONGLIAN: "红莲教",
-    Faction.NAJA: "那迦派",
-    Faction.TAIJI: "太极门",
-    Faction.XUESHAN: "雪山派",
-    Faction.XIAOYAO: "逍遥派",
-}
-SKILL_TYPE_NAMES = ["拳脚", "剑法", "刀法", "内功", "躲闪", "招架", "棍法", "杖法", "鞭法", "识字", "容貌"]
-
-
-@dataclass
-class Position:
-    x: float = 0.0
-    y: float = 0.0
-
-    def distance_to(self, other: 'Position') -> float:
-        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5
-
-    def __add__(self, other: 'Position') -> 'Position':
-        return Position(self.x + other.x, self.y + other.y)
-
-
-@dataclass
-class Skill:
-    id: str
-    name: str
-    type: int
-    level: int = 1
-    exp: int = 0
-    damage: int = 0
-    accuracy: float = 0.8
-    description: str = ""
-
-    def get_exp_for_next_level(self) -> int:
-        return self.level * 100
-
-    def add_exp(self, amount: int) -> bool:
-        self.exp += amount
-        needed = self.get_exp_for_next_level()
-        if self.exp >= needed:
-            self.exp -= needed
-            self.level += 1
-            self.damage += self.level
-            return True
-        return False
-
-
-@dataclass
-class Item:
-    id: str
-    name: str
-    type: ItemType
-    price: int = 0
-    description: str = ""
-    effects: Dict[str, int] = field(default_factory=dict)
-    quantity: int = 1
+# ========================================================================
+# 以下类型已迁移至 shared_types.py, 由上方 import 重新导出
+# ========================================================================
+# [原定义已注释移除 -- 参见 shared_types.py:]
+#   Faction, NpcType, SkillType, ItemType, QuestType
+#   FACTION_NAMES, SKILL_TYPE_NAMES
+#   Position, Skill, Item
+# ========================================================================
 
 
 @dataclass
@@ -145,8 +50,8 @@ class Player:
     active_quests: List[str] = field(default_factory=list)
     completed_quests: List[str] = field(default_factory=list)
     status_effects: List[Dict] = field(default_factory=list)
-    food: int = 100
-    water: int = 100
+    food: float = 100.0
+    water: float = 100.0
     faction_rep: Dict[int, int] = field(default_factory=dict)
     total_kills: int = 0
     total_deaths: int = 0
@@ -202,8 +107,8 @@ class Player:
         return False
 
     def update_food_water(self, delta_time: float) -> None:
-        self.food = max(0, int(self.food - delta_time * 0.01))
-        self.water = max(0, int(self.water - delta_time * 0.015))
+        self.food = max(0.0, self.food - delta_time * 0.01)
+        self.water = max(0.0, self.water - delta_time * 0.015)
 
     def get_food_water_debuff(self) -> Dict[str, float]:
         debuff = {"attack_mult": 1.0, "defense_mult": 1.0, "hp_regen_mult": 1.0}

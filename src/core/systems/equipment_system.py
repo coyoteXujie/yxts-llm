@@ -198,13 +198,22 @@ RECIPES: Dict[str, Recipe] = {
 }
 
 
+# 初始装备
+STARTER_ITEMS: Dict[str, Item] = {
+    "rusty_sword": Item("rusty_sword", "生锈的铁剑", "一把略有锈迹的铁剑", ItemType.WEAPON, rarity=1, attack=5, slot=EquipmentSlot.WEAPON),
+    "cloth_armor": Item("cloth_armor", "布衣", "普通的棉布衣服", ItemType.ARMOR, rarity=1, defense=3, slot=EquipmentSlot.ARMOR),
+    "minor_heal": Item("minor_heal", "小还丹", "恢复少量生命值", ItemType.CONSUMABLE, rarity=1, effects=["heal_30"], value=50),
+}
+
+
 class Inventory:
     """背包系统"""
     
     def __init__(self, max_slots: int = 50):
         self.max_slots = max_slots
         self.items: Dict[str, int] = {}  # item_id -> count
-        self.equipped: Dict[EquipmentSlot, Optional[str]] = {slot: None for slot in EquipmentSlot}
+        self._equipped: Dict[EquipmentSlot, Optional[str]] = {slot: None for slot in EquipmentSlot}
+        self._player_ref = None
         
     def add_item(self, item_id: str, count: int = 1) -> bool:
         """添加物品"""
@@ -227,10 +236,14 @@ class Inventory:
         """获取物品数量"""
         return self.items.get(item_id, 0)
         
+    def link_player(self, player) -> None:
+        """关联玩家"""
+        self._player_ref = player
+        
     def equip(self, item_id: str) -> bool:
         """装备物品"""
         # 获取物品信息
-        item = WEAPONS.get(item_id) or PILLS.get(item_id)
+        item = WEAPONS.get(item_id) or PILLS.get(item_id) or STARTER_ITEMS.get(item_id)
         if not item or not item.slot:
             return False
             
@@ -238,40 +251,49 @@ class Inventory:
             return False
             
         # 卸下当前装备
-        current = self.equipped[item.slot]
+        current = self._equipped[item.slot]
         if current:
             self.add_item(current)
             
         # 装备新物品
-        self.equipped[item.slot] = item_id
+        self._equipped[item.slot] = item_id
         self.remove_item(item_id)
         
+        # 同步到玩家
+        if self._player_ref is not None:
+            self._player_ref.equipment[item.slot.value] = item_id
+            
         return True
         
     def unequip(self, slot: EquipmentSlot) -> bool:
         """卸下装备"""
-        item_id = self.equipped[slot]
+        item_id = self._equipped[slot]
         if not item_id:
             return False
             
-        self.equipped[slot] = None
+        self._equipped[slot] = None
         self.add_item(item_id)
+        
+        # 同步到玩家
+        if self._player_ref is not None:
+            self._player_ref.equipment.pop(slot.value, None)
+            
         return True
         
     def get_total_stats(self) -> Dict[str, int]:
         """获取装备总属性"""
-        stats = {"attack": 0, "defense": 0, "speed": 0, "hp_bonus": 0, "mp_bonus": 0}
+        stats = {"attack": 0, "defense": 0, "max_hp": 0, "max_mp": 0, "speed": 0}
         
-        for slot, item_id in self.equipped.items():
+        for slot, item_id in self._equipped.items():
             if not item_id:
                 continue
-            item = WEAPONS.get(item_id)
+            item = WEAPONS.get(item_id) or STARTER_ITEMS.get(item_id)
             if item:
                 stats["attack"] += item.attack
                 stats["defense"] += item.defense
                 stats["speed"] += item.speed
-                stats["hp_bonus"] += item.hp_bonus
-                stats["mp_bonus"] += item.mp_bonus
+                stats["max_hp"] += item.hp_bonus
+                stats["max_mp"] += item.mp_bonus
                 
         return stats
 

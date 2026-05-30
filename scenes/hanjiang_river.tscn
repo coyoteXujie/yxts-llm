@@ -1,0 +1,131 @@
+[gd_scene format=3 uid="uid://bkm5p1lj3mgey"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="HanjiangRiver" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="Ground" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2750.0
+offset_top = -2750.0
+offset_right = 2750.0
+offset_bottom = 2750.0
+color = Color(0.25, 0.32, 0.22, 1)
+
+[node name="PathWest" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -2750.0
+offset_top = -30.0
+offset_right = -400.0
+offset_bottom = 30.0
+color = Color(0.32, 0.38, 0.28, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -30.0
+offset_top = -2750.0
+offset_right = 30.0
+offset_bottom = -400.0
+color = Color(0.32, 0.38, 0.28, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = 400.0
+offset_top = -30.0
+offset_right = 2750.0
+offset_bottom = 30.0
+color = Color(0.32, 0.38, 0.28, 1)
+
+[node name="HanWater" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = -800.0
+offset_top = -200.0
+offset_right = 800.0
+offset_bottom = 200.0
+color = Color(0.28, 0.38, 0.35, 0.7)
+
+[node name="FishingBoat" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = -300.0
+offset_top = -100.0
+offset_right = -250.0
+offset_bottom = -50.0
+color = Color(0.40, 0.35, 0.25, 0.8)
+
+[node name="GrainDock" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = 500.0
+offset_top = -150.0
+offset_right = 700.0
+offset_bottom = -50.0
+color = Color(0.38, 0.35, 0.28, 1)
+
+[node name="AncientBridge" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = -100.0
+offset_top = -250.0
+offset_right = 100.0
+offset_bottom = -200.0
+color = Color(0.35, 0.32, 0.28, 1)
+
+[node name="RiverBank" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = -800.0
+offset_top = 200.0
+offset_right = -600.0
+offset_bottom = 300.0
+color = Color(0.30, 0.38, 0.28, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=12]
+offset_left = -50.0
+offset_top = -500.0
+offset_right = 50.0
+offset_bottom = -450.0
+text = "汉江"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.55, 0.65, 0.55, 0.6))
+add_theme_font_size_override("font_size", 24)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=13]
+
+[node name="NPC_hanjiang_yufu" type="Node2D" parent="NPCLayer" unique_id=14]
+position = Vector2(-280, -80)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_hanjiang_yufu" unique_id=15]
+script = ExtResource("2_npcsprite")
+npc_id = "hanjiang_yufu"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_hanjiang_yufu" unique_id=16]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_hanjiang_yufu/InteractArea" unique_id=17]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_hanjiang_chuanfu" type="Node2D" parent="NPCLayer" unique_id=18]
+position = Vector2(600, -100)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_hanjiang_chuanfu" unique_id=19]
+script = ExtResource("2_npcsprite")
+npc_id = "hanjiang_chuanfu"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_hanjiang_chuanfu" unique_id=20]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_hanjiang_chuanfu/InteractArea" unique_id=21]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_hanjiang_liangshang" type="Node2D" parent="NPCLayer" unique_id=22]
+position = Vector2(550, -50)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_hanjiang_liangshang" unique_id=23]
+script = ExtResource("2_npcsprite")
+npc_id = "hanjiang_liangshang"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_hanjiang_liangshang" unique_id=24]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_hanjiang_liangshang/InteractArea" unique_id=25]
+shape = SubResource("CircleShape2D_player")

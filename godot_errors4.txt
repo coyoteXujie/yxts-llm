@@ -1,0 +1,47 @@
+﻿
+SCRIPT ERROR: Parse Error: Expected type specifier after "is".
+ERROR: Failed to load script "res://scripts/core/utils.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/core/utils.gd' is not compiling.
+SCRIPT ERROR: Parse Error: Invalid argument for "_fail_save()" function: argument 2 should be "String" but is "Error".
+ERROR: Failed to load script "res://scripts/core/save_system.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/core/save_system.gd' is not compiling.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "base_damage" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "is_critical" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "current_id" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "current_id" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "is_player_turn" variable because the value doesn't have a set type
+.
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+ERROR: Failed to load script "res://scripts/systems/combat_system.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/systems/combat_system.gd' is not compiling.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "choice" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "next_node_id" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "effect_type" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "amount" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "item_id" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "quantity" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "quest_id" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: Cannot infer the type of "enemies" variable because the value doesn't have a set type.
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+ERROR: Failed to load script "res://scripts/systems/dialogue_system.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/systems/dialogue_system.gd' is not compiling.
+SCRIPT ERROR: Parse Error: Identifier "_cultivation_breakthrough" not declared in the current scope.
+ERROR: Failed to load script "res://scripts/systems/cultivation_system.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/systems/cultivation_system.gd' is not compiling.
+SCRIPT ERROR: Parse Error: Too many arguments for "get()" call. Expected at most 1 but received 2.
+SCRIPT ERROR: Parse Error: Too many arguments for "get()" call. Expected at most 1 but received 2.
+SCRIPT ERROR: Parse Error: Too many arguments for "get()" call. Expected at most 1 but received 2.
+ERROR: Failed to load script "res://scripts/systems/quest_system.gd" with error "Parse error".
+ERROR: Failed to create an autoload, script 'res://scripts/systems/quest_system.gd' is not compiling.
+ERROR: Cannot save file 'C:/Users/jie/AppData/Roaming/Godot/editor_settings-4.6.tres'.
+ERROR: Error saving editor settings to C:/Users/jie/AppData/Roaming/Godot/editor_settings-4.6.tres
+
+

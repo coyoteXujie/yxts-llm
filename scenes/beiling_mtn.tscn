@@ -1,0 +1,243 @@
+[gd_scene format=3 uid="uid://j80rxi4h7ob5"]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="BeilingMtn" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="MountainGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2750.0
+offset_top = -2750.0
+offset_right = 2750.0
+offset_bottom = 2750.0
+color = Color(0.20, 0.25, 0.18, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -30.0
+offset_top = -2750.0
+offset_right = 30.0
+offset_bottom = -400.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -30.0
+offset_top = 400.0
+offset_right = 30.0
+offset_bottom = 2750.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="PathEast" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = 400.0
+offset_top = -30.0
+offset_right = 2750.0
+offset_bottom = 30.0
+color = Color(0.45, 0.40, 0.35, 1)
+
+[node name="Cliff1" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = -600.0
+offset_top = -800.0
+offset_right = -400.0
+offset_bottom = -600.0
+color = Color(0.35, 0.35, 0.30, 1)
+
+[node name="Cliff2" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = 500.0
+offset_top = -900.0
+offset_right = 700.0
+offset_bottom = -700.0
+color = Color(0.35, 0.35, 0.30, 1)
+
+[node name="Cliff3" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = -800.0
+offset_top = 300.0
+offset_right = -600.0
+offset_bottom = 500.0
+color = Color(0.35, 0.35, 0.30, 1)
+
+[node name="Cliff4" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = 600.0
+offset_top = 400.0
+offset_right = 800.0
+offset_bottom = 600.0
+color = Color(0.35, 0.35, 0.30, 1)
+
+[node name="WoodPath1" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = -300.0
+offset_top = -600.0
+offset_right = -280.0
+offset_bottom = -200.0
+color = Color(0.40, 0.35, 0.25, 1)
+
+[node name="WoodPath2" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = 300.0
+offset_top = -500.0
+offset_right = 320.0
+offset_bottom = -100.0
+color = Color(0.40, 0.35, 0.25, 1)
+
+[node name="Cloud1" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = -1000.0
+offset_top = -1200.0
+offset_right = -700.0
+offset_bottom = -1150.0
+color = Color(0.80, 0.80, 0.80, 0.3)
+
+[node name="Cloud2" type="ColorRect" parent="WorldLayer" unique_id=14]
+offset_left = 800.0
+offset_top = -1100.0
+offset_right = 1100.0
+offset_bottom = -1050.0
+color = Color(0.80, 0.80, 0.80, 0.3)
+
+[node name="Cloud3" type="ColorRect" parent="WorldLayer" unique_id=15]
+offset_left = -500.0
+offset_top = -1500.0
+offset_right = -200.0
+offset_bottom = -1450.0
+color = Color(0.80, 0.80, 0.80, 0.25)
+
+[node name="OldTree1" type="ColorRect" parent="WorldLayer" unique_id=16]
+offset_left = -500.0
+offset_top = -300.0
+offset_right = -460.0
+offset_bottom = -200.0
+color = Color(0.25, 0.20, 0.15, 1)
+
+[node name="OldTree2" type="ColorRect" parent="WorldLayer" unique_id=17]
+offset_left = 700.0
+offset_top = 200.0
+offset_right = 740.0
+offset_bottom = 300.0
+color = Color(0.25, 0.20, 0.15, 1)
+
+[node name="OldTree3" type="ColorRect" parent="WorldLayer" unique_id=18]
+offset_left = -900.0
+offset_top = 500.0
+offset_right = -860.0
+offset_bottom = 600.0
+color = Color(0.25, 0.20, 0.15, 1)
+
+[node name="OldTree4" type="ColorRect" parent="WorldLayer" unique_id=19]
+offset_left = 400.0
+offset_top = -400.0
+offset_right = 440.0
+offset_bottom = -300.0
+color = Color(0.25, 0.20, 0.15, 1)
+
+[node name="OldTree5" type="ColorRect" parent="WorldLayer" unique_id=20]
+offset_left = 200.0
+offset_top = 700.0
+offset_right = 240.0
+offset_bottom = 800.0
+color = Color(0.25, 0.20, 0.15, 1)
+
+[node name="Pine1" type="ColorRect" parent="WorldLayer" unique_id=21]
+offset_left = -400.0
+offset_top = -500.0
+offset_right = -370.0
+offset_bottom = -400.0
+color = Color(0.15, 0.25, 0.12, 1)
+
+[node name="Pine2" type="ColorRect" parent="WorldLayer" unique_id=22]
+offset_left = 800.0
+offset_top = -300.0
+offset_right = 830.0
+offset_bottom = -200.0
+color = Color(0.15, 0.25, 0.12, 1)
+
+[node name="Pine3" type="ColorRect" parent="WorldLayer" unique_id=23]
+offset_left = -600.0
+offset_top = 700.0
+offset_right = -570.0
+offset_bottom = 600.0
+color = Color(0.15, 0.25, 0.12, 1)
+
+[node name="Pine4" type="ColorRect" parent="WorldLayer" unique_id=24]
+offset_left = 300.0
+offset_top = 800.0
+offset_right = 330.0
+offset_bottom = 700.0
+color = Color(0.15, 0.25, 0.12, 1)
+
+[node name="Rock1" type="ColorRect" parent="WorldLayer" unique_id=25]
+offset_left = -700.0
+offset_top = -200.0
+offset_right = -650.0
+offset_bottom = -150.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="Rock2" type="ColorRect" parent="WorldLayer" unique_id=26]
+offset_left = 500.0
+offset_top = 100.0
+offset_right = 560.0
+offset_bottom = 160.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="Rock3" type="ColorRect" parent="WorldLayer" unique_id=27]
+offset_left = -200.0
+offset_top = 400.0
+offset_right = -140.0
+offset_bottom = 460.0
+color = Color(0.40, 0.38, 0.35, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=28]
+offset_left = -100.0
+offset_top = -400.0
+offset_right = 100.0
+offset_bottom = -350.0
+text = "北岭群山"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.7, 0.8, 0.6, 0.5))
+add_theme_font_size_override("font_size", 24)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=29]
+
+[node name="NPC_liehu" type="Node2D" parent="NPCLayer" unique_id=30]
+position = Vector2(-200, -500)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_liehu" unique_id=31]
+script = ExtResource("2_npcsprite")
+npc_id = "beiling_liehu"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_liehu" unique_id=32]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_liehu/InteractArea" unique_id=33]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_caiyao" type="Node2D" parent="NPCLayer" unique_id=34]
+position = Vector2(300, -200)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_caiyao" unique_id=35]
+script = ExtResource("2_npcsprite")
+npc_id = "beiling_caiyao"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_caiyao" unique_id=36]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_caiyao/InteractArea" unique_id=37]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_yinshi" type="Node2D" parent="NPCLayer" unique_id=38]
+position = Vector2(-400, 400)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_yinshi" unique_id=39]
+script = ExtResource("2_npcsprite")
+npc_id = "beiling_yinshi"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_yinshi" unique_id=40]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_yinshi/InteractArea" unique_id=41]
+shape = SubResource("CircleShape2D_player")

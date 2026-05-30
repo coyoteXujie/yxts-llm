@@ -17,7 +17,7 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageFilter
 
-from .combat_system import CombatPhase, Combatant, CombatAction, SKILLS_DATABASE
+from ..combat_system import CombatPhase, Combatant, CombatAction, SKILLS_DATABASE
 
 
 @dataclass

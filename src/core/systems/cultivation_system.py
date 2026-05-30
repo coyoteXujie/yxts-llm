@@ -260,6 +260,9 @@ class CultivationSystem:
     """修炼系统"""
     
     def __init__(self):
+        # 玩家引用（用于关联角色数据）
+        self._player_ref = None
+        
         # 经脉
         self.meridians: Dict[Meridian, MeridianState] = {
             m: MeridianState(m) for m in Meridian
@@ -279,6 +282,10 @@ class CultivationSystem:
         # 修炼经验
         self.cultivation_exp: int = 0
         self.cultivation_level: int = 1
+        
+    def link_player(self, player) -> None:
+        """关联玩家对象，使修炼系统能访问角色属性"""
+        self._player_ref = player
         
     def learn_internal_art(self, art_id: str) -> bool:
         """学习内功"""
@@ -459,6 +466,10 @@ class CultivationSystem:
                 stats[k] = stats.get(k, 0) + v
                 
         return stats
+        
+    def get_bonuses(self) -> Dict[str, int]:
+        """获取战斗属性加成（get_total_stats 的别名）"""
+        return self.get_total_stats()
         
     def add_cultivation_exp(self, exp: int) -> None:
         """增加修炼经验"""

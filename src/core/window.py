@@ -12,7 +12,8 @@ from .quest import get_quest_manager
 from .npc_brain import DialogueState, get_npc_brain_manager
 from .encounter import get_encounter_manager, Encounter
 from .atmosphere import AtmosphereManager
-from .combat_system import HybridCombatSystem, Combatant, EncounterSystem, ActionType
+from .combat_system import HybridCombatSystem, Combatant, EncounterSystem, ActionType, CombatPhase
+from .render.combat_renderer import InkCombatRenderer, CombatUIConfig
 from .systems.cultivation_system import CultivationSystem
 from .systems.economy_system import EconomySystem, ReputationSystem
 from .systems.story_system import StoryEngine
@@ -97,6 +98,7 @@ class GameWindow(arcade.Window):
         self.story = StoryEngine()
         self.crafting = CraftingSystem()
         self.player_inventory = Inventory()
+        self.combat_renderer = InkCombatRenderer(CombatUIConfig())
 
         # 战斗状态
         self._in_combat = False
@@ -142,6 +144,8 @@ class GameWindow(arcade.Window):
             self._encounter_cooldown -= delta_time
         if self._combat_anim_timer > 0:
             self._combat_anim_timer -= delta_time
+        if self._in_combat:
+            self.combat_renderer.update(delta_time)
 
         if self._hurt_flash_val > 0:
             self._hurt_flash_val = max(0, self._hurt_flash_val - delta_time * 3)
@@ -203,7 +207,7 @@ class GameWindow(arcade.Window):
                     self._start_combat(enemies)
 
             # === 战斗AI ===
-            if self._in_combat and self.combat_system.phase.value == "ENEMY_TURN":
+            if self._in_combat and self.combat_system.phase == CombatPhase.ENEMY_TURN:
                 self.combat_system.enemy_ai_action()
                 self._combat_anim_timer = 0.5
 
@@ -344,8 +348,12 @@ class GameWindow(arcade.Window):
         panel_top = SH - 55
         panel_h = panel_top - panel_bottom
 
-        self._draw_panel(left_px, panel_bottom, left_pw, panel_h, "角色信息")
-        self._draw_panel(right_px, panel_bottom, right_pw, panel_h, "属性分配")
+        left_focused = self.focus_target in ("name", "gender", "faction")
+        right_focused = self.focus_target == "attr"
+        self._draw_panel(left_px, panel_bottom, left_pw, panel_h, "角色信息",
+                         focused=left_focused)
+        self._draw_panel(right_px, panel_bottom, right_pw, panel_h, "属性分配",
+                         focused=right_focused)
 
         pcx = left_px + left_pw // 2
         content_top = panel_bottom + panel_h - 40
@@ -408,6 +416,9 @@ class GameWindow(arcade.Window):
 
         gx_male = gbtn_sx
         male_sel = self.char_gender == "male"
+        if gfocused:
+            self._RO(gbtn_sx - 4, gbtn_y - 4, gbtn_full + 8, gbtn_h + 8,
+                     (255, 220, 100, int(80 + 40 * math.sin(self.blink_timer * 3))), 2)
         self._R(gx_male, gbtn_y, gbtn_w, gbtn_h,
                 (45, 70, 130, 215) if male_sel else (28, 32, 50, 155))
         self._RO(gx_male, gbtn_y, gbtn_w, gbtn_h,
@@ -446,6 +457,12 @@ class GameWindow(arcade.Window):
         fc_x = pcx - fc_w // 2
         fc_y = faction_y
         ffocused = self.focus_target == "faction"
+
+        if ffocused:
+            total_h = len(factions_display) * (fc_h + 4)
+            glow_a = int(60 + 30 * math.sin(self.blink_timer * 3))
+            self._RO(fc_x - 4, fc_y - total_h - 2, fc_w + 8, total_h + 8,
+                     (255, 220, 100, glow_a), 2)
 
         for idx, (fid, fname, fcolor, fdesc) in enumerate(factions_display):
             fy = fc_y - idx * (fc_h + 4)
@@ -535,8 +552,9 @@ class GameWindow(arcade.Window):
 
         flabels = {"name": "◆ 姓名输入中", "gender": "◆ 性别选择中", "attr": "◆ 属性分配中", "faction": "◆ 门派选择中"}
         ftx = SW - margin - 8
+        pulse_v = int(200 + 55 * math.sin(self.blink_timer * 3))
         arcade.draw_text(flabels.get(self.focus_target, ""), ftx, pts_y + pts_h // 2,
-                         (176, 166, 146), 13, font_name=self.font,
+                         (pulse_v, int(pulse_v * 0.85), int(pulse_v * 0.5)), 15, font_name=self.font,
                          anchor_x="right", anchor_y="center")
 
         if self.char_creation_msg:
@@ -544,11 +562,18 @@ class GameWindow(arcade.Window):
             arcade.draw_text(self.char_creation_msg, margin, msg_y, (220, 80, 80), 15,
                              font_name=self.font, anchor_x="left", anchor_y="top")
 
-    def _draw_panel(self, px, py, pw, ph, ttl):
+    def _draw_panel(self, px, py, pw, ph, ttl, focused=False):
         self._R(px, py, pw, ph, (25, 22, 18, 245))
-        self._RO(px, py, pw, ph, (120, 105, 80), 2)
+        border_c = COLORS["accent"] if focused else (120, 105, 80)
+        border_w = 3 if focused else 2
+        self._RO(px, py, pw, ph, border_c, border_w)
+        if focused:
+            glow_alpha = int(40 + 20 * math.sin(self.blink_timer * 3))
+            self._RO(px - 1, py - 1, pw + 2, ph + 2,
+                     (COLORS["accent"][0], COLORS["accent"][1], COLORS["accent"][2], glow_alpha), 2)
         arcade.draw_line(px + 14, py + ph - 11, px + pw - 14, py + ph - 11, (80, 70, 55), 1)
-        arcade.draw_text(ttl, px + pw // 2, py + ph - 27, (180, 160, 120), 17,
+        ttl_color = COLORS["accent"] if focused else (180, 160, 120)
+        arcade.draw_text(ttl, px + pw // 2, py + ph - 27, ttl_color, 17,
                          font_name=self.font, anchor_x="center", anchor_y="center")
 
     def _draw_game(self):
@@ -568,11 +593,18 @@ class GameWindow(arcade.Window):
         cam_x = self.camera_x + shake_x
         cam_y = self.camera_y + shake_y
 
+        # Pre-calculate screen bounds for viewport culling
+        screen_left = cam_x - SW // 2 - 64
+        screen_right = cam_x + SW // 2 + 64
+        screen_bottom = cam_y - SH // 2 - 64
+        screen_top = cam_y + SH // 2 + 64
+
         renderer.draw_map(cam_x, cam_y, self.game_world.current_map)
 
         renderer.clear_light_sources()
         for npc in self.game_world.npcs:
-            if abs(npc.position.x - cam_x) > SW and abs(npc.position.y - cam_y) > SH:
+            if not (screen_left <= npc.position.x <= screen_right and
+                    screen_bottom <= npc.position.y <= screen_top):
                 continue
             if npc.is_master:
                 renderer.add_light_source(npc.position.x, npc.position.y, 100, (255, 200, 100), 0.4)
@@ -589,9 +621,8 @@ class GameWindow(arcade.Window):
             arcade.draw_circle_filled(sx, sy, part["size"], (c[0], c[1], c[2], max(0, min(255, alpha))))
 
         for npc in self.game_world.npcs:
-            dx = npc.position.x - cam_x
-            dy = npc.position.y - cam_y
-            if abs(dx) > SW * 0.7 or abs(dy) > SH * 0.7:
+            if not (screen_left <= npc.position.x <= screen_right and
+                    screen_bottom <= npc.position.y <= screen_top):
                 continue
             renderer.draw_npc(npc, cam_x, cam_y)
 
@@ -604,6 +635,24 @@ class GameWindow(arcade.Window):
         self.vfx.draw_day_night()
 
         self.vfx.draw_weather()
+
+        # Draw atmosphere weather particles
+        if self.atmosphere and hasattr(self.atmosphere, 'renderer'):
+            particles = self.atmosphere.renderer.particles
+            weather = self.atmosphere.weather
+            if particles and weather:
+                wtype = weather.current_weather.name
+                for p in particles:
+                    sx = int(p.get('x', 0))
+                    sy = int(p.get('y', 0))
+                    if 0 <= sx <= SW and 0 <= sy <= SH:
+                        if wtype in ('RAIN', 'HEAVY_RAIN', 'THUNDER'):
+                            arcade.draw_line(sx, sy, sx, sy + p.get('size', 2) * 4,
+                                           (180, 200, 240, 150), 1)
+                        elif wtype in ('SNOW', 'HEAVY_SNOW'):
+                            arcade.draw_circle_filled(sx, sy, p.get('size', 2), (255, 255, 255, 200))
+                        elif wtype == 'WIND':
+                            arcade.draw_line(sx, sy, sx + p.get('size', 3) * 2, sy, (180, 150, 100, 100), 1)
 
         self.vfx.draw_vignette()
 
@@ -900,9 +949,14 @@ class GameWindow(arcade.Window):
                 if not self.char_name:
                     self.char_name = "无名侠客"
                 if self.attribute_points > 0:
-                    self.char_creation_msg = f"还有 {self.attribute_points} 点属性未分配！请用左右键加完属性点"
-                else:
-                    self._create_player()
+                    ak = ["strength", "dexterity", "intelligence", "constitution"]
+                    idx = 0
+                    while self.attribute_points > 0:
+                        if self.char_attributes[ak[idx]] < 30:
+                            self.char_attributes[ak[idx]] += 1
+                            self.attribute_points -= 1
+                        idx = (idx + 1) % 4
+                self._create_player()
             elif key == arcade.key.ESCAPE:
                 self.game_state = "menu"
         elif self.game_state == "playing":
@@ -946,10 +1000,10 @@ class GameWindow(arcade.Window):
                     else:
                         self._combat_menu_idx = min(3, self._combat_menu_idx + 1)
                 elif key == arcade.key.ENTER or key == arcade.key.SPACE:
-                    if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+                    if cs.phase in (CombatPhase.VICTORY, CombatPhase.DEFEAT, CombatPhase.FLEE):
                         self._in_combat = False
                         self._combat_rewards = None
-                    elif cs.phase.value == "PLAYER_TURN":
+                    elif cs.phase == CombatPhase.PLAYER_TURN:
                         actions = ["attack", "skill", "defend", "flee"]
                         if self._combat_menu_idx < len(actions):
                             self._combat_action(actions[self._combat_menu_idx])
@@ -1159,6 +1213,26 @@ class GameWindow(arcade.Window):
 
         self.game_world._init_player_skills()
 
+        # 链接经济系统和声望系统到玩家
+        self.economy.link_player(self.game_world.player)
+        self.reputation.link_player(self.game_world.player)
+
+        # === 初始化修炼系统：关联玩家并自动学习门派内功 ===
+        self.cultivation.link_player(p)
+        # 根据玩家门派自动学习对应内功心法
+        faction_internal_map = {
+            Faction.BAGUA: "hunyuan_gong",
+            Faction.TAIJI: "taiji_gong",
+            Faction.FLOWER: "flower_heart",
+            Faction.HONGLIAN: "honglian_jue",
+            Faction.NAJA: "naja_jue",
+            Faction.XUESHAN: "xueshan_gong",
+            Faction.XIAOYAO: "beiming_shengong",
+        }
+        art_id = faction_internal_map.get(self.char_faction, "")
+        if art_id:
+            self.cultivation.learn_internal_art(art_id)
+
         if self.char_faction != Faction.NONE:
             self.game_world.reputation_system.on_join_faction(p, self.char_faction)
             from .world import FACTION_SKILLS, ALL_SKILLS
@@ -1175,6 +1249,10 @@ class GameWindow(arcade.Window):
                             accuracy=ALL_SKILLS[skill_id].accuracy,
                         )
                         p.skills.append(new_skill)
+
+        # 关联装备/打造系统到玩家并给予初始装备
+        self.player_inventory.link_player(p)
+        self.player_inventory.add_item("rusty_sword", 1)
 
         self.game_state = "playing"
 
@@ -1764,11 +1842,18 @@ class GameWindow(arcade.Window):
         player = self.game_world.player
         if not player:
             return
+        # 聚合修炼加成与装备加成
+        cult_bonus = self.cultivation.get_bonuses()
+        equip_bonus = self.player_inventory.get_total_stats()
         pc = Combatant(
-            name=player.name, max_hp=player.max_hp, hp=player.hp,
-            max_mp=player.max_mp, mp=player.mp,
-            attack=player.attack, defense=player.defense,
-            speed=getattr(player, 'speed', 10),
+            name=player.name,
+            max_hp=player.max_hp + cult_bonus.get("max_hp", 0) + equip_bonus.get("max_hp", 0),
+            hp=player.hp,
+            max_mp=player.max_mp + cult_bonus.get("max_mp", 0) + equip_bonus.get("max_mp", 0),
+            mp=player.mp,
+            attack=player.attack + cult_bonus.get("attack", 0) + equip_bonus.get("attack", 0),
+            defense=player.defense + cult_bonus.get("defense", 0) + equip_bonus.get("defense", 0),
+            speed=getattr(player, 'speed', 10) + cult_bonus.get("speed", 0) + equip_bonus.get("speed", 0),
             is_player=True, faction=getattr(player, 'faction', '').value,
             skills=list(self.cultivation.skills.keys())[:4] if self.cultivation.skills else ["basic_attack"]
         )
@@ -1793,7 +1878,7 @@ class GameWindow(arcade.Window):
         if not self._in_combat:
             return
         cs = self.combat_system
-        if cs.phase.value != "PLAYER_TURN":
+        if cs.phase != CombatPhase.PLAYER_TURN:
             return
 
         atype = {"attack": ActionType.ATTACK, "skill": ActionType.SKILL,
@@ -1813,12 +1898,12 @@ class GameWindow(arcade.Window):
         self._combat_log = cs.battle_log[:]
 
         # 检查结束
-        if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+        if cs.phase in (CombatPhase.VICTORY, CombatPhase.DEFEAT, CombatPhase.FLEE):
             self._end_combat()
 
     def _end_combat(self):
         cs = self.combat_system
-        if cs.phase.value == "VICTORY":
+        if cs.phase == CombatPhase.VICTORY:
             rewards = cs.get_battle_rewards()
             self._combat_rewards = rewards
             player = self.game_world.player
@@ -1833,97 +1918,296 @@ class GameWindow(arcade.Window):
             player = self.game_world.player
             if player:
                 player.hp = max(1, player.hp // 2)
-        self._in_combat = False
+        # 保持 _in_combat = True，让 _draw_combat 渲染胜利/失败画面
         self._combat_phase = "none"
         self._encounter_cooldown = 5.0
 
     def _draw_combat(self):
-        """绘制战斗界面"""
+        """绘制战斗界面 - 水墨风格"""
         cs = self.combat_system
-        # 战斗背景
-        arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (20, 18, 15, 240))
+        cr = self.combat_renderer
 
-        # 敌人区域
+        # 震动偏移
+        sx, sy = cr.shake_offset
+
+        # === 战斗背景 (水墨渐变) ===
+        for y in range(0, SH, 3):
+            ratio = y / SH
+            r = int(26 * (0.35 + 0.65 * ratio))
+            g = int(24 * (0.35 + 0.65 * ratio))
+            b = int(20 * (0.35 + 0.65 * ratio))
+            arcade.draw_line(0 + sx, y + sy, SW + sx, y + sy, (r, g, b, 255), 3)
+
+        # 水墨装饰边框
+        arcade.draw_rect_filled(arcade.LBWH(0 + sx, 0 + sy, SW, 4), (90, 75, 45, 140))
+        arcade.draw_rect_filled(arcade.LBWH(0 + sx, SH - 4 + sy, SW, 4), (90, 75, 45, 140))
+
+        # 闪光效果
+        if cr.flash_alpha > 0:
+            alpha = int(cr.flash_alpha)
+            arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (255, 255, 240, alpha))
+
+        # === 回合阶段 ===
+        phase_texts = {
+            CombatPhase.PLAYER_TURN: "—— 你的回合 ——",
+            CombatPhase.ENEMY_TURN: "—— 敌人回合 ——",
+            CombatPhase.VICTORY: "【 胜 利 】",
+            CombatPhase.DEFEAT: "【 败 北 】",
+            CombatPhase.FLEE: "【 逃 离 】"
+        }
+        phase = phase_texts.get(cs.phase, "")
+        if cs.phase == CombatPhase.VICTORY:
+            phase_color = (140, 230, 110)
+        elif cs.phase == CombatPhase.DEFEAT:
+            phase_color = (230, 100, 100)
+        else:
+            phase_color = (200, 170, 100)
+        arcade.draw_text(phase, SW // 2 + sx, SH - 28 + sy, phase_color, 20,
+                         font_name=self.font, anchor_x="center")
+
+        # === 敌人区域 ===
         if cs.enemies:
-            ex = SW - 250
-            ey = SH - 300
+            ex_base = SW - 300
+            ey_base = SH - 300
             for i, enemy in enumerate(cs.enemies):
                 if not enemy.is_alive:
                     continue
-                arcade.draw_text(enemy.name, ex, ey + 80 - i * 120, COLORS["accent"], 18, font_name=self.font)
-                arcade.draw_text(f"HP:{enemy.hp}/{enemy.max_hp}", ex, ey + 55 - i * 120,
-                               (220, 80, 80), 14, font_name=self.font)
-                if i == self._combat_enemy_idx:
-                    arcade.draw_triangle_filled(ex - 20, ey + 80 - i * 120 + 10,
-                                                ex - 30, ey + 80 - i * 120,
-                                                ex - 30, ey + 80 - i * 120 + 20, COLORS["accent"])
+                ex = ex_base + sx
+                ey = ey_base - i * 150 + sy
 
-        # 玩家区域
+                # 面板背景
+                self._R(ex - 20, ey - 20, 260, 140, (32, 29, 25, 235))
+                self._RO(ex - 20, ey - 20, 260, 140, (140, 120, 85), 2)
+
+                # 选中指示器
+                if i == self._combat_enemy_idx and cs.phase == CombatPhase.PLAYER_TURN:
+                    arcade.draw_triangle_filled(
+                        ex - 8, ey + 70, ex - 24, ey + 54, ex - 24, ey + 86, (200, 170, 100))
+
+                # 头像框
+                avatar_x, avatar_y = ex + 30, ey + 65
+                avatar_s = 52
+                arcade.draw_rect_filled(arcade.LBWH(avatar_x - avatar_s // 2, avatar_y - avatar_s // 2, avatar_s, avatar_s), (55, 40, 40))
+                arcade.draw_rect_outline(arcade.LBWH(avatar_x - avatar_s // 2, avatar_y - avatar_s // 2, avatar_s, avatar_s), (140, 120, 85), 1)
+                arcade.draw_text(enemy.name[0], avatar_x, avatar_y - 7, (200, 170, 100), 26,
+                                 font_name=self.font, anchor_x="center")
+
+                # 名字和等级
+                arcade.draw_text(enemy.name, ex + 65, ey + 95, (200, 170, 100), 18, font_name=self.font)
+                lvl = getattr(enemy, 'level', None) or getattr(enemy, 'combat_level', None)
+                if lvl:
+                    arcade.draw_text(f"Lv.{lvl}", ex + 210, ey + 95, (180, 170, 150), 13, font_name=self.font)
+
+                # HP条
+                hp_w, hp_h = 210, 12
+                hp_x, hp_y = ex, ey
+                self._R(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (22, 20, 17, 230))
+                hp_pct = enemy.hp_percent
+                hp_fill = max(1, int(hp_w * hp_pct))
+                arcade.draw_rect_filled(arcade.LBWH(hp_x, hp_y, hp_fill, hp_h),
+                                        (190, 60, 50) if hp_pct < 0.3 else (180, 60, 50))
+                self._RO(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (140, 120, 85), 1)
+                arcade.draw_text(f"HP {enemy.hp}/{enemy.max_hp}", hp_x + 4, hp_y + 1,
+                               (235, 230, 220), 10, font_name=self.font)
+
+                # 状态标记
+                status_y = ey + 20
+                if enemy.is_defending:
+                    arcade.draw_text("【防御】", ex + 8, status_y, (100, 150, 230), 11, font_name=self.font)
+                if enemy.is_stunned:
+                    arcade.draw_text("【眩晕】", ex + 80, status_y, (240, 180, 20), 11, font_name=self.font)
+
+        # === 玩家区域 ===
         if cs.player:
-            px, py = 80, SH - 300
-            arcade.draw_text(cs.player.name, px, py + 80, COLORS["accent"], 18, font_name=self.font)
-            arcade.draw_text(f"HP:{cs.player.hp}/{cs.player.max_hp}  MP:{cs.player.mp}/{cs.player.max_mp}",
-                           px, py + 55, (80, 200, 80), 14, font_name=self.font)
+            player = cs.player
+            px = 70 + sx
+            py = SH - 320 + sy
 
-        # 战斗日志
-        log_h = 140
-        arcade.draw_rect_filled(arcade.LBWH(50, 200, SW - 100, log_h), (25, 23, 20, 200))
-        arcade.draw_rect_outline(arcade.LBWH(50, 200, SW - 100, log_h), (100, 90, 70), 1)
-        ly = 320
-        for log in self._combat_log[-4:]:
-            arcade.draw_text(log[:60], 60, ly, (200, 200, 200), 13, font_name=self.font)
-            ly -= 22
+            # 面板背景
+            self._R(px - 20, py - 30, 300, 170, (32, 30, 28, 235))
+            self._RO(px - 20, py - 30, 300, 170, (140, 120, 85), 2)
 
-        # 战斗菜单
-        menu_w, menu_h = 200, 160
-        mx, my = 50, 50
-        arcade.draw_rect_filled(arcade.LBWH(mx, my, menu_w, menu_h), (30, 28, 24, 220))
-        arcade.draw_rect_outline(arcade.LBWH(mx, my, menu_w, menu_h), COLORS["accent"], 2)
+            # 头像框
+            avatar_x, avatar_y = px + 40, py + 85
+            avatar_s = 56
+            arcade.draw_rect_filled(arcade.LBWH(avatar_x - avatar_s // 2, avatar_y - avatar_s // 2, avatar_s, avatar_s), (50, 45, 60))
+            arcade.draw_rect_outline(arcade.LBWH(avatar_x - avatar_s // 2, avatar_y - avatar_s // 2, avatar_s, avatar_s), (140, 120, 85), 2)
+            arcade.draw_text(player.name[0], avatar_x, avatar_y - 8, (200, 170, 100), 28,
+                             font_name=self.font, anchor_x="center")
+
+            # 名字和等级
+            arcade.draw_text(player.name, px + 80, py + 115, (200, 170, 100), 20, font_name=self.font)
+            lvl = getattr(player, 'level', None)
+            if lvl:
+                arcade.draw_text(f"Lv.{lvl}", px + 220, py + 115, (180, 170, 150), 14, font_name=self.font)
+
+            # HP条
+            hp_w, hp_h = 230, 14
+            hp_x, hp_y = px + 10, py + 60
+            self._R(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (22, 20, 17, 230))
+            hp_pct = player.hp_percent
+            hp_fill = max(1, int(hp_w * hp_pct))
+            arcade.draw_rect_filled(arcade.LBWH(hp_x, hp_y, hp_fill, hp_h),
+                                    (190, 60, 50) if hp_pct < 0.3 else (180, 60, 50))
+            self._RO(hp_x - 1, hp_y - 1, hp_w + 2, hp_h + 2, (140, 120, 85), 1)
+            arcade.draw_text(f"气血 {player.hp}/{player.max_hp}", hp_x + 5, hp_y + 2,
+                           (235, 230, 220), 10, font_name=self.font)
+
+            # MP条
+            mp_h = 10
+            mp_y = py + 40
+            self._R(hp_x - 1, mp_y - 1, hp_w + 2, mp_h + 2, (22, 20, 17, 230))
+            mp_fill = max(1, int(hp_w * player.mp_percent))
+            arcade.draw_rect_filled(arcade.LBWH(hp_x, mp_y, mp_fill, mp_h), (75, 115, 185))
+            self._RO(hp_x - 1, mp_y - 1, hp_w + 2, mp_h + 2, (140, 120, 85), 1)
+            arcade.draw_text(f"内力 {player.mp}/{player.max_mp}", hp_x + 5, mp_y + 1,
+                           (230, 230, 240), 9, font_name=self.font)
+
+            # 状态标记
+            status_y = py + 15
+            if player.is_defending:
+                arcade.draw_text("【防御姿态】", px + 10, status_y, (100, 150, 230), 11, font_name=self.font)
+            if player.is_stunned:
+                arcade.draw_text("【眩晕】", px + 130, status_y, (240, 180, 20), 11, font_name=self.font)
+
+        # === 行动菜单 ===
+        menu_w, menu_h = 175, 170
+        mx = 28 + sx
+        my = 30 + sy
+        self._R(mx - 2, my - 2, menu_w + 4, menu_h + 4, (32, 29, 25, 235))
+        self._RO(mx - 2, my - 2, menu_w + 4, menu_h + 4, (140, 120, 85), 2)
+
         actions = ["攻击", "武学", "防御", "逃跑"]
         for i, act in enumerate(actions):
-            y = my + menu_h - 30 - i * 32
+            y = my + menu_h - 35 - i * 38
             if i == self._combat_menu_idx:
-                arcade.draw_text(f"> {act}", mx + 12, y, COLORS["accent"], 16, font_name=self.font)
+                self._R(mx + 2, y - 5, menu_w - 4, 30, (65, 55, 40, 170))
+                arcade.draw_text(f"▸ {act}", mx + 14, y, (200, 170, 100), 16, font_name=self.font)
             else:
-                arcade.draw_text(act, mx + 12, y, (160, 150, 130), 14, font_name=self.font)
+                arcade.draw_text(f"  {act}", mx + 14, y, (150, 140, 120), 14, font_name=self.font)
 
-        # 武学子菜单
+        # === 武学子菜单 ===
         if self._combat_menu_idx == 1 and cs.player:
             skills = list(self.cultivation.skills.keys())[:6]
             if skills:
-                smx, smy = mx + menu_w + 10, my
-                arcade.draw_rect_filled(arcade.LBWH(smx, smy, 250, menu_h), (30, 28, 24, 220))
+                smx = mx + menu_w + 14 + sx
+                smy = my + sy
+                smw, smh = 270, menu_h
+                self._R(smx - 2, smy - 2, smw + 4, smh + 4, (32, 29, 25, 235))
+                self._RO(smx - 2, smy - 2, smw + 4, smh + 4, (140, 120, 85), 2)
                 for i, sid in enumerate(skills):
                     from .combat_system import SKILLS_DATABASE
                     sk = SKILLS_DATABASE.get(sid)
                     if sk:
-                        y = smy + menu_h - 30 - i * 28
-                        text = f"{sk.name_zh} (内力:{sk.mp_cost})"
+                        y = smy + smh - 37 - i * 28
+                        can_afford = cs.player.mp >= sk.mp_cost
                         if i == self._combat_skill_idx:
-                            arcade.draw_text(f"> {text}", smx + 8, y, COLORS["accent"], 14, font_name=self.font)
+                            self._R(smx + 2, y - 5, smw - 4, 26, (65, 55, 40, 170))
+                            arcade.draw_text(f"▸ {sk.name_zh}", smx + 10, y, (200, 170, 100), 14,
+                                           font_name=self.font)
                         else:
-                            arcade.draw_text(text, smx + 8, y, (150, 140, 120), 12, font_name=self.font)
+                            color = (150, 140, 120) if can_afford else (90, 85, 75)
+                            arcade.draw_text(f"  {sk.name_zh}", smx + 10, y, color, 12, font_name=self.font)
+                        mp_color = (100, 140, 200) if can_afford else (80, 80, 80)
+                        arcade.draw_text(f"内力:{sk.mp_cost}", smx + smw - 70, y, mp_color, 11,
+                                       font_name=self.font)
 
-        # 回合指示
-        phase_text = {"PLAYER_TURN": "你的回合", "ENEMY_TURN": "敌人回合",
-                     "VICTORY": "胜利!", "DEFEAT": "失败...", "FLEE": "逃跑!"}
-        phase = phase_text.get(cs.phase.value, "")
-        arcade.draw_text(phase, SW - 150, 50, COLORS["accent"], 18, font_name=self.font, anchor_x="center")
+        # === 战斗日志 ===
+        log_w, log_h = 520, 158
+        log_x = SW - log_w - 30 + sx
+        log_y = 30 + sy
+        self._R(log_x - 2, log_y - 2, log_w + 4, log_h + 4, (32, 29, 25, 215))
+        self._RO(log_x - 2, log_y - 2, log_w + 4, log_h + 4, (140, 120, 85), 1)
+        arcade.draw_line(log_x + 12, log_y + log_h - 24, log_x + log_w - 12, log_y + log_h - 24,
+                         (140, 120, 85), 1)
+        arcade.draw_text("—— 战斗记录 ——", log_x + log_w // 2, log_y + log_h - 22,
+                        (180, 175, 155), 12, font_name=self.font, anchor_x="center")
 
-        # 奖励
-        if self._combat_rewards and cs.phase.value == "VICTORY":
+        ly = log_y + log_h - 44
+        for log_line in self._combat_log[-5:]:
+            if "伤害" in log_line:
+                color = (255, 150, 150, 230)
+            elif "胜利" in log_line:
+                color = (150, 255, 150, 230)
+            elif "失败" in log_line or "败" in log_line:
+                color = (255, 100, 100, 230)
+            elif "暴击" in log_line:
+                color = (255, 200, 50, 230)
+            elif "闪避" in log_line or "格挡" in log_line:
+                color = (200, 200, 150, 230)
+            else:
+                color = (200, 195, 170, 230)
+            arcade.draw_text(log_line[:55], log_x + 12, ly, color, 12, font_name=self.font)
+            ly -= 22
+
+        # === 胜利画面 ===
+        if cs.phase == CombatPhase.VICTORY:
+            arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (18, 32, 18, 50))
+            self._vic_win(cs)
+        elif cs.phase == CombatPhase.DEFEAT:
+            arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (35, 14, 14, 55))
+            self._vic_defeat()
+        elif cs.phase == CombatPhase.FLEE:
+            arcade.draw_rect_filled(arcade.LBWH(0, 0, SW, SH), (28, 24, 14, 45))
+            self._vic_flee()
+
+    def _vic_win(self, cs):
+        """胜利画面"""
+        vw, vh = 420, 280
+        vx = SW // 2 - vw // 2
+        vy = SH // 2 - vh // 2
+        self._R(vx, vy, vw, vh, (30, 38, 28, 250))
+        self._RO(vx, vy, vw, vh, (100, 190, 80), 3)
+        arcade.draw_line(vx + 30, vy + vh - 55, vx + vw - 30, vy + vh - 55, (80, 160, 70), 2)
+        arcade.draw_text("战 斗 胜 利", vx + vw // 2, vy + vh - 40, (160, 230, 140), 22,
+                         font_name=self.font, anchor_x="center")
+        if self._combat_rewards:
             rw = self._combat_rewards
-            arcade.draw_text(f"经验+{rw.get('exp',0)}  银两+{rw.get('gold',0)}",
-                           SW//2, SH-40, (200, 220, 120), 16,
-                           font_name=self.font, anchor_x="center")
-            arcade.draw_text("按空格继续", SW//2, SH-70, (150, 150, 150), 13,
-                           font_name=self.font, anchor_x="center")
+            ry = vy + vh - 100
+            if rw.get("exp", 0):
+                arcade.draw_text(f"经验值  +{rw['exp']}", vx + 110, ry, (220, 220, 150), 16, font_name=self.font)
+                ry -= 30
+            if rw.get("gold", 0):
+                arcade.draw_text(f"银  两  +{rw['gold']}", vx + 110, ry, (220, 210, 120), 16, font_name=self.font)
+                ry -= 30
+            if rw.get("items"):
+                arcade.draw_text(f"获得物品: {', '.join(rw['items'])}", vx + 110, ry, (130, 210, 130), 14,
+                                 font_name=self.font)
+        arcade.draw_text("按 空格键 或 回车 继续", vx + vw // 2, vy + 25, (180, 180, 180), 13,
+                         font_name=self.font, anchor_x="center")
+
+    def _vic_defeat(self):
+        """战败画面"""
+        vw, vh = 420, 230
+        vx = SW // 2 - vw // 2
+        vy = SH // 2 - vh // 2
+        self._R(vx, vy, vw, vh, (40, 28, 28, 250))
+        self._RO(vx, vy, vw, vh, (200, 90, 90), 3)
+        arcade.draw_line(vx + 30, vy + vh - 55, vx + vw - 30, vy + vh - 55, (150, 70, 70), 2)
+        arcade.draw_text("战 斗 失 败", vx + vw // 2, vy + vh - 40, (230, 130, 130), 22,
+                         font_name=self.font, anchor_x="center")
+        arcade.draw_text("将在最近城镇中复活", vx + vw // 2, vy + vh - 85, (200, 180, 180), 15,
+                         font_name=self.font, anchor_x="center")
+        arcade.draw_text("按 空格键 或 回车 继续", vx + vw // 2, vy + 25, (170, 170, 170), 13,
+                         font_name=self.font, anchor_x="center")
+
+    def _vic_flee(self):
+        """逃跑画面"""
+        vw, vh = 360, 180
+        vx = SW // 2 - vw // 2
+        vy = SH // 2 - vh // 2
+        self._R(vx, vy, vw, vh, (34, 30, 24, 245))
+        self._RO(vx, vy, vw, vh, (140, 120, 85), 2)
+        arcade.draw_text("逃 离 战 斗", vx + vw // 2, vy + vh - 55, (200, 170, 100), 21,
+                         font_name=self.font, anchor_x="center")
+        arcade.draw_text("按 空格键 或 回车 继续", vx + vw // 2, vy + 30, (170, 170, 170), 13,
+                         font_name=self.font, anchor_x="center")
 
     def _combat_input(self, key, modifiers):
         """战斗中的键盘输入"""
         cs = self.combat_system
 
-        if cs.phase.value in ("VICTORY", "DEFEAT", "FLEE"):
+        if cs.phase in (CombatPhase.VICTORY, CombatPhase.DEFEAT, CombatPhase.FLEE):
             if key == arcade.key.SPACE or key == arcade.key.ENTER:
                 self._in_combat = False
                 self._combat_rewards = None

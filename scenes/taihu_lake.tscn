@@ -1,0 +1,145 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://clbkwpe6l3ksj" path="res://scenes/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dob5mvaialqej" path="res://scripts/entities/npc_sprite.gd" id="2_npcsprite"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_player"]
+radius = 16.0
+
+[node name="TaihuLake" type="Node2D" unique_id=1]
+script = ExtResource("1_main")
+
+[node name="WorldLayer" type="Node2D" parent="." unique_id=2]
+z_index = -1
+
+[node name="LakeGround" type="ColorRect" parent="WorldLayer" unique_id=3]
+offset_left = -2750.0
+offset_top = -2750.0
+offset_right = 2750.0
+offset_bottom = 2750.0
+color = Color(0.25, 0.35, 0.28, 1)
+
+[node name="TaihuWater" type="ColorRect" parent="WorldLayer" unique_id=4]
+offset_left = -500.0
+offset_top = -350.0
+offset_right = 500.0
+offset_bottom = 350.0
+color = Color(0.20, 0.30, 0.38, 1)
+
+[node name="Island1" type="ColorRect" parent="WorldLayer" unique_id=5]
+offset_left = -150.0
+offset_top = -100.0
+offset_right = -50.0
+offset_bottom = -20.0
+color = Color(0.30, 0.38, 0.25, 1)
+
+[node name="Island2" type="ColorRect" parent="WorldLayer" unique_id=6]
+offset_left = 80.0
+offset_top = 50.0
+offset_right = 180.0
+offset_bottom = 130.0
+color = Color(0.30, 0.38, 0.25, 1)
+
+[node name="PathWest" type="ColorRect" parent="WorldLayer" unique_id=7]
+offset_left = -2750.0
+offset_top = -30.0
+offset_right = -400.0
+offset_bottom = 30.0
+color = Color(0.35, 0.42, 0.32, 1)
+
+[node name="PathSouth" type="ColorRect" parent="WorldLayer" unique_id=8]
+offset_left = -30.0
+offset_top = 400.0
+offset_right = 30.0
+offset_bottom = 2750.0
+color = Color(0.35, 0.42, 0.32, 1)
+
+[node name="PathNorth" type="ColorRect" parent="WorldLayer" unique_id=9]
+offset_left = -30.0
+offset_top = -2750.0
+offset_right = 30.0
+offset_bottom = -400.0
+color = Color(0.35, 0.42, 0.32, 1)
+
+[node name="FishingBoat1" type="ColorRect" parent="WorldLayer" unique_id=10]
+offset_left = 250.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = -180.0
+color = Color(0.42, 0.32, 0.22, 1)
+
+[node name="FishingBoat2" type="ColorRect" parent="WorldLayer" unique_id=11]
+offset_left = -350.0
+offset_top = 150.0
+offset_right = -300.0
+offset_bottom = -170.0
+color = Color(0.42, 0.32, 0.22, 1)
+
+[node name="TaihuStone1" type="ColorRect" parent="WorldLayer" unique_id=12]
+offset_left = 400.0
+offset_top = -300.0
+offset_right = 440.0
+offset_bottom = -260.0
+color = Color(0.55, 0.55, 0.52, 1)
+
+[node name="TaihuStone2" type="ColorRect" parent="WorldLayer" unique_id=13]
+offset_left = -250.0
+offset_top = -350.0
+offset_right = -210.0
+offset_bottom = -310.0
+color = Color(0.55, 0.55, 0.52, 1)
+
+[node name="SceneLabel" type="Label" parent="WorldLayer" unique_id=14]
+offset_left = -100.0
+offset_top = -400.0
+offset_right = 100.0
+offset_bottom = -350.0
+text = "太湖烟波"
+horizontal_alignment = 1
+add_theme_color_override("font_color", Color(0.55, 0.70, 0.60, 0.6))
+add_theme_font_size_override("font_size", 24)
+mouse_filter = 2
+
+[node name="NPCLayer" type="Node2D" parent="." unique_id=15]
+
+[node name="NPC_yufu" type="Node2D" parent="NPCLayer" unique_id=16]
+position = Vector2(280, -200)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_yufu" unique_id=17]
+script = ExtResource("2_npcsprite")
+npc_id = "taihu_yufu"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_yufu" unique_id=18]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_yufu/InteractArea" unique_id=19]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_caishi" type="Node2D" parent="NPCLayer" unique_id=20]
+position = Vector2(420, -280)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_caishi" unique_id=21]
+script = ExtResource("2_npcsprite")
+npc_id = "taihu_caishi"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_caishi" unique_id=22]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_caishi/InteractArea" unique_id=23]
+shape = SubResource("CircleShape2D_player")
+
+[node name="NPC_chuanniang" type="Node2D" parent="NPCLayer" unique_id=24]
+position = Vector2(-300, 180)
+
+[node name="Sprite" type="Node2D" parent="NPCLayer/NPC_chuanniang" unique_id=25]
+script = ExtResource("2_npcsprite")
+npc_id = "taihu_chuanniang"
+
+[node name="InteractArea" type="Area2D" parent="NPCLayer/NPC_chuanniang" unique_id=26]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape" type="CollisionShape2D" parent="NPCLayer/NPC_chuanniang/InteractArea" unique_id=27]
+shape = SubResource("CircleShape2D_player")

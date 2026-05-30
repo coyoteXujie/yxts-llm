@@ -140,8 +140,11 @@ class EconomySystem:
         self.bank = BankAccount()
         
         # 玩家资金
-        self.gold: int = 100
+        self._gold: int = 100
         self.silver: int = 0
+        
+        # 玩家引用
+        self._player_ref = None
         
         # 市场价格记忆
         self.price_history: Dict[str, List[Tuple[datetime, int]]] = {}
@@ -197,6 +200,30 @@ class EconomySystem:
             ],
             sell_price_rate=1.5  # 黑市价格更高
         )
+        
+    def link_player(self, player) -> None:
+        """链接玩家对象，同步金币"""
+        self._player_ref = player
+        if player and hasattr(player, 'money'):
+            self._gold = player.money
+    
+    @property
+    def gold(self) -> int:
+        """获取金币（优先从玩家读取）"""
+        if self._player_ref:
+            return self._player_ref.money
+        return self._gold
+    
+    @gold.setter
+    def gold(self, value: int) -> None:
+        """设置金币（同时更新玩家）"""
+        self._gold = value
+        if self._player_ref:
+            self._player_ref.money = value
+    
+    def add_gold(self, amount: int) -> None:
+        """增加金币"""
+        self.gold += amount
         
     def buy_item(self, shop_id: str, item_id: str, quantity: int = 1) -> Tuple[bool, str]:
         """购买物品"""
@@ -345,7 +372,10 @@ class ReputationSystem:
         self.faction_reputation: Dict[str, int] = {}
         
         # 正邪值 (-100 到 100)
-        self.alignment: int = 0  # 0=中立, 正=正派, 负=邪派
+        self._alignment: int = 0  # 0=中立, 正=正派, 负=邪派
+        
+        # 玩家引用
+        self._player_ref = None
         
         # 江湖名望
         self.fame: int = 0
@@ -356,6 +386,26 @@ class ReputationSystem:
         # 称号
         self.titles: List[str] = []
         self.current_title: str = "江湖新人"
+        
+    def link_player(self, player) -> None:
+        """链接玩家对象，同步正邪值"""
+        self._player_ref = player
+        if player and hasattr(player, 'daode'):
+            self._alignment = player.daode
+    
+    @property
+    def alignment(self) -> int:
+        """获取正邪值（优先从玩家读取）"""
+        if self._player_ref:
+            return self._player_ref.daode
+        return self._alignment
+    
+    @alignment.setter
+    def alignment(self, value: int) -> None:
+        """设置正邪值（同时更新玩家）"""
+        self._alignment = value
+        if self._player_ref:
+            self._player_ref.daode = value
         
     def get_faction_standing(self, faction: str) -> str:
         """获取门派声望等级"""

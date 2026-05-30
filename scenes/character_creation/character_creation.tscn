@@ -1,0 +1,176 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/character_creation.gd" id="1_create"]
+
+[node name="CharacterCreation" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_create")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.102, 0.102, 0.18, 1)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 30.0
+offset_bottom = 100.0
+theme_override_font_sizes/font_size = 48
+text = "创建角色"
+horizontal_alignment = 1
+
+[node name="LeftPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 400.0
+offset_bottom = -50.0
+grow_vertical = 2
+
+[node name="NameInput" type="LineEdit" parent="LeftPanel"]
+layout_mode = 2
+placeholder_text = "输入角色名称"
+
+[node name="GenderLabel" type="Label" parent="LeftPanel"]
+layout_mode = 2
+text = "性别"
+
+[node name="GenderButtons" type="HBoxContainer" parent="LeftPanel"]
+layout_mode = 2
+
+[node name="Male" type="Button" parent="LeftPanel/GenderButtons"]
+layout_mode = 2
+text = "男"
+
+[node name="Female" type="Button" parent="LeftPanel/GenderButtons"]
+layout_mode = 2
+text = "女"
+
+[node name="FactionLabel" type="Label" parent="LeftPanel"]
+layout_mode = 2
+text = "选择门派"
+
+[node name="FactionButtons" type="VBoxContainer" parent="LeftPanel"]
+layout_mode = 2
+
+[node name="RightPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_bottom = -50.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="AttrLabel" type="Label" parent="RightPanel"]
+layout_mode = 2
+text = "属性分配"
+
+[node name="AttrPoints" type="Label" parent="RightPanel"]
+layout_mode = 2
+text = "剩余点数: 20"
+
+[node name="Strength" type="HBoxContainer" parent="RightPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RightPanel/Strength"]
+layout_mode = 2
+text = "力量:"
+
+[node name="Value" type="Label" parent="RightPanel/Strength"]
+layout_mode = 2
+text = "10"
+
+[node name="StrMinus" type="Button" parent="RightPanel/Strength"]
+layout_mode = 2
+text = "-"
+
+[node name="StrPlus" type="Button" parent="RightPanel/Strength"]
+layout_mode = 2
+text = "+"
+
+[node name="Dexterity" type="HBoxContainer" parent="RightPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RightPanel/Dexterity"]
+layout_mode = 2
+text = "敏捷:"
+
+[node name="Value" type="Label" parent="RightPanel/Dexterity"]
+layout_mode = 2
+text = "10"
+
+[node name="DexMinus" type="Button" parent="RightPanel/Dexterity"]
+layout_mode = 2
+text = "-"
+
+[node name="DexPlus" type="Button" parent="RightPanel/Dexterity"]
+layout_mode = 2
+text = "+"
+
+[node name="Intelligence" type="HBoxContainer" parent="RightPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RightPanel/Intelligence"]
+layout_mode = 2
+text = "智力:"
+
+[node name="Value" type="Label" parent="RightPanel/Intelligence"]
+layout_mode = 2
+text = "10"
+
+[node name="IntMinus" type="Button" parent="RightPanel/Intelligence"]
+layout_mode = 2
+text = "-"
+
+[node name="IntPlus" type="Button" parent="RightPanel/Intelligence"]
+layout_mode = 2
+text = "+"
+
+[node name="Constitution" type="HBoxContainer" parent="RightPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RightPanel/Constitution"]
+layout_mode = 2
+text = "体质:"
+
+[node name="Value" type="Label" parent="RightPanel/Constitution"]
+layout_mode = 2
+text = "10"
+
+[node name="ConMinus" type="Button" parent="RightPanel/Constitution"]
+layout_mode = 2
+text = "-"
+
+[node name="ConPlus" type="Button" parent="RightPanel/Constitution"]
+layout_mode = 2
+text = "+"
+
+[node name="BottomPanel" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Back" type="Button" parent="BottomPanel"]
+layout_mode = 2
+text = "返回"
+
+[node name="Confirm" type="Button" parent="BottomPanel"]
+layout_mode = 2
+text = "确认创建"

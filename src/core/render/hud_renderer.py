@@ -131,19 +131,6 @@ def _draw_reputation(hud_h, reputation, economy):
         alignment = reputation.alignment
         align_color = (100, 200, 100) if alignment > 0 else ((200, 100, 100) if alignment < 0 else (180, 180, 180))
         draw_text(f"正邪: {alignment:+d}", SW - 280, hud_h - 60, align_color, 11, "left", "center")
-    ix = 430
-    icons = [
-        ("银两", f"{player.money}", COLORS["gold"], (255, 215, 0, 25)),
-        ("道德", f"{player.daode}", (100, 220, 100) if player.daode >= 0 else (220, 100, 100),
-         (100, 220, 100, 15) if player.daode >= 0 else (220, 100, 100, 15)),
-        ("潜能", f"{player.pot}", (150, 180, 220), (150, 180, 220, 15)),
-    ]
-    for i, (label, val, color, bg_c) in enumerate(icons):
-        iy = hud_h - 14 - i * 20
-        draw_gradient_rect(ix - 2, iy - 8, 100, 16, lighten(bg_c[:3], 5), bg_c[:3], 2)
-        arcade.draw_rect_outline(arcade.LBWH(ix - 2, iy - 8, 100, 16), (*color[:3], 35), 1)
-        draw_text(label, ix + 2, iy, (120, 120, 130), 10, "left", "center")
-        draw_text(val, ix + 40, iy, color, 13, "left", "center")
 
 
 def _draw_survival_bars(hud_h, player):
