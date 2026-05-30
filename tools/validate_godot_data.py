@@ -55,6 +55,15 @@ def main() -> int:
             errors.append(f"region {region.get('id')} has non-positive size")
         if x < 0 or y < 0 or x + width > MAP_WIDTH or y + height > MAP_HEIGHT:
             errors.append(f"region {region.get('id')} rect out of map bounds: {rect}")
+        center = region.get("center", [])
+        if len(center) != 2:
+            errors.append(f"region {region.get('id')} has invalid center")
+        else:
+            cx, cy = map(int, center)
+            if not (0 <= cx < MAP_WIDTH and 0 <= cy < MAP_HEIGHT):
+                errors.append(f"region {region.get('id')} center out of map bounds: {center}")
+            if not (x <= cx < x + width and y <= cy < y + height):
+                errors.append(f"region {region.get('id')} center outside rect: center={center} rect={rect}")
 
     for npc in npcs:
         x = int(npc.get("pos_x", -1))

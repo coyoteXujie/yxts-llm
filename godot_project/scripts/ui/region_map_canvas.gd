@@ -1,6 +1,8 @@
 extends Control
 class_name RegionMapCanvas
 
+signal region_clicked(region_id: String)
+
 var selected_region_id := ""
 var marker_npc: Texture2D
 var marker_quest: Texture2D
@@ -8,6 +10,7 @@ var marker_target: Texture2D
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(660, 318)
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	marker_npc = GameData.load_texture("res://assets/ui/marker_npc.png")
 	marker_quest = GameData.load_texture("res://assets/ui/marker_quest.png")
 	marker_target = GameData.load_texture("res://assets/ui/marker_target.png")
@@ -15,6 +18,15 @@ func _ready() -> void:
 func set_selected_region(region_id: String) -> void:
 	selected_region_id = region_id
 	queue_redraw()
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var region_id := _region_id_at_point(event.position)
+		if region_id.is_empty():
+			return
+		set_selected_region(region_id)
+		region_clicked.emit(region_id)
+		accept_event()
 
 func _draw() -> void:
 	var canvas := Rect2(Vector2.ZERO, size)
@@ -136,6 +148,16 @@ func _draw_legend(canvas: Rect2) -> void:
 func _scaled_tile(tile: Vector2i, canvas: Rect2) -> Vector2:
 	var scale := Vector2(canvas.size.x / float(GameData.MAP_WIDTH), canvas.size.y / float(GameData.MAP_HEIGHT))
 	return Vector2((float(tile.x) + 0.5) * scale.x, (float(tile.y) + 0.5) * scale.y)
+
+func _region_id_at_point(point: Vector2) -> String:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return ""
+	var tile := Vector2i(
+		clampi(floori(point.x / size.x * float(GameData.MAP_WIDTH)), 0, GameData.MAP_WIDTH - 1),
+		clampi(floori(point.y / size.y * float(GameData.MAP_HEIGHT)), 0, GameData.MAP_HEIGHT - 1)
+	)
+	var region := GameData.get_region_at_tile(tile)
+	return str(region.get("id", ""))
 
 func _tile_region_discovered(tile: Vector2i) -> bool:
 	var region := GameData.get_region_at_tile(tile)

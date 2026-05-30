@@ -3,12 +3,18 @@ class_name WorldMapPanel
 
 const MAP_CANVAS_SCRIPT := preload("res://scripts/ui/region_map_canvas.gd")
 
+signal focus_region_requested(region_id: String)
+signal fast_travel_requested(region_id: String)
+
 var region_list: ItemList
 var scene_texture: TextureRect
 var scene_caption: Label
 var details: RichTextLabel
 var map_canvas
+var focus_button: Button
+var travel_button: Button
 var region_ids: Array[String] = []
+var selected_region_id := ""
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -58,6 +64,7 @@ func _build() -> void:
 	root.add_child(right)
 
 	map_canvas = MAP_CANVAS_SCRIPT.new()
+	map_canvas.region_clicked.connect(_select_region_by_id)
 	right.add_child(map_canvas)
 
 	var info_row := HBoxContainer.new()
@@ -96,7 +103,20 @@ func _build() -> void:
 
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 10)
 	right.add_child(actions)
+
+	focus_button = Button.new()
+	focus_button.text = "标记目的地"
+	focus_button.custom_minimum_size = Vector2(132, 36)
+	focus_button.pressed.connect(_request_focus_region)
+	actions.add_child(focus_button)
+
+	travel_button = Button.new()
+	travel_button.text = "快速前往"
+	travel_button.custom_minimum_size = Vector2(132, 36)
+	travel_button.pressed.connect(_request_fast_travel)
+	actions.add_child(travel_button)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
@@ -107,7 +127,11 @@ func _build() -> void:
 func _refresh() -> void:
 	if region_list == null:
 		return
-	var selected_id: String = str(map_canvas.selected_region_id) if map_canvas != null else GameState.current_region_id
+	var selected_id := selected_region_id
+	if selected_id.is_empty() and map_canvas != null:
+		selected_id = str(map_canvas.selected_region_id)
+	if selected_id.is_empty():
+		selected_id = GameState.current_region_id
 	region_list.clear()
 	region_ids.clear()
 	for region in GameData.get_regions():
@@ -137,9 +161,11 @@ func _select_region(index: int) -> void:
 	_select_region_by_id(region_ids[index])
 
 func _select_region_by_id(region_id: String) -> void:
+	selected_region_id = region_id
 	if region_id.is_empty():
 		details.text = "尚未发现区域。"
 		_set_scene_background("", "区域景象")
+		_update_action_buttons("")
 		return
 	var region := GameData.get_region(region_id)
 	if region.is_empty():
@@ -147,9 +173,11 @@ func _select_region_by_id(region_id: String) -> void:
 	var discovered := GameState.is_region_discovered(region_id)
 	if map_canvas != null:
 		map_canvas.set_selected_region(region_id)
+	_select_region_list_item(region_id)
 	if not discovered:
 		details.text = "未知区域\n继续探索世界后，区域名称、地貌和危险等级会逐步显现。"
 		_set_scene_background("", "尚未发现")
+		_update_action_buttons(region_id)
 		return
 	var danger := int(region.get("danger", 0))
 	var state := GameState.get_region_state(region_id)
@@ -163,6 +191,16 @@ func _select_region_by_id(region_id: String) -> void:
 		extra
 	]
 	_set_scene_background(region_id, str(region.get("name", region_id)))
+	_update_action_buttons(region_id)
+
+func _select_region_list_item(region_id: String) -> void:
+	if region_list == null:
+		return
+	for index in range(region_ids.size()):
+		if region_ids[index] == region_id:
+			region_list.select(index)
+			region_list.ensure_current_is_visible()
+			return
 
 func _region_detail_lines(region_id: String) -> String:
 	var npc_names: Array[String] = []
@@ -189,9 +227,44 @@ func _region_detail_lines(region_id: String) -> String:
 		lines.append("要人：%s" % "、".join(npc_names.slice(0, 6)))
 	if not quest_names.is_empty():
 		lines.append("线索：%s" % "、".join(quest_names.slice(0, 4)))
+	var travel_line := _fast_travel_line(region_id)
+	if not travel_line.is_empty():
+		lines.append(travel_line)
 	if lines.is_empty():
 		return ""
 	return "\n" + "\n".join(lines)
+
+func _fast_travel_line(region_id: String) -> String:
+	var reason := GameState.get_fast_travel_block_reason(region_id)
+	if reason.is_empty():
+		return "驿路：可快速前往，约 %.1f 时辰。" % GameState.estimate_fast_travel_hours(region_id)
+	return "驿路：%s。" % reason
+
+func _update_action_buttons(region_id: String) -> void:
+	if focus_button == null or travel_button == null:
+		return
+	var region := GameData.get_region(region_id)
+	var discovered := not region.is_empty() and GameState.is_region_discovered(region_id)
+	focus_button.disabled = not discovered
+	focus_button.tooltip_text = "在大地图上标记该区域" if discovered else "尚未发现区域"
+	var reason := GameState.get_fast_travel_block_reason(region_id)
+	travel_button.disabled = not reason.is_empty()
+	travel_button.tooltip_text = "快速移动到区域入口" if reason.is_empty() else reason
+
+func _request_focus_region() -> void:
+	if selected_region_id.is_empty() or not GameState.is_region_discovered(selected_region_id):
+		EventBus.emit_toast("尚未发现该区域")
+		return
+	focus_region_requested.emit(selected_region_id)
+
+func _request_fast_travel() -> void:
+	if selected_region_id.is_empty():
+		return
+	var reason := GameState.get_fast_travel_block_reason(selected_region_id)
+	if not reason.is_empty():
+		EventBus.emit_toast(reason)
+		return
+	fast_travel_requested.emit(selected_region_id)
 
 func _type_name(region_type: String) -> String:
 	match region_type:

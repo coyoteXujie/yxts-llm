@@ -74,6 +74,8 @@ func _ready() -> void:
 	ui_layer.add_child(cultivation_panel)
 	world_map_panel = WORLD_MAP_PANEL_SCRIPT.new()
 	ui_layer.add_child(world_map_panel)
+	world_map_panel.focus_region_requested.connect(_mark_region_target)
+	world_map_panel.fast_travel_requested.connect(_fast_travel_to_region)
 	character_creation_panel = CHARACTER_CREATION_SCRIPT.new()
 	ui_layer.add_child(character_creation_panel)
 	main_menu_panel = MAIN_MENU_SCRIPT.new()
@@ -205,6 +207,40 @@ func _open_dialogue(npc: Dictionary) -> void:
 func _open_shop(npc: Dictionary) -> void:
 	_close_gameplay_panels()
 	shop_panel.show_shop(npc)
+
+func _mark_region_target(region_id: String) -> void:
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return
+	world_map.set_target_region(region_id)
+	world_map_panel.close_panel()
+	EventBus.emit_toast("已标记目的地：%s" % str(region.get("name", region_id)))
+
+func _fast_travel_to_region(region_id: String) -> void:
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return
+	var reason := GameState.get_fast_travel_block_reason(region_id)
+	if not reason.is_empty():
+		EventBus.emit_toast(reason)
+		return
+	var destination: Vector2 = world_map.get_region_entry_position(region_id)
+	if not world_map.is_position_walkable(destination):
+		EventBus.emit_toast("目的地入口暂不可通行")
+		return
+	var travel_hours := GameState.apply_fast_travel_time(region_id)
+	if travel_hours < 0.0:
+		return
+	player_actor.position = destination
+	player_actor.velocity = Vector2.ZERO
+	GameState.player_position = destination
+	world_map.set_target_region("")
+	_update_current_region()
+	_close_gameplay_panels()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+	if camera != null:
+		camera.reset_smoothing()
+	EventBus.emit_toast("抵达%s，用时 %.1f 时辰" % [str(region.get("name", region_id)), travel_hours])
 
 func _start_combat_from_data(enemy: Dictionary) -> void:
 	active_enemy_actor = focused_npc

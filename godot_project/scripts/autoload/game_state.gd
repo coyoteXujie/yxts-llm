@@ -33,6 +33,12 @@ var current_region_name := "未知之地"
 var current_tile := Vector2i.ZERO
 
 const SAVE_PATH := "user://savegame.json"
+const FAST_TRAVEL_MIN_EXPLORATION := 25
+const FAST_TRAVEL_REGION_TYPES := {
+	"city": true,
+	"town": true,
+	"sect": true
+}
 
 func _ready() -> void:
 	new_game()
@@ -170,6 +176,70 @@ func is_region_discovered(region_id: String) -> bool:
 
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
+
+func get_fast_travel_block_reason(region_id: String) -> String:
+	if region_id.is_empty():
+		return "未选择区域"
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return "区域不存在"
+	if not is_region_discovered(region_id):
+		return "尚未发现该区域"
+	if region_id == current_region_id:
+		return "已经身在此处"
+	var region_type := str(region.get("type", "wild"))
+	if not FAST_TRAVEL_REGION_TYPES.has(region_type):
+		return "荒野区域暂不可快速前往，只能标记目的地"
+	var exploration := get_region_exploration(region_id)
+	if exploration < FAST_TRAVEL_MIN_EXPLORATION:
+		return "探索度达到%d%%后解锁驿路" % FAST_TRAVEL_MIN_EXPLORATION
+	return ""
+
+func can_fast_travel_to_region(region_id: String) -> bool:
+	return get_fast_travel_block_reason(region_id).is_empty()
+
+func estimate_fast_travel_hours(region_id: String) -> float:
+	var target_region := GameData.get_region(region_id)
+	if target_region.is_empty():
+		return 0.0
+	var current := current_tile
+	var current_region := GameData.get_region(current_region_id)
+	if not current_region.is_empty():
+		current = _region_center_tile(current_region)
+	var target := _region_center_tile(target_region)
+	var distance := Vector2(float(current.x), float(current.y)).distance_to(Vector2(float(target.x), float(target.y)))
+	var danger := int(target_region.get("danger", 1))
+	var hours := clampf(distance / 8.0 + float(danger) * 0.4, 1.0, 12.0)
+	return roundf(hours * 2.0) / 2.0
+
+func apply_fast_travel_time(region_id: String) -> float:
+	var reason := get_fast_travel_block_reason(region_id)
+	if not reason.is_empty():
+		EventBus.emit_toast(reason)
+		return -1.0
+	var travel_hours := estimate_fast_travel_hours(region_id)
+	_advance_clock(travel_hours)
+	return travel_hours
+
+func _advance_clock(hours_to_add: float) -> void:
+	hour += maxf(hours_to_add, 0.0)
+	var day_changed := false
+	while hour >= 24.0:
+		hour -= 24.0
+		day += 1
+		day_changed = true
+	if day_changed:
+		_roll_weather()
+	EventBus.time_changed.emit(day, hour, weather)
+
+func _region_center_tile(region: Dictionary) -> Vector2i:
+	var center_data: Array = region.get("center", [])
+	if center_data.size() >= 2:
+		return Vector2i(int(center_data[0]), int(center_data[1]))
+	var rect: Array = region.get("rect", [])
+	if rect.size() >= 4:
+		return Vector2i(int(rect[0]) + int(rect[2]) / 2, int(rect[1]) + int(rect[3]) / 2)
+	return current_tile
 
 func advance_time(delta: float) -> void:
 	if not can_explore():

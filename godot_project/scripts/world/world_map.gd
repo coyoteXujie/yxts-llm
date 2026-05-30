@@ -73,6 +73,7 @@ var tiles: Array = []
 var npc_nodes: Array = []
 var landmark_labels: Array[Label] = []
 var tile_textures: Dictionary = {}
+var target_region_id := ""
 
 func _ready() -> void:
 	_load_tile_textures()
@@ -100,6 +101,18 @@ func get_region_at_world_position(world_position: Vector2) -> Dictionary:
 
 func get_world_rect() -> Rect2:
 	return Rect2(Vector2.ZERO, Vector2(map_width * tile_size, map_height * tile_size))
+
+func set_target_region(region_id: String) -> void:
+	target_region_id = region_id
+	queue_redraw()
+
+func get_region_entry_position(region_id: String) -> Vector2:
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return tile_to_world(Vector2i(30, 17))
+	var center := _region_center_tile(region)
+	var entry_tile := _find_walkable_tile_in_region(region, center)
+	return tile_to_world(entry_tile)
 
 func generate_map() -> void:
 	tiles.clear()
@@ -278,6 +291,9 @@ func _get_tile(x: int, y: int) -> int:
 
 func is_position_walkable(world_position: Vector2) -> bool:
 	var tile := world_to_tile(world_position)
+	return is_tile_walkable(tile)
+
+func is_tile_walkable(tile: Vector2i) -> bool:
 	if tile.x < 0 or tile.y < 0 or tile.x >= map_width or tile.y >= map_height:
 		return false
 	var tile_id: int = tiles[tile.y][tile.x]
@@ -369,6 +385,7 @@ func _draw() -> void:
 				draw_rect(rect, _tile_color(tile_id), true)
 			_draw_tile_detail(rect, tile_id, x, y)
 	_draw_region_overlays()
+	_draw_target_region_overlay()
 
 func _tile_color(tile_id: int) -> Color:
 	match tile_id:
@@ -503,6 +520,55 @@ func _draw_region_overlays() -> void:
 		draw_rect(rect.grow(-3.0), color, false, 2.0)
 		if region_type == "city":
 			draw_rect(rect.grow(-6.0), Color(0.15, 0.10, 0.06, 0.20), false, 1.2)
+
+func _draw_target_region_overlay() -> void:
+	if target_region_id.is_empty():
+		return
+	var region := GameData.get_region(target_region_id)
+	if region.is_empty():
+		return
+	var rect_data: Array = region.get("rect", [])
+	if rect_data.size() < 4:
+		return
+	var rect := Rect2(float(rect_data[0]) * tile_size, float(rect_data[1]) * tile_size, float(rect_data[2]) * tile_size, float(rect_data[3]) * tile_size)
+	var center := rect.get_center()
+	draw_rect(rect.grow(5.0), Color(1.0, 0.78, 0.28, 0.95), false, 4.0)
+	draw_rect(rect.grow(9.0), Color(1.0, 0.92, 0.56, 0.32), false, 1.5)
+	draw_arc(center, 19.0, 0.0, TAU, 32, Color(1.0, 0.86, 0.42, 0.92), 2.5)
+	draw_line(center + Vector2(-25, 0), center + Vector2(25, 0), Color(1.0, 0.92, 0.56, 0.70), 2.0)
+	draw_line(center + Vector2(0, -25), center + Vector2(0, 25), Color(1.0, 0.92, 0.56, 0.70), 2.0)
+
+func _find_walkable_tile_in_region(region: Dictionary, preferred: Vector2i) -> Vector2i:
+	if _region_contains_tile(region, preferred) and is_tile_walkable(preferred):
+		return preferred
+	var rect := _region_rect(region)
+	var max_radius: int = max(rect.size.x, rect.size.y) + 4
+	for radius in range(1, max_radius + 1):
+		for y in range(preferred.y - radius, preferred.y + radius + 1):
+			for x in range(preferred.x - radius, preferred.x + radius + 1):
+				if abs(x - preferred.x) != radius and abs(y - preferred.y) != radius:
+					continue
+				var tile := Vector2i(x, y)
+				if _region_contains_tile(region, tile) and is_tile_walkable(tile):
+					return tile
+	return preferred
+
+func _region_center_tile(region: Dictionary) -> Vector2i:
+	var center_data: Array = region.get("center", [])
+	if center_data.size() >= 2:
+		return Vector2i(int(center_data[0]), int(center_data[1]))
+	var rect := _region_rect(region)
+	return Vector2i(rect.position.x + rect.size.x / 2, rect.position.y + rect.size.y / 2)
+
+func _region_rect(region: Dictionary) -> Rect2i:
+	var rect_data: Array = region.get("rect", [])
+	if rect_data.size() < 4:
+		return Rect2i(0, 0, map_width, map_height)
+	return Rect2i(int(rect_data[0]), int(rect_data[1]), int(rect_data[2]), int(rect_data[3]))
+
+func _region_contains_tile(region: Dictionary, tile: Vector2i) -> bool:
+	var rect := _region_rect(region)
+	return tile.x >= rect.position.x and tile.y >= rect.position.y and tile.x < rect.end.x and tile.y < rect.end.y
 
 func _array_color(value, fallback: Color) -> Color:
 	if typeof(value) == TYPE_ARRAY and value.size() >= 3:
