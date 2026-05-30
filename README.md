@@ -29,8 +29,11 @@ yxts-llm/
 │   ├── scripts/           # GDScript 游戏逻辑
 │   ├── data/              # NPC、区域、任务、物品与资源映射 JSON
 │   └── assets/            # 当前运行时使用的美术资源
-├── doc/                   # 设计文档和实现差距审计
-└── tools/                 # 资产生成与数据校验工具
+├── docs/                  # 设计文档和实现差距审计
+├── tools/                 # 资产生成与数据校验工具
+├── AGENTS.md              # Codex 协作说明
+├── CLAUDE.md              # Claude Code 协作说明
+└── README.md              # 项目入口说明
 ```
 
 ## 现状
@@ -50,4 +53,4 @@ conda run -n yxts python tools/validate_godot_data.py
 env HOME=/tmp/godot_home XDG_DATA_HOME=/tmp/godot_data XDG_CONFIG_HOME=/tmp/godot_config XDG_CACHE_HOME=/tmp/godot_cache ./Godot_v4/linux/Godot_v4.6.3-stable_linux.x86_64 --headless --path godot_project --quit-after 1
 ```
 
-更多玩法和目录说明见 `godot_project/README.md`，设计目标和差距见 `doc/14_Godot实现差距审计.md`。
+更多玩法和目录说明见 `godot_project/README.md`，设计目标和差距见 `docs/14_Godot实现差距审计.md`。

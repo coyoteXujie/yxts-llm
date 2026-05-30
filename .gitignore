@@ -37,23 +37,38 @@ desktop.ini
 *.log
 stderr.log
 stdout.log
+godot_*.txt
+godot_err.txt
+godot_full.txt
+godot_log.txt
+godot_out.txt
+doc_part*.txt
 
 # Temp
 *.tmp
 *.bak
 *.cache
 screenshot_test.png
+/.agents/
+/.codex/
+
+# Root-level legacy scratch files
+/project.godot
+/icon.svg
+/main.py
+/requirements.txt
+/run.bat
+/run.sh
+/config.json
+/*.py
+/*.ps1
 
 # Large assets not needed in repo
 *.xcf
 *.zip
-*.ps1
-search_sprites.py
-test_game.py
-test_game_fixed.py
-write_doc.ps1
 
 # Godot extracted binary
+godot/
 godot/extracted/
 Godot_v*/
 *.exe
