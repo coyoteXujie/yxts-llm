@@ -189,6 +189,7 @@ func _continue_game() -> void:
 func _start_new_game(config: Dictionary) -> void:
 	GameState.new_game(config)
 	world_map.reset_npcs()
+	world_map.set_target_region(GameState.map_target_region_id)
 	player_actor.position = GameState.player_position
 	_update_current_region()
 	_close_gameplay_panels()
@@ -216,6 +217,7 @@ func _mark_region_target(region_id: String) -> void:
 	var region := GameData.get_region(region_id)
 	if region.is_empty():
 		return
+	GameState.set_map_target_region(region_id)
 	world_map.set_target_region(region_id)
 	world_map_panel.close_panel()
 	EventBus.emit_toast("已标记目的地：%s" % str(region.get("name", region_id)))
@@ -238,6 +240,7 @@ func _fast_travel_to_region(region_id: String) -> void:
 	player_actor.position = destination
 	player_actor.velocity = Vector2.ZERO
 	GameState.player_position = destination
+	GameState.set_map_target_region("")
 	world_map.set_target_region("")
 	_update_current_region()
 	_close_gameplay_panels()
@@ -254,6 +257,7 @@ func _on_game_loaded(_snapshot: Dictionary) -> void:
 	player_actor.position = GameState.player_position
 	world_map.reset_npcs()
 	world_map.apply_defeated_enemies()
+	world_map.set_target_region(GameState.map_target_region_id)
 	_update_current_region()
 	_close_gameplay_panels()
 	main_menu_panel.hide()

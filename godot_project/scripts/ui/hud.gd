@@ -1,6 +1,8 @@
 extends Control
 class_name HudView
 
+const MINIMAP_SCRIPT := preload("res://scripts/ui/minimap_canvas.gd")
+
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
 var name_label: Label
@@ -10,13 +12,20 @@ var time_label: Label
 var region_label: Label
 var prompt_label: Label
 var toast_label: Label
+var minimap
+var region_banner_panel: PanelContainer
+var region_banner_label: Label
 var toast_timer := 0.0
+var region_banner_timer := 0.0
+var last_region_id := ""
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build_top_panel()
+	_build_minimap()
 	_build_prompt()
+	_build_region_banner()
 	_build_toast()
 	EventBus.player_changed.connect(_on_player_changed)
 	EventBus.toast_requested.connect(show_toast)
@@ -32,6 +41,11 @@ func _process(delta: float) -> void:
 		toast_label.modulate.a = min(1.0, toast_timer)
 		if toast_timer <= 0.0:
 			toast_label.hide()
+	if region_banner_timer > 0.0:
+		region_banner_timer -= delta
+		region_banner_panel.modulate.a = min(1.0, region_banner_timer)
+		if region_banner_timer <= 0.0:
+			region_banner_panel.hide()
 
 func set_prompt(text: String) -> void:
 	prompt_label.text = text
@@ -45,6 +59,7 @@ func show_toast(text: String) -> void:
 
 func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
 	panel.size = Vector2(440, 152)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
@@ -93,8 +108,25 @@ func _build_top_panel() -> void:
 	region_label.add_theme_color_override("font_color", Color(0.76, 0.82, 0.70))
 	box.add_child(region_label)
 
+func _build_minimap() -> void:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.anchor_left = 1.0
+	panel.anchor_right = 1.0
+	panel.offset_left = -300
+	panel.offset_right = -16
+	panel.offset_top = 16
+	panel.offset_bottom = 222
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.045, 0.042, 0.034, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
+	add_child(panel)
+
+	minimap = MINIMAP_SCRIPT.new()
+	minimap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(minimap)
+
 func _build_prompt() -> void:
 	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 642)
 	panel.size = Vector2(560, 44)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.045, 0.040, 0.032, 0.66), Color(0.58, 0.44, 0.22, 0.48)))
@@ -106,6 +138,29 @@ func _build_prompt() -> void:
 	prompt_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
 	panel.add_child(prompt_label)
 	prompt_label.hide()
+
+func _build_region_banner() -> void:
+	region_banner_panel = PanelContainer.new()
+	region_banner_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	region_banner_panel.anchor_left = 0.5
+	region_banner_panel.anchor_right = 0.5
+	region_banner_panel.offset_left = -230
+	region_banner_panel.offset_right = 230
+	region_banner_panel.offset_top = 76
+	region_banner_panel.offset_bottom = 124
+	region_banner_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.049, 0.038, 0.80), Color(0.78, 0.58, 0.26, 0.62)))
+	add_child(region_banner_panel)
+
+	region_banner_label = Label.new()
+	region_banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	region_banner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	region_banner_label.add_theme_font_size_override("font_size", 17)
+	region_banner_label.add_theme_color_override("font_color", Color(0.97, 0.84, 0.50))
+	region_banner_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	region_banner_label.add_theme_constant_override("shadow_offset_x", 1)
+	region_banner_label.add_theme_constant_override("shadow_offset_y", 2)
+	region_banner_panel.add_child(region_banner_label)
+	region_banner_panel.hide()
 
 func _build_toast() -> void:
 	toast_label = Label.new()
@@ -157,16 +212,49 @@ func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 		region_label.text = "所在地：未知之地"
 		return
 	var danger := int(region.get("danger", 0))
-	var danger_text := "安全"
-	if danger >= 4:
-		danger_text = "险地"
-	elif danger >= 2:
-		danger_text = "谨慎"
+	var danger_text := _danger_text(danger)
 	region_label.text = "所在地：%s  探索 %d%%  %s" % [
 		str(region.get("name", region.get("id", ""))),
 		int(state.get("exploration", 0)),
 		danger_text
 	]
+	var region_id := str(region.get("id", ""))
+	if not region_id.is_empty() and region_id != last_region_id:
+		last_region_id = region_id
+		_show_region_banner(region, state)
+
+func _show_region_banner(region: Dictionary, state: Dictionary) -> void:
+	if region_banner_panel == null or region_banner_label == null:
+		return
+	region_banner_label.text = "进入 %s  ·  %s  ·  %s  ·  探索 %d%%" % [
+		str(region.get("name", region.get("id", ""))),
+		_region_type_name(str(region.get("type", "wild"))),
+		_danger_text(int(region.get("danger", 0))),
+		int(state.get("exploration", 0))
+	]
+	region_banner_panel.modulate.a = 1.0
+	region_banner_panel.show()
+	region_banner_timer = 2.6
+
+func _region_type_name(region_type: String) -> String:
+	match region_type:
+		"city":
+			return "城池"
+		"town":
+			return "小镇"
+		"sect":
+			return "门派"
+		_:
+			return "野外"
+
+func _danger_text(danger: int) -> String:
+	if danger >= 4:
+		return "险地"
+	if danger >= 3:
+		return "危险"
+	if danger >= 2:
+		return "谨慎"
+	return "安全"
 
 func _panel_style(bg: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

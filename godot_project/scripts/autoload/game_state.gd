@@ -32,6 +32,7 @@ var player_position := Vector2.ZERO
 var current_region_id := ""
 var current_region_name := "未知之地"
 var current_tile := Vector2i.ZERO
+var map_target_region_id := ""
 
 const SAVE_PATH := "user://savegame.json"
 const FAST_TRAVEL_MIN_EXPLORATION := 25
@@ -103,6 +104,7 @@ func new_game(config: Dictionary = {}) -> void:
 	current_region_id = ""
 	current_region_name = "未知之地"
 	current_tile = Vector2i(30, 17)
+	map_target_region_id = ""
 	set_mode(Mode.EXPLORE)
 	EventBus.player_changed.emit(player)
 	EventBus.inventory_changed.emit(inventory)
@@ -178,6 +180,12 @@ func is_region_discovered(region_id: String) -> bool:
 
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
+
+func set_map_target_region(region_id: String) -> void:
+	if map_target_region_id == region_id:
+		return
+	map_target_region_id = region_id
+	EventBus.map_target_changed.emit(map_target_region_id)
 
 func get_npc_memory(npc_name: String) -> Dictionary:
 	if npc_name.is_empty():
@@ -723,6 +731,7 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 		"day": day,
 		"hour": hour,
 		"weather": weather,
+		"map_target_region_id": map_target_region_id,
 		"player_position": {"x": position.x, "y": position.y}
 	}
 
@@ -770,6 +779,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	day = int(snapshot.get("day", 1))
 	hour = float(snapshot.get("hour", 8.0))
 	weather = str(snapshot.get("weather", "晴朗"))
+	map_target_region_id = str(snapshot.get("map_target_region_id", ""))
 	var pos: Dictionary = snapshot.get("player_position", {"x": 0, "y": 0})
 	player_position = Vector2(float(pos.get("x", 0)), float(pos.get("y", 0)))
 	current_tile = Vector2i(floori(player_position.x / GameData.TILE_SIZE), floori(player_position.y / GameData.TILE_SIZE))
@@ -778,3 +788,4 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	EventBus.inventory_changed.emit(inventory)
 	EventBus.quests_changed.emit()
 	EventBus.time_changed.emit(day, hour, weather)
+	EventBus.map_target_changed.emit(map_target_region_id)
