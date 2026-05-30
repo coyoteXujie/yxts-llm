@@ -70,6 +70,8 @@ def main() -> int:
         y = int(npc.get("pos_y", -1))
         if not (0 <= x < MAP_WIDTH and 0 <= y < MAP_HEIGHT):
             errors.append(f"npc {npc.get('name')} position out of bounds: {(x, y)}")
+        if not str(npc.get("personality", "")).strip():
+            errors.append(f"npc {npc.get('name')} missing personality")
         for item_id in npc.get("sell_items", []):
             if item_id not in item_ids:
                 errors.append(f"npc {npc.get('name')} sells missing item {item_id}")

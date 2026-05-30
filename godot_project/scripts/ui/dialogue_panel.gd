@@ -18,7 +18,8 @@ func show_npc(data: Dictionary) -> void:
 	talk_index = 0
 	var faction := GameData.get_faction_name(str(npc_data.get("faction", "none")))
 	title_label.text = "%s  ·  %s" % [str(npc_data.get("name", "NPC")), faction]
-	meta_label.text = str(npc_data.get("description", ""))
+	GameState.record_npc_interaction(npc_data, "talk")
+	_update_meta()
 	_set_portrait()
 	_set_next_line()
 	show()
@@ -61,6 +62,7 @@ func _build() -> void:
 	meta_label = Label.new()
 	meta_label.add_theme_font_size_override("font_size", 15)
 	meta_label.add_theme_color_override("font_color", Color(0.72, 0.69, 0.62))
+	meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(meta_label)
 
 	body_label = Label.new()
@@ -77,7 +79,7 @@ func _build() -> void:
 
 	var talk_button := Button.new()
 	talk_button.text = "闲谈"
-	talk_button.pressed.connect(_set_next_line)
+	talk_button.pressed.connect(_talk)
 	actions.add_child(talk_button)
 
 	var teach_button := Button.new()
@@ -110,13 +112,56 @@ func _build() -> void:
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
+func _talk() -> void:
+	GameState.record_npc_interaction(npc_data, "talk")
+	_update_meta()
+	_set_next_line()
+
 func _set_next_line() -> void:
 	var lines := GameData.get_dialogue_lines(str(npc_data.get("name", "")))
 	if lines.is_empty():
 		body_label.text = "江湖路远，少侠保重。"
 		return
-	body_label.text = str(lines[talk_index % lines.size()])
+	var line := str(lines[talk_index % lines.size()])
+	if talk_index == 0:
+		var memory_line := _opening_memory_line()
+		if not memory_line.is_empty():
+			line = "%s\n%s" % [memory_line, line]
+	body_label.text = line
 	talk_index += 1
+
+func _update_meta() -> void:
+	if meta_label == null:
+		return
+	var npc_name := str(npc_data.get("name", ""))
+	var memory := GameState.get_npc_memory(npc_name)
+	var parts: Array[String] = []
+	var description := str(npc_data.get("description", ""))
+	if not description.is_empty():
+		parts.append(description)
+	var personality := str(npc_data.get("personality", ""))
+	if not personality.is_empty():
+		parts.append("性格：%s" % personality)
+	parts.append("关系：%s %d" % [GameState.get_npc_relation_label(npc_name), int(memory.get("favor", 0))])
+	var memories: Array = memory.get("memories", [])
+	if not memories.is_empty():
+		parts.append("记忆：%s" % str(memories[memories.size() - 1]))
+	meta_label.text = "  |  ".join(parts)
+
+func _opening_memory_line() -> String:
+	var npc_name := str(npc_data.get("name", ""))
+	var memory := GameState.get_npc_memory(npc_name)
+	var talk_count := int(memory.get("talk_count", 0))
+	var relation := GameState.get_npc_relation_label(npc_name)
+	if talk_count <= 1:
+		return "【初识】对方还在观察你的来意。"
+	if relation == "挚友" or relation == "知己":
+		return "【%s】%s 对你已少了几分戒心。" % [relation, npc_name]
+	if relation == "好友" or relation == "朋友":
+		return "【%s】%s 认得你，语气比从前熟络。" % [relation, npc_name]
+	if relation == "疏远" or relation == "敌视":
+		return "【%s】%s 看你的眼神并不友善。" % [relation, npc_name]
+	return "【%s】%s 记得你来过。" % [relation, npc_name]
 
 func _set_portrait() -> void:
 	if portrait_texture == null:
@@ -134,6 +179,8 @@ func _teach() -> void:
 		return
 	var skill_id := str(skills[0])
 	var level := GameState.learn_skill(skill_id, 1)
+	GameState.record_npc_interaction(npc_data, "teach")
+	_update_meta()
 	body_label.text = "%s 指点了你一番，%s 提升到 %d 级。" % [
 		str(npc_data.get("name", "对方")),
 		GameData.get_skill_name(skill_id),
@@ -154,6 +201,8 @@ func _quest() -> void:
 			body_label.text = "任务进行中：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
 			return
 		GameState.accept_quest(quest_id)
+		GameState.record_npc_interaction(npc_data, "quest_accept")
+		_update_meta()
 		body_label.text = "接下任务：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
 		return
 	body_label.text = "%s 点点头：你已经帮了不少忙。" % str(npc_data.get("name", "对方"))
@@ -163,6 +212,7 @@ func _shop() -> void:
 	if sell_items.is_empty():
 		body_label.text = "%s 不做买卖。" % str(npc_data.get("name", "对方"))
 		return
+	GameState.record_npc_interaction(npc_data, "trade")
 	hide()
 	EventBus.emit_shop_requested(npc_data)
 
@@ -172,6 +222,8 @@ func _join_faction() -> void:
 		body_label.text = "%s 不是可拜师的门派掌门。" % str(npc_data.get("name", "对方"))
 		return
 	if GameState.join_faction(faction_id):
+		GameState.record_npc_interaction(npc_data, "join")
+		_update_meta()
 		body_label.text = "你拜入%s门下。" % GameData.get_faction_name(faction_id)
 	else:
 		body_label.text = "拜师未成。"
@@ -181,6 +233,8 @@ func _rest() -> void:
 		body_label.text = "这里不能住店休息。"
 		return
 	if GameState.rest(12):
+		GameState.record_npc_interaction(npc_data, "rest")
+		_update_meta()
 		body_label.text = "你在客栈歇下，醒来时精神恢复。"
 	else:
 		body_label.text = "银两不足，住不了店。"

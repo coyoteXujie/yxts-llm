@@ -22,6 +22,7 @@ var active_quests: Dictionary = {}
 var completed_quests: Array = []
 var defeated_enemies: Array = []
 var game_flags: Dictionary = {}
+var npc_memory: Dictionary = {}
 var region_state: Dictionary = {}
 var active_quest: String = "初入平安镇"
 var day := 1
@@ -92,6 +93,7 @@ func new_game(config: Dictionary = {}) -> void:
 	completed_quests = []
 	defeated_enemies = []
 	game_flags = {}
+	npc_memory = {}
 	region_state = {}
 	active_quest = "初入平安镇"
 	day = 1
@@ -176,6 +178,137 @@ func is_region_discovered(region_id: String) -> bool:
 
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
+
+func get_npc_memory(npc_name: String) -> Dictionary:
+	if npc_name.is_empty():
+		return _default_npc_memory()
+	var state: Dictionary = npc_memory.get(npc_name, _default_npc_memory())
+	return state.duplicate(true)
+
+func get_npc_favor(npc_name: String) -> int:
+	return int(get_npc_memory(npc_name).get("favor", 0))
+
+func get_npc_relation_label(npc_name: String) -> String:
+	var favor := get_npc_favor(npc_name)
+	if favor <= -50:
+		return "敌视"
+	if favor < 0:
+		return "疏远"
+	if favor >= 90:
+		return "挚友"
+	if favor >= 70:
+		return "知己"
+	if favor >= 50:
+		return "好友"
+	if favor >= 30:
+		return "朋友"
+	if favor >= 10:
+		return "认识"
+	return "初识"
+
+func record_npc_interaction(npc_data: Dictionary, kind: String) -> Dictionary:
+	var npc_name := str(npc_data.get("name", ""))
+	if npc_name.is_empty():
+		return _default_npc_memory()
+	var state := _ensure_npc_memory(npc_name)
+	var favor_delta := _npc_favor_delta(npc_data, kind)
+	if kind == "talk":
+		var daily_talk_day := int(state.get("daily_talk_day", 0))
+		var daily_talks := int(state.get("daily_talks", 0))
+		if daily_talk_day != day:
+			daily_talk_day = day
+			daily_talks = 0
+		if daily_talks >= 3:
+			favor_delta = 0
+		state["daily_talk_day"] = daily_talk_day
+		state["daily_talks"] = daily_talks + 1
+		state["talk_count"] = int(state.get("talk_count", 0)) + 1
+	state["favor"] = clampi(int(state.get("favor", 0)) + favor_delta, -100, 100)
+	state["last_day"] = day
+	_append_npc_memory(state, _npc_memory_label(kind, favor_delta))
+	npc_memory[npc_name] = state
+	return state.duplicate(true)
+
+func _default_npc_memory() -> Dictionary:
+	return {
+		"favor": 0,
+		"talk_count": 0,
+		"last_day": 0,
+		"daily_talk_day": 0,
+		"daily_talks": 0,
+		"memories": []
+	}
+
+func _ensure_npc_memory(npc_name: String) -> Dictionary:
+	if not npc_memory.has(npc_name) or typeof(npc_memory[npc_name]) != TYPE_DICTIONARY:
+		npc_memory[npc_name] = _default_npc_memory()
+	var state: Dictionary = npc_memory[npc_name]
+	if not state.has("memories") or typeof(state["memories"]) != TYPE_ARRAY:
+		state["memories"] = []
+	for key in ["favor", "talk_count", "last_day", "daily_talk_day", "daily_talks"]:
+		if not state.has(key):
+			state[key] = 0
+	return state
+
+func _npc_favor_delta(npc_data: Dictionary, kind: String) -> int:
+	var base := 0
+	match kind:
+		"talk":
+			base = 1
+		"teach":
+			base = 1
+		"quest_accept":
+			base = 3
+		"trade":
+			base = 1
+		"join":
+			base = 8
+		"rest":
+			base = 1
+		_:
+			base = 0
+	if base == 0:
+		return 0
+	var personality := str(npc_data.get("personality", ""))
+	if kind == "talk":
+		if personality.contains("善") or personality.contains("温") or personality.contains("热情") or personality.contains("活泼"):
+			base += 1
+		elif personality.contains("冷") or personality.contains("阴") or personality.contains("沉默") or personality.contains("多疑"):
+			base = max(0, base - 1)
+	if bool(npc_data.get("is_master", false)) or str(npc_data.get("npc_type", "")) == "master":
+		base = max(1, base)
+	return base
+
+func _npc_memory_label(kind: String, favor_delta: int) -> String:
+	var suffix := ""
+	if favor_delta > 0:
+		suffix = "，好感+%d" % favor_delta
+	match kind:
+		"talk":
+			return "与你交谈%s" % suffix
+		"teach":
+			return "指点武学%s" % suffix
+		"quest_accept":
+			return "托付任务%s" % suffix
+		"trade":
+			return "与你交易%s" % suffix
+		"join":
+			return "收你入门%s" % suffix
+		"rest":
+			return "安排住店%s" % suffix
+		_:
+			return "记住了你的行动%s" % suffix
+
+func _append_npc_memory(state: Dictionary, text: String) -> void:
+	if text.is_empty():
+		return
+	var memories: Array = state.get("memories", [])
+	var stamped := "第%d日：%s" % [day, text]
+	if memories.is_empty() or str(memories[memories.size() - 1]) != stamped:
+		memories.append(stamped)
+	while memories.size() > 6:
+		memories.remove_at(0)
+	state["memories"] = memories
 
 func get_fast_travel_block_reason(region_id: String) -> String:
 	if region_id.is_empty():
@@ -584,6 +717,7 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 		"completed_quests": completed_quests,
 		"defeated_enemies": defeated_enemies,
 		"game_flags": game_flags,
+		"npc_memory": npc_memory,
 		"region_state": region_state,
 		"active_quest": active_quest,
 		"day": day,
@@ -630,6 +764,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	completed_quests = snapshot.get("completed_quests", [])
 	defeated_enemies = snapshot.get("defeated_enemies", [])
 	game_flags = snapshot.get("game_flags", {})
+	npc_memory = snapshot.get("npc_memory", {})
 	region_state = snapshot.get("region_state", {})
 	active_quest = str(snapshot.get("active_quest", "自由探索江湖"))
 	day = int(snapshot.get("day", 1))
