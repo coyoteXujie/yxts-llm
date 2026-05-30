@@ -65,6 +65,125 @@ Chinese ink wash painting style, traditional Chinese martial arts, wuxia charact
 
 ---
 
+### 1.0 Godot 2D NPC拆件套件（实装规范）
+
+> 本节是 Godot 版当前使用的 2D NPC 地图形象规范。目标不是先追求高精度立绘，而是建立一套可复用、可扩展、能在地图上快速识别角色身份的“水墨小人拆件系统”。当前 Godot 已用该拆件规则批量生成透明 PNG sprite，并在地图上优先使用这些资源。
+
+#### 1.0.1 拆件字段
+
+每个 NPC 可以通过 `appearance` 字段覆盖外观。若不填写，Godot 会按 NPC 名称、门派、类型自动匹配预设。
+
+```json
+"appearance": {
+  "archetype": "innkeeper",
+  "build": "round",
+  "head": "round",
+  "hair": "sideburns",
+  "hat": "merchant_cap",
+  "outfit": "merchant_robe",
+  "prop": "abacus",
+  "motif": "coin",
+  "primary": [0.62, 0.36, 0.20],
+  "secondary": [0.84, 0.68, 0.36],
+  "accent": [0.96, 0.78, 0.34]
+}
+```
+
+| 字段 | 用途 | 示例 |
+|------|------|------|
+| `archetype` | 角色职业/身份模板 | `innkeeper`, `scholar`, `constable`, `bagua_master` |
+| `build` | 体型轮廓 | `round`, `slim`, `broad`, `aged`, `boss` |
+| `head` | 头脸轮廓 | `round`, `oval`, `square`, `long`, `sharp`, `aged` |
+| `hair` | 头发/胡须基础 | `short`, `topknot`, `long_tail`, `white_beard`, `bald`, `messy` |
+| `hat` | 帽子/头饰 | `merchant_cap`, `scholar_hat`, `constable_hat`, `daoist_crown`, `snow_hood` |
+| `outfit` | 服装结构 | `merchant_robe`, `work_apron`, `official_uniform`, `monk_robe`, `dark_armor` |
+| `prop` | 手持物/职业道具 | `abacus`, `scroll`, `dao`, `hammer`, `fan`, `great_blade` |
+| `motif` | 胸口/身份纹样 | `coin`, `book`, `badge`, `bagua`, `flower`, `taiji`, `snow`, `dragon` |
+| `primary` | 主衣色 RGB 0-1 | `[0.44, 0.43, 0.38]` |
+| `secondary` | 辅助衣色/深色部件 | `[0.18, 0.17, 0.16]` |
+| `accent` | 高亮色/纹样/腰带 | `[0.82, 0.68, 0.38]` |
+
+#### 1.0.2 当前职业模板
+
+| 模板 | 身份识别重点 | 头帽 | 服饰 | 道具 | 地图识别目标 |
+|------|--------------|------|------|------|--------------|
+| `innkeeper` 掌柜 | 圆润、精明、店铺经营者 | 商人帽、鬓角 | 暖棕商人袍、金色腰带 | 算盘 | 一眼看出能交易/住店 |
+| `waiter` 店小二 | 机灵、跑堂、轻快 | 布帽 | 短褂围裙 | 毛巾 | 客栈服务人员 |
+| `tofu_seller` 阿青 | 清爽、温柔、隐藏剑意 | 长发束尾 | 浅色素衣 | 竹篮 | 市井少女但有武学气质 |
+| `scholar` 夫子 | 文气、瘦长、年长 | 方巾/书生帽、胡须 | 青灰长衫 | 书卷 | 教学/识字 NPC |
+| `constable` 捕快 | 正直、执法、压迫感 | 捕快帽 | 深蓝官服、胸牌 | 朴刀 | 治安/除暴任务入口 |
+| `elder` 村长 | 年长、稳重、乡土权威 | 软帽、白须 | 土褐长袍 | 手杖 | 镇内事务中心 |
+| `monk` 和尚 | 僧侣、慈悲、戒律 | 光头戒疤 | 橘褐僧袍 | 佛珠 | 内功/道德相关 |
+| `blacksmith` 铁匠 | 强壮、粗粝、工具感 | 头巾 | 深色皮围裙 | 铁锤 | 武器防具商店 |
+| `wandering_hero` 大侠 | 挺拔、游侠、主线引导 | 高束发 | 深蓝侠客服 | 长剑 | 高等级引路人 |
+
+#### 1.0.3 门派掌门模板
+
+| 模板 | 门派气质 | 头饰 | 服装轮廓 | 武器/道具 | 纹样 |
+|------|----------|------|----------|-----------|------|
+| `bagua_master` 韦扬 | 稳、厚、阵法感 | 小冠 | 灰黑门派袍、金腰带 | 刀 | 八卦圆盘 |
+| `flower_master` 清照 | 雅、柔、花影流动 | 花簪 | 粉红流袖汉服 | 扇 | 花瓣 |
+| `taiji_master` 清虚道人 | 静、虚、道家 | 道冠 | 黑白道袍 | 拂尘 | 太极 |
+| `xueshan_master` 白瑞德 | 冷、硬、雪山高处 | 雪帽/兜帽 | 冰蓝毛领袍 | 剑 | 雪花 |
+
+#### 1.0.4 敌人模板
+
+| 模板 | 敌人层级 | 轮廓 | 服饰 | 武器 | 视觉语言 |
+|------|----------|------|------|------|----------|
+| `thug` 流氓 | 低级杂兵 | 粗短、不端正 | 破衣 | 木棍 | 红褐色、疤痕 |
+| `bandit` 流氓头/土匪 | 小头目 | 宽肩、压迫感 | 皮甲/头巾 | 刀 | 更深红、更厚重 |
+| `assassin` 采花大盗 | 速度型敌人 | 瘦长、尖锐 | 夜行衣/面罩 | 匕首 | 黑红、遮脸 |
+| `boss` 神秘人 | 阶段 BOSS | 高大、外放 | 暗甲/冠饰 | 大刀 | 暗红龙纹、危险光环 |
+
+#### 1.0.5 设计原则
+
+1. 地图上优先看“剪影”：帽子、肩宽、衣摆、道具必须比脸部细节更明显。
+2. NPC 身份由三件事决定：`帽子/发型 + 服装轮廓 + 手持物`。
+3. 门派角色必须有统一色彩和胸口纹样，掌门再额外加光环。
+4. 敌人不只换颜色，要改变姿态和轮廓：破衣、面罩、武器外露、暗色光环。
+5. 地图小人用于地图识别；对话半身像和正式立绘可在同一 `appearance` 字段基础上扩展。
+
+#### 1.0.6 当前 NPC 对应表
+
+| NPC | 模板 | 关键视觉 |
+|-----|------|----------|
+| 平阿四 | `innkeeper` | 商人帽、暖棕袍、算盘、铜钱纹 |
+| 店小二 | `waiter` | 布帽、围裙、毛巾 |
+| 阿青 | `tofu_seller` | 浅色素衣、长发、竹篮、水纹 |
+| 老夫子 | `scholar` | 书生帽、青灰长衫、书卷、书纹 |
+| 捕快 | `constable` | 捕快帽、深蓝官服、胸牌、朴刀 |
+| 村长 | `elder` | 软帽、白须、手杖、土褐袍 |
+| 道德和尚 | `monk` | 光头戒疤、僧袍、佛珠、莲纹 |
+| 铁匠 | `blacksmith` | 头巾、皮围裙、铁锤、火星纹 |
+| 大侠 | `wandering_hero` | 高束发、侠客服、长剑、风纹 |
+| 韦扬 | `bagua_master` | 小冠、灰黑袍、刀、八卦纹 |
+| 清照 | `flower_master` | 花簪、流袖汉服、扇、花纹 |
+| 清虚道人 | `taiji_master` | 道冠、太极袍、拂尘、太极纹 |
+| 白瑞德 | `xueshan_master` | 雪帽、毛领袍、剑、雪花纹 |
+| 流氓 | `thug` | 破衣、乱发、木棍、疤痕 |
+| 流氓头 | `bandit` | 头巾、皮甲、刀、疤痕 |
+| 采花大盗 | `assassin` | 面罩、夜行衣、匕首、暗影纹 |
+| 神秘人 | `boss` | 暗冠、暗甲、大刀、龙纹 |
+
+#### 1.0.7 Godot 当前实装资产
+
+- Godot 工程当前已恢复并扩展到 `99` 个 NPC 数据，来源为旧 Python 版本的 `src/data/npcs.json` 和第一批文档核心角色。
+- `tools/generate_godot_art_assets.py` 已按拆件规则生成第一批可直接使用资源：`99` 个 NPC 地图 sprite、`99` 个 NPC 对话头像、`16` 个玩家门派/性别 sprite、`29` 个头部/服饰/道具拆件 PNG、`20` 个地图瓦片 PNG、`22` 个物品图标、`73` 个区域场景背景、`8` 个基础 UI PNG。
+- 当前大地图 NPC 优先使用 `godot_project/assets/characters/generated_map_sprites/` 的统一风格透明 PNG，避免整身 PNG 与临时程序小人混用导致精细度不一致。
+- NPC 对话头像保存在 `godot_project/assets/characters/npc/portraits/`，当前对话面板已按 NPC 名称加载这些头像。
+- 玩家地图 sprite 保存在 `godot_project/assets/characters/player/`，拆件源资源保存在 `godot_project/assets/characters/parts/`。
+- 地图瓦片保存在 `godot_project/assets/world/tiles/`，区域场景背景保存在 `godot_project/assets/world/scenes/`，物品图标保存在 `godot_project/assets/items/icons/`，基础 UI 资源保存在 `godot_project/assets/ui/`。
+- 背包/商店已按物品 ID 加载 `assets/items/icons/` 图标，世界地图面板已按区域 ID 加载 `assets/world/scenes/` 背景，并使用 `assets/ui/` 的地图标记 PNG。
+- 资源预览保存在 `godot_project/assets/previews/`，包含瓦片、地图 NPC、玩家、NPC 头像、物品图标和场景背景预览。
+- 旧 PNG 图集仍保存在 `godot_project/assets/characters/npc/atlases/`，切片后的单角色 sprite 仍保存在 `godot_project/assets/characters/npc/sprites/`，后续更适合作为头像、立绘或战斗展示素材库。
+- `godot_project/data/npc_sprite_assets.json` 负责把 99 个 NPC 名称映射到当前地图 PNG；未映射的 NPC 才回退到 `appearance` 拆件系统自动渲染。
+- `godot_project/data/npc_portrait_assets.json` 负责把 99 个 NPC 名称映射到对话头像。
+- `godot_project/data/item_icon_assets.json` 负责把 22 个物品 ID 映射到图标。
+- `godot_project/data/scene_background_assets.json` 负责把 73 个区域 ID 映射到场景背景。
+- 后续新增 NPC 美术时，优先按 `帽子/发型 + 服装轮廓 + 手持物 + 门派纹样` 四件套设计，保证地图上不用读字也能辨识身份。
+
+---
+
 ### 1.1 角色设计规范
 
 #### 1.1.1 角色比例标准

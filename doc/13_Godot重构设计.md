@@ -1,0 +1,132 @@
+# 白金英雄坛说 - Godot 重构设计
+
+> 目标：把原 pygame/Python 原型迁移为 Godot 4 项目。Python 版本保留为玩法和数据参考，Godot 版本作为后续主线实现。
+
+## 1. 工程边界
+
+- `Godot_v4/`：本机 Godot 引擎目录，只放可执行文件，不放游戏代码。
+- `godot_project/`：Godot 游戏工程，可直接用 Godot 打开。
+- `src/` / `assets/` / `doc/`：原 Python 原型、数据和设计文档，作为迁移来源。
+
+## 2. 当前竖切目标
+
+第一版不追求一次迁完全部系统，而是先做一个可玩的 Alpha 主循环：
+
+1. 按 `doc/02_map_design.md` 压缩实现的世界大地图探索。
+2. 玩家 WASD/方向键移动，镜头跟随。
+3. NPC 和敌人由 JSON 数据生成，当前已从旧 Python 数据恢复并扩展到 99 个 NPC，并重排到五城、七派、野外区域。
+4. `T` 交谈、向师父请教武学。
+5. `F` 挑战敌人，进入简化回合战斗。
+6. HUD 显示气血、内力、等级、银两和当前目标。
+7. 主菜单、角色创建、任务日志、背包、商店、修炼、世界地图、存档读档。
+8. 平安镇任务链到“英雄试炼”的阶段通关目标，并接入“洛阳旧火/暗影书信/七派风声”的主线开端。
+
+这条竖切已包含背包、商店、任务、门派修炼、区域探索、带 NPC/任务标记的世界地图面板、存档读档和基础 NPC/地图/物品/UI 美术资源。后续重点转向更完整的门派剧情、战斗招式和 LLM 对话。
+
+## 3. 目录结构
+
+```text
+godot_project/
+├── project.godot
+├── scenes/
+│   └── main.tscn
+├── data/
+│   ├── npcs.json
+│   ├── items.json
+│   ├── quests.json
+│   ├── npc_sprite_assets.json
+│   ├── npc_portrait_assets.json
+│   ├── item_icon_assets.json
+│   ├── scene_background_assets.json
+│   └── regions.json
+├── assets/
+│   ├── characters/
+│   │   ├── generated_map_sprites/
+│   │   ├── npc/portraits/
+│   │   ├── player/
+│   │   └── parts/
+│   ├── items/icons/
+│   ├── world/
+│   │   ├── tiles/
+│   │   └── scenes/
+│   └── ui/
+└── scripts/
+    ├── autoload/
+    │   ├── event_bus.gd
+    │   ├── game_data.gd
+    │   └── game_state.gd
+    ├── entities/
+    │   ├── player.gd
+    │   └── npc.gd
+    ├── systems/
+    │   └── combat_system.gd
+    ├── ui/
+    │   ├── hud.gd
+    │   ├── dialogue_panel.gd
+    │   └── combat_panel.gd
+    ├── world/
+    │   └── world_map.gd
+    └── main.gd
+```
+
+## 4. 系统拆分
+
+- `GameData`：加载 JSON、门派名、技能名、NPC 台词、区域数据等静态数据。
+- `GameState`：保存玩家数值、当前模式、已学技能、当前目标和区域探索度。
+- `EventBus`：跨系统信号，避免 UI、地图、战斗互相硬耦合。
+- `WorldMap`：按地图文档程序化生成世界大图、处理可通行判定、NPC 生成和就近交互查询。
+- `regions.json`：记录 73 个区域的 ID、名称、类型、压缩世界坐标、危险等级和描述。
+- `PlayerActor` / `NpcActor`：只负责表现、移动和自身数据引用；地图角色优先使用生成后的透明 PNG，未命中资源映射时再回退到拆件绘制。
+- `CombatSystem`：独立战斗状态机，后续可替换为完整门派招式系统。
+- `HudView` / `DialoguePanel` / `CombatPanel`：UI 单独维护，不混进地图逻辑。
+
+## 5. 迁移顺序
+
+1. 先把 `src/data/npcs.json` 和 `items.json` 清洗为 Godot 直接读取的数据。
+2. 把 Python 的 `combat_system.py` 迁到 `systems/combat_system.gd`，保留公式名称和字段。
+3. 增加 `inventory_system.gd`、`quest_system.gd`、`cultivation_system.gd`，每个系统只暴露少量公共方法。
+4. 地图从程序化绘制逐步替换为 TileMapLayer 和正式 TileSet。
+5. 美术资产稳定后再做水墨后处理、天气、昼夜和粒子。
+
+## 6. 设计原则
+
+- Godot 工程内数据以 JSON/TRES 为单一来源，避免把 Python 代码当运行时依赖。
+- 场景负责节点组织，系统脚本负责规则，UI 脚本负责展示。
+- 每次只迁移一条完整玩家体验，不按文件机械翻译。
+- 原型可先用程序化图形，等玩法稳定后再换正式素材。
+
+## 6.1 当前地图落地
+
+- 地图尺寸：`96 x 72` tile，使用 `GameData.MAP_WIDTH/MAP_HEIGHT` 管理。
+- 世界结构参考 `doc/02_map_design.md`：5 城、16 镇、45 野外、7 门派压缩到一张连续可走地图。
+- 已实装地貌：官道、街市、商铺、城池、乡村、田地、山脉、雪山、森林、竹海、荒漠、沼泽、水乡、河流、湖泊、桥。
+- 已实装地标标签：平安镇、洛阳、长安、成都、江陵、临安、八卦门、雪山派、红莲教、太极门、那迦派、花间派、逍遥宫等。
+- 已实装区域识别：`data/regions.json` 登记 73 个区域，玩家移动时更新当前区域、探索度和危险等级。
+- 已实装世界地图面板：`M` 键打开，显示区域示意图、已发现区域、区域说明、NPC 标记、可接任务标记和当前任务目标。
+- 平安镇作为起始镇落在北洛阳区域，新手镇 NPC、洛阳主线 NPC、镇东敌人与门派 NPC 已分层摆放，避免开局人群全部堆在洛阳中心。
+
+## 6.2 当前剧情与核心角色落地
+
+- 已加入第一批文档核心 NPC：苏梦瑶、陈天行、赵无极、玄机子、花如玉、烈火、蛇王、太极真人、冰魄、逍遥子。
+- 已加入主线开端任务：`q_main_luoyang_ashes`、`q_main_shadow_letters`、`q_main_sect_warnings`。
+- 这些任务先承担“把玩家带到五城与七派”的作用，后续再扩展选择、分支后果、NPC 好感与暗影司主线。
+
+## 7. 当前美术落地
+
+- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、73 张区域场景背景、8 张 UI 资源。
+- `godot_project/assets/world/tiles/` 保存当前大地图实际使用的 48x48 瓦片 PNG。
+- `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
+- `godot_project/assets/characters/generated_map_sprites/` 保存当前大地图实际使用的 99 个统一风格 NPC sprite。
+- `godot_project/assets/characters/npc/portraits/` 保存当前对话面板实际使用的 99 个 NPC 头像。
+- `godot_project/assets/characters/player/` 保存玩家不同门派/性别 sprite。
+- `godot_project/assets/characters/parts/` 保存头部、发型/帽子、服饰、道具等拆件源资源，生成 NPC sprite 时按组件组合。
+- `godot_project/assets/items/icons/` 保存当前 22 个物品的 64x64 图标，当前已接入背包和商店。
+- `godot_project/assets/ui/` 保存面板、按钮、物品槽、气血/内力条、NPC/任务/目标标记等基础 UI PNG，当前地图标记已接入世界地图面板。
+- `godot_project/data/npc_sprite_assets.json` 管理 99 个 NPC 到当前地图 sprite 的映射。
+- `godot_project/data/npc_portrait_assets.json` 管理 99 个 NPC 到对话头像的映射。
+- `godot_project/data/item_icon_assets.json` 管理 22 个物品到图标的映射。
+- `godot_project/data/scene_background_assets.json` 管理 73 个区域到场景背景的映射。
+- 旧的 `godot_project/assets/characters/npc/atlases/` 和 `sprites/` 仍保留作为立绘、头像或战斗姿态的原始美术库。
+- 地图 NPC 与玩家优先使用生成后的透明 PNG；姓名标签只在靠近/选中时显示；对话面板已接入 NPC 头像；背包/商店已接入物品图标；世界地图已接入区域背景和标记资源。
+- 当前生成资源是可运行的统一风格占位资产，不等同于最终 900+ 高精度立绘、战斗姿态、技能特效和正式 TileSet。
+- `doc/12_美术资产Prompt.md` 记录 NPC 拆件规范和当前资源状态。

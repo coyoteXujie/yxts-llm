@@ -1,0 +1,108 @@
+[
+  {
+    "id": "q_intro_town",
+    "title": "初入平安镇",
+    "giver": "村长",
+    "description": "村长让你先熟悉镇上的人情，去和客栈掌柜、捕快打听消息。",
+    "objectives": [
+      {"type": "talk", "target": "平阿四", "count": 1, "label": "拜访平阿四"},
+      {"type": "talk", "target": "捕快", "count": 1, "label": "拜访捕快"}
+    ],
+    "rewards": {"exp": 80, "money": 40, "daode": 1, "items": {"item_yao": 1}}
+  },
+  {
+    "id": "q_clear_thugs",
+    "title": "镇东除恶",
+    "giver": "捕快",
+    "description": "捕快请你清理镇东滋事的流氓。",
+    "objectives": [
+      {"type": "kill", "target": "流氓", "count": 1, "label": "击败流氓"},
+      {"type": "kill", "target": "流氓头", "count": 1, "label": "击败流氓头"}
+    ],
+    "rewards": {"exp": 160, "money": 120, "daode": 3, "items": {"item_shengji": 1}}
+  },
+  {
+    "id": "q_first_reading",
+    "title": "识字入门",
+    "giver": "老夫子",
+    "description": "老夫子认为读书是习武根基，让你认真请教学问。",
+    "objectives": [
+      {"type": "skill", "target": "kf_literate", "count": 2, "label": "提升读书识字"}
+    ],
+    "rewards": {"exp": 70, "money": 30, "daode": 1, "items": {"item_dan": 1}}
+  },
+  {
+    "id": "q_buy_food",
+    "title": "备些干粮",
+    "giver": "平阿四",
+    "description": "平阿四提醒你出门前买些吃食。",
+    "objectives": [
+      {"type": "collect", "target": "item_baozi", "count": 3, "label": "备好包子"}
+    ],
+    "rewards": {"exp": 40, "money": 16, "daode": 0, "items": {"item_wine": 1}}
+  },
+  {
+    "id": "q_bagua_entry",
+    "title": "八卦入门",
+    "giver": "韦扬",
+    "description": "韦扬让你先拜入八卦门，再练出一点游龙步法的根基。",
+    "objectives": [
+      {"type": "skill", "target": "kf_bagua_blade", "count": 1, "label": "请教八卦刀"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_blade": 1}}
+  },
+  {
+    "id": "q_flower_thief",
+    "title": "追捕采花大盗",
+    "giver": "捕快",
+    "description": "流氓背后还有采花大盗出没，捕快请你继续追查。",
+    "objectives": [
+      {"type": "kill", "target": "采花大盗", "count": 1, "label": "击败采花大盗"}
+    ],
+    "rewards": {"exp": 220, "money": 180, "daode": 5, "items": {"item_fine_cloth": 1}}
+  },
+  {
+    "id": "q_hero_trial",
+    "title": "英雄试炼",
+    "giver": "大侠",
+    "description": "大侠发现镇外神秘人暗中搅动江湖，请你前去试探并击败他。",
+    "objectives": [
+      {"type": "kill", "target": "神秘人", "count": 1, "label": "击败神秘人"}
+    ],
+    "rewards": {"exp": 360, "money": 260, "daode": 8, "items": {"item_dan": 2}}
+  },
+  {
+    "id": "q_main_luoyang_ashes",
+    "title": "洛阳旧火",
+    "giver": "苏梦瑶",
+    "description": "苏梦瑶怀疑苏家旧宅大火并非意外。她让你先去长安寻找陈天行，再向洛阳武林盟执事赵无极打探旧案卷宗。",
+    "objectives": [
+      {"type": "talk", "target": "陈天行", "count": 1, "label": "在长安找到陈天行"},
+      {"type": "talk", "target": "赵无极", "count": 1, "label": "向赵无极打听苏家旧案"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 2, "items": {"item_dan": 1}}
+  },
+  {
+    "id": "q_main_shadow_letters",
+    "title": "暗影书信",
+    "giver": "陈天行",
+    "description": "陈天行指出苏家旧案背后可能牵连暗影司。他让你拜访八卦门玄机子和花间派花如玉，确认两封密信中的门派暗号。",
+    "objectives": [
+      {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子辨认阵法暗号"},
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉辨认花间暗号"}
+    ],
+    "rewards": {"exp": 240, "money": 120, "daode": 2, "items": {"item_shengji": 1}}
+  },
+  {
+    "id": "q_main_sect_warnings",
+    "title": "七派风声",
+    "giver": "玄机子",
+    "description": "玄机子认为暗影司的动作不止针对洛阳。他让你走访几位掌门，确认七派是否已有异动。",
+    "objectives": [
+      {"type": "talk", "target": "太极真人", "count": 1, "label": "拜访太极真人"},
+      {"type": "talk", "target": "冰魄", "count": 1, "label": "拜访雪山派冰魄"},
+      {"type": "talk", "target": "逍遥子", "count": 1, "label": "拜访逍遥子"}
+    ],
+    "rewards": {"exp": 320, "money": 180, "daode": 3, "items": {"item_fine_cloth": 1}}
+  }
+]

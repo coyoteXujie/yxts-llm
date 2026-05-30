@@ -1,0 +1,178 @@
+[
+  {
+    "id": "item_baozi",
+    "name": "包子",
+    "type": "consumable",
+    "price": 8,
+    "description": "热腾腾的包子，能恢复少量气血。",
+    "effects": {"hp": 18}
+  },
+  {
+    "id": "item_chicken",
+    "name": "烧鸡",
+    "type": "consumable",
+    "price": 28,
+    "description": "客栈招牌烧鸡，恢复气血和内力。",
+    "effects": {"hp": 45, "mp": 12}
+  },
+  {
+    "id": "item_wine",
+    "name": "米酒",
+    "type": "consumable",
+    "price": 18,
+    "description": "暖身的米酒，恢复少量内力。",
+    "effects": {"mp": 24}
+  },
+  {
+    "id": "item_yao",
+    "name": "金创药",
+    "type": "consumable",
+    "price": 35,
+    "description": "江湖常备伤药，恢复气血。",
+    "effects": {"hp": 70}
+  },
+  {
+    "id": "item_shengji",
+    "name": "生肌散",
+    "type": "consumable",
+    "price": 80,
+    "description": "名医配制的药粉，大幅恢复气血。",
+    "effects": {"hp": 160}
+  },
+  {
+    "id": "item_dan",
+    "name": "小还丹",
+    "type": "consumable",
+    "price": 120,
+    "description": "可恢复内力，并略增潜能。",
+    "effects": {"mp": 90, "pot": 8}
+  },
+  {
+    "id": "item_tang_hulu",
+    "name": "糖葫芦",
+    "type": "consumable",
+    "price": 6,
+    "description": "镇上孩子喜欢的零嘴。",
+    "effects": {"hp": 10}
+  },
+  {
+    "id": "item_white_doufu",
+    "name": "白豆腐",
+    "type": "consumable",
+    "price": 12,
+    "description": "阿青做的白豆腐，清淡养身。",
+    "effects": {"hp": 22, "mp": 8}
+  },
+  {
+    "id": "item_sword",
+    "name": "青钢剑",
+    "type": "weapon",
+    "price": 160,
+    "description": "入门剑客常用的长剑。",
+    "effects": {"attack": 10}
+  },
+  {
+    "id": "item_blade",
+    "name": "雁翎刀",
+    "type": "weapon",
+    "price": 180,
+    "description": "刀身厚重，适合刚猛路数。",
+    "effects": {"attack": 12}
+  },
+  {
+    "id": "item_cloth",
+    "name": "布衣",
+    "type": "armor",
+    "price": 60,
+    "description": "粗布衣衫，胜在轻便。",
+    "effects": {"defense": 4}
+  },
+  {
+    "id": "item_fine_cloth",
+    "name": "细布衣",
+    "type": "armor",
+    "price": 120,
+    "description": "裁缝铺的细布衣，防护更好。",
+    "effects": {"defense": 8}
+  },
+  {
+    "id": "item_green_doufu",
+    "name": "青豆腐",
+    "type": "consumable",
+    "price": 18,
+    "description": "阿青特制的青豆腐，清香提神。",
+    "effects": {"hp": 18, "mp": 18}
+  },
+  {
+    "id": "item_meat",
+    "name": "熟肉",
+    "type": "consumable",
+    "price": 22,
+    "description": "屠夫摊上的熟肉，顶饿也补气血。",
+    "effects": {"hp": 38}
+  },
+  {
+    "id": "item_red_flower",
+    "name": "红花",
+    "type": "consumable",
+    "price": 16,
+    "description": "卖花女包好的红花，可作药引。",
+    "effects": {"mp": 10, "pot": 2}
+  },
+  {
+    "id": "item_tea_flower",
+    "name": "茶花",
+    "type": "consumable",
+    "price": 14,
+    "description": "香气清淡的茶花，能静心养气。",
+    "effects": {"mp": 18}
+  },
+  {
+    "id": "item_fish",
+    "name": "鲜鱼",
+    "type": "consumable",
+    "price": 20,
+    "description": "何喜钓来的鲜鱼，做熟后颇能补身。",
+    "effects": {"hp": 32, "mp": 6}
+  },
+  {
+    "id": "item_diaogan",
+    "name": "钓竿",
+    "type": "weapon",
+    "price": 90,
+    "description": "看似普通的钓竿，也能当作棍棒防身。",
+    "effects": {"attack": 6}
+  },
+  {
+    "id": "item_dagger",
+    "name": "短匕",
+    "type": "weapon",
+    "price": 120,
+    "description": "短小锋利，适合近身突袭。",
+    "effects": {"attack": 8}
+  },
+  {
+    "id": "item_whip",
+    "name": "软鞭",
+    "type": "weapon",
+    "price": 220,
+    "description": "何铁手惯用的软兵器，出手刁钻。",
+    "effects": {"attack": 14}
+  },
+  {
+    "id": "item_hetun_blade",
+    "name": "蝎尾刀",
+    "type": "weapon",
+    "price": 360,
+    "description": "刀锋带毒纹，五毒门路的奇兵。",
+    "effects": {"attack": 18}
+  },
+  {
+    "id": "item_silk_cloth",
+    "name": "丝绸衣",
+    "type": "armor",
+    "price": 260,
+    "description": "裁剪精细的丝绸衣，轻便且护身。",
+    "effects": {"defense": 12}
+  }
+]

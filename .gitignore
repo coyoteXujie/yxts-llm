@@ -4,8 +4,10 @@
 *.md5
 *.ctex
 .godot/
+godot_project/.godot/
 *.uid
 export_presets.cfg
+godot_project/export_presets.cfg
 
 # Python
 __pycache__/
