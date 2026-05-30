@@ -46,8 +46,8 @@ func show_toast(text: String) -> void:
 func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(430, 150)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.08, 0.075, 0.06, 0.86), Color(0.55, 0.44, 0.25, 0.75)))
+	panel.size = Vector2(440, 152)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -62,11 +62,15 @@ func _build_top_panel() -> void:
 	hp_bar = ProgressBar.new()
 	hp_bar.custom_minimum_size = Vector2(360, 18)
 	hp_bar.show_percentage = false
+	hp_bar.add_theme_stylebox_override("background", _bar_background())
+	hp_bar.add_theme_stylebox_override("fill", _bar_fill(Color(0.64, 0.10, 0.08, 0.92), Color(0.94, 0.34, 0.22, 0.96)))
 	box.add_child(hp_bar)
 
 	mp_bar = ProgressBar.new()
 	mp_bar.custom_minimum_size = Vector2(360, 18)
 	mp_bar.show_percentage = false
+	mp_bar.add_theme_stylebox_override("background", _bar_background())
+	mp_bar.add_theme_stylebox_override("fill", _bar_fill(Color(0.08, 0.24, 0.54, 0.90), Color(0.32, 0.62, 0.96, 0.96)))
 	box.add_child(mp_bar)
 
 	stats_label = Label.new()
@@ -93,7 +97,7 @@ func _build_prompt() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(16, 642)
 	panel.size = Vector2(560, 44)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.06, 0.055, 0.045, 0.78), Color(0.45, 0.35, 0.19, 0.65)))
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.045, 0.040, 0.032, 0.66), Color(0.58, 0.44, 0.22, 0.48)))
 	add_child(panel)
 
 	prompt_label = Label.new()
@@ -180,4 +184,32 @@ func _panel_style(bg: Color, border: Color) -> StyleBoxFlat:
 	style.content_margin_right = 14
 	style.content_margin_top = 10
 	style.content_margin_bottom = 10
+	return style
+
+func _bar_background() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.018, 0.014, 0.78)
+	style.border_color = Color(0.44, 0.35, 0.20, 0.45)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	return style
+
+func _bar_fill(base: Color, edge: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = base
+	style.border_color = edge
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
 	return style

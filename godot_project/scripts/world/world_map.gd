@@ -384,6 +384,7 @@ func _draw() -> void:
 			else:
 				draw_rect(rect, _tile_color(tile_id), true)
 			_draw_tile_detail(rect, tile_id, x, y)
+	_draw_world_decoration_layer()
 	_draw_region_overlays()
 	_draw_target_region_overlay()
 
@@ -502,6 +503,187 @@ func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 				draw_line(rect.position + Vector2(8 + i * 8, 7), rect.position + Vector2(8 + i * 8, 41), Color(0.25, 0.14, 0.07, 0.55), 1.4)
 			draw_line(rect.position + Vector2(5, 18), rect.position + Vector2(43, 18), Color(0.70, 0.48, 0.24, 0.55), 2.0)
 			draw_line(rect.position + Vector2(5, 29), rect.position + Vector2(43, 29), Color(0.70, 0.48, 0.24, 0.55), 2.0)
+
+func _draw_world_decoration_layer() -> void:
+	for y in range(map_height):
+		for x in range(map_width):
+			var tile_id: int = tiles[y][x]
+			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
+			var seed := _tile_seed(x, y)
+			match tile_id:
+				Tile.FOREST:
+					if seed % 7 == 0:
+						_draw_tree_cluster(rect, seed)
+				Tile.BAMBOO:
+					if seed % 5 == 0:
+						_draw_bamboo_cluster(rect, seed)
+				Tile.WATER:
+					if seed % 29 == 0:
+						_draw_boat(rect, seed)
+					elif seed % 11 == 0:
+						_draw_water_plants(rect, seed)
+				Tile.MARSH:
+					if seed % 4 == 0:
+						_draw_reeds(rect, seed)
+				Tile.CITY, Tile.TOWN, Tile.VILLAGE:
+					if seed % 6 == 0:
+						_draw_street_life(rect, tile_id, seed)
+				Tile.ROAD:
+					if seed % 33 == 0:
+						_draw_signpost(rect, seed)
+				Tile.FIELD:
+					if seed % 6 == 0:
+						_draw_field_detail(rect, seed)
+				Tile.MOUNTAIN, Tile.CLIFF:
+					if seed % 5 == 0:
+						_draw_rock_detail(rect, seed)
+				Tile.DESERT:
+					if seed % 7 == 0:
+						_draw_desert_detail(rect, seed)
+				Tile.SNOW:
+					if seed % 6 == 0:
+						_draw_snow_detail(rect, seed)
+				Tile.SECT:
+					if seed % 4 == 0:
+						_draw_sect_detail(rect, seed)
+
+func _tile_seed(x: int, y: int) -> int:
+	return abs((x * 928371 + y * 689287 + x * y * 37) % 9973)
+
+func _seed_offset(seed: int, range_px: float) -> Vector2:
+	return Vector2(float((seed * 17) % 100) / 100.0 - 0.5, float((seed * 31) % 100) / 100.0 - 0.5) * range_px
+
+func _draw_tree_cluster(rect: Rect2, seed: int) -> void:
+	var base := rect.get_center() + _seed_offset(seed, 18.0)
+	draw_line(base + Vector2(0, 7), base + Vector2(0, 18), Color(0.13, 0.08, 0.04, 0.58), 3.0)
+	draw_circle(base + Vector2(-8, 1), 10.5, Color(0.05, 0.18, 0.09, 0.76))
+	draw_circle(base + Vector2(6, -4), 11.5, Color(0.08, 0.26, 0.12, 0.78))
+	draw_circle(base + Vector2(2, 7), 9.0, Color(0.10, 0.32, 0.16, 0.70))
+	draw_line(base + Vector2(-12, 12), base + Vector2(13, 7), Color(0.44, 0.56, 0.30, 0.20), 1.4)
+
+func _draw_bamboo_cluster(rect: Rect2, seed: int) -> void:
+	var base := rect.position + Vector2(12 + seed % 9, 7)
+	for i in range(4):
+		var x := base.x + float(i * 8)
+		var sway := float(((seed + i * 19) % 7) - 3)
+		draw_line(Vector2(x, base.y), Vector2(x + sway, base.y + 39), Color(0.09, 0.24, 0.08, 0.78), 2.3)
+		draw_line(Vector2(x + sway * 0.3, base.y + 15), Vector2(x + 8, base.y + 10), Color(0.38, 0.66, 0.28, 0.46), 1.8)
+		draw_line(Vector2(x + sway * 0.2, base.y + 25), Vector2(x - 7, base.y + 21), Color(0.30, 0.56, 0.23, 0.42), 1.4)
+
+func _draw_boat(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 12.0)
+	draw_polygon(PackedVector2Array([
+		center + Vector2(-15, 3),
+		center + Vector2(13, -2),
+		center + Vector2(17, 3),
+		center + Vector2(3, 9),
+		center + Vector2(-13, 8)
+	]), PackedColorArray([
+		Color(0.25, 0.13, 0.06, 0.68),
+		Color(0.48, 0.30, 0.14, 0.72),
+		Color(0.30, 0.16, 0.08, 0.70),
+		Color(0.18, 0.10, 0.05, 0.72),
+		Color(0.35, 0.20, 0.10, 0.70)
+	]))
+	draw_line(center + Vector2(-8, -1), center + Vector2(15, -8), Color(0.82, 0.74, 0.52, 0.38), 1.4)
+
+func _draw_water_plants(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 20.0)
+	for i in range(3):
+		var pos := center + Vector2(float(i * 7 - 8), float((seed + i * 13) % 5))
+		draw_circle(pos, 3.2, Color(0.24, 0.46, 0.28, 0.38))
+		draw_line(pos + Vector2(-6, 5), pos + Vector2(6, 4), Color(0.66, 0.84, 0.78, 0.20), 1.1)
+
+func _draw_reeds(rect: Rect2, seed: int) -> void:
+	var base := rect.position + Vector2(7 + seed % 16, 33)
+	for i in range(5):
+		var x := base.x + float(i * 4)
+		draw_line(Vector2(x, base.y + 4), Vector2(x + float((seed + i) % 5 - 2), base.y - 13 - float(i % 3)), Color(0.17, 0.30, 0.16, 0.60), 1.5)
+		draw_circle(Vector2(x + 1, base.y - 12), 1.8, Color(0.64, 0.52, 0.30, 0.50))
+
+func _draw_street_life(rect: Rect2, tile_id: int, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 14.0)
+	var awning := Color(0.72, 0.35, 0.22, 0.34)
+	if tile_id == Tile.CITY:
+		awning = Color(0.84, 0.56, 0.25, 0.38)
+	elif tile_id == Tile.VILLAGE:
+		awning = Color(0.54, 0.44, 0.24, 0.30)
+	draw_polygon(PackedVector2Array([
+		center + Vector2(-14, -4),
+		center + Vector2(10, -8),
+		center + Vector2(15, -2),
+		center + Vector2(-9, 3)
+	]), PackedColorArray([awning.darkened(0.1), awning.lightened(0.1), awning, awning.darkened(0.05)]))
+	draw_line(center + Vector2(-9, 3), center + Vector2(-9, 15), Color(0.20, 0.12, 0.06, 0.45), 1.5)
+	draw_line(center + Vector2(12, 0), center + Vector2(12, 13), Color(0.20, 0.12, 0.06, 0.45), 1.5)
+	if seed % 2 == 0:
+		draw_circle(center + Vector2(18, 8), 2.2, Color(0.95, 0.70, 0.28, 0.55))
+
+func _draw_signpost(rect: Rect2, seed: int) -> void:
+	var base := rect.get_center() + _seed_offset(seed, 12.0)
+	draw_line(base + Vector2(0, -12), base + Vector2(0, 14), Color(0.23, 0.13, 0.06, 0.62), 2.0)
+	draw_polygon(PackedVector2Array([
+		base + Vector2(0, -11),
+		base + Vector2(17, -8),
+		base + Vector2(12, -2),
+		base + Vector2(0, -4)
+	]), PackedColorArray([
+		Color(0.64, 0.45, 0.22, 0.58),
+		Color(0.78, 0.56, 0.28, 0.60),
+		Color(0.56, 0.36, 0.18, 0.60),
+		Color(0.48, 0.30, 0.16, 0.60)
+	]))
+
+func _draw_field_detail(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 18.0)
+	draw_circle(center, 6.5, Color(0.74, 0.63, 0.27, 0.30))
+	draw_line(center + Vector2(-7, 5), center + Vector2(7, -5), Color(0.86, 0.76, 0.34, 0.28), 2.0)
+	if seed % 3 == 0:
+		draw_line(center + Vector2(13, -7), center + Vector2(13, 12), Color(0.20, 0.12, 0.06, 0.55), 1.5)
+		draw_line(center + Vector2(5, -2), center + Vector2(21, -2), Color(0.66, 0.47, 0.22, 0.42), 1.4)
+
+func _draw_rock_detail(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 18.0)
+	draw_polygon(PackedVector2Array([
+		center + Vector2(-11, 8),
+		center + Vector2(-4, -7),
+		center + Vector2(10, -3),
+		center + Vector2(14, 8)
+	]), PackedColorArray([
+		Color(0.18, 0.18, 0.16, 0.46),
+		Color(0.55, 0.54, 0.48, 0.44),
+		Color(0.28, 0.28, 0.26, 0.50),
+		Color(0.13, 0.13, 0.12, 0.42)
+	]))
+
+func _draw_desert_detail(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 22.0)
+	draw_arc(center, 18.0, deg_to_rad(200.0), deg_to_rad(340.0), 22, Color(0.86, 0.70, 0.42, 0.34), 2.0)
+	if seed % 4 == 0:
+		draw_line(center + Vector2(8, 9), center + Vector2(13, -8), Color(0.25, 0.16, 0.08, 0.42), 1.3)
+		draw_line(center + Vector2(12, -1), center + Vector2(22, -6), Color(0.25, 0.16, 0.08, 0.34), 1.1)
+
+func _draw_snow_detail(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 18.0)
+	draw_circle(center, 6.5, Color(1.0, 1.0, 1.0, 0.28))
+	draw_circle(center + Vector2(7, 3), 3.5, Color(0.70, 0.82, 0.92, 0.20))
+	draw_line(center + Vector2(-9, -2), center + Vector2(9, 2), Color(1.0, 1.0, 1.0, 0.18), 1.2)
+
+func _draw_sect_detail(rect: Rect2, seed: int) -> void:
+	var center := rect.get_center() + _seed_offset(seed, 10.0)
+	draw_line(center + Vector2(-8, -12), center + Vector2(-8, 13), Color(0.20, 0.12, 0.06, 0.52), 1.6)
+	draw_line(center + Vector2(8, -12), center + Vector2(8, 13), Color(0.20, 0.12, 0.06, 0.52), 1.6)
+	draw_polygon(PackedVector2Array([
+		center + Vector2(-8, -12),
+		center + Vector2(8, -12),
+		center + Vector2(8, -2),
+		center + Vector2(-8, -2)
+	]), PackedColorArray([
+		Color(0.78, 0.56, 0.24, 0.35),
+		Color(0.88, 0.66, 0.32, 0.40),
+		Color(0.62, 0.42, 0.18, 0.35),
+		Color(0.52, 0.34, 0.14, 0.32)
+	]))
 
 func _draw_region_overlays() -> void:
 	for region in GameData.get_regions():

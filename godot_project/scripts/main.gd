@@ -5,6 +5,7 @@ const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
 const COMBAT_PANEL_SCRIPT := preload("res://scripts/ui/combat_panel.gd")
+const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
 const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
@@ -20,6 +21,7 @@ var camera: Camera2D
 var hud
 var dialogue_panel
 var combat_panel
+var atmosphere_layer
 var main_menu_panel
 var character_creation_panel
 var inventory_panel
@@ -46,7 +48,7 @@ func _ready() -> void:
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
-	camera.zoom = Vector2(1.0, 1.0)
+	camera.zoom = Vector2(1.08, 1.08)
 	player_actor.add_child(camera)
 	camera.make_current()
 
@@ -57,6 +59,8 @@ func _ready() -> void:
 	var ui_layer := CanvasLayer.new()
 	add_child(ui_layer)
 
+	atmosphere_layer = ATMOSPHERE_LAYER_SCRIPT.new()
+	ui_layer.add_child(atmosphere_layer)
 	hud = HUD_SCRIPT.new()
 	ui_layer.add_child(hud)
 	dialogue_panel = DIALOGUE_PANEL_SCRIPT.new()
