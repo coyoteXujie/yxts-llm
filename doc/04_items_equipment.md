@@ -1,7 +1,7 @@
 # 白金英雄坛说 -- 物品与装备系统设计文档
 
 > **文档版本**: v4.0 | **最后更新**: 2026-05-19
-> **对应代码**: `src/core/systems/equipment_system.py` / `src/core/shared_types.py`
+> **当前对应**: `godot_project/data/items.json` / `godot_project/scripts/ui/inventory_panel.gd` / `godot_project/scripts/ui/shop_panel.gd`
 > **文档定位**: 物品体系总纲 · 消耗品大全 · 武器防具 · 套装系统 · 材料锻造
 > **核心原则**: 层次分明 · 特色鲜明 · 系统完善 · 细节丰富 · 代码可落地
 

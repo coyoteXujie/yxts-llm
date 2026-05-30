@@ -1,12 +1,13 @@
 # 白金英雄坛说 - Godot 重构设计
 
-> 目标：把原 pygame/Python 原型迁移为 Godot 4 项目。Python 版本保留为玩法和数据参考，Godot 版本作为后续主线实现。
+> 目标：以 Godot 4 工程作为后续主线实现。旧 pygame/Python 原型已完成迁移和清理，不再作为运行时依赖。
 
 ## 1. 工程边界
 
 - `Godot_v4/`：本机 Godot 引擎目录，只放可执行文件，不放游戏代码。
 - `godot_project/`：Godot 游戏工程，可直接用 Godot 打开。
-- `src/` / `assets/` / `doc/`：原 Python 原型、数据和设计文档，作为迁移来源。
+- `doc/`：设计文档、实现差距审计和后续规划。
+- `tools/`：当前 Godot 数据校验与美术资源生成工具。
 
 ## 2. 当前竖切目标
 
@@ -14,7 +15,7 @@
 
 1. 按 `doc/02_map_design.md` 压缩实现的世界大地图探索。
 2. 玩家 WASD/方向键移动，镜头跟随。
-3. NPC 和敌人由 JSON 数据生成，当前已从旧 Python 数据恢复并扩展到 99 个 NPC，并重排到五城、七派、野外区域。
+3. NPC 和敌人由 JSON 数据生成，当前 Godot 数据已扩展到 99 个 NPC，并重排到五城、七派、野外区域。
 4. `T` 交谈、向师父请教武学。
 5. `F` 挑战敌人，进入简化回合战斗。
 6. HUD 显示气血、内力、等级、银两和当前目标。
@@ -82,13 +83,13 @@ godot_project/
 - `CombatSystem`：独立战斗状态机，后续可替换为完整门派招式系统。
 - `HudView` / `DialoguePanel` / `CombatPanel`：UI 单独维护，不混进地图逻辑。
 
-## 5. 迁移顺序
+## 5. 后续建设顺序
 
-1. 先把 `src/data/npcs.json` 和 `items.json` 清洗为 Godot 直接读取的数据。
-2. 把 Python 的 `combat_system.py` 迁到 `systems/combat_system.gd`，保留公式名称和字段。
-3. 增加 `inventory_system.gd`、`quest_system.gd`、`cultivation_system.gd`，每个系统只暴露少量公共方法。
-4. 地图从程序化绘制逐步替换为 TileMapLayer 和正式 TileSet。
-5. 美术资产稳定后再做水墨后处理、天气、昼夜和粒子。
+1. 继续整理 `godot_project/data/`，让 NPC、区域、任务、物品和资源映射保持单一来源。
+2. 扩展 `systems/combat_system.gd`，补齐门派招式、状态效果、日志和战斗表现。
+3. 逐步拆出 `inventory_system.gd`、`quest_system.gd`、`cultivation_system.gd`，每个系统只暴露少量公共方法。
+4. 地图从当前程序化绘制逐步替换为 TileMapLayer 和正式 TileSet。
+5. 美术资产稳定后再继续推进水墨后处理、天气、昼夜、粒子和技能特效。
 
 ## 6. 设计原则
 
@@ -130,7 +131,7 @@ godot_project/
 - `godot_project/data/item_icon_assets.json` 管理 22 个物品到图标的映射。
 - `godot_project/data/skill_icon_assets.json` 管理 41 个武学到图标的映射。
 - `godot_project/data/scene_background_assets.json` 管理 73 个区域到场景背景的映射。
-- 旧的 `godot_project/assets/characters/npc/atlases/` 和 `sprites/` 仍保留作为立绘、头像或战斗姿态的原始美术库。
+- 旧的 `godot_project/assets/characters/npc/atlases/`、`sprites/` 和 prompt 源已清理，避免与当前统一风格 NPC 资源混用。
 - 地图 NPC 与玩家优先使用生成后的透明 PNG；姓名标签只在靠近/选中时显示；对话面板已接入 NPC 头像；背包/商店已接入物品图标；修炼/战斗已接入武学图标；世界地图已接入区域背景和标记资源。
 - 当前生成资源是可运行的统一风格占位资产，不等同于最终 900+ 高精度立绘、战斗姿态、技能特效和正式 TileSet。
 - `doc/12_美术资产Prompt.md` 记录 NPC 拆件规范和当前资源状态。

@@ -167,7 +167,7 @@ Chinese ink wash painting style, traditional Chinese martial arts, wuxia charact
 
 #### 1.0.7 Godot 当前实装资产
 
-- Godot 工程当前已恢复并扩展到 `99` 个 NPC 数据，来源为旧 Python 版本的 `src/data/npcs.json` 和第一批文档核心角色。
+- Godot 工程当前已扩展到 `99` 个 NPC 数据，当前来源为 `godot_project/data/npcs.json` 和第一批文档核心角色。
 - `tools/generate_godot_art_assets.py` 已按拆件规则生成第一批可直接使用资源：`99` 个 NPC 地图 sprite、`99` 个 NPC 对话头像、`16` 个玩家门派/性别 sprite、`29` 个头部/服饰/道具拆件 PNG、`20` 个地图瓦片 PNG、`22` 个物品图标、`41` 个武学图标、`73` 个区域场景背景、`8` 个基础 UI PNG。
 - 当前大地图 NPC 优先使用 `godot_project/assets/characters/generated_map_sprites/` 的统一风格透明 PNG，避免整身 PNG 与临时程序小人混用导致精细度不一致。
 - NPC 对话头像保存在 `godot_project/assets/characters/npc/portraits/`，当前对话面板已按 NPC 名称加载这些头像。
@@ -175,7 +175,7 @@ Chinese ink wash painting style, traditional Chinese martial arts, wuxia charact
 - 地图瓦片保存在 `godot_project/assets/world/tiles/`，区域场景背景保存在 `godot_project/assets/world/scenes/`，物品图标保存在 `godot_project/assets/items/icons/`，武学图标保存在 `godot_project/assets/skills/icons/`，基础 UI 资源保存在 `godot_project/assets/ui/`。
 - 背包/商店已按物品 ID 加载 `assets/items/icons/` 图标，修炼/战斗面板已按武学 ID 加载 `assets/skills/icons/` 图标，世界地图面板已按区域 ID 加载 `assets/world/scenes/` 背景，并使用 `assets/ui/` 的地图标记 PNG。
 - 资源预览保存在 `godot_project/assets/previews/`，包含瓦片、地图 NPC、玩家、NPC 头像、物品图标、武学图标和场景背景预览。
-- 旧 PNG 图集仍保存在 `godot_project/assets/characters/npc/atlases/`，切片后的单角色 sprite 仍保存在 `godot_project/assets/characters/npc/sprites/`，后续更适合作为头像、立绘或战斗展示素材库。
+- 旧 PNG 图集、切片后的单角色 sprite 和 prompt 源已清理，当前保留 `generated_map_sprites/`、`npc/portraits/` 与 `characters/parts/` 作为运行时资源和生成源。
 - `godot_project/data/npc_sprite_assets.json` 负责把 99 个 NPC 名称映射到当前地图 PNG；未映射的 NPC 才回退到 `appearance` 拆件系统自动渲染。
 - `godot_project/data/npc_portrait_assets.json` 负责把 99 个 NPC 名称映射到对话头像。
 - `godot_project/data/item_icon_assets.json` 负责把 22 个物品 ID 映射到图标。
