@@ -1,0 +1,58 @@
+# Godot
+.import/
+*.import
+*.md5
+*.ctex
+.godot/
+*.uid
+export_presets.cfg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+stderr.log
+stdout.log
+
+# Temp
+*.tmp
+*.bak
+*.cache
+screenshot_test.png
+
+# Large assets not needed in repo
+*.xcf
+*.zip
+*.ps1
+search_sprites.py
+test_game.py
+test_game_fixed.py
+write_doc.ps1
+
+# Godot extracted binary
+godot/extracted/
+
+# Submodule untracked
+based-src/
