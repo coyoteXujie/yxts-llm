@@ -53,6 +53,8 @@ write_doc.ps1
 
 # Godot extracted binary
 godot/extracted/
+Godot_v*/
+*.exe
 
 # Submodule untracked
 based-src/
