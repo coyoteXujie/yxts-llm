@@ -36,10 +36,11 @@
 - 平安镇已作为起始镇落到大地图北洛阳区域，玩家出生点、新手 NPC、镇东敌人和洛阳主线 NPC 不再挤在同一个城中心。
 - `data/regions.json` 已登记 73 个结构化区域，玩家移动时会识别当前区域并记录探索度；HUD 会显示所在地、探索度和危险等级。
 - M 键可打开世界地图面板，查看已发现区域、探索度、区域说明、区域背景图、NPC 标记、可接任务标记和当前任务目标。
-- `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、73 张区域场景背景、8 张 UI 资源。
+- `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - 地图现在优先使用 `assets/world/tiles/` 的瓦片 PNG；NPC 和玩家优先使用生成后的透明 PNG sprite，姓名只在靠近/选中时显示，避免标签和角色互相遮挡。
-- 对话面板已接入 `assets/characters/npc/portraits/` 的 NPC 头像；背包和商店已接入 `assets/items/icons/` 的物品图标；世界地图面板已接入 `assets/world/scenes/` 的区域背景和 `assets/ui/` 的地图标记。
-- `assets/previews/` 下有瓦片、NPC、玩家、头像、物品图标和场景背景资源预览图；旧的 53 个 NPC/敌人透明 PNG 仍保留在 `assets/characters/npc/` 作为原始美术库。
+- 对话面板已接入 `assets/characters/npc/portraits/` 的 NPC 头像；背包和商店已接入 `assets/items/icons/` 的物品图标；修炼和战斗面板已接入 `assets/skills/icons/` 的武学图标；世界地图面板已接入 `assets/world/scenes/` 的区域背景和 `assets/ui/` 的地图标记。
+- 战斗面板会显示敌人头像，并按玩家已学的攻击类武学生成可点击招式按钮。
+- `assets/previews/` 下有瓦片、NPC、玩家、头像、物品图标、武学图标和场景背景资源预览图；旧的 53 个 NPC/敌人透明 PNG 仍保留在 `assets/characters/npc/` 作为原始美术库。
 
 ## 目录
 
@@ -53,6 +54,7 @@
 - `data/npc_sprite_assets.json`：99 个 NPC 名称到当前地图 PNG sprite 的映射。
 - `data/npc_portrait_assets.json`：99 个 NPC 名称到对话头像 PNG 的映射。
 - `data/item_icon_assets.json`：22 个物品 ID 到图标 PNG 的映射。
+- `data/skill_icon_assets.json`：41 个武学 ID 到图标 PNG 的映射。
 - `data/scene_background_assets.json`：73 个区域 ID 到场景背景 PNG 的映射。
 - `data/regions.json`：五城、十六镇、四十五野外、七门派的区域数据。
 - `data/items.json`：物品、药品、武器、防具数据。
@@ -63,12 +65,13 @@
 - `assets/characters/player/`：玩家不同性别/门派地图 sprite。
 - `assets/characters/parts/`：头部、服装、道具等拆件 PNG。
 - `assets/items/icons/`：物品图标。
+- `assets/skills/icons/`：武学图标。
 - `assets/world/scenes/`：区域场景背景。
 - `assets/ui/`：水墨 UI 边框、按钮、状态条和地图标记资源。
 - `assets/world/tiles/`：当前大地图使用的瓦片 PNG。
 - `assets/previews/`：自动生成的资源预览图。
 - `assets/generated_art_manifest.json`：本轮生成资源清单。
 - `tools/split_npc_atlas.py`：把生成图集切成单个 NPC sprite。
-- `tools/generate_godot_art_assets.py`：批量生成地图瓦片、NPC/玩家地图 sprite、NPC 头像、物品图标、区域背景、UI 和拆件资源。
+- `tools/generate_godot_art_assets.py`：批量生成地图瓦片、NPC/玩家地图 sprite、NPC 头像、物品图标、武学图标、区域背景、UI 和拆件资源。
 - `tools/build_godot_npcs.py`：从旧 Python 数据重建 Godot NPC 数据并套用当前地图坐标。
 - `tools/validate_godot_data.py`：校验区域数量、NPC/任务/商品/sprite 引用和坐标边界。

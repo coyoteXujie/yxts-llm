@@ -27,6 +27,7 @@ def main() -> int:
     sprite_assets = load_json("npc_sprite_assets.json")
     portrait_assets = load_json("npc_portrait_assets.json")
     item_icon_assets = load_json("item_icon_assets.json")
+    skill_icon_assets = load_json("skill_icon_assets.json")
     scene_background_assets = load_json("scene_background_assets.json")
 
     item_ids = {item["id"] for item in items}
@@ -111,6 +112,16 @@ def main() -> int:
         if not asset_path.exists():
             errors.append(f"item icon path missing for {item_id}: {icon_path}")
 
+    for skill_id, icon_path in skill_icon_assets.items():
+        if skill_id not in skill_ids:
+            errors.append(f"skill icon mapping references missing skill {skill_id}")
+        asset_path = ROOT / "godot_project" / icon_path.removeprefix("res://")
+        if not asset_path.exists():
+            errors.append(f"skill icon path missing for {skill_id}: {icon_path}")
+    for skill_id in skill_ids:
+        if skill_id not in skill_icon_assets:
+            errors.append(f"skill {skill_id} missing icon mapping")
+
     for region_id, background_path in scene_background_assets.items():
         if region_id not in region_id_set:
             errors.append(f"scene background mapping references missing region {region_id}")
@@ -125,7 +136,7 @@ def main() -> int:
 
     print(
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
-        f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} scenes={len(scene_background_assets)}"
+        f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} scenes={len(scene_background_assets)}"
     )
     return 0
 

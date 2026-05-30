@@ -2,6 +2,7 @@ extends Control
 class_name CultivationPanel
 
 var skill_list: ItemList
+var skill_preview: TextureRect
 var details: Label
 var skill_ids: Array[String] = []
 
@@ -39,15 +40,33 @@ func _build() -> void:
 
 	skill_list = ItemList.new()
 	skill_list.custom_minimum_size = Vector2(430, 270)
+	skill_list.fixed_icon_size = Vector2i(36, 36)
+	skill_list.icon_mode = ItemList.ICON_MODE_LEFT
 	skill_list.item_selected.connect(_select_skill)
 	box.add_child(skill_list)
 
+	var detail_row := HBoxContainer.new()
+	detail_row.custom_minimum_size = Vector2(430, 124)
+	detail_row.add_theme_constant_override("separation", 12)
+	box.add_child(detail_row)
+
+	var preview_frame := PanelContainer.new()
+	preview_frame.custom_minimum_size = Vector2(88, 88)
+	preview_frame.add_theme_stylebox_override("panel", _slot_style())
+	detail_row.add_child(preview_frame)
+
+	skill_preview = TextureRect.new()
+	skill_preview.custom_minimum_size = Vector2(72, 72)
+	skill_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	skill_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview_frame.add_child(skill_preview)
+
 	details = Label.new()
-	details.custom_minimum_size = Vector2(430, 118)
+	details.custom_minimum_size = Vector2(328, 118)
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	details.add_theme_font_size_override("font_size", 16)
 	details.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
-	box.add_child(details)
+	detail_row.add_child(details)
 
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
@@ -74,21 +93,28 @@ func _refresh() -> void:
 		return
 	skill_list.clear()
 	skill_ids.clear()
-	for skill_id in GameState.learned_skills.keys():
+	var ids := GameState.learned_skills.keys()
+	ids.sort()
+	for skill_id in ids:
 		skill_ids.append(str(skill_id))
-		skill_list.add_item("%s  Lv.%d" % [GameData.get_skill_name(str(skill_id)), int(GameState.learned_skills[skill_id])])
+		skill_list.add_item("%s  Lv.%d" % [GameData.get_skill_name(str(skill_id)), int(GameState.learned_skills[skill_id])], _load_skill_icon(str(skill_id)))
 	details.text = "潜能：%d\n选择武学后可消耗潜能修炼。" % int(GameState.player.get("pot", 0))
+	if skill_preview != null:
+		skill_preview.texture = null
 
 func _select_skill(index: int) -> void:
 	if index < 0 or index >= skill_ids.size():
 		return
 	var skill_id := skill_ids[index]
 	var level := int(GameState.learned_skills.get(skill_id, 0))
-	details.text = "%s\n当前等级：%d\n下次修炼消耗潜能：%d" % [
+	details.text = "%s\n当前等级：%d    下次消耗：%d\n%s" % [
 		GameData.get_skill_name(skill_id),
 		level,
-		max(5, level * 3)
+		max(5, level * 3),
+		GameData.get_skill_summary(skill_id)
 	]
+	if skill_preview != null:
+		skill_preview.texture = _load_skill_icon(skill_id)
 
 func _practice_selected() -> void:
 	var selected := skill_list.get_selected_items()
@@ -125,3 +151,27 @@ func _panel_style() -> StyleBoxFlat:
 	style.content_margin_top = 14
 	style.content_margin_bottom = 14
 	return style
+
+func _slot_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.10, 0.085, 0.06, 0.92)
+	style.border_color = Color(0.68, 0.53, 0.28, 0.88)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
+
+func _load_skill_icon(skill_id: String) -> Texture2D:
+	var path := GameData.get_skill_icon_path(skill_id)
+	if path.is_empty():
+		return null
+	return GameData.load_texture(path)

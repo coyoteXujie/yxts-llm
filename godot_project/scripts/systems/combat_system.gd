@@ -26,6 +26,7 @@ func player_attack(skill_id: String = "normal") -> void:
 	var skill_name := "普通攻击"
 	var mp_cost := 0
 	var bonus := 0
+	var level := 0
 	match skill_id:
 		"bare":
 			skill_name = "基本拳脚"
@@ -38,6 +39,20 @@ func player_attack(skill_id: String = "normal") -> void:
 			_append_log("你调匀内息，恢复少许气血。")
 			_enemy_turn()
 			return
+		_:
+			if skill_id != "normal":
+				if not GameData.is_attack_skill(skill_id):
+					_append_log("%s 暂不能作为战斗招式。" % GameData.get_skill_name(skill_id))
+					combat_changed.emit(snapshot())
+					return
+				level = int(GameState.learned_skills.get(skill_id, 0))
+				if level <= 0:
+					_append_log("你还没有掌握%s。" % GameData.get_skill_name(skill_id))
+					combat_changed.emit(snapshot())
+					return
+				skill_name = GameData.get_skill_name(skill_id)
+				mp_cost = 5 + min(18, int(level / 8))
+				bonus = 8 + int(level * 0.45)
 
 	if mp_cost > 0 and not GameState.spend_mp(mp_cost):
 		_append_log("内力不足，招式使不出来。")
@@ -47,9 +62,13 @@ func player_attack(skill_id: String = "normal") -> void:
 	var player := GameState.player
 	var base_attack := int(player.get("attack", 12))
 	var defense := int(enemy.get("defense", 0))
-	var damage: int = int(max(1, base_attack + bonus + randi_range(0, 7) - int(defense * 0.45)))
+	var variance: int = 7 + min(10, int(level / 5))
+	var damage: int = int(max(1, base_attack + bonus + randi_range(0, variance) - int(defense * 0.45)))
 	enemy["hp"] = max(0, int(enemy.get("hp", 0)) - damage)
-	_append_log("你使出%s，造成 %d 点伤害。" % [skill_name, damage])
+	if level > 0:
+		_append_log("你使出%s Lv.%d，造成 %d 点伤害。" % [skill_name, level, damage])
+	else:
+		_append_log("你使出%s，造成 %d 点伤害。" % [skill_name, damage])
 
 	if int(enemy.get("hp", 0)) <= 0:
 		_finish(true)

@@ -37,6 +37,7 @@ godot_project/
 │   ├── npc_sprite_assets.json
 │   ├── npc_portrait_assets.json
 │   ├── item_icon_assets.json
+│   ├── skill_icon_assets.json
 │   ├── scene_background_assets.json
 │   └── regions.json
 ├── assets/
@@ -46,6 +47,7 @@ godot_project/
 │   │   ├── player/
 │   │   └── parts/
 │   ├── items/icons/
+│   ├── skills/icons/
 │   ├── world/
 │   │   ├── tiles/
 │   │   └── scenes/
@@ -113,7 +115,7 @@ godot_project/
 
 ## 7. 当前美术落地
 
-- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、73 张区域场景背景、8 张 UI 资源。
+- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - `godot_project/assets/world/tiles/` 保存当前大地图实际使用的 48x48 瓦片 PNG。
 - `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
 - `godot_project/assets/characters/generated_map_sprites/` 保存当前大地图实际使用的 99 个统一风格 NPC sprite。
@@ -121,12 +123,14 @@ godot_project/
 - `godot_project/assets/characters/player/` 保存玩家不同门派/性别 sprite。
 - `godot_project/assets/characters/parts/` 保存头部、发型/帽子、服饰、道具等拆件源资源，生成 NPC sprite 时按组件组合。
 - `godot_project/assets/items/icons/` 保存当前 22 个物品的 64x64 图标，当前已接入背包和商店。
+- `godot_project/assets/skills/icons/` 保存当前 41 个武学的 64x64 图标，当前已接入修炼面板和战斗按钮。
 - `godot_project/assets/ui/` 保存面板、按钮、物品槽、气血/内力条、NPC/任务/目标标记等基础 UI PNG，当前地图标记已接入世界地图面板。
 - `godot_project/data/npc_sprite_assets.json` 管理 99 个 NPC 到当前地图 sprite 的映射。
 - `godot_project/data/npc_portrait_assets.json` 管理 99 个 NPC 到对话头像的映射。
 - `godot_project/data/item_icon_assets.json` 管理 22 个物品到图标的映射。
+- `godot_project/data/skill_icon_assets.json` 管理 41 个武学到图标的映射。
 - `godot_project/data/scene_background_assets.json` 管理 73 个区域到场景背景的映射。
 - 旧的 `godot_project/assets/characters/npc/atlases/` 和 `sprites/` 仍保留作为立绘、头像或战斗姿态的原始美术库。
-- 地图 NPC 与玩家优先使用生成后的透明 PNG；姓名标签只在靠近/选中时显示；对话面板已接入 NPC 头像；背包/商店已接入物品图标；世界地图已接入区域背景和标记资源。
+- 地图 NPC 与玩家优先使用生成后的透明 PNG；姓名标签只在靠近/选中时显示；对话面板已接入 NPC 头像；背包/商店已接入物品图标；修炼/战斗已接入武学图标；世界地图已接入区域背景和标记资源。
 - 当前生成资源是可运行的统一风格占位资产，不等同于最终 900+ 高精度立绘、战斗姿态、技能特效和正式 TileSet。
 - `doc/12_美术资产Prompt.md` 记录 NPC 拆件规范和当前资源状态。

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import re
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -19,12 +20,14 @@ PORTRAIT_DIR = ASSETS / "characters" / "npc" / "portraits"
 PLAYER_DIR = ASSETS / "characters" / "player"
 PARTS_DIR = ASSETS / "characters" / "parts"
 ITEM_ICON_DIR = ASSETS / "items" / "icons"
+SKILL_ICON_DIR = ASSETS / "skills" / "icons"
 UI_DIR = ASSETS / "ui"
 PREVIEW_DIR = ASSETS / "previews"
 MANIFEST = ASSETS / "generated_art_manifest.json"
 NPC_SPRITE_MAPPING = DATA / "npc_sprite_assets.json"
 NPC_PORTRAIT_MAPPING = DATA / "npc_portrait_assets.json"
 ITEM_ICON_MAPPING = DATA / "item_icon_assets.json"
+SKILL_ICON_MAPPING = DATA / "skill_icon_assets.json"
 SCENE_BACKGROUND_MAPPING = DATA / "scene_background_assets.json"
 
 SCALE = 3
@@ -815,6 +818,98 @@ def generate_item_icons() -> dict[str, str]:
     return mapping
 
 
+def load_skill_names() -> dict[str, str]:
+    source = (ROOT / "godot_project" / "scripts" / "autoload" / "game_data.gd").read_text(encoding="utf-8")
+    block_match = re.search(r"const SKILL_NAMES := \{(?P<body>.*?)\n\}", source, re.S)
+    if block_match == None:
+        return {}
+    return dict(re.findall(r'"(kf_[a-zA-Z0-9_]+)"\s*:\s*"([^"]+)"', block_match.group("body")))
+
+
+def generate_skill_icons() -> dict[str, str]:
+    skills = load_skill_names()
+    mapping: dict[str, str] = {}
+    for skill_id, skill_name in skills.items():
+        image, p = new_canvas((64, 64))
+        primary, secondary, accent = _skill_palette(skill_id)
+        p.rect((4, 4, 60, 60), color((0.075, 0.068, 0.052), 238), accent, 2)
+        p.ellipse((9, 9, 55, 55), with_alpha(primary, 72))
+        p.arc((10, 13, 55, 52), 200, 345, with_alpha(lighten(accent, 0.18), 92), 2.0)
+        _draw_skill_symbol(p, skill_id, skill_name, primary, secondary, accent)
+        path = SKILL_ICON_DIR / f"{skill_id}.png"
+        save_canvas(image, path, (64, 64))
+        mapping[skill_id] = "res://" + str(path.relative_to(ROOT / "godot_project"))
+    SKILL_ICON_MAPPING.write_text(json.dumps(mapping, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return mapping
+
+
+def _skill_palette(skill_id: str) -> tuple[tuple[int, int, int, int], tuple[int, int, int, int], tuple[int, int, int, int]]:
+    if "bagua" in skill_id or "bazhen" in skill_id or "hunyuan" in skill_id or "youlong" in skill_id:
+        return color((0.34, 0.28, 0.48), 230), color((0.16, 0.13, 0.22), 230), color((0.88, 0.70, 0.36), 235)
+    if "hua" in skill_id or "liu" in skill_id or "meihua" in skill_id or "sanhua" in skill_id:
+        return color((0.58, 0.26, 0.40), 230), color((0.20, 0.10, 0.16), 230), color((0.96, 0.62, 0.72), 235)
+    if "taiji" in skill_id or "wanliu" in skill_id or "xuanxu" in skill_id:
+        return color((0.62, 0.64, 0.60), 230), color((0.14, 0.14, 0.13), 230), color((0.86, 0.84, 0.72), 235)
+    if "xue" in skill_id or "taxue" in skill_id:
+        return color((0.42, 0.58, 0.70), 230), color((0.18, 0.25, 0.32), 230), color((0.86, 0.94, 1.0), 235)
+    if "hexiang" in skill_id or "jiaoyi" in skill_id or "pifeng" in skill_id or "taizu" in skill_id or "tongji" in skill_id:
+        return color((0.66, 0.16, 0.12), 230), color((0.22, 0.07, 0.05), 230), color((1.0, 0.58, 0.26), 235)
+    if "renshu" in skill_id or "wufa" in skill_id or "wuying" in skill_id or "yidao" in skill_id:
+        return color((0.16, 0.32, 0.20), 230), color((0.06, 0.09, 0.07), 230), color((0.58, 0.82, 0.38), 235)
+    if "xiaoyao" in skill_id or "beiming" in skill_id or "liuyang" in skill_id or "xiaowuxiang" in skill_id or "lingbo" in skill_id:
+        return color((0.20, 0.44, 0.34), 230), color((0.08, 0.15, 0.13), 230), color((0.78, 0.88, 0.52), 235)
+    return color((0.34, 0.36, 0.36), 230), color((0.13, 0.13, 0.12), 230), color((0.78, 0.62, 0.32), 235)
+
+
+def _draw_skill_symbol(
+    p: Painter,
+    skill_id: str,
+    skill_name: str,
+    primary: tuple[int, int, int, int],
+    secondary: tuple[int, int, int, int],
+    accent: tuple[int, int, int, int],
+) -> None:
+    ink = color((0.035, 0.03, 0.025), 235)
+    metal = color((0.82, 0.84, 0.80), 235)
+    if "sword" in skill_id or "jian" in skill_id or "huafei" in skill_id or "liu" in skill_id:
+        p.polygon([(31, 8), (38, 37), (32, 48), (26, 37)], metal, ink)
+        p.line([(21, 44), (43, 44)], accent, 4)
+        p.line([(32, 45), (32, 58)], secondary, 4)
+        p.arc((12, 10, 52, 56), 215, 315, with_alpha(accent, 150), 2)
+    elif "blade" in skill_id or "dao" in skill_id or "pifeng" in skill_id or "xuanxu" in skill_id or "yidao" in skill_id:
+        p.polygon([(21, 9), (45, 15), (35, 44), (24, 50)], metal, ink)
+        p.line([(32, 44), (24, 58)], secondary, 4)
+        p.arc((14, 7, 56, 51), 188, 288, with_alpha(accent, 150), 3)
+    elif "palm" in skill_id or "fist" in skill_id or "bare" in skill_id or "taizu" in skill_id or "liuyang" in skill_id:
+        p.ellipse((20, 14, 44, 46), color((0.82, 0.58, 0.42), 235), ink)
+        for x in (18, 25, 32, 39):
+            p.line([(x, 25), (x + 2, 12)], color((0.82, 0.58, 0.42), 235), 4)
+        p.arc((11, 10, 55, 56), 205, 330, with_alpha(accent, 150), 3)
+    elif "force" in skill_id or "hunyuan" in skill_id or "jiaoyi" in skill_id or "beiming" in skill_id or "xiaowuxiang" in skill_id:
+        p.ellipse((18, 18, 46, 46), with_alpha(accent, 170), ink, 2)
+        p.arc((13, 13, 51, 51), 30, 310, primary, 4)
+        p.arc((23, 23, 41, 41), 210, 130, lighten(accent, 0.28), 3)
+    elif "dodge" in skill_id or "youlong" in skill_id or "meihua" in skill_id or "wanliu" in skill_id or "taxue" in skill_id or "wuying" in skill_id or "lingbo" in skill_id or "xiaoyao_you" in skill_id:
+        p.line([(14, 46), (30, 28), (48, 16)], accent, 4)
+        p.arc((12, 18, 38, 50), 200, 20, with_alpha(accent, 145), 2.5)
+        p.arc((24, 8, 58, 43), 205, 30, with_alpha(lighten(accent, 0.22), 130), 2.5)
+        p.ellipse((42, 13, 49, 20), lighten(accent, 0.16), ink)
+    elif "bazhen" in skill_id or "bagua" in skill_id:
+        p.ellipse((17, 17, 47, 47), with_alpha(accent, 120), ink, 2)
+        for angle in range(0, 360, 45):
+            rad = math.radians(angle)
+            p.line([(32 + math.cos(rad) * 10, 32 + math.sin(rad) * 10), (32 + math.cos(rad) * 21, 32 + math.sin(rad) * 21)], accent, 2)
+        p.rect((28, 24, 36, 40), secondary, ink)
+    elif "literate" in skill_id:
+        p.rect((20, 13, 45, 51), color((0.88, 0.80, 0.58), 235), ink)
+        for y in (22, 30, 38):
+            p.line([(25, y), (40, y - 2)], secondary, 1.5)
+        p.line([(15, 48), (31, 16)], accent, 2.5)
+    else:
+        p.ellipse((20, 20, 44, 44), accent, ink)
+        p.arc((14, 14, 50, 50), 220, 40, lighten(accent, 0.20), 3)
+
+
 def _draw_item_symbol(p: Painter, item_id: str, item_type: str, accent) -> None:
     ink = color((0.05, 0.04, 0.03), 230)
     metal = color((0.82, 0.84, 0.80), 235)
@@ -1029,6 +1124,7 @@ def main() -> None:
     PLAYER_DIR.mkdir(parents=True, exist_ok=True)
     PARTS_DIR.mkdir(parents=True, exist_ok=True)
     ITEM_ICON_DIR.mkdir(parents=True, exist_ok=True)
+    SKILL_ICON_DIR.mkdir(parents=True, exist_ok=True)
     UI_DIR.mkdir(parents=True, exist_ok=True)
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     tiles = generate_tiles()
@@ -1037,9 +1133,10 @@ def main() -> None:
     players = generate_player_sprites()
     parts = generate_parts()
     item_icons = generate_item_icons()
+    skill_icons = generate_skill_icons()
     scenes = generate_scene_backgrounds()
     ui = generate_ui_assets()
-    previews = generate_previews(tiles, npcs, players, portraits, item_icons, scenes)
+    previews = generate_previews(tiles, npcs, players, portraits, item_icons, skill_icons, scenes)
     manifest = {
         "generated_by": "tools/generate_godot_art_assets.py",
         "style": "2D ink-wash wuxia, deterministic component sprites",
@@ -1049,6 +1146,7 @@ def main() -> None:
         "player_map_sprites": players,
         "character_parts": parts,
         "item_icons": item_icons,
+        "skill_icons": skill_icons,
         "scene_backgrounds": scenes,
         "ui": ui,
         "previews": previews,
@@ -1059,6 +1157,7 @@ def main() -> None:
             "player_map_sprites": len(players),
             "parts": sum(len(v) for v in parts.values()),
             "item_icons": len(item_icons),
+            "skill_icons": len(skill_icons),
             "scene_backgrounds": len(scenes),
             "ui": len(ui),
         },
@@ -1068,7 +1167,7 @@ def main() -> None:
         "Generated art assets: "
         f"tiles={len(tiles)} npcs={len(npcs)} portraits={len(portraits)} "
         f"players={len(players)} parts={manifest['counts']['parts']} icons={len(item_icons)} "
-        f"scenes={len(scenes)} ui={len(ui)}"
+        f"skills={len(skill_icons)} scenes={len(scenes)} ui={len(ui)}"
     )
 
 
@@ -1078,6 +1177,7 @@ def generate_previews(
     players: dict[str, str],
     portraits: dict[str, str],
     item_icons: dict[str, str],
+    skill_icons: dict[str, str],
     scenes: dict[str, str],
 ) -> dict[str, str]:
     tile_sheet = Image.new("RGBA", (10 * 48, 2 * 48), (24, 22, 18, 255))
@@ -1123,6 +1223,15 @@ def generate_previews(
     icon_preview = PREVIEW_DIR / "item_icon_preview.png"
     icon_sheet.save(icon_preview)
 
+    skill_items = list(skill_icons.values())
+    skill_sheet = Image.new("RGBA", (8 * 64, 6 * 64), (24, 22, 18, 255))
+    for index, res_path in enumerate(skill_items[:48]):
+        path = ROOT / "godot_project" / res_path.removeprefix("res://")
+        image = Image.open(path).convert("RGBA")
+        skill_sheet.alpha_composite(image, ((index % 8) * 64, (index // 8) * 64))
+    skill_preview = PREVIEW_DIR / "skill_icon_preview.png"
+    skill_sheet.save(skill_preview)
+
     scene_items = list(scenes.values())
     scene_sheet = Image.new("RGBA", (4 * 160, 4 * 90), (24, 22, 18, 255))
     for index, res_path in enumerate(scene_items[:16]):
@@ -1138,6 +1247,7 @@ def generate_previews(
         "player": "res://" + str(player_preview.relative_to(ROOT / "godot_project")),
         "npc_portrait": "res://" + str(portrait_preview.relative_to(ROOT / "godot_project")),
         "item_icon": "res://" + str(icon_preview.relative_to(ROOT / "godot_project")),
+        "skill_icon": "res://" + str(skill_preview.relative_to(ROOT / "godot_project")),
         "scene": "res://" + str(scene_preview.relative_to(ROOT / "godot_project")),
     }
 

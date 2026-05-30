@@ -69,6 +69,32 @@ const FACTION_SKILLS := {
 	"xiaoyao": ["kf_xiaoyao_you", "kf_beiming", "kf_liuyang", "kf_xiaowuxiang", "kf_lingbo"]
 }
 
+const ATTACK_SKILLS := {
+	"kf_basic_bare": true,
+	"kf_basic_sword": true,
+	"kf_basic_blade": true,
+	"kf_basic_club": true,
+	"kf_bagua_blade": true,
+	"kf_bagua_palm": true,
+	"kf_bazhen": true,
+	"kf_huafei": true,
+	"kf_huatuan": true,
+	"kf_liu": true,
+	"kf_taiji_sword": true,
+	"kf_taiji_fist": true,
+	"kf_xuanxu": true,
+	"kf_xueshang": true,
+	"kf_xueshan_sword": true,
+	"kf_xueying": true,
+	"kf_pifeng": true,
+	"kf_taizu": true,
+	"kf_tongji": true,
+	"kf_renshu": true,
+	"kf_wufa": true,
+	"kf_yidao": true,
+	"kf_liuyang": true
+}
+
 const DIALOGUES := {
 	"平阿四": ["客官住店还是打尖？平安镇消息，十有八九先到我这里。", "北边八卦门近日开山收徒，想拜师可以去看看。"],
 	"阿青": ["豆腐刚出锅，白嫩得很。", "剑法不必争强，一口气顺了，招式自然顺。"],
@@ -615,6 +641,7 @@ var quests: Dictionary = {}
 var npc_sprite_assets: Dictionary = {}
 var npc_portrait_assets: Dictionary = {}
 var item_icon_assets: Dictionary = {}
+var skill_icon_assets: Dictionary = {}
 var scene_background_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
@@ -638,6 +665,7 @@ func load_database() -> void:
 	_load_npc_sprite_assets()
 	_load_npc_portrait_assets()
 	_load_item_icon_assets()
+	_load_skill_icon_assets()
 	_load_scene_background_assets()
 	_load_regions()
 
@@ -679,6 +707,10 @@ func _load_npc_portrait_assets() -> void:
 func _load_item_icon_assets() -> void:
 	item_icon_assets.clear()
 	_load_asset_mapping("res://data/item_icon_assets.json", item_icon_assets)
+
+func _load_skill_icon_assets() -> void:
+	skill_icon_assets.clear()
+	_load_asset_mapping("res://data/skill_icon_assets.json", skill_icon_assets)
 
 func _load_scene_background_assets() -> void:
 	scene_background_assets.clear()
@@ -799,6 +831,9 @@ func get_npc_portrait_path(npc_name: String) -> String:
 func get_item_icon_path(item_id: String) -> String:
 	return str(item_icon_assets.get(item_id, ""))
 
+func get_skill_icon_path(skill_id: String) -> String:
+	return str(skill_icon_assets.get(skill_id, ""))
+
 func get_scene_background_path(region_id: String) -> String:
 	return str(scene_background_assets.get(region_id, ""))
 
@@ -816,6 +851,20 @@ func load_texture(path: String) -> Texture2D:
 
 func get_faction_skills(faction_id: String) -> Array:
 	return FACTION_SKILLS.get(faction_id, [])
+
+func is_attack_skill(skill_id: String) -> bool:
+	return bool(ATTACK_SKILLS.get(skill_id, false))
+
+func get_skill_summary(skill_id: String) -> String:
+	if skill_id == "kf_literate":
+		return "江湖阅历与任务线索相关。"
+	if is_attack_skill(skill_id):
+		return "可在战斗中作为招式使用，等级越高伤害越稳定。"
+	if skill_id.find("force") >= 0 or skill_id.find("hunyuan") >= 0 or skill_id.find("jiaoyi") >= 0 or skill_id.find("beiming") >= 0 or skill_id.find("xiaowuxiang") >= 0:
+		return "内功心法，当前主要提升修炼与调息表现。"
+	if skill_id.find("dodge") >= 0 or skill_id.find("youlong") >= 0 or skill_id.find("meihua") >= 0 or skill_id.find("wanliu") >= 0 or skill_id.find("taxue") >= 0 or skill_id.find("wuying") >= 0 or skill_id.find("lingbo") >= 0 or skill_id.find("xiaoyao_you") >= 0:
+		return "身法轻功，当前主要用于战斗脱身与后续探索扩展。"
+	return "门派武学，后续可扩展为独立招式效果。"
 
 func get_npc_appearance(npc_data: Dictionary) -> Dictionary:
 	var preset_key := _appearance_preset_key(npc_data)
