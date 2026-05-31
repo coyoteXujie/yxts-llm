@@ -183,7 +183,17 @@ func get_entry_position(kind: String = "area") -> Vector2:
 		return tile_to_world(Vector2i(map_width / 2, map_height - 4))
 	if kind == "world":
 		return tile_to_world(Vector2i(map_width / 2, map_height - 5))
-	return tile_to_world(Vector2i(map_width / 2, map_height / 2))
+	var tile := Vector2i(map_width / 2, map_height / 2)
+	match kind:
+		"north":
+			tile = Vector2i(map_width / 2, 7)
+		"south":
+			tile = Vector2i(map_width / 2, map_height - 7)
+		"east":
+			tile = Vector2i(map_width - 8, map_height / 2)
+		"west":
+			tile = Vector2i(8, map_height / 2)
+	return tile_to_world(_find_nearest_walkable_tile(tile))
 
 func is_position_walkable(world_position: Vector2) -> bool:
 	return is_tile_walkable(world_to_tile(world_position))
@@ -193,6 +203,19 @@ func is_tile_walkable(tile: Vector2i) -> bool:
 		return false
 	var tile_id := int(tiles[tile.y][tile.x])
 	return tile_id != Tile.WATER and tile_id != Tile.BUILDING and tile_id != Tile.SHOP and tile_id != Tile.WALL and tile_id != Tile.COUNTER
+
+func _find_nearest_walkable_tile(preferred: Vector2i) -> Vector2i:
+	if is_tile_walkable(preferred):
+		return preferred
+	for radius in range(1, 12):
+		for y in range(preferred.y - radius, preferred.y + radius + 1):
+			for x in range(preferred.x - radius, preferred.x + radius + 1):
+				if abs(x - preferred.x) != radius and abs(y - preferred.y) != radius:
+					continue
+				var tile := Vector2i(x, y)
+				if is_tile_walkable(tile):
+					return tile
+	return preferred
 
 func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true):
 	var best = null
@@ -228,7 +251,7 @@ func focus_portal(portal: Dictionary) -> void:
 	for label in portal_labels:
 		if not is_instance_valid(label):
 			continue
-		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_")
+		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_")
 	queue_redraw()
 
 func clear_highlights() -> void:
@@ -286,6 +309,7 @@ func _generate_region_map() -> void:
 		_:
 			_generate_wild_region()
 	_add_exit_portal()
+	_add_region_travel_portals()
 
 func _generate_city_region() -> void:
 	_reset_tiles(Tile.GRASS)
@@ -414,14 +438,113 @@ func _add_exit_portal() -> void:
 	_paint_line([Vector2i(map_width / 2, map_height - 8), Vector2i(map_width / 2, map_height - 2)], Tile.ROAD, 2)
 	_add_portal("exit_world", "返回世界", "exit_world", Vector2i(map_width / 2, map_height - 4), "")
 
-func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String) -> void:
-	portals.append({
+func _add_region_travel_portals() -> void:
+	var region_id := str(current_region.get("id", ""))
+	if region_id.is_empty():
+		return
+	var neighbors: Array = GameData.get_neighbor_regions(region_id, _travel_portal_limit())
+	var direction_counts := {
+		"north": 0,
+		"south": 0,
+		"east": 0,
+		"west": 0
+	}
+	for neighbor in neighbors:
+		if typeof(neighbor) != TYPE_DICTIONARY:
+			continue
+		var target: Dictionary = neighbor
+		var target_id := str(target.get("id", ""))
+		if target_id.is_empty():
+			continue
+		var direction := _direction_to_region(target)
+		var direction_index := int(direction_counts.get(direction, 0))
+		direction_counts[direction] = direction_index + 1
+		var tile := _travel_portal_tile(direction, direction_index)
+		_paint_travel_path(tile, direction)
+		_add_portal(
+			"travel_%s" % target_id,
+			"前往%s" % str(target.get("name", target_id)),
+			"travel_region",
+			tile,
+			"",
+			target_id,
+			_opposite_direction(direction)
+		)
+
+func _travel_portal_limit() -> int:
+	var region_type := str(current_region.get("type", "wild"))
+	if region_type == "city":
+		return 5
+	if region_type == "wild":
+		return 3
+	return 4
+
+func _direction_to_region(target: Dictionary) -> String:
+	var source_center := _region_center(current_region)
+	var target_center := _region_center(target)
+	var delta := target_center - source_center
+	if absf(delta.x) > absf(delta.y):
+		return "east" if delta.x >= 0.0 else "west"
+	return "south" if delta.y >= 0.0 else "north"
+
+func _travel_portal_tile(direction: String, index: int) -> Vector2i:
+	var offset := (index % 3 - 1) * 7
+	match direction:
+		"north":
+			return Vector2i(clampi(map_width / 2 + offset, 8, map_width - 9), 6)
+		"south":
+			return Vector2i(clampi(map_width / 2 + offset, 8, map_width - 9), map_height - 6)
+		"east":
+			return Vector2i(map_width - 6, clampi(map_height / 2 + offset, 8, map_height - 9))
+		"west":
+			return Vector2i(6, clampi(map_height / 2 + offset, 8, map_height - 9))
+	return Vector2i(map_width / 2, map_height - 6)
+
+func _paint_travel_path(tile: Vector2i, direction: String) -> void:
+	var inner := Vector2i(map_width / 2, map_height / 2)
+	match direction:
+		"north":
+			inner = Vector2i(tile.x, min(tile.y + 8, map_height / 2))
+		"south":
+			inner = Vector2i(tile.x, max(tile.y - 8, map_height / 2))
+		"east":
+			inner = Vector2i(max(tile.x - 8, map_width / 2), tile.y)
+		"west":
+			inner = Vector2i(min(tile.x + 8, map_width / 2), tile.y)
+	_paint_line([tile, inner, Vector2i(map_width / 2, map_height / 2)], Tile.ROAD, 1)
+	_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.ROAD)
+
+func _opposite_direction(direction: String) -> String:
+	match direction:
+		"north":
+			return "south"
+		"south":
+			return "north"
+		"east":
+			return "west"
+		"west":
+			return "east"
+	return "area"
+
+func _region_center(region: Dictionary) -> Vector2:
+	var center_data: Array = region.get("center", [])
+	if center_data.size() >= 2:
+		return Vector2(float(center_data[0]), float(center_data[1]))
+	return Vector2.ZERO
+
+func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String, target_region_id: String = "", entry_kind: String = "") -> void:
+	var portal := {
 		"id": id,
 		"label": label,
 		"type": kind,
 		"tile": [tile.x, tile.y],
 		"shop_id": shop_id
-	})
+	}
+	if not target_region_id.is_empty():
+		portal["target_region_id"] = target_region_id
+	if not entry_kind.is_empty():
+		portal["entry_kind"] = entry_kind
+	portals.append(portal)
 
 func _generate_shop_map(shop_id: String) -> void:
 	portals.clear()
@@ -573,14 +696,18 @@ func _build_portal_labels() -> void:
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
-		if portal_type == "shop":
+		if portal_type == "shop" or portal_type == "travel_region":
 			var board := StyleBoxFlat.new()
-			board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
-			board.border_color = Color(0.86, 0.58, 0.25, 0.55)
+			if portal_type == "travel_region":
+				board.bg_color = Color(0.08, 0.16, 0.12, 0.74)
+				board.border_color = Color(0.72, 0.84, 0.52, 0.58)
+			else:
+				board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
+				board.border_color = Color(0.86, 0.58, 0.25, 0.55)
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop"
+		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -816,7 +943,10 @@ func _draw_portals() -> void:
 		var pos := tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1])))
 		var highlighted := str(portal.get("id", "")) == highlighted_portal_id
 		var color := Color(0.92, 0.70, 0.28, 0.78)
-		if str(portal.get("type", "")) == "exit_world" or str(portal.get("type", "")) == "exit_area":
+		var portal_type := str(portal.get("type", ""))
+		if portal_type == "travel_region":
+			color = Color(0.72, 0.84, 0.46, 0.82)
+		elif portal_type == "exit_world" or portal_type == "exit_area":
 			color = Color(0.56, 0.78, 0.98, 0.75)
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
 		draw_circle(pos, 4.2 if highlighted else 3.0, color)

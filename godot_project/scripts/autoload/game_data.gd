@@ -756,6 +756,34 @@ func get_regions() -> Array:
 func get_region(region_id: String) -> Dictionary:
 	return regions.get(region_id, {})
 
+func get_neighbor_regions(region_id: String, max_count: int = 4) -> Array:
+	var source: Dictionary = get_region(region_id)
+	if source.is_empty():
+		return []
+	var scored: Array = []
+	for candidate in get_regions():
+		if typeof(candidate) != TYPE_DICTIONARY:
+			continue
+		var target: Dictionary = candidate
+		if str(target.get("id", "")) == region_id:
+			continue
+		var score: float = _region_link_score(source, target)
+		if score >= 999999.0:
+			continue
+		scored.append({
+			"region": target,
+			"score": score
+		})
+	scored.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("score", 0.0)) < float(b.get("score", 0.0))
+	)
+	var result: Array = []
+	for entry in scored:
+		result.append(entry.get("region", {}))
+		if result.size() >= max_count:
+			break
+	return result
+
 func get_region_at_tile(tile: Vector2i) -> Dictionary:
 	var best: Dictionary = {}
 	var best_priority := -1
@@ -787,6 +815,44 @@ func _region_area(region: Dictionary) -> int:
 	if rect_data.size() < 4:
 		return 999999
 	return max(1, int(rect_data[2]) * int(rect_data[3]))
+
+func _region_link_score(source: Dictionary, target: Dictionary) -> float:
+	var source_id := str(source.get("id", ""))
+	var target_id := str(target.get("id", ""))
+	var source_parent := str(source.get("parent", ""))
+	var target_parent := str(target.get("parent", ""))
+	var source_type := str(source.get("type", "wild"))
+	var target_type := str(target.get("type", "wild"))
+	var same_cluster := source_parent == target_parent and not source_parent.is_empty()
+	var parent_link := source_parent == target_id or target_parent == source_id
+	var city_spine := source_type == "city" and target_type == "city"
+	if not same_cluster and not parent_link and not city_spine:
+		return 999999.0
+	var distance := _region_center(source).distance_to(_region_center(target))
+	var type_weight := 0.0
+	match target_type:
+		"city":
+			type_weight = 0.0
+		"town":
+			type_weight = 2.0
+		"sect":
+			type_weight = 3.5
+		_:
+			type_weight = 5.0
+	if parent_link:
+		type_weight -= 6.0
+	if city_spine:
+		type_weight += 24.0
+	return maxf(0.0, distance + type_weight)
+
+func _region_center(region: Dictionary) -> Vector2:
+	var center_data: Array = region.get("center", [])
+	if center_data.size() >= 2:
+		return Vector2(float(center_data[0]), float(center_data[1]))
+	var rect_data: Array = region.get("rect", [])
+	if rect_data.size() >= 4:
+		return Vector2(float(rect_data[0]) + float(rect_data[2]) * 0.5, float(rect_data[1]) + float(rect_data[3]) * 0.5)
+	return Vector2.ZERO
 
 func _region_priority(region_type: String) -> int:
 	match region_type:

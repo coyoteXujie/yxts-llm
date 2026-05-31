@@ -354,6 +354,8 @@ func _handle_enter_area() -> void:
 			_enter_shop(focused_portal)
 		"exit_area":
 			_exit_shop_to_area()
+		"travel_region":
+			_travel_to_linked_region(focused_portal)
 		"look":
 			EventBus.emit_toast("驿亭可歇脚探听，后续接入野外事件")
 		_:
@@ -402,6 +404,23 @@ func _return_to_world() -> void:
 	_switch_to_world_map(world_return_position)
 	_update_current_region()
 	EventBus.emit_toast("返回世界地图")
+
+func _travel_to_linked_region(portal: Dictionary) -> void:
+	var target_id := str(portal.get("target_region_id", ""))
+	var target_region := GameData.get_region(target_id)
+	if target_region.is_empty():
+		EventBus.emit_toast("这条路暂时走不通")
+		return
+	world_return_position = world_map.get_region_entry_position(target_id)
+	local_area.setup_region(target_region)
+	player_actor.position = local_area.get_entry_position(str(portal.get("entry_kind", "area")))
+	player_actor.velocity = Vector2.ZERO
+	focused_portal = {}
+	if camera != null:
+		_apply_camera_zoom()
+		camera.reset_smoothing()
+	_update_current_region()
+	EventBus.emit_toast("抵达%s" % str(target_region.get("name", target_id)))
 
 func _switch_to_world_map(position: Vector2) -> void:
 	if local_area != null:

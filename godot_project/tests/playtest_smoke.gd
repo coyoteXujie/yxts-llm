@@ -53,6 +53,8 @@ func _run() -> void:
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
+	_check(GameData.get_neighbor_regions("qinghe", 4).size() >= 3, "平安镇应能计算相邻区域")
+	_check(not _first_portal(local_area, "travel_region").is_empty(), "平安镇应生成相邻区域转场入口")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")

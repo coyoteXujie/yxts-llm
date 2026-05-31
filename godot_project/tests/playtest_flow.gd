@@ -35,6 +35,8 @@ func _run() -> void:
 		_check(main.local_area.current_mode == "region", "进入平安镇后应处于区域模式")
 		_check(main.local_area.npc_nodes.size() >= 8, "平安镇局部地图应有镇民")
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")
+		var travel_portal := _first_portal(main.local_area, "travel_region")
+		_check(not travel_portal.is_empty(), "平安镇应有通往相邻区域的路牌入口")
 
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
@@ -68,6 +70,13 @@ func _run() -> void:
 			main._exit_shop_to_area()
 			await _frames(2)
 			_check(main.local_area.current_mode == "region", "出门后应回到局部区域")
+		if not travel_portal.is_empty():
+			var target_region_id := str(travel_portal.get("target_region_id", ""))
+			main._travel_to_linked_region(travel_portal)
+			await _frames(3)
+			_check(main.active_map == main.local_area, "相邻区域转场后仍应停留在局部地图层")
+			_check(str(main.local_area.current_region.get("id", "")) == target_region_id, "相邻区域转场应切换目标区域")
+			_check(main.local_area.portals.size() >= 2, "目标区域应继续生成入口")
 		main._return_to_world()
 		await _frames(2)
 		_check(main.active_map == main.world_map, "应能从局部地图返回世界地图")
