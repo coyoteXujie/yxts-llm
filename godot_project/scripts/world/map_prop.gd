@@ -4,6 +4,7 @@ class_name MapProp
 var kind := ""
 var tile_size := 48
 var variant := 0
+var prop_texture: Texture2D
 
 func setup(new_kind: String, world_position: Vector2, new_tile_size: int, new_variant: int = 0, z_offset: int = 0, scale_factor: float = 1.0) -> void:
 	kind = new_kind
@@ -12,9 +13,13 @@ func setup(new_kind: String, world_position: Vector2, new_tile_size: int, new_va
 	variant = new_variant
 	scale = Vector2.ONE * scale_factor
 	z_index = int(position.y) + z_offset
+	prop_texture = GameData.load_texture("res://assets/world/props/prop_%s.png" % kind, true)
 	queue_redraw()
 
 func _draw() -> void:
+	if prop_texture != null:
+		_draw_texture_prop()
+		return
 	match kind:
 		"roof":
 			_draw_roof()
@@ -54,6 +59,12 @@ func _draw() -> void:
 			_draw_rock_cluster()
 		"shrine":
 			_draw_shrine()
+
+func _draw_texture_prop() -> void:
+	var draw_scale := float(tile_size) / 96.0
+	var size := Vector2(prop_texture.get_width(), prop_texture.get_height()) * draw_scale
+	var top_left := Vector2(-size.x * 0.5, -size.y + float(tile_size) * 0.24)
+	draw_texture_rect(prop_texture, Rect2(top_left, size), false)
 
 func _draw_roof(base: Color = Color(0.30, 0.12, 0.06), highlight: Color = Color(0.68, 0.36, 0.17), has_sign: bool = false) -> void:
 	var w := float(tile_size)

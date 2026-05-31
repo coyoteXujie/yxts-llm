@@ -33,6 +33,7 @@ func _run() -> void:
 
 	_check(world_map.npc_nodes.size() >= 12 and world_map.npc_nodes.size() <= 32, "世界层 NPC 数量应保持稀疏，当前=%d" % world_map.npc_nodes.size())
 	_check(world_map.prop_nodes.size() > 20, "世界地图应生成 2.5D 遮挡节点")
+	_check(_textured_prop_count(world_map.prop_nodes) > 20, "世界地图 2.5D 道具应加载 PNG 资源")
 	_check(world_map.is_position_walkable(GameState.player_position), "玩家出生点应可通行")
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_WATER)), "世界地图水面应不可通行")
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_BUILDING)), "世界地图建筑应不可通行")
@@ -55,6 +56,7 @@ func _run() -> void:
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
+	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
@@ -135,6 +137,13 @@ func _texture_variant_count(map_node, tile_id: int) -> int:
 	if typeof(variants) == TYPE_ARRAY:
 		return (variants as Array).size()
 	return 0
+
+func _textured_prop_count(nodes: Array) -> int:
+	var count := 0
+	for prop in nodes:
+		if is_instance_valid(prop) and prop.prop_texture != null:
+			count += 1
+	return count
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:
