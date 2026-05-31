@@ -119,13 +119,14 @@ godot_project/
 
 ## 7. 当前美术落地
 
-- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
+- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - `godot_project/assets/world/tiles/` 保存当前大地图实际使用的 48x48 瓦片 PNG。
 - `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
-- `godot_project/assets/characters/generated_map_sprites/` 保存当前大地图实际使用的 99 个统一风格 NPC sprite。
+- `godot_project/assets/characters/reference_map_sprites/` 保存当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype，由参考图抠图后转为透明 PNG。
+- `godot_project/assets/characters/generated_map_sprites/` 保存组件化生成的 99 个 NPC sprite，作为参考级资源未覆盖时的回退资源。
 - `godot_project/assets/characters/npc/portraits/` 保存当前对话面板实际使用的 99 个 NPC 头像。
 - `godot_project/assets/characters/player/` 保存玩家不同门派/性别 sprite。
-- `godot_project/assets/characters/parts/` 保存头部、发型/帽子、服饰、道具等拆件源资源，生成 NPC sprite 时按组件组合。
+- `godot_project/assets/characters/parts/` 保存头部、发型/帽子、服饰、道具等 45 个拆件源资源，生成 NPC sprite 时按组件组合。
 - `godot_project/assets/items/icons/` 保存当前 22 个物品的 64x64 图标，当前已接入背包和商店。
 - `godot_project/assets/skills/icons/` 保存当前 41 个武学的 64x64 图标，当前已接入修炼面板和战斗按钮。
 - `godot_project/assets/ui/` 保存面板、按钮、物品槽、气血/内力条、NPC/任务/目标标记等基础 UI PNG，当前地图标记已接入世界地图面板。

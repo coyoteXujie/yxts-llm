@@ -39,8 +39,8 @@
 - `data/regions.json` 已登记 73 个结构化区域，玩家移动时会识别当前区域并记录探索度；HUD 会显示所在地、探索度和危险等级。
 - M 键可打开世界地图面板，查看已发现区域、探索度、区域说明、区域背景图、NPC 标记、可接任务标记和当前任务目标。
 - HUD 右上角有常驻小地图，显示当前区域、探索进度、玩家位置、任务目标和已标记目的地。
-- `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、29 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
-- 地图现在优先使用 `assets/world/tiles/` 的瓦片 PNG；NPC 和玩家优先使用生成后的透明 PNG sprite，姓名只在靠近/选中时显示，避免标签和角色互相遮挡。
+- `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
+- 地图现在优先使用 `assets/world/tiles/` 的瓦片 PNG；NPC 优先使用 `assets/characters/reference_map_sprites/` 的水墨 Q 版参考级透明 PNG，未覆盖时回退到组件化生成 sprite；姓名只在靠近/选中时显示，避免标签和角色互相遮挡。
 - 对话面板已接入 `assets/characters/npc/portraits/` 的 NPC 头像；背包和商店已接入 `assets/items/icons/` 的物品图标；修炼和战斗面板已接入 `assets/skills/icons/` 的武学图标；世界地图面板已接入 `assets/world/scenes/` 的区域背景和 `assets/ui/` 的地图标记。
 - 切换区域时会出现区域横幅，提示区域类型、危险等级和探索度。
 - 战斗面板会显示敌人头像，并按玩家已学的攻击类武学生成可点击招式按钮。
@@ -63,10 +63,11 @@
 - `data/regions.json`：五城、十六镇、四十五野外、七门派的区域数据。
 - `data/items.json`：物品、药品、武器、防具数据。
 - `data/quests.json`：任务链数据。
-- `assets/characters/generated_map_sprites/`：当前大地图使用的 99 个统一风格 NPC sprite。
+- `assets/characters/reference_map_sprites/`：当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype。
+- `assets/characters/generated_map_sprites/`：组件化生成的 99 个 NPC sprite，作为参考级资源未覆盖时的回退资源。
 - `assets/characters/npc/portraits/`：当前对话面板使用的 99 个 NPC 头像。
 - `assets/characters/player/`：玩家不同性别/门派地图 sprite。
-- `assets/characters/parts/`：头部、服装、道具等拆件 PNG。
+- `assets/characters/parts/`：头部、服装、道具等 45 个拆件 PNG。
 - `assets/items/icons/`：物品图标。
 - `assets/skills/icons/`：武学图标。
 - `assets/world/scenes/`：区域场景背景。

@@ -16,6 +16,7 @@ ASSETS = ROOT / "godot_project" / "assets"
 TILE_DIR = ASSETS / "world" / "tiles"
 SCENE_DIR = ASSETS / "world" / "scenes"
 NPC_DIR = ASSETS / "characters" / "generated_map_sprites"
+REFERENCE_NPC_DIR = ASSETS / "characters" / "reference_map_sprites"
 PORTRAIT_DIR = ASSETS / "characters" / "npc" / "portraits"
 PLAYER_DIR = ASSETS / "characters" / "player"
 PARTS_DIR = ASSETS / "characters" / "parts"
@@ -33,6 +34,7 @@ SCENE_BACKGROUND_MAPPING = DATA / "scene_background_assets.json"
 SCALE = 3
 TILE_SIZE = 48
 CHAR_SIZE = (96, 128)
+REFERENCE_SOURCE_DIR = Path.home() / ".codex" / "generated_images" / "019e76eb-83a3-74b3-ad4b-7abe039a47fd"
 
 
 def color(rgb: tuple[float, float, float] | tuple[float, float, float, float], alpha: int | None = None) -> tuple[int, int, int, int]:
@@ -59,6 +61,19 @@ def darken(c: tuple[int, int, int, int], amount: float) -> tuple[int, int, int, 
 
 def with_alpha(c: tuple[int, int, int, int], alpha: int) -> tuple[int, int, int, int]:
     return (c[0], c[1], c[2], alpha)
+
+
+def mix(
+    a: tuple[int, int, int, int],
+    b: tuple[int, int, int, int],
+    amount: float,
+) -> tuple[int, int, int, int]:
+    return (
+        round(a[0] + (b[0] - a[0]) * amount),
+        round(a[1] + (b[1] - a[1]) * amount),
+        round(a[2] + (b[2] - a[2]) * amount),
+        round(a[3] + (b[3] - a[3]) * amount),
+    )
 
 
 class Painter:
@@ -312,6 +327,82 @@ NAME_PRESETS = {
 }
 
 
+REFERENCE_SHEETS = [
+    {
+        "file": "ig_0a2a7eac8ca883c9016a1aad6ba638819183ba560594353208.png",
+        "cols": 4,
+        "rows": 2,
+        "names": ["innkeeper_ref", "waiter_ref", "tofu_seller_ref", "scholar_ref", "constable_ref", "elder_ref", "monk_ref", "blacksmith_ref"],
+    },
+    {
+        "file": "ig_0146fdb1cc9a2df8016a1acea199f081918733b442624afdf6.png",
+        "cols": 4,
+        "rows": 3,
+        "names": [
+            "honglian_master_ref", "honglian_elder_ref", "honglian_staff_ref", "honglian_swordswoman_ref",
+            "naja_hat_ref", "naja_dual_ref", "naja_lady_ref", "wanderer_ref",
+            "bagua_blade_ref", "bagua_master_ref", "flower_swordswoman_ref", "assassin_flower_ref",
+        ],
+    },
+    {
+        "file": "ig_0146fdb1cc9a2df8016a1acf4704788191b9dd7669105b0bc2.png",
+        "cols": 4,
+        "rows": 3,
+        "names": [
+            "taiji_elder_ref", "taiji_disciple_ref", "taiji_herb_ref", "taiji_scholar_ref",
+            "xueshan_staff_ref", "xueshan_swordswoman_ref", "xueshan_blade_ref", "xueshan_lady_ref",
+            "xueshan_girl_ref", "bandit_axe_ref", "naja_assassin_ref", "boss_monk_ref",
+        ],
+    },
+    {
+        "file": "ig_0a2a7eac8ca883c9016a1aae02416081918d1ae0d5530b21d2.png",
+        "cols": 5,
+        "rows": 1,
+        "names": ["bagua_grandmaster_ref", "flower_master_ref", "taiji_master_ref", "xueshan_master_ref", "xiaoyao_hero_ref"],
+    },
+    {
+        "file": "ig_0a2a7eac8ca883c9016a1aae43425481918ebe396dd2f0caf2.png",
+        "cols": 4,
+        "rows": 1,
+        "names": ["thug_ref", "bandit_ref", "assassin_ref", "boss_ref"],
+    },
+]
+
+REFERENCE_NPC_ASSIGNMENTS = {
+    "平阿四": "innkeeper_ref", "店小二": "waiter_ref", "阎商": "innkeeper_ref", "葛朗台": "innkeeper_ref",
+    "阿青": "tofu_seller_ref", "厨师": "waiter_ref", "屠夫": "bandit_axe_ref", "卖花女": "tofu_seller_ref",
+    "小商贩": "innkeeper_ref", "平一指": "scholar_ref", "何铁手": "naja_lady_ref", "何喜": "wanderer_ref",
+    "小裁缝": "waiter_ref", "何裁缝": "waiter_ref", "捕快": "constable_ref", "巡捕": "constable_ref",
+    "衙役": "constable_ref", "老夫子": "scholar_ref", "村长": "elder_ref", "老婆婆": "elder_ref",
+    "妇人": "tofu_seller_ref", "公子哥": "scholar_ref", "书童": "taiji_herb_ref", "小童": "taiji_herb_ref",
+    "过路人": "wanderer_ref", "茅十七": "wanderer_ref", "道德和尚": "monk_ref", "大侠": "xiaoyao_hero_ref",
+    "李白": "xiaoyao_hero_ref", "铁匠": "blacksmith_ref",
+    "韦扬": "bagua_grandmaster_ref", "简明": "bagua_master_ref", "简杰": "bagua_blade_ref", "简英": "bagua_blade_ref",
+    "鲍振": "bagua_blade_ref", "武师教头": "bagua_blade_ref", "护院武师": "bagua_blade_ref", "春花娘": "tofu_seller_ref",
+    "清照": "flower_master_ref", "红拂女": "flower_swordswoman_ref", "公孙大娘": "flower_swordswoman_ref",
+    "青红": "flower_swordswoman_ref", "绿珠": "flower_master_ref", "雪涛": "flower_swordswoman_ref",
+    "隐娘": "assassin_flower_ref", "王辞": "scholar_ref",
+    "于红儒": "honglian_elder_ref", "方长老": "honglian_elder_ref", "韩长老": "honglian_elder_ref",
+    "楚红灯": "honglian_swordswoman_ref", "崇儿": "honglian_staff_ref", "唐四儿": "honglian_staff_ref",
+    "白衣教众": "honglian_staff_ref", "红衣教众": "honglian_master_ref",
+    "钟央": "naja_assassin_ref", "十三卫": "naja_hat_ref", "美奈子": "naja_lady_ref", "藤王": "naja_dual_ref",
+    "游敬": "naja_hat_ref", "天井": "naja_dual_ref", "孙三": "naja_assassin_ref", "浪人甲": "wanderer_ref",
+    "清虚道人": "taiji_master_ref", "古松道人": "taiji_elder_ref", "仓月道人": "taiji_disciple_ref",
+    "采药道人": "taiji_herb_ref", "知客道人": "taiji_scholar_ref", "迎客道童": "taiji_herb_ref",
+    "明月": "taiji_disciple_ref", "清风": "taiji_disciple_ref",
+    "白瑞德": "xueshan_blade_ref", "史婆婆": "xueshan_staff_ref", "万剑": "xueshan_swordswoman_ref",
+    "万刃": "xueshan_blade_ref", "万重": "xueshan_blade_ref", "万一": "xueshan_girl_ref",
+    "阿秀": "xueshan_lady_ref", "雪千柔": "xueshan_swordswoman_ref",
+    "流氓": "thug_ref", "流氓头": "bandit_ref", "独角大盗": "bandit_axe_ref", "采花大盗": "assassin_ref",
+    "黑衣大盗": "assassin_ref", "土匪甲": "thug_ref", "土匪头目": "bandit_ref", "雪豹": "xueshan_girl_ref",
+    "神秘人": "boss_ref", "绣花女": "assassin_flower_ref", "魔化和尚": "boss_monk_ref",
+    "苏梦瑶": "flower_master_ref", "陈天行": "xiaoyao_hero_ref", "赵无极": "constable_ref",
+    "玄机子": "bagua_grandmaster_ref", "花如玉": "flower_master_ref", "烈火": "honglian_master_ref",
+    "蛇王": "naja_assassin_ref", "太极真人": "taiji_master_ref", "冰魄": "xueshan_master_ref",
+    "逍遥子": "xiaoyao_hero_ref",
+}
+
+
 def preset_for_npc(npc: dict) -> tuple[str, str, str, str, str, str, str, tuple[float, float, float], tuple[float, float, float], tuple[float, float, float]]:
     name = str(npc.get("name", ""))
     key = NAME_PRESETS.get(name)
@@ -433,6 +524,7 @@ def draw_outfit(p: Painter, outfit: str, build: str, primary, secondary, accent)
             p.polygon([(48 - half_bottom, bottom - 7), (48, bottom + 7), (48 + half_bottom, bottom - 7), (56, bottom + 10), (40, bottom + 10)], lighten(primary, 0.05), None)
         if outfit == "fur_robe":
             p.line([(34, 51), (62, 51)], color((0.96, 0.98, 1.0), 170), 5)
+    draw_outfit_detail(p, outfit, build, primary, secondary, accent, top, bottom, half_top, half_bottom)
     arm_y = 60
     p.line([(48 - half_top + 1, arm_y), (27, 77)], darken(primary, 0.08), 5)
     p.line([(48 + half_top - 1, arm_y), (69, 76)], darken(primary, 0.10), 5)
@@ -440,6 +532,53 @@ def draw_outfit(p: Painter, outfit: str, build: str, primary, secondary, accent)
     p.ellipse((67, 73, 73, 80), color((0.84, 0.68, 0.52), 230))
     p.line([(40, bottom - 2), (37, 113)], ink, 3)
     p.line([(56, bottom - 2), (59, 113)], ink, 3)
+
+
+def draw_outfit_detail(p: Painter, outfit: str, build: str, primary, secondary, accent, top: int, bottom: int, half_top: float, half_bottom: float) -> None:
+    ink = color((0.07, 0.06, 0.05), 150)
+    wash = with_alpha(lighten(primary, 0.26), 48)
+    shade = with_alpha(darken(primary, 0.28), 70)
+    p.line([(48 - half_top + 5, top + 5), (48 + half_top - 6, top + 1)], wash, 1.1)
+    p.line([(48 - half_bottom + 2, bottom - 13), (48 + half_bottom - 3, bottom - 18)], shade, 1.1)
+    if outfit in {"merchant_robe", "short_robe"}:
+        p.rect((35, 61, 61, 82), with_alpha(lighten(secondary, 0.16), 125), ink, 1)
+        p.line([(38, 66), (58, 66)], with_alpha(accent, 160), 1.2)
+        p.line([(39, 74), (57, 74)], with_alpha(darken(accent, 0.16), 135), 1.0)
+    elif outfit in {"scholar_robe", "elder_robe"}:
+        p.line([(39, 54), (35, bottom - 3)], with_alpha(lighten(secondary, 0.16), 120), 1.5)
+        p.line([(57, 54), (61, bottom - 5)], with_alpha(lighten(secondary, 0.10), 90), 1.5)
+        for y in (62, 72, 82):
+            p.line([(42, y), (54, y - 2)], with_alpha(accent, 85), 0.9)
+        if outfit == "elder_robe":
+            p.rect((54, 82, 63, 92), with_alpha(darken(secondary, 0.20), 135), ink, 1)
+    elif outfit in {"plain_hanfu", "flowing_hanfu"}:
+        p.polygon([(29, 72), (39, 76), (31, 94), (22, 91)], with_alpha(lighten(primary, 0.12), 120), ink)
+        p.polygon([(67, 72), (57, 76), (65, 94), (74, 91)], with_alpha(lighten(primary, 0.10), 110), ink)
+        p.line([(37, 58), (59, 90)], with_alpha(accent, 160), 1.6)
+        if outfit == "flowing_hanfu":
+            p.arc((30, 76, 66, 118), 205, 336, with_alpha(accent, 90), 1.5)
+    elif outfit in {"hero_robe", "sect_robe", "daoist_robe"}:
+        p.line([(34, 55), (48, 48), (62, 55)], with_alpha(accent, 170), 1.8)
+        p.line([(40, 60), (40, bottom - 8)], with_alpha(lighten(secondary, 0.12), 105), 1.0)
+        p.line([(56, 60), (56, bottom - 8)], with_alpha(darken(secondary, 0.08), 105), 1.0)
+        if outfit == "sect_robe":
+            p.rect((36, 78, 60, 84), with_alpha(darken(accent, 0.14), 160), ink, 1)
+        if outfit == "daoist_robe":
+            p.arc((39, 62, 57, 82), 90, 270, with_alpha(accent, 135), 1.4)
+    elif outfit == "monk_robe":
+        p.polygon([(34, 51), (62, 51), (56, 75), (40, 92)], with_alpha(lighten(primary, 0.10), 135), ink)
+        p.line([(39, 55), (61, 84)], with_alpha(accent, 150), 1.5)
+    elif outfit in {"work_apron", "smith_apron"}:
+        for y in (65, 76, 87):
+            p.line([(36, y), (60, y - 2)], with_alpha(darken(secondary, 0.24), 90), 1.0)
+        if outfit == "smith_apron":
+            p.rect((39, 82, 57, 93), with_alpha(color((0.12, 0.11, 0.10), 1), 110), ink, 1)
+    elif outfit in {"leather", "ragged", "dark_armor", "night_suit", "official_uniform"}:
+        for y in (61, 71, 81):
+            p.line([(35, y), (61, y + 1)], with_alpha(accent, 95), 1.0)
+        if outfit == "ragged":
+            p.line([(37, bottom - 9), (31, bottom + 3)], ink, 1.2)
+            p.line([(59, bottom - 8), (66, bottom + 2)], ink, 1.2)
 
 
 def draw_head(p: Painter, head: str, hair: str, hat: str, primary, secondary, accent) -> None:
@@ -464,6 +603,11 @@ def draw_head(p: Painter, head: str, hair: str, hat: str, primary, secondary, ac
     if hair in {"long_tail", "wild", "messy"}:
         p.line([(39, 36), (32, 63)], ink, 3)
         p.line([(57, 36), (64, 62)], ink, 3)
+    if hair == "sideburns":
+        p.line([(39, 33), (34, 48)], ink, 3)
+        p.line([(57, 33), (62, 48)], ink, 3)
+    if hair == "short":
+        p.arc((37, 23, 59, 40), 188, 352, ink, 3)
     if hair in {"beard", "white_beard"}:
         beard = color((0.88, 0.86, 0.78), 220) if hair == "white_beard" else ink
         p.polygon([(42, 46), (54, 46), (48, 62)], beard)
@@ -493,14 +637,27 @@ def draw_head(p: Painter, head: str, hair: str, hat: str, primary, secondary, ac
         p.ellipse((44, 13, 52, 21), darken(secondary, 0.04), ink, 1)
     elif hat == "dark_crown":
         p.polygon([(36, 26), (42, 15), (48, 26), (54, 15), (60, 26)], darken(primary, 0.25), ink)
+    elif hat == "headband":
+        p.line([(36, 30), (60, 28)], accent, 3)
+        p.line([(58, 28), (66, 34)], darken(accent, 0.12), 2)
+    elif hat == "bandit_wrap":
+        p.arc((35, 18, 61, 38), 180, 360, darken(secondary, 0.18), 5)
+        p.line([(36, 31), (60, 28)], accent, 2.3)
+        p.polygon([(58, 28), (66, 33), (61, 36)], darken(accent, 0.15), ink)
+    elif hat == "monk_dots":
+        for x in (43, 48, 53):
+            p.ellipse((x - 0.9, 32, x + 0.9, 34), color((0.30, 0.16, 0.08), 180))
     elif hat == "flower_pin":
         for angle in range(0, 360, 72):
             rad = math.radians(angle)
             cx = 59 + math.cos(rad) * 3
             cy = 25 + math.sin(rad) * 3
             p.ellipse((cx - 2, cy - 2, cx + 2, cy + 2), lighten(accent, 0.18))
+    p.line([(42, 35), (46, 34)], with_alpha(ink, 130), 0.8)
+    p.line([(50, 34), (54, 35)], with_alpha(ink, 130), 0.8)
     p.ellipse((43, 36, 45, 38), ink)
     p.ellipse((51, 36, 53, 38), ink)
+    p.line([(48, 38), (47, 41)], color((0.45, 0.26, 0.18), 90), 0.8)
     p.line([(45, 44), (52, 44)], color((0.26, 0.12, 0.10), 150), 1)
 
 
@@ -551,6 +708,7 @@ def draw_character(preset, path: Path, variant_seed: int = 0) -> None:
         tint = ((variant_seed * 17) % 9 - 4) / 100.0
         primary = lighten(primary, tint) if tint > 0 else darken(primary, -tint)
     image, p = new_canvas(CHAR_SIZE)
+    p.ellipse((26, 106, 70, 121), color((0.02, 0.018, 0.014), 28))
     if build in {"master", "boss"}:
         p.ellipse((21, 30, 75, 116), with_alpha(accent, 28))
     if motif == "snow":
@@ -560,11 +718,96 @@ def draw_character(preset, path: Path, variant_seed: int = 0) -> None:
     draw_head(p, head, hair, hat, primary, secondary, accent)
     draw_prop(p, prop, primary, secondary, accent, front=True)
     draw_motif(p, motif, accent, primary)
+    p.arc((21, 24, 75, 116), 210, 330, with_alpha(lighten(accent, 0.20), 45), 1.4)
     save_canvas(image, path, CHAR_SIZE)
+
+
+def is_green_screen_pixel(r: int, g: int, b: int) -> bool:
+    return g > 130 and g - max(r, b) > 42
+
+
+def remove_green_background(image: Image.Image) -> Image.Image:
+    image = image.convert("RGBA")
+    pixels = image.load()
+    width, height = image.size
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = pixels[x, y]
+            if is_green_screen_pixel(r, g, b):
+                pixels[x, y] = (r, g, b, 0)
+            elif g > 90 and g - max(r, b) > 22:
+                alpha = max(0, min(a, 255 - int((g - max(r, b)) * 3.0)))
+                pixels[x, y] = (r, max(0, g - 38), b, alpha)
+    return image
+
+
+def trim_transparent(image: Image.Image, padding: int = 10) -> Image.Image:
+    alpha = image.getchannel("A")
+    bbox = alpha.getbbox()
+    if bbox is None:
+        return image
+    left = max(0, bbox[0] - padding)
+    top = max(0, bbox[1] - padding)
+    right = min(image.width, bbox[2] + padding)
+    bottom = min(image.height, bbox[3] + padding)
+    return image.crop((left, top, right, bottom))
+
+
+def normalize_reference_sprite(image: Image.Image, target: tuple[int, int] = (144, 168)) -> Image.Image:
+    image = trim_transparent(remove_green_background(image), 12)
+    canvas = Image.new("RGBA", target, (0, 0, 0, 0))
+    scale = min((target[0] - 10) / max(image.width, 1), (target[1] - 8) / max(image.height, 1))
+    size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+    resized = image.resize(size, Image.Resampling.LANCZOS)
+    x = (target[0] - size[0]) // 2
+    y = target[1] - size[1] - 2
+    canvas.alpha_composite(resized, (x, y))
+    return canvas
+
+
+def existing_reference_npc_sprites() -> dict[str, str]:
+    return {
+        path.stem: "res://" + str(path.relative_to(ROOT / "godot_project"))
+        for path in REFERENCE_NPC_DIR.glob("*.png")
+    }
+
+
+def generate_reference_npc_sprites() -> dict[str, str]:
+    result: dict[str, str] = existing_reference_npc_sprites()
+    if not REFERENCE_SOURCE_DIR.exists():
+        return result
+    for sheet in REFERENCE_SHEETS:
+        source = REFERENCE_SOURCE_DIR / str(sheet["file"])
+        if not source.exists():
+            continue
+        image = Image.open(source).convert("RGB")
+        cols = int(sheet["cols"])
+        rows = int(sheet["rows"])
+        names = list(sheet["names"])
+        cell_w = image.width / cols
+        cell_h = image.height / rows
+        for index, name in enumerate(names):
+            col = index % cols
+            row = index // cols
+            if row >= rows:
+                continue
+            crop = image.crop((
+                round(col * cell_w),
+                round(row * cell_h),
+                round((col + 1) * cell_w),
+                round((row + 1) * cell_h),
+            ))
+            sprite = normalize_reference_sprite(crop)
+            path = REFERENCE_NPC_DIR / f"{name}.png"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            sprite.save(path)
+            result[name] = "res://" + str(path.relative_to(ROOT / "godot_project"))
+    return result
 
 
 def generate_npc_sprites() -> dict[str, str]:
     npcs = json.loads((DATA / "npcs.json").read_text(encoding="utf-8"))
+    reference_sprites = generate_reference_npc_sprites()
     mapping: dict[str, str] = {}
     for npc in npcs:
         npc_id = int(npc.get("id", 0))
@@ -572,7 +815,11 @@ def generate_npc_sprites() -> dict[str, str]:
         filename = f"npc_{npc_id:03d}.png"
         path = NPC_DIR / filename
         draw_character(preset_for_npc(npc), path, npc_id)
-        mapping[name] = "res://" + str(path.relative_to(ROOT / "godot_project"))
+        reference_key = REFERENCE_NPC_ASSIGNMENTS.get(name)
+        if reference_key is not None and reference_key in reference_sprites:
+            mapping[name] = reference_sprites[reference_key]
+        else:
+            mapping[name] = "res://" + str(path.relative_to(ROOT / "godot_project"))
     NPC_SPRITE_MAPPING.write_text(json.dumps(mapping, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return mapping
 
@@ -627,6 +874,7 @@ def draw_portrait_character(p: Painter, preset, variant_seed: int = 0) -> None:
     p.line([(67, 130), (124, 182)], accent, 3)
     p.line([(124, 129), (73, 181)], darken(secondary, 0.08), 2)
     p.rect((52, 154, 140, 162), darken(accent, 0.22))
+    draw_portrait_outfit_detail(p, outfit, primary, secondary, accent)
     if outfit in {"official_uniform", "dark_armor", "night_suit"}:
         p.rect((74, 134, 118, 164), darken(secondary, 0.10), ink)
     if outfit == "fur_robe":
@@ -639,6 +887,11 @@ def draw_portrait_character(p: Painter, preset, variant_seed: int = 0) -> None:
         if hair in {"long_tail", "wild", "messy"}:
             p.line([(67, 76), (45, 147)], ink, 7)
             p.line([(125, 76), (147, 147)], ink, 7)
+        if hair == "sideburns":
+            p.line([(66, 65), (55, 109)], ink, 7)
+            p.line([(126, 65), (137, 109)], ink, 7)
+        if hair == "short":
+            p.arc((62, 36, 130, 88), 188, 352, ink, 7)
         p.arc((62, 26, 130, 92), 180, 360, ink, 9)
     face_box = (66, 43, 126, 108)
     if head == "long":
@@ -675,6 +928,16 @@ def draw_portrait_character(p: Painter, preset, variant_seed: int = 0) -> None:
         p.ellipse((82, 10, 110, 36), darken(secondary, 0.03), ink, 2)
     elif hat == "dark_crown":
         p.polygon([(58, 49), (75, 17), (96, 47), (117, 17), (134, 49)], darken(primary, 0.26), ink)
+    elif hat == "headband":
+        p.line([(62, 56), (130, 51)], accent, 6)
+        p.line([(126, 51), (148, 68)], darken(accent, 0.12), 4)
+    elif hat == "bandit_wrap":
+        p.arc((58, 25, 134, 75), 180, 360, darken(secondary, 0.18), 12)
+        p.line([(61, 58), (131, 52)], accent, 5)
+        p.polygon([(129, 52), (151, 69), (136, 77)], darken(accent, 0.16), ink)
+    elif hat == "monk_dots":
+        for x in (84, 96, 108):
+            p.ellipse((x - 2, 60, x + 2, 64), color((0.30, 0.16, 0.08), 190))
     elif hat == "flower_pin":
         for angle in range(0, 360, 72):
             rad = math.radians(angle)
@@ -683,8 +946,11 @@ def draw_portrait_character(p: Painter, preset, variant_seed: int = 0) -> None:
             p.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), lighten(accent, 0.18), ink)
     if hat == "face_mask":
         p.rect((63, 82, 129, 105), darken(primary, 0.16))
+    p.line([(78, 67), (89, 64)], with_alpha(ink, 140), 2)
+    p.line([(103, 64), (114, 67)], with_alpha(ink, 140), 2)
     p.ellipse((80, 72, 86, 78), ink)
     p.ellipse((106, 72, 112, 78), ink)
+    p.line([(96, 77), (93, 87)], color((0.45, 0.26, 0.18), 100), 1.5)
     p.line([(84, 95), (108, 95)], color((0.24, 0.10, 0.08), 150), 2)
     if motif in {"flower", "lotus"}:
         for angle in range(0, 360, 72):
@@ -705,6 +971,38 @@ def draw_portrait_character(p: Painter, preset, variant_seed: int = 0) -> None:
             p.line([(96 - math.cos(rad) * 16, 146 - math.sin(rad) * 16), (96 + math.cos(rad) * 16, 146 + math.sin(rad) * 16)], accent, 2)
     elif motif == "badge":
         p.rect((84, 134, 108, 158), accent, ink, 2)
+
+
+def draw_portrait_outfit_detail(p: Painter, outfit: str, primary, secondary, accent) -> None:
+    ink = color((0.055, 0.045, 0.035), 150)
+    p.line([(58, 124), (134, 116)], with_alpha(lighten(primary, 0.30), 52), 2)
+    p.line([(39, 184), (153, 174)], with_alpha(darken(primary, 0.30), 68), 2)
+    if outfit in {"merchant_robe", "short_robe"}:
+        p.rect((70, 132, 122, 169), with_alpha(lighten(secondary, 0.18), 120), ink, 2)
+        p.line([(75, 142), (117, 142)], with_alpha(accent, 160), 2)
+        p.line([(76, 156), (116, 156)], with_alpha(darken(accent, 0.16), 145), 2)
+    elif outfit in {"scholar_robe", "elder_robe"}:
+        p.line([(73, 124), (59, 185)], with_alpha(lighten(secondary, 0.16), 130), 3)
+        p.line([(119, 124), (133, 185)], with_alpha(lighten(secondary, 0.10), 110), 3)
+        for y in (136, 150, 164):
+            p.line([(80, y), (112, y - 4)], with_alpha(accent, 92), 1.5)
+    elif outfit in {"plain_hanfu", "flowing_hanfu"}:
+        p.line([(62, 130), (132, 180)], with_alpha(accent, 150), 3)
+        p.arc((55, 142, 137, 209), 200, 340, with_alpha(accent, 95), 3)
+    elif outfit in {"hero_robe", "sect_robe", "daoist_robe"}:
+        p.line([(55, 128), (96, 112), (137, 128)], with_alpha(accent, 170), 3)
+        p.line([(74, 132), (72, 188)], with_alpha(lighten(secondary, 0.14), 110), 2)
+        p.line([(118, 132), (120, 188)], with_alpha(darken(secondary, 0.08), 110), 2)
+        if outfit == "sect_robe":
+            p.rect((70, 162, 122, 174), with_alpha(darken(accent, 0.12), 150), ink, 2)
+    elif outfit == "monk_robe":
+        p.polygon([(56, 123), (138, 121), (123, 170), (74, 190)], with_alpha(lighten(primary, 0.10), 135), ink)
+    elif outfit in {"work_apron", "smith_apron"}:
+        for y in (136, 152, 168):
+            p.line([(71, y), (121, y - 3)], with_alpha(darken(secondary, 0.25), 95), 2)
+    elif outfit in {"leather", "ragged", "dark_armor", "night_suit", "official_uniform"}:
+        for y in (134, 151, 168):
+            p.line([(64, y), (128, y + 2)], with_alpha(accent, 95), 2)
 
 
 def generate_player_sprites() -> dict[str, str]:
@@ -772,16 +1070,21 @@ def generate_parts() -> dict[str, dict[str, str]]:
         "heads": [
             ("head_town", "default"), ("head_scholar", "scholar"), ("head_constable", "constable"), ("head_monk", "monk"),
             ("head_flower", "flower_disciple"), ("head_masked", "naja_disciple"), ("head_snow", "xueshan_disciple"),
+            ("head_merchant", "innkeeper"), ("head_elder", "elder"), ("head_doctor", "doctor"), ("head_bandit", "bandit"),
+            ("head_taiji", "taiji_master"), ("head_child", "child"),
         ],
         "outfits": [
             ("robe_town", "default"), ("robe_merchant", "innkeeper"), ("robe_scholar", "scholar"), ("uniform_constable", "constable"),
             ("robe_monk", "monk"), ("robe_bagua", "bagua_disciple"), ("robe_flower", "flower_disciple"), ("robe_honglian", "honglian_disciple"),
             ("robe_naja", "naja_disciple"), ("robe_taiji", "taiji_disciple"), ("robe_xueshan", "xueshan_disciple"), ("robe_hero", "wandering_hero"),
+            ("robe_elder", "elder"), ("robe_doctor", "doctor"), ("robe_tailor", "tailor"), ("robe_blacksmith", "blacksmith"),
+            ("robe_bandit", "bandit"), ("robe_assassin", "assassin"),
         ],
         "props": [
             ("prop_sword", "wandering_hero"), ("prop_blade", "bagua_disciple"), ("prop_fan", "flower_disciple"), ("prop_dagger", "naja_disciple"),
             ("prop_whisk", "taiji_disciple"), ("prop_staff", "elder"), ("prop_abacus", "innkeeper"), ("prop_basket", "tofu_seller"),
             ("prop_scroll", "scholar"), ("prop_hammer", "blacksmith"),
+            ("prop_towel", "waiter"), ("prop_beads", "monk"), ("prop_knife", "butcher"), ("prop_great_blade", "honglian_master"),
         ],
     }
     result: dict[str, dict[str, str]] = {}
@@ -1120,6 +1423,7 @@ def main() -> None:
     TILE_DIR.mkdir(parents=True, exist_ok=True)
     SCENE_DIR.mkdir(parents=True, exist_ok=True)
     NPC_DIR.mkdir(parents=True, exist_ok=True)
+    REFERENCE_NPC_DIR.mkdir(parents=True, exist_ok=True)
     PORTRAIT_DIR.mkdir(parents=True, exist_ok=True)
     PLAYER_DIR.mkdir(parents=True, exist_ok=True)
     PARTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -1139,9 +1443,13 @@ def main() -> None:
     previews = generate_previews(tiles, npcs, players, portraits, item_icons, skill_icons, scenes)
     manifest = {
         "generated_by": "tools/generate_godot_art_assets.py",
-        "style": "2D ink-wash wuxia, deterministic component sprites",
+        "style": "2D ink-wash wuxia, reference-assisted component sprites",
         "tiles": tiles,
         "npc_map_sprites": npcs,
+        "reference_npc_archetypes": {
+            key: "res://" + str(path.relative_to(ROOT / "godot_project"))
+            for key, path in sorted((p.stem, p) for p in REFERENCE_NPC_DIR.glob("*.png"))
+        },
         "npc_portraits": portraits,
         "player_map_sprites": players,
         "character_parts": parts,
@@ -1153,6 +1461,7 @@ def main() -> None:
         "counts": {
             "tiles": len(tiles),
             "npc_map_sprites": len(npcs),
+            "reference_npc_archetypes": len(list(REFERENCE_NPC_DIR.glob("*.png"))),
             "npc_portraits": len(portraits),
             "player_map_sprites": len(players),
             "parts": sum(len(v) for v in parts.values()),

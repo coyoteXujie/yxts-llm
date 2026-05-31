@@ -54,7 +54,7 @@ func _ensure_label() -> void:
 	name_label.text = str(data.get("name", "NPC"))
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(-58, -68)
+	name_label.position = Vector2(-58, -78)
 	name_label.size = Vector2(116, 22)
 	name_label.add_theme_font_size_override("font_size", 13)
 	name_label.add_theme_color_override("font_color", Color(0.95, 0.89, 0.76))
@@ -97,17 +97,17 @@ func _refresh_sprite_asset() -> void:
 		add_child(sprite_node)
 	sprite_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()
-	var target_height := 58.0
-	var target_width := 50.0
+	var target_height := 74.0
+	var target_width := 66.0
 	if is_master():
-		target_height = 64.0
-		target_width = 56.0
+		target_height = 82.0
+		target_width = 72.0
 	if is_enemy():
-		target_height = 62.0
-		target_width = 54.0
+		target_height = 80.0
+		target_width = 70.0
 	if str(data.get("name", "")) == "神秘人":
-		target_height = 66.0
-		target_width = 58.0
+		target_height = 86.0
+		target_width = 76.0
 	var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
 	sprite_node.scale = Vector2.ONE * factor
 	sprite_node.position = Vector2(0, -7)
