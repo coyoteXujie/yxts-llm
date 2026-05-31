@@ -12,6 +12,7 @@ var sprite_texture: Texture2D
 var sprite_key := ""
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	z_index = int(position.y)
 	if not EventBus.player_changed.is_connected(_on_player_changed):
 		EventBus.player_changed.connect(_on_player_changed)
@@ -157,9 +158,9 @@ func _refresh_sprite_texture(force: bool = false) -> void:
 		return
 	sprite_key = key
 	var path := "res://assets/characters/player/player_%s_%s.png" % [gender, faction]
-	sprite_texture = GameData.load_texture(path)
+	sprite_texture = GameData.load_texture(path, true)
 	if sprite_texture == null:
-		sprite_texture = GameData.load_texture("res://assets/characters/player/player_male_none.png")
+		sprite_texture = GameData.load_texture("res://assets/characters/player/player_male_none.png", true)
 
 func _draw_shadow(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

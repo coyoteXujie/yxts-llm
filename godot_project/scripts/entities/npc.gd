@@ -89,7 +89,7 @@ func _refresh_sprite_asset() -> void:
 	if sprite_path.is_empty():
 		_clear_sprite_asset()
 		return
-	var texture := GameData.load_texture(sprite_path)
+	var texture := GameData.load_texture(sprite_path, true)
 	if texture == null:
 		_clear_sprite_asset()
 		return
@@ -97,6 +97,7 @@ func _refresh_sprite_asset() -> void:
 		sprite_node = Sprite2D.new()
 		sprite_node.centered = true
 		sprite_node.z_index = 2
+		sprite_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		add_child(sprite_node)
 	sprite_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()

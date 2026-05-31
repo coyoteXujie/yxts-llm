@@ -903,16 +903,19 @@ func get_skill_icon_path(skill_id: String) -> String:
 func get_scene_background_path(region_id: String) -> String:
 	return str(scene_background_assets.get(region_id, ""))
 
-func load_texture(path: String) -> Texture2D:
+func load_texture(path: String, use_mipmaps: bool = false) -> Texture2D:
 	if path.is_empty():
 		return null
-	if texture_cache.has(path):
-		return texture_cache[path]
+	var cache_key := "%s#mipmap" % path if use_mipmaps else path
+	if texture_cache.has(cache_key):
+		return texture_cache[cache_key]
 	var image := Image.new()
 	if image.load(path) != OK:
 		return null
+	if use_mipmaps and not image.has_mipmaps():
+		image.generate_mipmaps()
 	var texture := ImageTexture.create_from_image(image)
-	texture_cache[path] = texture
+	texture_cache[cache_key] = texture
 	return texture
 
 func get_faction_skills(faction_id: String) -> Array:
