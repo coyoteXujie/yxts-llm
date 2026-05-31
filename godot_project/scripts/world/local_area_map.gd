@@ -320,6 +320,7 @@ func _generate_city_region() -> void:
 	_paint_line([Vector2i(8, map_height / 2), Vector2i(map_width - 9, map_height / 2)], Tile.ROAD, 2)
 	_paint_line([Vector2i(map_width / 2, 8), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 2)
 	_paint_line([Vector2i(14, 14), Vector2i(map_width - 14, map_height - 14)], Tile.ROAD, 1)
+	_paint_city_street_grid(profile)
 	_fill_rect(Rect2i(11, 10, 14, 8), Tile.GARDEN)
 	_fill_rect(Rect2i(map_width - 27, 10, 16, 9), Tile.GARDEN if bool(profile.get("garden_city", false)) else Tile.BUILDING)
 	_fill_rect(Rect2i(12, map_height - 20, 14, 8), Tile.BUILDING)
@@ -327,16 +328,53 @@ func _generate_city_region() -> void:
 	_place_shops(_shop_plan_for_region())
 	_apply_city_identity(profile)
 
+func _paint_city_street_grid(profile: Dictionary) -> void:
+	for y in range(14, map_height - 12, 9):
+		var offset := 1 if int(y / 9) % 2 == 0 else -2
+		_paint_line([Vector2i(10, y), Vector2i(map_width / 2 - 7, y + offset), Vector2i(map_width - 11, y)], Tile.ROAD, 1)
+	for x in range(17, map_width - 13, 13):
+		var offset := 2 if int(x / 13) % 2 == 0 else -1
+		_paint_line([Vector2i(x, 9), Vector2i(x + offset, map_height / 2 - 4), Vector2i(x, map_height - 9)], Tile.ROAD, 1)
+	var district_tiles := [Tile.BUILDING, Tile.SHOP, Tile.GARDEN if bool(profile.get("garden_city", false)) else Tile.BUILDING]
+	for index in range(6):
+		var x := 11 + (index % 3) * 21
+		var y := 11 + int(index / 3) * (map_height - 25)
+		var tile_id: int = district_tiles[index % district_tiles.size()]
+		_fill_rect(Rect2i(clampi(x, 10, map_width - 18), clampi(y, 10, map_height - 15), 9 + index % 2 * 3, 5), tile_id)
+		_fill_rect(Rect2i(clampi(x + 2, 11, map_width - 16), clampi(y + 5, 12, map_height - 10), 4, 2), Tile.ROAD)
+
 func _generate_town_region() -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_id := str(current_region.get("id", ""))
 	_reset_tiles(Tile.FIELD)
 	_fill_rect(Rect2i(4, 5, map_width - 8, map_height - 10), Tile.GRASS)
 	_paint_line([Vector2i(4, map_height / 2), Vector2i(map_width - 5, map_height / 2)], Tile.ROAD, 2)
 	_paint_line([Vector2i(map_width / 2, 7), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 1)
+	_paint_line([Vector2i(8, map_height - 9), Vector2i(map_width / 2 - 8, map_height / 2 + 3), Vector2i(map_width - 8, 10)], Tile.ROAD, 1)
+	_fill_rect(Rect2i(map_width / 2 - 5, map_height / 2 - 3, 10, 6), Tile.ROAD)
 	_fill_rect(Rect2i(7, 8, 12, 7), Tile.BUILDING)
 	_fill_rect(Rect2i(map_width - 19, 8, 12, 7), Tile.BUILDING)
 	_fill_rect(Rect2i(8, map_height - 16, 14, 7), Tile.FIELD)
+	_paint_town_hamlet_details(region_id, terrain)
 	_place_shops(_shop_plan_for_region())
 	_apply_town_identity()
+
+func _paint_town_hamlet_details(region_id: String, terrain: String) -> void:
+	for index in range(4):
+		var x := 8 + (index % 2) * (map_width - 24)
+		var y := 8 + int(index / 2) * (map_height - 22)
+		_fill_rect(Rect2i(x, y, 7, 4), Tile.BUILDING)
+		_fill_rect(Rect2i(x + 2, y + 4, 3, 2), Tile.ROAD)
+	if region_id == "qinghe" or terrain.contains("starter"):
+		_fill_rect(Rect2i(9, map_height / 2 + 6, 8, 5), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width - 18, map_height / 2 + 5, 10, 6), Tile.FIELD)
+		_paint_line([Vector2i(10, map_height / 2 + 8), Vector2i(map_width / 2 - 8, map_height / 2 + 5)], Tile.ROAD, 1)
+	elif terrain.contains("bath") or terrain.contains("spring"):
+		_fill_rect(Rect2i(map_width - 18, map_height / 2 + 4, 10, 5), Tile.WATER)
+		_fill_rect(Rect2i(map_width - 15, map_height / 2 + 5, 4, 2), Tile.BRIDGE)
+	else:
+		_fill_rect(Rect2i(map_width / 2 + 9, map_height - 13, 12, 6), Tile.FIELD)
+		_fill_rect(Rect2i(8, map_height - 13, 9, 5), Tile.GARDEN)
 
 func _generate_sect_region() -> void:
 	_reset_tiles(Tile.MOUNTAIN if str(current_region.get("terrain", "")).contains("snow") else Tile.GRASS)
@@ -346,12 +384,41 @@ func _generate_sect_region() -> void:
 	_fill_rect(Rect2i(map_width / 2 - 7, 8, 14, 8), Tile.BUILDING)
 	_fill_rect(Rect2i(12, map_height / 2 - 5, 12, 9), Tile.BUILDING)
 	_fill_rect(Rect2i(map_width - 24, map_height / 2 - 5, 12, 9), Tile.BUILDING)
+	_apply_sect_identity()
 	_place_shops(["medicine", "market"])
+
+func _apply_sect_identity() -> void:
+	var region_id := str(current_region.get("id", ""))
+	var terrain := str(current_region.get("terrain", ""))
+	_fill_rect(Rect2i(map_width / 2 - 9, map_height / 2 + 5, 18, 7), Tile.ROAD)
+	if region_id == "flower_sect" or terrain.contains("flower"):
+		_fill_rect(Rect2i(9, 8, 12, 9), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width - 22, map_height - 17, 12, 8), Tile.GARDEN)
+		_paint_line([Vector2i(map_width - 11, 12), Vector2i(map_width / 2 + 8, map_height / 2 - 3)], Tile.ROAD, 1)
+	elif region_id == "xueshan_sect" or terrain.contains("snow"):
+		_fill_rect(Rect2i(8, 7, 14, 8), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 22, 8, 13, 8), Tile.MOUNTAIN)
+		_paint_line([Vector2i(9, map_height - 10), Vector2i(map_width / 2 - 6, map_height / 2 + 8)], Tile.ROAD, 1)
+	elif region_id == "xiaoyao_sect" or terrain.contains("lake"):
+		_paint_line([Vector2i(10, map_height - 12), Vector2i(map_width / 2, map_height - 16), Vector2i(map_width - 10, map_height - 11)], Tile.WATER, 1)
+		_set_bridge_patch(Vector2i(map_width / 2, map_height - 15))
+	elif region_id == "honglian_sect":
+		_fill_rect(Rect2i(map_width / 2 - 17, map_height / 2 - 10, 8, 6), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width / 2 + 9, map_height / 2 - 10, 8, 6), Tile.MOUNTAIN)
+	elif region_id == "naja_sect":
+		_paint_line([Vector2i(8, 11), Vector2i(map_width / 2 - 7, map_height / 2 - 2), Vector2i(map_width - 9, 13)], Tile.ROAD, 1)
+		_fill_rect(Rect2i(9, map_height - 15, 11, 7), Tile.MOUNTAIN)
+	elif region_id == "taiji_sect" or terrain.contains("daoist"):
+		_fill_rect(Rect2i(map_width / 2 - 12, map_height / 2 - 12, 24, 5), Tile.ROAD)
+		_fill_rect(Rect2i(map_width / 2 - 12, map_height / 2 + 12, 24, 4), Tile.GARDEN)
+	else:
+		_fill_rect(Rect2i(10, map_height - 14, 12, 7), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 22, map_height - 14, 12, 7), Tile.GARDEN)
 
 func _generate_wild_region() -> void:
 	var terrain := str(current_region.get("terrain", "plain"))
 	var base := Tile.GRASS
-	if terrain.contains("mountain") or terrain.contains("peak") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau"):
+	if _terrain_has_mountain(terrain):
 		base = Tile.MOUNTAIN
 	elif _terrain_has_water(terrain):
 		base = Tile.GRASS
@@ -359,18 +426,39 @@ func _generate_wild_region() -> void:
 		base = Tile.FIELD
 	_reset_tiles(base)
 	_paint_line([Vector2i(5, map_height / 2), Vector2i(map_width / 2, map_height / 2 - 3), Vector2i(map_width - 6, map_height / 2 + 2)], Tile.ROAD, 1)
-	if _terrain_has_water(terrain):
-		_paint_line([Vector2i(0, 14), Vector2i(map_width / 2, 18), Vector2i(map_width, 13)], Tile.WATER, 2)
-		_set_tile(map_width / 2, 17, Tile.BRIDGE)
-		_set_tile(map_width / 2 + 1, 17, Tile.BRIDGE)
-	if terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("garden"):
-		_fill_rect(Rect2i(7, 8, 12, 8), Tile.GARDEN)
-		_fill_rect(Rect2i(map_width - 22, map_height - 15, 12, 8), Tile.GARDEN)
-	if terrain.contains("desert"):
-		_fill_rect(Rect2i(8, 8, 10, 6), Tile.MOUNTAIN)
-		_fill_rect(Rect2i(map_width - 20, map_height - 13, 10, 6), Tile.MOUNTAIN)
+	_apply_wild_identity(terrain)
 	_fill_rect(Rect2i(map_width / 2 - 4, map_height / 2 - 8, 8, 5), Tile.BUILDING)
 	_add_portal("wild_rest", "驿亭", "look", Vector2i(map_width / 2, map_height / 2 - 2), "")
+
+func _apply_wild_identity(terrain: String) -> void:
+	if _terrain_has_water(terrain):
+		_paint_line([Vector2i(0, 14), Vector2i(map_width / 3, 18), Vector2i(map_width / 2, 16), Vector2i(map_width, 13)], Tile.WATER, 2)
+		_paint_line([Vector2i(map_width / 2 + 9, 0), Vector2i(map_width / 2 + 6, 18), Vector2i(map_width / 2 + 12, map_height - 5)], Tile.WATER, 1)
+		_set_bridge_patch(Vector2i(map_width / 2, 17))
+		_set_bridge_patch(Vector2i(map_width / 2 + 9, map_height / 2 + 1))
+		if terrain.contains("marsh"):
+			_fill_rect(Rect2i(9, map_height - 15, 14, 8), Tile.GARDEN)
+			_fill_rect(Rect2i(map_width - 22, 8, 13, 8), Tile.GARDEN)
+	elif _terrain_has_forest(terrain):
+		_fill_rect(Rect2i(7, 8, 14, 9), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width - 24, map_height - 16, 14, 9), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width / 2 + 9, 8, 12, 8), Tile.GARDEN)
+		_paint_line([Vector2i(10, 12), Vector2i(map_width / 2, map_height / 2 - 4), Vector2i(map_width - 15, map_height - 12)], Tile.ROAD, 1)
+	elif terrain.contains("desert"):
+		_fill_rect(Rect2i(8, 8, 10, 6), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 20, map_height - 13, 10, 6), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width / 2 + 12, 10, 12, 5), Tile.FIELD)
+		_paint_line([Vector2i(8, map_height - 10), Vector2i(map_width / 2 - 8, map_height / 2 + 6)], Tile.ROAD, 1)
+	elif _terrain_has_mountain(terrain):
+		_fill_rect(Rect2i(6, 6, 14, 8), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 22, 7, 14, 9), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(10, map_height - 14, 12, 7), Tile.MOUNTAIN)
+		_paint_line([Vector2i(map_width / 2 - 15, 9), Vector2i(map_width / 2 + 8, map_height / 2 - 6), Vector2i(map_width - 11, map_height - 10)], Tile.ROAD, 1)
+	else:
+		_fill_rect(Rect2i(8, 8, 13, 7), Tile.FIELD)
+		_fill_rect(Rect2i(map_width - 23, 9, 14, 7), Tile.FIELD)
+		_fill_rect(Rect2i(10, map_height - 15, 12, 7), Tile.GARDEN)
+		_paint_line([Vector2i(9, 12), Vector2i(map_width / 2 - 9, map_height / 2 + 5)], Tile.ROAD, 1)
 
 func _apply_city_identity(profile: Dictionary) -> void:
 	var region_id := str(current_region.get("id", ""))
@@ -408,7 +496,13 @@ func _apply_town_identity() -> void:
 		_fill_rect(Rect2i(map_width - 17, map_height - 13, 10, 6), Tile.MOUNTAIN)
 
 func _terrain_has_water(terrain: String) -> bool:
-	return terrain.contains("river") or terrain.contains("lake") or terrain.contains("water") or terrain.contains("canal") or terrain.contains("ford") or terrain.contains("tide") or terrain.contains("weir") or terrain.contains("marsh") or terrain.contains("spring")
+	return terrain.contains("river") or terrain.contains("lake") or terrain.contains("water") or terrain.contains("waterway") or terrain.contains("canal") or terrain.contains("ford") or terrain.contains("tide") or terrain.contains("weir") or terrain.contains("marsh") or terrain.contains("spring")
+
+func _terrain_has_mountain(terrain: String) -> bool:
+	return terrain.contains("mountain") or terrain.contains("peak") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau") or terrain.contains("valley")
+
+func _terrain_has_forest(terrain: String) -> bool:
+	return terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("garden") or terrain.contains("field")
 
 func _set_bridge_patch(center: Vector2i) -> void:
 	for y in range(center.y - 1, center.y + 2):
@@ -776,6 +870,8 @@ func _clear_npcs() -> void:
 
 func _build_depth_props() -> void:
 	_clear_depth_props()
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
 	for y in range(map_height):
 		for x in range(map_width):
 			var tile_id: int = int(tiles[y][x])
@@ -783,13 +879,17 @@ func _build_depth_props() -> void:
 			var pos := Vector2((float(x) + 0.5) * tile_size, (float(y) + 0.92) * tile_size)
 			match tile_id:
 				Tile.GARDEN:
-					if seed % 7 == 0:
+					if (terrain.contains("flower") or terrain.contains("garden")) and seed % 13 == 0:
+						_add_depth_prop("flower_tree", pos, seed, 0, 0.82)
+					elif seed % 7 == 0:
 						_add_depth_prop("bamboo", pos, seed, 0, 0.92)
 					elif seed % 11 == 0:
 						_add_depth_prop("tree", pos, seed, 0, 0.84)
 				Tile.MOUNTAIN:
 					if not _has_tile(x, y - 1, tile_id) and seed % 3 == 0:
 						_add_depth_prop("ridge", pos, seed, 0, 0.95)
+					elif seed % 19 == 0:
+						_add_depth_prop("rock_cluster", pos + Vector2(0, 4), seed, 0, 0.82)
 				Tile.SHOP:
 					if not _has_tile(x, y - 1, tile_id):
 						_add_depth_prop("shop_roof", pos, seed, 0, 0.90)
@@ -797,8 +897,22 @@ func _build_depth_props() -> void:
 					if not _has_tile(x, y - 1, tile_id) and seed % 2 == 0:
 						_add_depth_prop("roof", pos, seed, 0, 0.86)
 				Tile.ROAD:
-					if current_mode == "region" and seed % 43 == 0:
+					if current_mode == "region" and region_type == "sect" and seed % 37 == 0:
+						_add_depth_prop("stone_lantern", pos + Vector2(-8, 7), seed, 0, 0.78)
+					elif current_mode == "region" and seed % 43 == 0:
 						_add_depth_prop("lantern", pos + Vector2(-12, 8), seed, 0, 0.72)
+					if current_mode == "region" and region_type == "town" and seed % 97 == 0:
+						_add_depth_prop("well", pos + Vector2(0, 6), seed, 0, 0.76)
+					if current_mode == "region" and region_type == "sect" and seed % 83 == 0:
+						_add_depth_prop("banner", pos + Vector2(12, 7), seed, 0, 0.80)
+				Tile.WATER:
+					if current_mode == "region" and seed % 31 == 0:
+						_add_depth_prop("boat", pos + Vector2(0, 8), seed, 0, 0.76)
+				Tile.FIELD:
+					if current_mode == "region" and terrain.contains("desert") and seed % 17 == 0:
+						_add_depth_prop("rock_cluster", pos + Vector2(0, 5), seed, 0, 0.76)
+					elif current_mode == "region" and region_type == "town" and seed % 47 == 0:
+						_add_depth_prop("market_stall", pos + Vector2(0, 7), seed, 0, 0.62)
 				Tile.BRIDGE:
 					if current_mode == "region" and seed % 2 == 0:
 						_add_depth_prop("bridge_railing", pos + Vector2(0, -4), seed, 0, 0.86)
