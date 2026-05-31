@@ -14,6 +14,7 @@ const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
 const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
 const CULTIVATION_PANEL_SCRIPT := preload("res://scripts/ui/cultivation_panel.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
+const DISCOVERY_PANEL_SCRIPT := preload("res://scripts/ui/discovery_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 
 const WORLD_CAMERA_ZOOM := Vector2(0.92, 0.92)
@@ -35,6 +36,7 @@ var quest_panel
 var shop_panel
 var cultivation_panel
 var world_map_panel
+var discovery_panel
 var combat_system
 var focused_npc
 var focused_portal: Dictionary = {}
@@ -92,6 +94,8 @@ func _ready() -> void:
 	ui_layer.add_child(world_map_panel)
 	world_map_panel.focus_region_requested.connect(_mark_region_target)
 	world_map_panel.fast_travel_requested.connect(_fast_travel_to_region)
+	discovery_panel = DISCOVERY_PANEL_SCRIPT.new()
+	ui_layer.add_child(discovery_panel)
 	character_creation_panel = CHARACTER_CREATION_SCRIPT.new()
 	ui_layer.add_child(character_creation_panel)
 	main_menu_panel = MAIN_MENU_SCRIPT.new()
@@ -199,6 +203,8 @@ func _handle_cancel() -> void:
 			cultivation_panel.close_panel()
 		GameState.Mode.MAP:
 			world_map_panel.close_panel()
+		GameState.Mode.DISCOVERY:
+			discovery_panel.close_panel()
 		GameState.Mode.MENU:
 			main_menu_panel.hide()
 			GameState.set_mode(GameState.Mode.EXPLORE)
@@ -231,6 +237,7 @@ func _close_gameplay_panels() -> void:
 	shop_panel.hide()
 	cultivation_panel.hide()
 	world_map_panel.hide()
+	discovery_panel.hide()
 
 func _open_dialogue(npc: Dictionary) -> void:
 	GameState.progress_quest("talk", str(npc.get("name", "")), 1)
@@ -429,28 +436,38 @@ func _inspect_landmark(portal: Dictionary) -> void:
 	var portal_id := str(portal.get("id", "landmark"))
 	var flag_key := "landmark_%s_%s" % [region_id, portal_id]
 	var description := str(portal.get("description", "这里暂时没有更多线索。"))
-	if bool(GameState.game_flags.get(flag_key, false)):
-		EventBus.emit_toast(description)
-		return
-	GameState.game_flags[flag_key] = true
+	var already_seen := bool(GameState.game_flags.get(flag_key, false))
 	var reward_parts: Array[String] = []
 	var item_id := str(portal.get("reward_item", ""))
+	var reward_money := int(portal.get("reward_money", 0))
+	var reward_exp := int(portal.get("reward_exp", 0))
+	if bool(GameState.game_flags.get(flag_key, false)):
+		_show_landmark_discovery(portal, description, [], true)
+		return
+	GameState.game_flags[flag_key] = true
 	if not item_id.is_empty():
 		GameState.add_item(item_id, 1)
 		var item := GameData.get_item(item_id)
 		reward_parts.append(str(item.get("name", item_id)))
-	var reward_money := int(portal.get("reward_money", 0))
 	if reward_money > 0:
 		GameState.add_money(reward_money)
 		reward_parts.append("%d 两银子" % reward_money)
-	var reward_exp := int(portal.get("reward_exp", 0))
 	if reward_exp > 0:
 		GameState.reward_player(reward_exp, 0)
 		reward_parts.append("%d 点阅历" % reward_exp)
-	if reward_parts.is_empty():
+	_show_landmark_discovery(portal, description, reward_parts, already_seen)
+
+func _show_landmark_discovery(portal: Dictionary, description: String, rewards: Array[String], already_seen: bool) -> void:
+	if discovery_panel == null:
 		EventBus.emit_toast(description)
-	else:
-		EventBus.emit_toast("%s 获得：%s" % [description, "，".join(reward_parts)])
+		return
+	discovery_panel.show_discovery({
+		"title": str(portal.get("label", "有所发现")),
+		"region": str(local_area.current_region.get("name", "")),
+		"description": description,
+		"rewards": rewards,
+		"already_seen": already_seen
+	})
 
 func _switch_to_world_map(position: Vector2) -> void:
 	if local_area != null:

@@ -10,7 +10,8 @@ enum Mode {
 	JOURNAL,
 	SHOP,
 	CULTIVATION,
-	MAP
+	MAP,
+	DISCOVERY
 }
 
 var mode: Mode = Mode.EXPLORE
