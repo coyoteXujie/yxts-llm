@@ -125,8 +125,8 @@ godot_project/
 
 ## 7. 当前美术落地
 
-- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
-- `godot_project/assets/world/tiles/` 保存当前世界地图和局部地图实际使用的 48x48 瓦片 PNG；道路、水面、建筑、商铺、桥、竹林、山体等瓦片已强化为更接近国风仙侠地图的表现。
+- `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源；`tools/refine_world_tiles.py` 负责迭代当前运行时使用的手绘瓦片多变体。
+- `godot_project/assets/world/tiles/` 保存当前世界地图和局部地图实际使用的 20 类、80 张 96px 高采样瓦片 PNG；道路、水面、建筑、商铺、桥、竹林、山体等瓦片已强化为更接近国风仙侠地图的表现，并由地图节点使用 mipmap/线性过滤缩放到运行尺寸，再按坐标稳定选择变体以降低重复平铺感。
 - `WorldMap` 已加入第一版伪 2.5D 表现：地貌边缘过渡、建筑/门派/山体高度叠层、`MapProp` 遮挡节点、世界层角色缩放和较远镜头，后续再逐步替换为正式 TileMapLayer/TileSet。
 - `LocalAreaMap` 已从单一十字路模板推进到分类型布局：五城会生成多层街巷和街区，镇子会生成村舍、田地和中心空场，野外按水系/山地/林地/荒漠/平原生成河道、桥、山脊、林坡和驿亭，门派按七派气质生成庭院、水榭、雪岭、碑场或旗幡空间。
 - `MapProp` 已补井、石灯、小船、旗幡、花树、石堆、碑龛等程序化 2.5D 道具，并由局部地图按地貌自动摆放。

@@ -37,6 +37,7 @@ func _run() -> void:
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_WATER)), "世界地图水面应不可通行")
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_BUILDING)), "世界地图建筑应不可通行")
 	_check(_tile_ratio(world_map, WORLD_TILE_MOUNTAIN) < 0.18, "世界地图不应被山峰瓦片铺满")
+	_check(_texture_variant_count(world_map, WORLD_TILE_WATER) >= 4, "世界地图应加载多变体水面瓦片")
 	_check(_actors_use_y_sort(world_map.npc_nodes), "世界层 NPC 应按脚底 Y 坐标排序")
 
 	var player = PLAYER_SCRIPT.new()
@@ -54,6 +55,7 @@ func _run() -> void:
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
+	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
 	_check(GameData.get_neighbor_regions("qinghe", 4).size() >= 3, "平安镇应能计算相邻区域")
@@ -127,6 +129,12 @@ func _tile_ratio(map_node, tile_id: int) -> float:
 			if int(map_node.tiles[y][x]) == tile_id:
 				count += 1
 	return float(count) / float(total)
+
+func _texture_variant_count(map_node, tile_id: int) -> int:
+	var variants = map_node.tile_textures.get(tile_id, [])
+	if typeof(variants) == TYPE_ARRAY:
+		return (variants as Array).size()
+	return 0
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:

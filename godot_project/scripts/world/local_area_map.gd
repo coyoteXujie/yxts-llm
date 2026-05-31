@@ -84,6 +84,7 @@ const TILE_TEXTURE_PATHS := {
 
 const LOCAL_NPC_SPACING_STEPS := [6, 5, 4, 3, 2, 1]
 const LOCAL_NPC_ENTRY_CLEAR_RADIUS := 7
+const TILE_VARIANT_COUNT := 4
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -103,15 +104,24 @@ var tile_textures: Dictionary = {}
 var occupied_npc_tiles: Array[Vector2i] = []
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_load_tile_textures()
 
 func _load_tile_textures() -> void:
 	tile_textures.clear()
 	for tile_id in TILE_TEXTURE_PATHS.keys():
 		var path := str(TILE_TEXTURE_PATHS[tile_id])
-		var texture := GameData.load_texture(path)
+		var variants: Array[Texture2D] = []
+		var texture := GameData.load_texture(path, true)
 		if texture != null:
-			tile_textures[int(tile_id)] = texture
+			variants.append(texture)
+		for variant in range(1, TILE_VARIANT_COUNT):
+			var variant_path := path.replace(".png", "_v%d.png" % variant)
+			var variant_texture := GameData.load_texture(variant_path, true)
+			if variant_texture != null:
+				variants.append(variant_texture)
+		if not variants.is_empty():
+			tile_textures[int(tile_id)] = variants
 
 func setup_region(region: Dictionary) -> void:
 	if tile_textures.is_empty():
@@ -1241,7 +1251,7 @@ func _draw() -> void:
 		for x in range(map_width):
 			var tile_id: int = tiles[y][x]
 			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
-			var texture: Texture2D = tile_textures.get(tile_id, null)
+			var texture := _tile_texture(tile_id, x, y)
 			if texture != null:
 				draw_texture_rect(texture, rect, false)
 				var tint := _tile_tint(tile_id)
@@ -1254,6 +1264,13 @@ func _draw() -> void:
 	_draw_scene_overlay()
 	_draw_portal_signs()
 	_draw_portals()
+
+func _tile_texture(tile_id: int, x: int, y: int) -> Texture2D:
+	var variants: Array = tile_textures.get(tile_id, [])
+	if variants.is_empty():
+		return null
+	var index := _tile_seed(x, y) % variants.size()
+	return variants[index]
 
 func _update_title_label() -> void:
 	if title_label == null:

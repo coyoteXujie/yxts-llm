@@ -69,6 +69,7 @@ const LANDMARKS := [
 
 const WORLD_NPC_SCALE := 0.58
 const WORLD_NPC_MIN_SPACING := 4
+const TILE_VARIANT_COUNT := 4
 
 var tile_size := GameData.TILE_SIZE
 var map_width := GameData.MAP_WIDTH
@@ -82,6 +83,7 @@ var target_region_id := ""
 var world_npc_tiles: Array[Vector2i] = []
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_load_tile_textures()
 	generate_map()
 	_build_depth_props()
@@ -93,9 +95,17 @@ func _load_tile_textures() -> void:
 	tile_textures.clear()
 	for tile_id in TILE_TEXTURE_PATHS.keys():
 		var path := str(TILE_TEXTURE_PATHS[tile_id])
-		var texture := GameData.load_texture(path)
+		var variants: Array[Texture2D] = []
+		var texture := GameData.load_texture(path, true)
 		if texture != null:
-			tile_textures[int(tile_id)] = texture
+			variants.append(texture)
+		for variant in range(1, TILE_VARIANT_COUNT):
+			var variant_path := path.replace(".png", "_v%d.png" % variant)
+			var variant_texture := GameData.load_texture(variant_path, true)
+			if variant_texture != null:
+				variants.append(variant_texture)
+		if not variants.is_empty():
+			tile_textures[int(tile_id)] = variants
 
 func tile_to_world(tile: Vector2i) -> Vector2:
 	return Vector2(tile.x * tile_size + tile_size * 0.5, tile.y * tile_size + tile_size * 0.5)
@@ -516,7 +526,7 @@ func _draw() -> void:
 		for x in range(map_width):
 			var tile_id: int = tiles[y][x]
 			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
-			var texture: Texture2D = tile_textures.get(tile_id, null)
+			var texture := _tile_texture(tile_id, x, y)
 			if texture != null:
 				draw_texture_rect(texture, rect, false)
 			else:
@@ -527,6 +537,13 @@ func _draw() -> void:
 	_draw_world_decoration_layer()
 	_draw_region_overlays()
 	_draw_target_region_overlay()
+
+func _tile_texture(tile_id: int, x: int, y: int) -> Texture2D:
+	var variants: Array = tile_textures.get(tile_id, [])
+	if variants.is_empty():
+		return null
+	var index := _tile_seed(x, y) % variants.size()
+	return variants[index]
 
 func _draw_tile_transition(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 	if tile_id == Tile.WATER:
