@@ -82,6 +82,9 @@ const TILE_TEXTURE_PATHS := {
 	Tile.CARPET: "res://assets/world/tiles/tile_temple.png",
 }
 
+const LOCAL_NPC_SPACING_STEPS := [6, 5, 4, 3, 2, 1]
+const LOCAL_NPC_ENTRY_CLEAR_RADIUS := 7
+
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
 var map_height := 42
@@ -526,9 +529,18 @@ func _build_depth_props() -> void:
 				Tile.BUILDING:
 					if not _has_tile(x, y - 1, tile_id) and seed % 2 == 0:
 						_add_depth_prop("roof", pos, seed, 0, 0.86)
+				Tile.ROAD:
+					if current_mode == "region" and seed % 43 == 0:
+						_add_depth_prop("lantern", pos + Vector2(-12, 8), seed, 0, 0.72)
+				Tile.BRIDGE:
+					if current_mode == "region" and seed % 2 == 0:
+						_add_depth_prop("bridge_railing", pos + Vector2(0, -4), seed, 0, 0.86)
 				Tile.COUNTER:
 					if current_mode == "shop" and not _has_tile(x, y - 1, tile_id) and seed % 4 == 0:
 						_add_depth_prop("shelf", pos + Vector2(0, -4), seed, 0, 0.76)
+				Tile.CARPET:
+					if current_mode == "shop" and seed % 11 == 0:
+						_add_depth_prop("market_stall", pos + Vector2(0, 6), seed, 0, 0.62)
 
 func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
 	var prop = MAP_PROP_SCRIPT.new()
@@ -582,14 +594,26 @@ func _local_npc_tile(npc_data: Dictionary, index: int) -> Vector2i:
 	var source := Vector2i(int(npc_data.get("pos_x", map_width / 2)), int(npc_data.get("pos_y", map_height / 2)))
 	var source_region := GameData.get_region_at_tile(source)
 	var preferred := _scaled_world_tile_to_local(source, source_region)
+	if current_mode == "region":
+		preferred = _role_anchor(npc_data, index, preferred)
+	return _claim_local_npc_tile(preferred, int(npc_data.get("id", index)), index)
+
+func _role_anchor(npc_data: Dictionary, index: int, fallback: Vector2i) -> Vector2i:
 	var npc_type := str(npc_data.get("npc_type", "normal"))
 	if npc_type == "trader":
-		preferred = _merchant_anchor(index)
-	elif npc_type == "enemy":
-		preferred = _edge_anchor(index)
-	elif npc_type == "master":
-		preferred = _quiet_anchor(index)
-	return _claim_local_npc_tile(preferred, int(npc_data.get("id", index)), index)
+		return _merchant_anchor(index)
+	if npc_type == "enemy":
+		return _edge_anchor(index)
+	if npc_type == "master" or bool(npc_data.get("is_master", false)):
+		return _quiet_anchor(index)
+	if bool(npc_data.get("has_quests", false)):
+		return _story_anchor(index)
+	var description := str(npc_data.get("description", ""))
+	if description.contains("村长") or description.contains("夫子") or description.contains("捕快") or description.contains("郎中"):
+		return _civic_anchor(index)
+	if fallback.x <= 3 or fallback.y <= 3 or fallback.x >= map_width - 3 or fallback.y >= map_height - 3:
+		return _civilian_anchor(index)
+	return _civilian_anchor(index)
 
 func _scaled_world_tile_to_local(source: Vector2i, source_region: Dictionary) -> Vector2i:
 	if source_region.is_empty():
@@ -607,21 +631,24 @@ func _scaled_world_tile_to_local(source: Vector2i, source_region: Dictionary) ->
 
 func _merchant_anchor(index: int) -> Vector2i:
 	var anchors := [
-		Vector2i(12, 18),
-		Vector2i(map_width - 13, 18),
-		Vector2i(12, map_height - 16),
-		Vector2i(map_width - 13, map_height - 16),
-		Vector2i(map_width / 2 - 13, 13),
-		Vector2i(map_width / 2 + 13, map_height - 14)
+		Vector2i(11, 15),
+		Vector2i(map_width - 12, 15),
+		Vector2i(11, map_height - 14),
+		Vector2i(map_width - 12, map_height - 14),
+		Vector2i(map_width / 2 - 15, 11),
+		Vector2i(map_width / 2 + 15, map_height - 12),
+		Vector2i(map_width / 2 - 21, map_height / 2 + 7),
+		Vector2i(map_width / 2 + 21, map_height / 2 - 7)
 	]
 	return anchors[index % anchors.size()]
 
 func _quiet_anchor(index: int) -> Vector2i:
 	var anchors := [
-		Vector2i(map_width / 2 - 14, map_height / 2 - 8),
-		Vector2i(map_width / 2 + 14, map_height / 2 - 8),
-		Vector2i(map_width / 2 - 16, map_height / 2 + 8),
-		Vector2i(map_width / 2 + 16, map_height / 2 + 8)
+		Vector2i(map_width / 2 - 19, map_height / 2 - 12),
+		Vector2i(map_width / 2 + 19, map_height / 2 - 12),
+		Vector2i(map_width / 2 - 21, map_height / 2 + 10),
+		Vector2i(map_width / 2 + 21, map_height / 2 + 10),
+		Vector2i(map_width / 2, 10)
 	]
 	return anchors[index % anchors.size()]
 
@@ -630,16 +657,53 @@ func _edge_anchor(index: int) -> Vector2i:
 		Vector2i(map_width - 10, map_height / 2),
 		Vector2i(9, map_height / 2),
 		Vector2i(map_width / 2, 9),
-		Vector2i(map_width / 2, map_height - 10)
+		Vector2i(map_width / 2, map_height - 10),
+		Vector2i(map_width - 12, map_height - 11),
+		Vector2i(12, 11)
+	]
+	return anchors[index % anchors.size()]
+
+func _story_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(map_width / 2 - 17, map_height / 2 - 10),
+		Vector2i(map_width / 2 + 17, map_height / 2 - 10),
+		Vector2i(map_width / 2 - 18, map_height / 2 + 10),
+		Vector2i(map_width / 2 + 18, map_height / 2 + 10),
+		Vector2i(10, map_height / 2 + 4),
+		Vector2i(map_width - 11, map_height / 2 - 4)
+	]
+	return anchors[index % anchors.size()]
+
+func _civic_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(map_width / 2 - 8, 12),
+		Vector2i(map_width / 2 + 9, 12),
+		Vector2i(map_width / 2 - 9, map_height / 2 - 3),
+		Vector2i(map_width / 2 + 10, map_height / 2 + 3),
+		Vector2i(13, map_height / 2),
+		Vector2i(map_width - 14, map_height / 2)
+	]
+	return anchors[index % anchors.size()]
+
+func _civilian_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(10, 10),
+		Vector2i(map_width - 11, 10),
+		Vector2i(9, map_height - 11),
+		Vector2i(map_width - 10, map_height - 11),
+		Vector2i(map_width / 2 - 23, map_height / 2 - 3),
+		Vector2i(map_width / 2 + 23, map_height / 2 + 3),
+		Vector2i(map_width / 2 - 8, map_height / 2 + 13),
+		Vector2i(map_width / 2 + 9, map_height / 2 - 13)
 	]
 	return anchors[index % anchors.size()]
 
 func _claim_local_npc_tile(preferred: Vector2i, npc_id: int, index: int) -> Vector2i:
-	for min_spacing in [4, 3, 2, 1]:
+	for min_spacing in LOCAL_NPC_SPACING_STEPS:
 		for radius in range(0, 16):
 			var candidates := _ring_candidates(preferred, radius, npc_id + index * 23)
 			for tile in candidates:
-				if is_tile_walkable(tile) and _is_local_npc_tile_clear(tile, min_spacing):
+				if is_tile_walkable(tile) and _is_local_npc_tile_clear(tile, min_spacing) and not _is_near_entry_tile(tile):
 					occupied_npc_tiles.append(tile)
 					return tile
 	occupied_npc_tiles.append(preferred)
@@ -669,6 +733,14 @@ func _is_local_npc_tile_clear(tile: Vector2i, min_spacing: int) -> bool:
 		if dx * dx + dy * dy < min_spacing * min_spacing:
 			return false
 	return true
+
+func _is_near_entry_tile(tile: Vector2i) -> bool:
+	if current_mode != "region":
+		return false
+	var entry := world_to_tile(get_entry_position("world"))
+	var dx := tile.x - entry.x
+	var dy := tile.y - entry.y
+	return dx * dx + dy * dy < LOCAL_NPC_ENTRY_CLEAR_RADIUS * LOCAL_NPC_ENTRY_CLEAR_RADIUS
 
 func _shop_plan_for_region() -> Array:
 	var region_type := str(current_region.get("type", "wild"))

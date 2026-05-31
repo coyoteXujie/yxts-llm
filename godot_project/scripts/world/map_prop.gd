@@ -34,6 +34,12 @@ func _draw() -> void:
 			_draw_awning()
 		"shelf":
 			_draw_shelf()
+		"lantern":
+			_draw_lantern()
+		"market_stall":
+			_draw_market_stall()
+		"bridge_railing":
+			_draw_bridge_railing()
 
 func _draw_roof(base: Color = Color(0.30, 0.12, 0.06), highlight: Color = Color(0.68, 0.36, 0.17), has_sign: bool = false) -> void:
 	var w := float(tile_size)
@@ -143,6 +149,48 @@ func _draw_shelf() -> void:
 	for i in range(5):
 		var x := -w * 0.34 + float(i) * w * 0.17
 		draw_circle(Vector2(x, -w * 0.36), 3.5, Color(0.72, 0.52, 0.26, 0.55))
+
+func _draw_lantern() -> void:
+	var w := float(tile_size)
+	_draw_ellipse_poly(Vector2(4, 10), Vector2(w * 0.22, 4), Color(0, 0, 0, 0.14))
+	draw_line(Vector2(0, 10), Vector2(0, -w * 0.88), Color(0.18, 0.10, 0.05, 0.72), 2.4)
+	draw_line(Vector2(0, -w * 0.74), Vector2(16, -w * 0.78), Color(0.20, 0.11, 0.05, 0.70), 2.0)
+	draw_circle(Vector2(19, -w * 0.70), 8.0, Color(0.72, 0.18, 0.10, 0.82))
+	draw_circle(Vector2(19, -w * 0.70), 4.3, Color(1.0, 0.74, 0.28, 0.42))
+	draw_line(Vector2(19, -w * 0.61), Vector2(19, -w * 0.48), Color(0.92, 0.64, 0.28, 0.62), 1.3)
+
+func _draw_market_stall() -> void:
+	var w := float(tile_size)
+	_draw_ellipse_poly(Vector2(3, 9), Vector2(w * 0.43, 5), Color(0, 0, 0, 0.14))
+	draw_rect(Rect2(Vector2(-w * 0.36, -w * 0.18), Vector2(w * 0.72, w * 0.26)), Color(0.28, 0.14, 0.06, 0.78), true)
+	draw_polygon(PackedVector2Array([
+		Vector2(-w * 0.46, -w * 0.35),
+		Vector2(-w * 0.25, -w * 0.56),
+		Vector2(w * 0.33, -w * 0.50),
+		Vector2(w * 0.48, -w * 0.30),
+		Vector2(w * 0.34, -w * 0.22),
+		Vector2(-w * 0.38, -w * 0.25)
+	]), PackedColorArray([
+		Color(0.50, 0.18, 0.10, 0.86),
+		Color(0.88, 0.50, 0.18, 0.90),
+		Color(0.68, 0.24, 0.12, 0.88),
+		Color(0.38, 0.14, 0.08, 0.88),
+		Color(0.52, 0.20, 0.10, 0.86),
+		Color(0.72, 0.32, 0.14, 0.86)
+	]))
+	for i in range(4):
+		var x := -w * 0.22 + float(i) * w * 0.14
+		draw_circle(Vector2(x, -w * 0.06), 3.8, Color(0.82, 0.58, 0.24, 0.62))
+	draw_line(Vector2(-w * 0.36, -w * 0.22), Vector2(-w * 0.36, 8), Color(0.20, 0.10, 0.04, 0.62), 1.7)
+	draw_line(Vector2(w * 0.36, -w * 0.22), Vector2(w * 0.36, 8), Color(0.20, 0.10, 0.04, 0.62), 1.7)
+
+func _draw_bridge_railing() -> void:
+	var w := float(tile_size)
+	draw_line(Vector2(-w * 0.48, -w * 0.20), Vector2(w * 0.48, -w * 0.28), Color(0.36, 0.20, 0.08, 0.78), 3.0)
+	draw_line(Vector2(-w * 0.48, -w * 0.04), Vector2(w * 0.48, -w * 0.12), Color(0.70, 0.46, 0.22, 0.56), 2.0)
+	for i in range(5):
+		var x := -w * 0.42 + float(i) * w * 0.21
+		draw_line(Vector2(x, -w * 0.32), Vector2(x, w * 0.08), Color(0.22, 0.12, 0.05, 0.70), 1.8)
 
 func _draw_ellipse_poly(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

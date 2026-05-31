@@ -23,6 +23,15 @@ env HOME=/tmp/godot_home XDG_DATA_HOME=/tmp/godot_data XDG_CONFIG_HOME=/tmp/godo
 ./Godot_v4/linux/Godot_v4.6.3-stable_linux.x86_64 --headless --path godot_project --scene res://tests/playtest_smoke.tscn
 ```
 
+主流程自动游玩测试：
+
+```bash
+env HOME=/tmp/godot_home XDG_DATA_HOME=/tmp/godot_data XDG_CONFIG_HOME=/tmp/godot_config XDG_CACHE_HOME=/tmp/godot_cache \
+./Godot_v4/linux/Godot_v4.6.3-stable_linux.x86_64 --headless --path godot_project --scene res://tests/playtest_flow.tscn
+```
+
+`playtest_flow` 会实例化主场景，自动跑新游戏、进入平安镇、进入商铺、与掌柜对话、打开交易、购买商品、出门并返回世界地图。headless 渲染使用 Godot 的 dummy renderer，不能取真实画面截图；在非 headless 运行时会尝试保存 `user://playtest_flow.png`。
+
 ## 当前玩法竖切
 
 - 主菜单、角色创建、读档入口。
@@ -49,6 +58,7 @@ env HOME=/tmp/godot_home XDG_DATA_HOME=/tmp/godot_data XDG_CONFIG_HOME=/tmp/godo
 - `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - 世界地图和局部地图现在都优先使用 `assets/world/tiles/` 的瓦片 PNG；局部地图额外叠加水岸、道路边缘、连续屋檐、城墙/灯笼、商铺招牌和室内陈设层，减少纯色方格感。
 - 世界地图和局部地图加入第一版伪 2.5D 表现：地貌边缘过渡、`MapProp` 遮挡节点、建筑/门派/山体/树冠高度叠层、脚底 Y 轴排序、较远世界镜头和世界层 NPC 缩放。
+- 局部地图 NPC 现在按角色功能分区落点，并保留更大的出生点空区和人物间距；道路、桥面和商铺内景增加灯笼、桥栏、货摊等 2.5D 前景道具。
 - NPC 优先使用 `assets/characters/reference_map_sprites/` 的水墨 Q 版参考级透明 PNG，未覆盖时回退到组件化生成 sprite；姓名只在靠近/选中时显示，避免标签和角色互相遮挡。
 - 对话面板已接入 `assets/characters/npc/portraits/` 的 NPC 头像；背包和商店已接入 `assets/items/icons/` 的物品图标；修炼和战斗面板已接入 `assets/skills/icons/` 的武学图标；世界地图面板已接入 `assets/world/scenes/` 的区域背景和 `assets/ui/` 的地图标记。
 - 切换区域时会出现区域横幅，提示区域类型、危险等级和探索度。
