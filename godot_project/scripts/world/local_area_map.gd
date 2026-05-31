@@ -697,7 +697,11 @@ func _region_profile() -> Dictionary:
 	}
 
 func _draw() -> void:
+	if tiles.size() < map_height:
+		return
 	for y in range(map_height):
+		if y >= tiles.size() or (tiles[y] as Array).size() < map_width:
+			return
 		for x in range(map_width):
 			var tile_id: int = tiles[y][x]
 			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)

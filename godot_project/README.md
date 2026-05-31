@@ -16,6 +16,13 @@
 ./Godot_v4/linux/Godot_v4.6.3-stable_linux.x86_64 --editor --path godot_project
 ```
 
+自动游玩 smoke test：
+
+```bash
+env HOME=/tmp/godot_home XDG_DATA_HOME=/tmp/godot_data XDG_CONFIG_HOME=/tmp/godot_config XDG_CACHE_HOME=/tmp/godot_cache \
+./Godot_v4/linux/Godot_v4.6.3-stable_linux.x86_64 --headless --path godot_project --scene res://tests/playtest_smoke.tscn
+```
+
 ## 当前玩法竖切
 
 - 主菜单、角色创建、读档入口。
