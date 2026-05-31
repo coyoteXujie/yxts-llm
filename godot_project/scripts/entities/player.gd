@@ -60,11 +60,13 @@ func _draw() -> void:
 	_draw_shadow(Vector2(3, 27), Vector2(30, 10), Color(0, 0, 0, 0.20))
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
-		var target_height := 74.0
-		var target_width := 58.0
+		var target_height := 84.0
+		var target_width := 66.0
 		var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
 		var draw_size := texture_size * factor
 		var top_left := Vector2(-draw_size.x * 0.5, 31.0 - draw_size.y + bob)
+		var outline_rect := Rect2(top_left - Vector2(2.0, 1.0), draw_size + Vector2(4.0, 4.0))
+		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 2 + bob), dir * 16.0 + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.16), 1.8)

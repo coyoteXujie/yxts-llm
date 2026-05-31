@@ -6,6 +6,7 @@ var highlighted := false
 var tile_size := 48
 var name_label: Label
 var sprite_node: Sprite2D
+var sprite_outline_node: Sprite2D
 var using_sprite_asset := false
 
 const USE_FULL_SPRITES_ON_MAP := true
@@ -93,29 +94,40 @@ func _refresh_sprite_asset() -> void:
 	if texture == null:
 		_clear_sprite_asset()
 		return
+	if sprite_outline_node == null:
+		sprite_outline_node = Sprite2D.new()
+		sprite_outline_node.centered = true
+		sprite_outline_node.z_index = 1
+		sprite_outline_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		sprite_outline_node.modulate = Color(0.02, 0.018, 0.014, 0.62)
+		add_child(sprite_outline_node)
 	if sprite_node == null:
 		sprite_node = Sprite2D.new()
 		sprite_node.centered = true
 		sprite_node.z_index = 2
 		sprite_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		add_child(sprite_node)
+	sprite_outline_node.texture = texture
 	sprite_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()
-	var target_height := 74.0
-	var target_width := 66.0
+	var target_height := 82.0
+	var target_width := 72.0
 	if is_master():
-		target_height = 82.0
-		target_width = 72.0
+		target_height = 90.0
+		target_width = 78.0
 	if is_enemy():
-		target_height = 80.0
-		target_width = 70.0
-	if str(data.get("name", "")) == "神秘人":
-		target_height = 86.0
+		target_height = 88.0
 		target_width = 76.0
+	if str(data.get("name", "")) == "神秘人":
+		target_height = 94.0
+		target_width = 82.0
 	var map_scale := _map_actor_scale()
 	target_height *= map_scale
 	target_width *= map_scale
 	var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
+	sprite_outline_node.scale = Vector2.ONE * factor * 1.045
+	sprite_outline_node.position = Vector2(0, -7 * map_scale + 1.2)
+	sprite_outline_node.visible = true
 	sprite_node.scale = Vector2.ONE * factor
 	sprite_node.position = Vector2(0, -7 * map_scale)
 	sprite_node.visible = true
@@ -125,6 +137,8 @@ func _refresh_sprite_asset() -> void:
 
 func _clear_sprite_asset() -> void:
 	using_sprite_asset = false
+	if sprite_outline_node != null:
+		sprite_outline_node.visible = false
 	if sprite_node != null:
 		sprite_node.visible = false
 
