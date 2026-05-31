@@ -16,6 +16,9 @@ const CULTIVATION_PANEL_SCRIPT := preload("res://scripts/ui/cultivation_panel.gd
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 
+const WORLD_CAMERA_ZOOM := Vector2(0.92, 0.92)
+const LOCAL_CAMERA_ZOOM := Vector2(0.98, 0.98)
+
 var world_map
 var local_area
 var active_map
@@ -57,7 +60,7 @@ func _ready() -> void:
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 8.0
-	camera.zoom = Vector2(1.08, 1.08)
+	camera.zoom = WORLD_CAMERA_ZOOM
 	player_actor.add_child(camera)
 	camera.make_current()
 
@@ -371,6 +374,7 @@ func _enter_local_region(region: Dictionary) -> void:
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
 	if camera != null:
+		_apply_camera_zoom()
 		camera.reset_smoothing()
 	_update_current_region()
 	EventBus.emit_toast("进入%s" % str(region.get("name", "区域")))
@@ -381,6 +385,7 @@ func _enter_shop(portal: Dictionary) -> void:
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
 	if camera != null:
+		_apply_camera_zoom()
 		camera.reset_smoothing()
 	EventBus.emit_toast(str(portal.get("label", "进入商铺")))
 
@@ -389,6 +394,7 @@ func _exit_shop_to_area() -> void:
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
 	if camera != null:
+		_apply_camera_zoom()
 		camera.reset_smoothing()
 	EventBus.emit_toast("回到街上")
 
@@ -411,12 +417,21 @@ func _switch_to_world_map(position: Vector2) -> void:
 	world_return_position = position
 	focused_portal = {}
 	if camera != null:
+		_apply_camera_zoom()
 		camera.reset_smoothing()
 
 func _current_world_save_position() -> Vector2:
 	if active_map == world_map:
 		return player_actor.position
 	return world_return_position
+
+func _apply_camera_zoom() -> void:
+	if camera == null:
+		return
+	if active_map == world_map:
+		camera.zoom = WORLD_CAMERA_ZOOM
+	else:
+		camera.zoom = LOCAL_CAMERA_ZOOM
 
 func _register_inputs() -> void:
 	_add_key_action("move_up", [KEY_W, KEY_UP])

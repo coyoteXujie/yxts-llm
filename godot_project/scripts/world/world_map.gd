@@ -66,6 +66,9 @@ const LANDMARKS := [
 	{"name": "花间派", "tile": [88, 46], "size": 17, "color": [1.00, 0.70, 0.82]},
 ]
 
+const WORLD_NPC_SCALE := 0.58
+const WORLD_NPC_MIN_SPACING := 4
+
 var tile_size := GameData.TILE_SIZE
 var map_width := GameData.MAP_WIDTH
 var map_height := GameData.MAP_HEIGHT
@@ -74,6 +77,7 @@ var npc_nodes: Array = []
 var landmark_labels: Array[Label] = []
 var tile_textures: Dictionary = {}
 var target_region_id := ""
+var world_npc_tiles: Array[Vector2i] = []
 
 func _ready() -> void:
 	_load_tile_textures()
@@ -129,19 +133,19 @@ func generate_map() -> void:
 	_paint_bridges()
 
 func _paint_world_biomes() -> void:
-	_fill_rect(Rect2i(0, 0, 96, 8), Tile.MOUNTAIN)
-	_fill_rect(Rect2i(0, 8, 15, 10), Tile.FOREST)
-	_fill_rect(Rect2i(38, 5, 20, 12), Tile.SNOW)
-	_fill_rect(Rect2i(30, 31, 30, 6), Tile.MOUNTAIN)
-	_fill_rect(Rect2i(6, 39, 18, 11), Tile.DESERT)
-	_fill_rect(Rect2i(4, 55, 22, 17), Tile.BAMBOO)
-	_fill_rect(Rect2i(24, 54, 15, 14), Tile.FIELD)
-	_fill_rect(Rect2i(56, 31, 18, 9), Tile.FOREST)
-	_fill_rect(Rect2i(68, 38, 18, 13), Tile.MARSH)
-	_fill_rect(Rect2i(80, 42, 16, 12), Tile.FOREST)
-	_fill_rect(Rect2i(73, 55, 22, 15), Tile.MARSH)
-	_fill_rect(Rect2i(47, 9, 9, 7), Tile.CLIFF)
-	_fill_rect(Rect2i(54, 58, 14, 9), Tile.FIELD)
+	_rough_fill_rect(Rect2i(0, 0, 96, 8), Tile.MOUNTAIN)
+	_rough_fill_rect(Rect2i(0, 8, 15, 10), Tile.FOREST)
+	_rough_fill_rect(Rect2i(38, 5, 20, 12), Tile.SNOW)
+	_rough_fill_rect(Rect2i(30, 31, 30, 6), Tile.MOUNTAIN)
+	_rough_fill_rect(Rect2i(6, 39, 18, 11), Tile.DESERT)
+	_rough_fill_rect(Rect2i(4, 55, 22, 17), Tile.BAMBOO)
+	_rough_fill_rect(Rect2i(24, 54, 15, 14), Tile.FIELD)
+	_rough_fill_rect(Rect2i(56, 31, 18, 9), Tile.FOREST)
+	_rough_fill_rect(Rect2i(68, 38, 18, 13), Tile.MARSH)
+	_rough_fill_rect(Rect2i(80, 42, 16, 12), Tile.FOREST)
+	_rough_fill_rect(Rect2i(73, 55, 22, 15), Tile.MARSH)
+	_rough_fill_rect(Rect2i(47, 9, 9, 7), Tile.CLIFF)
+	_rough_fill_rect(Rect2i(54, 58, 14, 9), Tile.FIELD)
 
 func _paint_rivers() -> void:
 	_paint_line([Vector2i(-2, 16), Vector2i(16, 15), Vector2i(36, 17), Vector2i(60, 15), Vector2i(98, 13)], Tile.WATER, 1, true)
@@ -279,6 +283,14 @@ func _fill_rect(rect: Rect2i, tile_id: int) -> void:
 		for x in range(rect.position.x, rect.end.x):
 			_set_tile(x, y, tile_id)
 
+func _rough_fill_rect(rect: Rect2i, tile_id: int, edge_width: int = 2) -> void:
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var edge_distance: int = min(min(x - rect.position.x, rect.end.x - 1 - x), min(y - rect.position.y, rect.end.y - 1 - y))
+			if edge_distance < edge_width and _tile_seed(x, y) % 4 == 0:
+				continue
+			_set_tile(x, y, tile_id)
+
 func _set_tile(x: int, y: int, tile_id: int) -> void:
 	if x < 0 or y < 0 or x >= map_width or y >= map_height:
 		return
@@ -300,13 +312,80 @@ func is_tile_walkable(tile: Vector2i) -> bool:
 	return tile_id != Tile.WATER and tile_id != Tile.BUILDING and tile_id != Tile.MOUNTAIN and tile_id != Tile.CLIFF
 
 func spawn_npcs() -> void:
+	world_npc_tiles.clear()
 	for npc_data in GameData.get_npcs():
 		if GameState.defeated_enemies.has(int(npc_data.get("id", -1))):
 			continue
+		if not _should_spawn_npc_on_world(npc_data):
+			continue
 		var actor = NPC_SCRIPT.new()
 		add_child(actor)
-		actor.setup(npc_data, tile_size)
+		var world_data: Dictionary = npc_data.duplicate(true)
+		var tile := _world_npc_tile(world_data, world_npc_tiles.size())
+		world_data["pos_x"] = tile.x
+		world_data["pos_y"] = tile.y
+		world_data["map_actor_scale"] = WORLD_NPC_SCALE
+		actor.setup(world_data, tile_size)
 		npc_nodes.append(actor)
+
+func _should_spawn_npc_on_world(npc_data: Dictionary) -> bool:
+	var npc_type := str(npc_data.get("npc_type", "normal"))
+	if npc_type == "enemy":
+		return true
+	var tile := Vector2i(int(npc_data.get("pos_x", 0)), int(npc_data.get("pos_y", 0)))
+	var region := GameData.get_region_at_tile(tile)
+	var region_type := str(region.get("type", "wild"))
+	if region_type == "sect":
+		return npc_type == "master" or bool(npc_data.get("is_master", false))
+	if region_type == "wild":
+		return npc_type == "master"
+	return false
+
+func _world_npc_tile(npc_data: Dictionary, index: int) -> Vector2i:
+	var source := Vector2i(int(npc_data.get("pos_x", 0)), int(npc_data.get("pos_y", 0)))
+	var region := GameData.get_region_at_tile(source)
+	var preferred := source
+	if not region.is_empty():
+		preferred = _find_walkable_tile_in_region(region, source)
+	return _claim_world_npc_tile(preferred, region, int(npc_data.get("id", index)), index)
+
+func _claim_world_npc_tile(preferred: Vector2i, region: Dictionary, npc_id: int, index: int) -> Vector2i:
+	for min_spacing in [WORLD_NPC_MIN_SPACING, 3, 2, 1]:
+		for radius in range(0, 12):
+			var candidates := _ring_candidates(preferred, radius, npc_id + index * 17)
+			for tile in candidates:
+				if not region.is_empty() and not _region_contains_tile(region, tile):
+					continue
+				if is_tile_walkable(tile) and _is_world_npc_tile_clear(tile, min_spacing):
+					world_npc_tiles.append(tile)
+					return tile
+	world_npc_tiles.append(preferred)
+	return preferred
+
+func _ring_candidates(center: Vector2i, radius: int, seed: int) -> Array[Vector2i]:
+	var candidates: Array[Vector2i] = []
+	if radius <= 0:
+		candidates.append(center)
+		return candidates
+	for y in range(center.y - radius, center.y + radius + 1):
+		for x in range(center.x - radius, center.x + radius + 1):
+			if abs(x - center.x) != radius and abs(y - center.y) != radius:
+				continue
+			candidates.append(Vector2i(x, y))
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var score_a: int = abs((a.x * 37 + a.y * 19 + seed) % 97)
+		var score_b: int = abs((b.x * 37 + b.y * 19 + seed) % 97)
+		return score_a < score_b
+	)
+	return candidates
+
+func _is_world_npc_tile_clear(tile: Vector2i, min_spacing: int) -> bool:
+	for used in world_npc_tiles:
+		var dx := tile.x - used.x
+		var dy := tile.y - used.y
+		if dx * dx + dy * dy < min_spacing * min_spacing:
+			return false
+	return true
 
 func reset_npcs() -> void:
 	for actor in npc_nodes:
@@ -383,10 +462,63 @@ func _draw() -> void:
 				draw_texture_rect(texture, rect, false)
 			else:
 				draw_rect(rect, _tile_color(tile_id), true)
+			_draw_tile_transition(rect, tile_id, x, y)
 			_draw_tile_detail(rect, tile_id, x, y)
+			_draw_2_5d_tile_overlay(rect, tile_id, x, y)
 	_draw_world_decoration_layer()
 	_draw_region_overlays()
 	_draw_target_region_overlay()
+
+func _draw_tile_transition(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if tile_id == Tile.WATER:
+		var shoreline := Color(0.86, 0.74, 0.48, 0.28)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, 0), Vector2(tile_size, 0), Vector2i(0, -1), shoreline, 2.0)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, tile_size), Vector2(tile_size, tile_size), Vector2i(0, 1), shoreline, 2.0)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, 0), Vector2(0, tile_size), Vector2i(-1, 0), shoreline, 2.0)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(tile_size, 0), Vector2(tile_size, tile_size), Vector2i(1, 0), shoreline, 2.0)
+	elif tile_id == Tile.ROAD:
+		var road_edge := Color(0.30, 0.20, 0.10, 0.16)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, 0), Vector2(tile_size, 0), Vector2i(0, -1), road_edge, 1.2)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, tile_size), Vector2(tile_size, tile_size), Vector2i(0, 1), road_edge, 1.2)
+	elif tile_id == Tile.SNOW or tile_id == Tile.DESERT or tile_id == Tile.BAMBOO or tile_id == Tile.FIELD or tile_id == Tile.MARSH:
+		var soft_edge := Color(0.08, 0.06, 0.03, 0.10)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, 0), Vector2(tile_size, 0), Vector2i(0, -1), soft_edge, 1.2)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, tile_size), Vector2(tile_size, tile_size), Vector2i(0, 1), soft_edge, 1.2)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(0, 0), Vector2(0, tile_size), Vector2i(-1, 0), soft_edge, 1.2)
+		_draw_edge_if_different(rect, x, y, tile_id, Vector2(tile_size, 0), Vector2(tile_size, tile_size), Vector2i(1, 0), soft_edge, 1.2)
+
+func _draw_edge_if_different(rect: Rect2, x: int, y: int, tile_id: int, start: Vector2, end: Vector2, offset: Vector2i, color: Color, width: float) -> void:
+	var other := _get_tile(x + offset.x, y + offset.y)
+	if other != tile_id and not (tile_id == Tile.WATER and other == Tile.BRIDGE):
+		draw_line(rect.position + start, rect.position + end, color, width)
+
+func _draw_2_5d_tile_overlay(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if tile_id == Tile.BUILDING or tile_id == Tile.SHOP or tile_id == Tile.CITY or tile_id == Tile.TOWN or tile_id == Tile.VILLAGE or tile_id == Tile.TEMPLE or tile_id == Tile.SECT:
+		var top_edge := _get_tile(x, y - 1) != tile_id
+		var bottom_edge := _get_tile(x, y + 1) != tile_id
+		var roof := Color(0.34, 0.14, 0.08, 0.36)
+		var wall := Color(0.20, 0.11, 0.06, 0.24)
+		if tile_id == Tile.SHOP:
+			roof = Color(0.58, 0.26, 0.10, 0.38)
+			wall = Color(0.50, 0.30, 0.16, 0.26)
+		elif tile_id == Tile.SECT:
+			roof = Color(0.55, 0.42, 0.18, 0.30)
+			wall = Color(0.28, 0.24, 0.15, 0.22)
+		draw_rect(Rect2(rect.position + Vector2(6, 10), rect.size - Vector2(8, 12)), Color(0.03, 0.02, 0.01, 0.08), true)
+		if top_edge:
+			draw_polygon(PackedVector2Array([
+				rect.position + Vector2(2, 21),
+				rect.position + Vector2(tile_size * 0.5, 5),
+				rect.position + Vector2(tile_size - 2, 21),
+				rect.position + Vector2(tile_size - 8, 27),
+				rect.position + Vector2(8, 27)
+			]), PackedColorArray([roof.darkened(0.16), roof.lightened(0.12), roof.darkened(0.10), roof, roof]))
+		if bottom_edge:
+			draw_rect(Rect2(rect.position + Vector2(7, 29), Vector2(tile_size - 14, 11)), wall, true)
+	elif tile_id == Tile.MOUNTAIN or tile_id == Tile.CLIFF:
+		if _get_tile(x, y - 1) != tile_id:
+			draw_line(rect.position + Vector2(8, 38), rect.position + Vector2(24, 9), Color(0.70, 0.67, 0.55, 0.18), 2.0)
+			draw_line(rect.position + Vector2(24, 9), rect.position + Vector2(42, 39), Color(0.08, 0.07, 0.06, 0.18), 2.0)
 
 func _tile_color(tile_id: int) -> Color:
 	match tile_id:

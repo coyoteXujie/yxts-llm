@@ -78,6 +78,9 @@ func _visual_offset() -> Vector2:
 		oy *= 0.6
 	return Vector2(ox, oy)
 
+func _map_actor_scale() -> float:
+	return clamp(float(data.get("map_actor_scale", 1.0)), 0.45, 1.15)
+
 func _refresh_sprite_asset() -> void:
 	if not bool(data.get("use_map_sprite", USE_FULL_SPRITES_ON_MAP)):
 		_clear_sprite_asset()
@@ -108,9 +111,12 @@ func _refresh_sprite_asset() -> void:
 	if str(data.get("name", "")) == "神秘人":
 		target_height = 86.0
 		target_width = 76.0
+	var map_scale := _map_actor_scale()
+	target_height *= map_scale
+	target_width *= map_scale
 	var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
 	sprite_node.scale = Vector2.ONE * factor
-	sprite_node.position = Vector2(0, -7)
+	sprite_node.position = Vector2(0, -7 * map_scale)
 	sprite_node.visible = true
 	using_sprite_asset = true
 	if name_label != null:
@@ -129,16 +135,17 @@ func _draw() -> void:
 	var ink := Color(0.07, 0.06, 0.05)
 
 	if using_sprite_asset:
+		var map_scale := _map_actor_scale()
 		_draw_ground_marker(accent)
-		draw_circle(Vector2(3, 20), 14.0, Color(0, 0, 0, 0.18))
+		draw_circle(Vector2(3, 20 * map_scale), 14.0 * map_scale, Color(0, 0, 0, 0.18))
 		_draw_aura(appearance, accent)
 		if highlighted:
-			draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
-			draw_circle(Vector2(0, 27), 3.0, Color(0.95, 0.74, 0.28, 0.95))
+			draw_arc(Vector2.ZERO, 27.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
+			draw_circle(Vector2(0, 27 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
 		return
 
 	var skin := _color(appearance.get("skin", [0.84, 0.68, 0.52]), Color(0.84, 0.68, 0.52))
-	var scale := _build_scale(str(appearance.get("build", "standard"))) * MAP_ACTOR_SCALE
+	var scale := _build_scale(str(appearance.get("build", "standard"))) * MAP_ACTOR_SCALE * _map_actor_scale()
 
 	_draw_ground_marker(accent)
 	draw_circle(Vector2(3, 19 * MAP_ACTOR_SCALE), 15.0 * max(scale.x, 1.0), Color(0, 0, 0, 0.16))
@@ -162,6 +169,7 @@ func _draw() -> void:
 		draw_circle(Vector2(0, 27), 3.0, Color(0.95, 0.74, 0.28, 0.95))
 
 func _draw_ground_marker(accent: Color) -> void:
+	var map_scale := _map_actor_scale()
 	var color := Color(accent.r, accent.g, accent.b, 0.20)
 	if bool(data.get("has_quests", false)):
 		color = Color(0.95, 0.72, 0.22, 0.34)
@@ -169,9 +177,9 @@ func _draw_ground_marker(accent: Color) -> void:
 		color = Color(accent.r, accent.g, accent.b, 0.30)
 	elif is_enemy():
 		color = Color(0.76, 0.12, 0.09, 0.30)
-	_draw_ellipse(Vector2(0, 26), Vector2(15, 4.5), color)
+	_draw_ellipse(Vector2(0, 26 * map_scale), Vector2(15 * map_scale, 4.5 * map_scale), color)
 	if bool(data.get("has_quests", false)):
-		draw_circle(Vector2(15, -38), 3.5, Color(0.98, 0.78, 0.28, 0.95))
+		draw_circle(Vector2(15 * map_scale, -38 * map_scale), 3.5, Color(0.98, 0.78, 0.28, 0.95))
 
 func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

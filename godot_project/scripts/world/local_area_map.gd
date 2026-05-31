@@ -95,6 +95,7 @@ var highlighted_portal_id := ""
 var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
 var tile_textures: Dictionary = {}
+var occupied_npc_tiles: Array[Vector2i] = []
 
 func _ready() -> void:
 	_load_tile_textures()
@@ -114,6 +115,7 @@ func setup_region(region: Dictionary) -> void:
 	current_mode = "region"
 	active_shop_id = ""
 	highlighted_portal_id = ""
+	occupied_npc_tiles.clear()
 	_clear_npcs()
 	_clear_portal_labels()
 	_configure_region_size()
@@ -134,6 +136,7 @@ func enter_shop(portal: Dictionary) -> void:
 	var tile_data: Array = portal.get("tile", [map_width / 2, map_height / 2])
 	shop_return_tile = Vector2i(int(tile_data[0]), int(tile_data[1]))
 	highlighted_portal_id = ""
+	occupied_npc_tiles.clear()
 	_clear_npcs()
 	_clear_portal_labels()
 	_configure_shop_size()
@@ -435,13 +438,14 @@ func _spawn_region_npcs() -> void:
 	if region_id.is_empty():
 		return
 	var placed := 0
+	occupied_npc_tiles.clear()
 	for npc_data in GameData.get_npcs():
 		var tile := Vector2i(int(npc_data.get("pos_x", -1)), int(npc_data.get("pos_y", -1)))
 		var region := GameData.get_region_at_tile(tile)
 		if str(region.get("id", "")) != region_id:
 			continue
 		var local_data: Dictionary = npc_data.duplicate(true)
-		var local_tile := _local_npc_tile(int(local_data.get("id", placed)), placed)
+		var local_tile := _local_npc_tile(local_data, placed)
 		local_data["pos_x"] = local_tile.x
 		local_data["pos_y"] = local_tile.y
 		_spawn_npc(local_data)
@@ -472,6 +476,7 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 			"accent": _color_to_array(shop.get("accent", Color(0.86, 0.66, 0.34)))
 		}
 	}
+	occupied_npc_tiles.clear()
 	_spawn_npc(keeper)
 
 func _shop_index(shop_id: String) -> int:
@@ -529,21 +534,97 @@ func _clear_portal_labels() -> void:
 			label.queue_free()
 	portal_labels.clear()
 
-func _local_npc_tile(npc_id: int, index: int) -> Vector2i:
-	var candidates := [
-		Vector2i(map_width / 2 - 5, map_height / 2 - 3),
-		Vector2i(map_width / 2 + 5, map_height / 2 - 2),
-		Vector2i(map_width / 2 - 9, map_height / 2 + 5),
-		Vector2i(map_width / 2 + 9, map_height / 2 + 5),
-		Vector2i(12 + index * 3 % max(8, map_width - 24), map_height / 2),
-		Vector2i(map_width / 2, 11 + index * 3 % max(8, map_height - 20))
+func _local_npc_tile(npc_data: Dictionary, index: int) -> Vector2i:
+	var source := Vector2i(int(npc_data.get("pos_x", map_width / 2)), int(npc_data.get("pos_y", map_height / 2)))
+	var source_region := GameData.get_region_at_tile(source)
+	var preferred := _scaled_world_tile_to_local(source, source_region)
+	var npc_type := str(npc_data.get("npc_type", "normal"))
+	if npc_type == "trader":
+		preferred = _merchant_anchor(index)
+	elif npc_type == "enemy":
+		preferred = _edge_anchor(index)
+	elif npc_type == "master":
+		preferred = _quiet_anchor(index)
+	return _claim_local_npc_tile(preferred, int(npc_data.get("id", index)), index)
+
+func _scaled_world_tile_to_local(source: Vector2i, source_region: Dictionary) -> Vector2i:
+	if source_region.is_empty():
+		return Vector2i(map_width / 2, map_height / 2)
+	var rect_data: Array = source_region.get("rect", [])
+	if rect_data.size() < 4:
+		return Vector2i(map_width / 2, map_height / 2)
+	var rect := Rect2i(int(rect_data[0]), int(rect_data[1]), int(rect_data[2]), int(rect_data[3]))
+	var nx := float(source.x - rect.position.x) / float(max(1, rect.size.x - 1))
+	var ny := float(source.y - rect.position.y) / float(max(1, rect.size.y - 1))
+	return Vector2i(
+		roundi(lerpf(8.0, float(map_width - 9), clamp(nx, 0.0, 1.0))),
+		roundi(lerpf(8.0, float(map_height - 8), clamp(ny, 0.0, 1.0)))
+	)
+
+func _merchant_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(12, 18),
+		Vector2i(map_width - 13, 18),
+		Vector2i(12, map_height - 16),
+		Vector2i(map_width - 13, map_height - 16),
+		Vector2i(map_width / 2 - 13, 13),
+		Vector2i(map_width / 2 + 13, map_height - 14)
 	]
-	var start: int = abs(npc_id + index) % candidates.size()
-	for offset in range(candidates.size()):
-		var tile: Vector2i = candidates[(start + offset) % candidates.size()]
-		if is_tile_walkable(tile):
-			return tile
-	return Vector2i(map_width / 2, map_height / 2)
+	return anchors[index % anchors.size()]
+
+func _quiet_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(map_width / 2 - 14, map_height / 2 - 8),
+		Vector2i(map_width / 2 + 14, map_height / 2 - 8),
+		Vector2i(map_width / 2 - 16, map_height / 2 + 8),
+		Vector2i(map_width / 2 + 16, map_height / 2 + 8)
+	]
+	return anchors[index % anchors.size()]
+
+func _edge_anchor(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(map_width - 10, map_height / 2),
+		Vector2i(9, map_height / 2),
+		Vector2i(map_width / 2, 9),
+		Vector2i(map_width / 2, map_height - 10)
+	]
+	return anchors[index % anchors.size()]
+
+func _claim_local_npc_tile(preferred: Vector2i, npc_id: int, index: int) -> Vector2i:
+	for min_spacing in [4, 3, 2, 1]:
+		for radius in range(0, 16):
+			var candidates := _ring_candidates(preferred, radius, npc_id + index * 23)
+			for tile in candidates:
+				if is_tile_walkable(tile) and _is_local_npc_tile_clear(tile, min_spacing):
+					occupied_npc_tiles.append(tile)
+					return tile
+	occupied_npc_tiles.append(preferred)
+	return preferred
+
+func _ring_candidates(center: Vector2i, radius: int, seed: int) -> Array[Vector2i]:
+	var candidates: Array[Vector2i] = []
+	if radius <= 0:
+		candidates.append(center)
+		return candidates
+	for y in range(center.y - radius, center.y + radius + 1):
+		for x in range(center.x - radius, center.x + radius + 1):
+			if abs(x - center.x) != radius and abs(y - center.y) != radius:
+				continue
+			candidates.append(Vector2i(x, y))
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var score_a: int = abs((a.x * 41 + a.y * 29 + seed) % 101)
+		var score_b: int = abs((b.x * 41 + b.y * 29 + seed) % 101)
+		return score_a < score_b
+	)
+	return candidates
+
+func _is_local_npc_tile_clear(tile: Vector2i, min_spacing: int) -> bool:
+	for used in occupied_npc_tiles:
+		var dx := tile.x - used.x
+		var dy := tile.y - used.y
+		if dx * dx + dy * dy < min_spacing * min_spacing:
+			return false
+	return true
 
 func _shop_plan_for_region() -> Array:
 	var region_type := str(current_region.get("type", "wild"))
