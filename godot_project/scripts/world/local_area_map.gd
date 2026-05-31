@@ -101,6 +101,7 @@ var highlighted_portal_id := ""
 var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
 var tile_textures: Dictionary = {}
+var scene_background_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
 
 func _ready() -> void:
@@ -123,12 +124,20 @@ func _load_tile_textures() -> void:
 		if not variants.is_empty():
 			tile_textures[int(tile_id)] = variants
 
+func _load_region_scene_background() -> void:
+	scene_background_texture = null
+	var region_id := str(current_region.get("id", ""))
+	var path := GameData.get_scene_background_path(region_id)
+	if not path.is_empty():
+		scene_background_texture = GameData.load_texture(path, true)
+
 func setup_region(region: Dictionary) -> void:
 	if tile_textures.is_empty():
 		_load_tile_textures()
 	current_region = region.duplicate(true)
 	current_mode = "region"
 	active_shop_id = ""
+	_load_region_scene_background()
 	highlighted_portal_id = ""
 	occupied_npc_tiles.clear()
 	_clear_npcs()
@@ -150,6 +159,7 @@ func enter_shop(portal: Dictionary) -> void:
 		return
 	active_shop_id = shop_id
 	current_mode = "shop"
+	scene_background_texture = null
 	var tile_data: Array = portal.get("tile", [map_width / 2, map_height / 2])
 	shop_return_tile = Vector2i(int(tile_data[0]), int(tile_data[1]))
 	highlighted_portal_id = ""
@@ -1261,6 +1271,7 @@ func _draw() -> void:
 				draw_rect(rect, _tile_color(tile_id), true)
 			_draw_tile_transition(rect, tile_id, x, y)
 			_draw_tile_detail(rect, tile_id, x, y)
+	_draw_scene_background_wash()
 	_draw_scene_overlay()
 	_draw_portal_signs()
 	_draw_portals()
@@ -1271,6 +1282,17 @@ func _tile_texture(tile_id: int, x: int, y: int) -> Texture2D:
 		return null
 	var index := _tile_seed(x, y) % variants.size()
 	return variants[index]
+
+func _draw_scene_background_wash() -> void:
+	if current_mode != "region" or scene_background_texture == null:
+		return
+	var alpha := 0.12
+	var region_type := str(current_region.get("type", "wild"))
+	if region_type == "city":
+		alpha = 0.10
+	elif region_type == "sect":
+		alpha = 0.15
+	draw_texture_rect(scene_background_texture, Rect2(Vector2.ZERO, get_world_rect().size), false, Color(1.0, 1.0, 1.0, alpha))
 
 func _update_title_label() -> void:
 	if title_label == null:

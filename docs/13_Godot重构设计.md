@@ -131,8 +131,8 @@ godot_project/
 - `LocalAreaMap` 已从单一十字路模板推进到分类型布局：五城会生成多层街巷和街区，镇子会生成村舍、田地和中心空场，野外按水系/山地/林地/荒漠/平原生成河道、桥、山脊、林坡和驿亭，门派按七派气质生成庭院、水榭、雪岭、碑场或旗幡空间。
 - `MapProp` 已补井、石灯、小船、旗幡、花树、石堆、碑龛等 2.5D 道具，并优先加载 `assets/world/props/` 下的透明 PNG 资源；资源缺失时才回退到程序化绘制，由世界地图和局部地图按地貌自动摆放。
 - `AtmosphereLayer` 已加入地域主题动态氛围：临安/江陵水系有雾带与水光，城池/镇子有灯晕和市集微光，山地有云带，花间/花田有花瓣，荒漠有风沙，雪山有寒光，各门派有对应气场。
-- `LocalAreaMap` 在瓦片之上叠加局部环境层：水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌、商铺内景陈设和可遮挡树冠/屋檐层，避免局部城镇继续呈现纯色方格块。
-- `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
+- `LocalAreaMap` 在瓦片之上叠加局部环境层：区域场景水墨氛围图、水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌、商铺内景陈设和可遮挡树冠/屋檐层，避免局部城镇继续呈现纯色方格块。
+- `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，并作为局部地图低透明度氛围层用于强化地域差异。
 - `godot_project/assets/characters/reference_map_sprites/` 保存当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype，由参考图抠图后转为透明 PNG。
 - `godot_project/assets/characters/generated_map_sprites/` 保存组件化生成的 99 个 NPC sprite，作为参考级资源未覆盖时的回退资源。
 - `godot_project/assets/characters/npc/portraits/` 保存当前对话面板实际使用的 99 个 NPC 头像。

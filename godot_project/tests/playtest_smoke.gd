@@ -55,6 +55,7 @@ func _run() -> void:
 	await get_tree().process_frame
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
+	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -71,6 +72,7 @@ func _run() -> void:
 		local_area.enter_shop(shop_portal)
 		await get_tree().process_frame
 		_check(local_area.npc_nodes.size() == 1, "商铺内应生成 1 名掌柜")
+		_check(local_area.scene_background_texture == null, "商铺内景不应继续叠加区域背景")
 		_check(not _first_portal(local_area, "exit_area").is_empty(), "商铺内应有出门入口")
 		if local_area.npc_nodes.size() > 0:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data
