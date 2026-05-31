@@ -16,7 +16,7 @@ func setup(new_data: Dictionary, new_tile_size: int) -> void:
 	tile_size = new_tile_size
 	name = str(data.get("name", "NPC"))
 	position = Vector2((float(data.get("pos_x", 0)) + 0.5) * tile_size, (float(data.get("pos_y", 0)) + 0.5) * tile_size) + _visual_offset()
-	z_index = 10 + int(position.y / float(tile_size))
+	z_index = int(position.y)
 	if is_enemy():
 		add_to_group("enemies")
 	add_to_group("npcs")
@@ -27,7 +27,7 @@ func setup(new_data: Dictionary, new_tile_size: int) -> void:
 
 func _ready() -> void:
 	if data.is_empty():
-		z_index = 10
+		z_index = int(position.y)
 	_ensure_label()
 	_refresh_label_visibility()
 	if not data.is_empty():

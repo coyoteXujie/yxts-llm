@@ -122,8 +122,8 @@ godot_project/
 
 - `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - `godot_project/assets/world/tiles/` 保存当前世界地图和局部地图实际使用的 48x48 瓦片 PNG；道路、水面、建筑、商铺、桥、竹林、山体等瓦片已强化为更接近国风仙侠地图的表现。
-- `WorldMap` 已加入第一版伪 2.5D 表现：地貌边缘过渡、建筑/门派/山体高度叠层、世界层角色缩放和较远镜头，后续再逐步替换为正式 TileMapLayer/TileSet。
-- `LocalAreaMap` 在瓦片之上叠加局部环境层：水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌和商铺内景陈设，避免局部城镇继续呈现纯色方格块。
+- `WorldMap` 已加入第一版伪 2.5D 表现：地貌边缘过渡、建筑/门派/山体高度叠层、`MapProp` 遮挡节点、世界层角色缩放和较远镜头，后续再逐步替换为正式 TileMapLayer/TileSet。
+- `LocalAreaMap` 在瓦片之上叠加局部环境层：水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌、商铺内景陈设和可遮挡树冠/屋檐层，避免局部城镇继续呈现纯色方格块。
 - `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
 - `godot_project/assets/characters/reference_map_sprites/` 保存当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype，由参考图抠图后转为透明 PNG。
 - `godot_project/assets/characters/generated_map_sprites/` 保存组件化生成的 99 个 NPC sprite，作为参考级资源未覆盖时的回退资源。

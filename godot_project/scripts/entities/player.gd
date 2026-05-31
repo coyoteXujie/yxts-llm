@@ -12,7 +12,7 @@ var sprite_texture: Texture2D
 var sprite_key := ""
 
 func _ready() -> void:
-	z_index = 20
+	z_index = int(position.y)
 	if not EventBus.player_changed.is_connected(_on_player_changed):
 		EventBus.player_changed.connect(_on_player_changed)
 	_refresh_sprite_texture()
@@ -45,7 +45,7 @@ func _physics_process(_delta: float) -> void:
 	if world_map != null and not world_map.is_position_walkable(position):
 		position = previous_position
 		velocity = Vector2.ZERO
-	z_index = 100 + int(position.y / GameData.TILE_SIZE)
+	z_index = int(position.y)
 
 func _draw() -> void:
 	_refresh_sprite_texture()

@@ -41,7 +41,7 @@
 - HUD 右上角有常驻小地图，显示当前区域、探索进度、玩家位置、任务目标和已标记目的地。
 - `tools/generate_godot_art_assets.py` 已生成并接入第一批游戏内美术资源：20 张 48x48 地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - 世界地图和局部地图现在都优先使用 `assets/world/tiles/` 的瓦片 PNG；局部地图额外叠加水岸、道路边缘、连续屋檐、城墙/灯笼、商铺招牌和室内陈设层，减少纯色方格感。
-- 世界地图加入第一版伪 2.5D 表现：地貌边缘过渡、建筑/门派/山体高度叠层、较远世界镜头和世界层 NPC 缩放。
+- 世界地图和局部地图加入第一版伪 2.5D 表现：地貌边缘过渡、`MapProp` 遮挡节点、建筑/门派/山体/树冠高度叠层、脚底 Y 轴排序、较远世界镜头和世界层 NPC 缩放。
 - NPC 优先使用 `assets/characters/reference_map_sprites/` 的水墨 Q 版参考级透明 PNG，未覆盖时回退到组件化生成 sprite；姓名只在靠近/选中时显示，避免标签和角色互相遮挡。
 - 对话面板已接入 `assets/characters/npc/portraits/` 的 NPC 头像；背包和商店已接入 `assets/items/icons/` 的物品图标；修炼和战斗面板已接入 `assets/skills/icons/` 的武学图标；世界地图面板已接入 `assets/world/scenes/` 的区域背景和 `assets/ui/` 的地图标记。
 - 切换区域时会出现区域横幅，提示区域类型、危险等级和探索度。

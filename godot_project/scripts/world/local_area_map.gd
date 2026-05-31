@@ -2,6 +2,7 @@ extends Node2D
 class_name LocalAreaMap
 
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
+const MAP_PROP_SCRIPT := preload("res://scripts/world/map_prop.gd")
 
 enum Tile {
 	GRASS,
@@ -91,6 +92,7 @@ var portals: Array = []
 var portal_labels: Array[Label] = []
 var title_label: Label
 var npc_nodes: Array = []
+var prop_nodes: Array[Node2D] = []
 var highlighted_portal_id := ""
 var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
@@ -117,9 +119,11 @@ func setup_region(region: Dictionary) -> void:
 	highlighted_portal_id = ""
 	occupied_npc_tiles.clear()
 	_clear_npcs()
+	_clear_depth_props()
 	_clear_portal_labels()
 	_configure_region_size()
 	_generate_region_map()
+	_build_depth_props()
 	_spawn_region_npcs()
 	_build_portal_labels()
 	_update_title_label()
@@ -138,9 +142,11 @@ func enter_shop(portal: Dictionary) -> void:
 	highlighted_portal_id = ""
 	occupied_npc_tiles.clear()
 	_clear_npcs()
+	_clear_depth_props()
 	_clear_portal_labels()
 	_configure_shop_size()
 	_generate_shop_map(shop_id)
+	_build_depth_props()
 	_spawn_shopkeeper(shop_id)
 	_build_portal_labels()
 	_update_title_label()
@@ -498,6 +504,44 @@ func _clear_npcs() -> void:
 			actor.queue_free()
 	npc_nodes.clear()
 
+func _build_depth_props() -> void:
+	_clear_depth_props()
+	for y in range(map_height):
+		for x in range(map_width):
+			var tile_id: int = int(tiles[y][x])
+			var seed := _tile_seed(x, y)
+			var pos := Vector2((float(x) + 0.5) * tile_size, (float(y) + 0.92) * tile_size)
+			match tile_id:
+				Tile.GARDEN:
+					if seed % 7 == 0:
+						_add_depth_prop("bamboo", pos, seed, 0, 0.92)
+					elif seed % 11 == 0:
+						_add_depth_prop("tree", pos, seed, 0, 0.84)
+				Tile.MOUNTAIN:
+					if not _has_tile(x, y - 1, tile_id) and seed % 3 == 0:
+						_add_depth_prop("ridge", pos, seed, 0, 0.95)
+				Tile.SHOP:
+					if not _has_tile(x, y - 1, tile_id):
+						_add_depth_prop("shop_roof", pos, seed, 0, 0.90)
+				Tile.BUILDING:
+					if not _has_tile(x, y - 1, tile_id) and seed % 2 == 0:
+						_add_depth_prop("roof", pos, seed, 0, 0.86)
+				Tile.COUNTER:
+					if current_mode == "shop" and not _has_tile(x, y - 1, tile_id) and seed % 4 == 0:
+						_add_depth_prop("shelf", pos + Vector2(0, -4), seed, 0, 0.76)
+
+func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
+	var prop = MAP_PROP_SCRIPT.new()
+	add_child(prop)
+	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor)
+	prop_nodes.append(prop)
+
+func _clear_depth_props() -> void:
+	for prop in prop_nodes:
+		if is_instance_valid(prop):
+			prop.queue_free()
+	prop_nodes.clear()
+
 func _build_portal_labels() -> void:
 	_clear_portal_labels()
 	for portal in portals:
@@ -511,7 +555,7 @@ func _build_portal_labels() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) + Vector2(-68, -50)
 		label.size = Vector2(136, 24)
-		label.z_index = 7
+		label.z_index = 3900
 		label.add_theme_font_size_override("font_size", 13)
 		label.add_theme_color_override("font_color", Color(0.96, 0.82, 0.44))
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
@@ -676,7 +720,7 @@ func _update_title_label() -> void:
 		title_label = Label.new()
 		title_label.position = Vector2(22, 8)
 		title_label.size = Vector2(420, 32)
-		title_label.z_index = 8
+		title_label.z_index = 3901
 		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		title_label.add_theme_font_size_override("font_size", 22)
 		title_label.add_theme_color_override("font_color", Color(0.94, 0.80, 0.48, 0.90))
@@ -880,6 +924,9 @@ func _has_tile(x: int, y: int, tile_id: int) -> bool:
 	if x < 0 or y < 0 or x >= map_width or y >= map_height:
 		return false
 	return int(tiles[y][x]) == tile_id
+
+func _tile_seed(x: int, y: int) -> int:
+	return abs((x * 928371 + y * 689287 + x * y * 37) % 9973)
 
 func _paint_line(points: Array, tile_id: int, radius: int = 0) -> void:
 	if points.size() < 2:

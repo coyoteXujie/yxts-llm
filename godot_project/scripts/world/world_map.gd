@@ -25,6 +25,7 @@ enum Tile {
 }
 
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
+const MAP_PROP_SCRIPT := preload("res://scripts/world/map_prop.gd")
 
 const TILE_TEXTURE_PATHS := {
 	Tile.GRASS: "res://assets/world/tiles/tile_grass.png",
@@ -75,6 +76,7 @@ var map_height := GameData.MAP_HEIGHT
 var tiles: Array = []
 var npc_nodes: Array = []
 var landmark_labels: Array[Label] = []
+var prop_nodes: Array[Node2D] = []
 var tile_textures: Dictionary = {}
 var target_region_id := ""
 var world_npc_tiles: Array[Vector2i] = []
@@ -82,6 +84,7 @@ var world_npc_tiles: Array[Vector2i] = []
 func _ready() -> void:
 	_load_tile_textures()
 	generate_map()
+	_build_depth_props()
 	_build_landmark_labels()
 	spawn_npcs()
 	queue_redraw()
@@ -328,6 +331,50 @@ func spawn_npcs() -> void:
 		actor.setup(world_data, tile_size)
 		npc_nodes.append(actor)
 
+func _build_depth_props() -> void:
+	_clear_depth_props()
+	for y in range(map_height):
+		for x in range(map_width):
+			var tile_id: int = int(tiles[y][x])
+			var seed := _tile_seed(x, y)
+			var pos := Vector2((float(x) + 0.5) * tile_size, (float(y) + 0.92) * tile_size)
+			match tile_id:
+				Tile.FOREST:
+					if seed % 9 == 0:
+						_add_depth_prop("tree", pos, seed, 0, 0.74)
+				Tile.BAMBOO:
+					if seed % 7 == 0:
+						_add_depth_prop("bamboo", pos, seed, 0, 0.76)
+				Tile.MOUNTAIN, Tile.CLIFF:
+					if _get_tile(x, y - 1) != tile_id and seed % 5 == 0:
+						_add_depth_prop("ridge", pos, seed, 0, 0.82)
+				Tile.SHOP:
+					if _get_tile(x, y - 1) != tile_id and seed % 2 == 0:
+						_add_depth_prop("shop_roof", pos, seed, 0, 0.62)
+				Tile.TEMPLE:
+					if _get_tile(x, y - 1) != tile_id:
+						_add_depth_prop("temple_roof", pos, seed, 0, 0.78)
+				Tile.SECT:
+					if _get_tile(x, y - 1) != tile_id and seed % 3 == 0:
+						_add_depth_prop("gate", pos, seed, 0, 0.72)
+				Tile.CITY, Tile.TOWN, Tile.VILLAGE, Tile.BUILDING:
+					if _get_tile(x, y - 1) != tile_id and seed % 3 == 0:
+						_add_depth_prop("roof", pos, seed, 0, 0.58)
+					elif seed % 31 == 0:
+						_add_depth_prop("awning", pos + Vector2(0, 8), seed, 0, 0.60)
+
+func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
+	var prop = MAP_PROP_SCRIPT.new()
+	add_child(prop)
+	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor)
+	prop_nodes.append(prop)
+
+func _clear_depth_props() -> void:
+	for prop in prop_nodes:
+		if is_instance_valid(prop):
+			prop.queue_free()
+	prop_nodes.clear()
+
 func _should_spawn_npc_on_world(npc_data: Dictionary) -> bool:
 	var npc_type := str(npc_data.get("npc_type", "normal"))
 	if npc_type == "enemy":
@@ -443,7 +490,7 @@ func _build_landmark_labels() -> void:
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		label.position = tile_to_world(Vector2i(int(pos_data[0]), int(pos_data[1]))) + Vector2(-92, -16)
 		label.size = Vector2(184, 28)
-		label.z_index = 4
+		label.z_index = 3900
 		label.add_theme_font_size_override("font_size", int(landmark.get("size", 16)))
 		label.add_theme_color_override("font_color", _array_color(landmark.get("color", [0.88, 0.76, 0.50]), Color(0.88, 0.76, 0.50)))
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.95))
