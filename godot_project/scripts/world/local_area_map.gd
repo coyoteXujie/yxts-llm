@@ -65,6 +65,22 @@ const SHOP_DEFINITIONS := {
 	}
 }
 
+const TILE_TEXTURE_PATHS := {
+	Tile.GRASS: "res://assets/world/tiles/tile_grass.png",
+	Tile.ROAD: "res://assets/world/tiles/tile_road.png",
+	Tile.WATER: "res://assets/world/tiles/tile_water.png",
+	Tile.BUILDING: "res://assets/world/tiles/tile_building.png",
+	Tile.SHOP: "res://assets/world/tiles/tile_shop.png",
+	Tile.WALL: "res://assets/world/tiles/tile_courtyard.png",
+	Tile.GARDEN: "res://assets/world/tiles/tile_bamboo.png",
+	Tile.FIELD: "res://assets/world/tiles/tile_field.png",
+	Tile.MOUNTAIN: "res://assets/world/tiles/tile_mountain.png",
+	Tile.BRIDGE: "res://assets/world/tiles/tile_bridge.png",
+	Tile.FLOOR: "res://assets/world/tiles/tile_courtyard.png",
+	Tile.COUNTER: "res://assets/world/tiles/tile_building.png",
+	Tile.CARPET: "res://assets/world/tiles/tile_temple.png",
+}
+
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
 var map_height := 42
@@ -78,8 +94,22 @@ var npc_nodes: Array = []
 var highlighted_portal_id := ""
 var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
+var tile_textures: Dictionary = {}
+
+func _ready() -> void:
+	_load_tile_textures()
+
+func _load_tile_textures() -> void:
+	tile_textures.clear()
+	for tile_id in TILE_TEXTURE_PATHS.keys():
+		var path := str(TILE_TEXTURE_PATHS[tile_id])
+		var texture := GameData.load_texture(path)
+		if texture != null:
+			tile_textures[int(tile_id)] = texture
 
 func setup_region(region: Dictionary) -> void:
+	if tile_textures.is_empty():
+		_load_tile_textures()
 	current_region = region.duplicate(true)
 	current_mode = "region"
 	active_shop_id = ""
@@ -94,6 +124,8 @@ func setup_region(region: Dictionary) -> void:
 	queue_redraw()
 
 func enter_shop(portal: Dictionary) -> void:
+	if tile_textures.is_empty():
+		_load_tile_textures()
 	var shop_id := str(portal.get("shop_id", ""))
 	if not SHOP_DEFINITIONS.has(shop_id):
 		return
@@ -184,7 +216,7 @@ func focus_portal(portal: Dictionary) -> void:
 	for label in portal_labels:
 		if not is_instance_valid(label):
 			continue
-		label.visible = label.name == highlighted_portal_id or current_mode == "shop"
+		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_")
 	queue_redraw()
 
 func clear_highlights() -> void:
@@ -465,6 +497,7 @@ func _build_portal_labels() -> void:
 	_clear_portal_labels()
 	for portal in portals:
 		var tile_data: Array = portal.get("tile", [0, 0])
+		var portal_type := str(portal.get("type", ""))
 		var label := Label.new()
 		label.name = str(portal.get("id", ""))
 		label.text = str(portal.get("label", "入口"))
@@ -479,7 +512,14 @@ func _build_portal_labels() -> void:
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
-		label.visible = current_mode == "shop"
+		if portal_type == "shop":
+			var board := StyleBoxFlat.new()
+			board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
+			board.border_color = Color(0.86, 0.58, 0.25, 0.55)
+			board.set_border_width_all(1)
+			board.set_corner_radius_all(3)
+			label.add_theme_stylebox_override("normal", board)
+		label.visible = current_mode == "shop" or portal_type == "shop"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -536,8 +576,18 @@ func _draw() -> void:
 		for x in range(map_width):
 			var tile_id: int = tiles[y][x]
 			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
-			draw_rect(rect, _tile_color(tile_id), true)
+			var texture: Texture2D = tile_textures.get(tile_id, null)
+			if texture != null:
+				draw_texture_rect(texture, rect, false)
+				var tint := _tile_tint(tile_id)
+				if tint.a > 0.0:
+					draw_rect(rect, tint, true)
+			else:
+				draw_rect(rect, _tile_color(tile_id), true)
+			_draw_tile_transition(rect, tile_id, x, y)
 			_draw_tile_detail(rect, tile_id, x, y)
+	_draw_scene_overlay()
+	_draw_portal_signs()
 	_draw_portals()
 
 func _update_title_label() -> void:
@@ -570,6 +620,66 @@ func _draw_portals() -> void:
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
 		draw_circle(pos, 4.2 if highlighted else 3.0, color)
 
+func _draw_portal_signs() -> void:
+	for portal in portals:
+		if str(portal.get("type", "")) != "shop":
+			continue
+		var tile_data: Array = portal.get("tile", [0, 0])
+		var pos := tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1])))
+		var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", "")), {})
+		var accent: Color = shop.get("accent", Color(0.86, 0.58, 0.28))
+		var sign_rect := Rect2(pos + Vector2(-34, -78), Vector2(68, 18))
+		draw_rect(sign_rect, Color(0.20, 0.10, 0.05, 0.88), true)
+		draw_rect(sign_rect.grow(-2), accent.darkened(0.32), true)
+		draw_line(sign_rect.position + Vector2(7, 3), sign_rect.position + Vector2(7, 18), Color(0.92, 0.76, 0.44, 0.55), 1.4)
+		draw_line(sign_rect.position + Vector2(61, 3), sign_rect.position + Vector2(61, 18), Color(0.92, 0.76, 0.44, 0.55), 1.4)
+
+func _draw_scene_overlay() -> void:
+	if current_mode == "shop":
+		_draw_shop_overlay()
+	else:
+		_draw_region_overlay()
+
+func _draw_region_overlay() -> void:
+	var size := get_world_rect().size
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
+	if region_type == "city":
+		var wall_rect := Rect2(Vector2(5 * tile_size, 5 * tile_size), Vector2((map_width - 10) * tile_size, (map_height - 10) * tile_size))
+		draw_rect(wall_rect, Color(0.52, 0.34, 0.17, 0.34), false, 5.0)
+		for x in range(12, map_width - 12, 7):
+			var north := tile_to_world(Vector2i(x, map_height / 2 - 4))
+			var south := tile_to_world(Vector2i(x, map_height / 2 + 4))
+			draw_circle(north, 3.0, Color(0.95, 0.54, 0.22, 0.42))
+			draw_circle(south, 3.0, Color(0.95, 0.54, 0.22, 0.36))
+	elif region_type == "town":
+		draw_line(Vector2(4 * tile_size, 6 * tile_size), Vector2((map_width - 4) * tile_size, 5 * tile_size), Color(0.86, 0.72, 0.48, 0.24), 2.0)
+		draw_line(Vector2(4 * tile_size, (map_height - 5) * tile_size), Vector2((map_width - 4) * tile_size, (map_height - 6) * tile_size), Color(0.34, 0.24, 0.13, 0.20), 2.0)
+	elif region_type == "sect":
+		draw_arc(Vector2(size.x * 0.5, size.y * 0.20), tile_size * 2.2, PI, TAU, 32, Color(0.92, 0.86, 0.62, 0.28), 3.0)
+	else:
+		if terrain.contains("mountain") or terrain.contains("peak") or terrain.contains("cliff"):
+			for x in range(6, map_width - 6, 9):
+				var p := tile_to_world(Vector2i(x, 7 + (x % 5)))
+				draw_line(p + Vector2(-24, 20), p + Vector2(0, -18), Color(0.20, 0.19, 0.16, 0.24), 2.0)
+				draw_line(p + Vector2(0, -18), p + Vector2(27, 23), Color(0.66, 0.62, 0.52, 0.20), 2.0)
+		if _terrain_has_water(terrain):
+			draw_line(Vector2(0, 14 * tile_size), Vector2(size.x, 13 * tile_size), Color(0.72, 0.86, 0.88, 0.16), 4.0)
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.03, 0.015, 0.18), false, 3.0)
+
+func _draw_shop_overlay() -> void:
+	var size := get_world_rect().size
+	var shop: Dictionary = SHOP_DEFINITIONS.get(active_shop_id, {})
+	var accent: Color = shop.get("accent", Color(0.80, 0.54, 0.28))
+	draw_rect(Rect2(0, 0, size.x, tile_size * 2.0), Color(0.18, 0.10, 0.06, 0.48), true)
+	draw_line(Vector2(tile_size, tile_size * 2.05), Vector2(size.x - tile_size, tile_size * 2.05), accent.darkened(0.25), 3.0)
+	for x in range(3, map_width - 3, 5):
+		var hanger := Vector2(x * tile_size + tile_size * 0.5, tile_size * 1.2)
+		draw_line(hanger + Vector2(0, -10), hanger + Vector2(0, 8), Color(0.88, 0.70, 0.38, 0.45), 1.2)
+		draw_circle(hanger + Vector2(0, 11), 4.0, accent.lightened(0.18))
+	draw_rect(Rect2(Vector2(tile_size * 2, tile_size * 3), Vector2(size.x - tile_size * 4, tile_size * 0.34)), Color(0.86, 0.64, 0.34, 0.20), true)
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.025, 0.015, 0.25), false, 3.0)
+
 func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 	var seed := (x * 31 + y * 17) % 19
 	match tile_id:
@@ -581,9 +691,12 @@ func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 			draw_line(rect.position + Vector2(5, 18), rect.position + Vector2(43, 15), Color(0.72, 0.88, 0.94, 0.24), 2.0)
 			draw_line(rect.position + Vector2(7, 32), rect.position + Vector2(41, 29), Color(0.08, 0.18, 0.26, 0.22), 1.4)
 		Tile.BUILDING, Tile.SHOP:
-			draw_polygon(PackedVector2Array([rect.position + Vector2(4, 18), rect.position + Vector2(24, 7), rect.position + Vector2(44, 18), rect.position + Vector2(38, 24), rect.position + Vector2(10, 24)]), PackedColorArray([Color(0.32, 0.15, 0.08, 0.58), Color(0.72, 0.40, 0.20, 0.64), Color(0.32, 0.15, 0.08, 0.58), Color(0.40, 0.22, 0.12, 0.58), Color(0.40, 0.22, 0.12, 0.58)]))
-			if tile_id == Tile.SHOP:
-				draw_rect(Rect2(rect.position + Vector2(12, 25), Vector2(24, 4)), Color(0.92, 0.68, 0.28, 0.45), true)
+			if not _has_tile(x, y - 1, tile_id):
+				draw_polygon(PackedVector2Array([rect.position + Vector2(0, 22), rect.position + Vector2(24, 6), rect.position + Vector2(48, 22), rect.position + Vector2(42, 28), rect.position + Vector2(6, 28)]), PackedColorArray([Color(0.32, 0.15, 0.08, 0.58), Color(0.72, 0.40, 0.20, 0.64), Color(0.32, 0.15, 0.08, 0.58), Color(0.40, 0.22, 0.12, 0.58), Color(0.40, 0.22, 0.12, 0.58)]))
+				if tile_id == Tile.SHOP:
+					draw_rect(Rect2(rect.position + Vector2(8, 29), Vector2(32, 5)), Color(0.92, 0.68, 0.28, 0.45), true)
+			elif not _has_tile(x, y + 1, tile_id):
+				draw_rect(Rect2(rect.position + Vector2(5, 34), Vector2(38, 5)), Color(0.22, 0.10, 0.06, 0.30), true)
 		Tile.GARDEN:
 			draw_circle(rect.get_center() + Vector2(-6, 2), 9.0, Color(0.13, 0.34, 0.16, 0.38))
 			draw_circle(rect.get_center() + Vector2(7, -4), 7.0, Color(0.28, 0.48, 0.20, 0.34))
@@ -591,7 +704,8 @@ func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 			for i in range(3):
 				draw_line(rect.position + Vector2(5, 13 + i * 9), rect.position + Vector2(43, 8 + i * 9), Color(0.70, 0.70, 0.34, 0.28), 1.4)
 		Tile.MOUNTAIN:
-			draw_polygon(PackedVector2Array([rect.position + Vector2(5, 40), rect.position + Vector2(24, 9), rect.position + Vector2(43, 40)]), PackedColorArray([Color(0.22, 0.22, 0.20, 0.55), Color(0.54, 0.52, 0.46, 0.55), Color(0.18, 0.18, 0.17, 0.55)]))
+			if not _has_tile(x, y - 1, tile_id) or (x + y) % 4 == 0:
+				draw_polygon(PackedVector2Array([rect.position + Vector2(5, 40), rect.position + Vector2(24, 9), rect.position + Vector2(43, 40)]), PackedColorArray([Color(0.22, 0.22, 0.20, 0.55), Color(0.54, 0.52, 0.46, 0.55), Color(0.18, 0.18, 0.17, 0.55)]))
 		Tile.FLOOR:
 			if (x + y) % 4 == 0:
 				draw_line(rect.position + Vector2(4, 34), rect.position + Vector2(44, 29), Color(0.48, 0.38, 0.24, 0.16), 1.2)
@@ -633,6 +747,58 @@ func _tile_color(tile_id: int) -> Color:
 			return Color(0.42, 0.18, 0.13)
 		_:
 			return Color(0.30, 0.45, 0.27)
+
+func _tile_tint(tile_id: int) -> Color:
+	match tile_id:
+		Tile.ROAD:
+			return Color(0.86, 0.72, 0.46, 0.12)
+		Tile.WATER:
+			return Color(0.08, 0.25, 0.36, 0.10)
+		Tile.BUILDING:
+			return Color(0.28, 0.13, 0.07, 0.10)
+		Tile.SHOP:
+			return Color(0.70, 0.34, 0.12, 0.08)
+		Tile.WALL:
+			return Color(0.16, 0.10, 0.06, 0.22)
+		Tile.GARDEN:
+			return Color(0.08, 0.26, 0.12, 0.08)
+		Tile.FIELD:
+			return Color(0.72, 0.62, 0.28, 0.08)
+		Tile.MOUNTAIN:
+			return Color(0.16, 0.15, 0.13, 0.12)
+		Tile.FLOOR:
+			return Color(0.62, 0.45, 0.25, 0.16)
+		Tile.COUNTER:
+			return Color(0.18, 0.08, 0.03, 0.20)
+		Tile.CARPET:
+			return Color(0.48, 0.10, 0.06, 0.18)
+		_:
+			return Color.TRANSPARENT
+
+func _draw_tile_transition(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if tile_id == Tile.WATER:
+		_draw_edge_if_missing(rect, x, y, Tile.WATER, Vector2(0, 0), Vector2(tile_size, 0), Vector2i(0, -1), Color(0.84, 0.74, 0.50, 0.26), 2.0)
+		_draw_edge_if_missing(rect, x, y, Tile.WATER, Vector2(0, tile_size), Vector2(tile_size, tile_size), Vector2i(0, 1), Color(0.84, 0.74, 0.50, 0.22), 2.0)
+		_draw_edge_if_missing(rect, x, y, Tile.WATER, Vector2(0, 0), Vector2(0, tile_size), Vector2i(-1, 0), Color(0.84, 0.74, 0.50, 0.22), 2.0)
+		_draw_edge_if_missing(rect, x, y, Tile.WATER, Vector2(tile_size, 0), Vector2(tile_size, tile_size), Vector2i(1, 0), Color(0.84, 0.74, 0.50, 0.22), 2.0)
+	elif tile_id == Tile.ROAD:
+		var edge_color := Color(0.30, 0.20, 0.10, 0.16)
+		_draw_edge_if_missing(rect, x, y, Tile.ROAD, Vector2(0, 0), Vector2(tile_size, 0), Vector2i(0, -1), edge_color, 1.2)
+		_draw_edge_if_missing(rect, x, y, Tile.ROAD, Vector2(0, tile_size), Vector2(tile_size, tile_size), Vector2i(0, 1), edge_color, 1.2)
+		_draw_edge_if_missing(rect, x, y, Tile.ROAD, Vector2(0, 0), Vector2(0, tile_size), Vector2i(-1, 0), edge_color, 1.2)
+		_draw_edge_if_missing(rect, x, y, Tile.ROAD, Vector2(tile_size, 0), Vector2(tile_size, tile_size), Vector2i(1, 0), edge_color, 1.2)
+	elif tile_id == Tile.GARDEN or tile_id == Tile.FIELD:
+		if not _has_tile(x, y - 1, tile_id):
+			draw_line(rect.position, rect.position + Vector2(tile_size, 0), Color(0.16, 0.28, 0.10, 0.16), 1.0)
+
+func _draw_edge_if_missing(rect: Rect2, x: int, y: int, tile_id: int, start: Vector2, end: Vector2, offset: Vector2i, color: Color, width: float) -> void:
+	if not _has_tile(x + offset.x, y + offset.y, tile_id):
+		draw_line(rect.position + start, rect.position + end, color, width)
+
+func _has_tile(x: int, y: int, tile_id: int) -> bool:
+	if x < 0 or y < 0 or x >= map_width or y >= map_height:
+		return false
+	return int(tiles[y][x]) == tile_id
 
 func _paint_line(points: Array, tile_id: int, radius: int = 0) -> void:
 	if points.size() < 2:
