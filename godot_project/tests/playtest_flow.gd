@@ -56,6 +56,24 @@ func _run() -> void:
 			main.discovery_panel.close_panel()
 			await _frames(1)
 
+		var resource_portal := _first_reward_resource(main.local_area)
+		_check(not resource_portal.is_empty(), "平安镇应有每日资源点")
+		if not resource_portal.is_empty():
+			var resource_item := str(resource_portal.get("reward_item", ""))
+			var before_resource_item_count := int(GameState.inventory.get(resource_item, 0))
+			main._inspect_resource(resource_portal)
+			await _frames(1)
+			_check(main.discovery_panel.visible, "采集资源点应打开发现面板")
+			_check(GameState.mode == GameState.Mode.DISCOVERY, "资源点面板应切换到发现模式")
+			_check(int(GameState.inventory.get(resource_item, 0)) == before_resource_item_count + 1, "资源点应发放当日奖励")
+			main.discovery_panel.close_panel()
+			await _frames(1)
+			main._inspect_resource(resource_portal)
+			await _frames(1)
+			_check(int(GameState.inventory.get(resource_item, 0)) == before_resource_item_count + 1, "同一天重复采集资源点不应重复发奖")
+			main.discovery_panel.close_panel()
+			await _frames(1)
+
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
 		if not shop_portal.is_empty():
@@ -127,6 +145,12 @@ func _first_portal(local_area, portal_type: String) -> Dictionary:
 func _first_reward_landmark(local_area) -> Dictionary:
 	for portal in local_area.portals:
 		if str(portal.get("type", "")) == "landmark" and not str(portal.get("reward_item", "")).is_empty():
+			return portal
+	return {}
+
+func _first_reward_resource(local_area) -> Dictionary:
+	for portal in local_area.portals:
+		if str(portal.get("type", "")) == "resource" and not str(portal.get("reward_item", "")).is_empty():
 			return portal
 	return {}
 

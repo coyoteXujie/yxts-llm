@@ -251,7 +251,7 @@ func focus_portal(portal: Dictionary) -> void:
 	for label in portal_labels:
 		if not is_instance_valid(label):
 			continue
-		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_") or str(label.name).begins_with("landmark_")
+		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_") or str(label.name).begins_with("landmark_") or str(label.name).begins_with("resource_")
 	queue_redraw()
 
 func clear_highlights() -> void:
@@ -311,6 +311,7 @@ func _generate_region_map() -> void:
 	_add_exit_portal()
 	_add_region_travel_portals()
 	_add_landmark_portals()
+	_add_resource_portals()
 
 func _generate_city_region() -> void:
 	_reset_tiles(Tile.GRASS)
@@ -554,6 +555,55 @@ func _add_landmark_portals() -> void:
 		}
 		portals.append(portal)
 
+func _add_resource_portals() -> void:
+	var resources := _resources_for_region()
+	for index in range(resources.size()):
+		var resource: Dictionary = resources[index]
+		var tile: Vector2i = resource.get("tile", _resource_tile(index))
+		tile = _find_nearest_walkable_tile(tile)
+		_paint_resource_site(tile, str(resource.get("kind", "cache")))
+		portals.append({
+			"id": "resource_%s_%d" % [str(current_region.get("id", "region")), index],
+			"label": str(resource.get("label", "资源点")),
+			"type": "resource",
+			"tile": [tile.x, tile.y],
+			"shop_id": "",
+			"description": str(resource.get("description", "这里有一点可用的物资。")),
+			"depleted_description": str(resource.get("depleted_description", "这里今日已经搜寻过，明日再来或许会有新的收获。")),
+			"reward_item": str(resource.get("reward_item", "")),
+			"reward_count": int(resource.get("reward_count", 1)),
+			"reward_money": int(resource.get("reward_money", 0)),
+			"reward_exp": int(resource.get("reward_exp", 0)),
+			"resource_kind": str(resource.get("kind", "cache"))
+		})
+
+func _resources_for_region() -> Array:
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
+	var resources: Array = []
+	if region_type == "city":
+		resources.append({"label": "街边食盒", "description": "街边摊贩收摊前分你一份热食。", "kind": "cache", "tile": Vector2i(map_width / 2 - 18, map_height / 2 + 8), "reward_item": "item_baozi"})
+		resources.append({"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": Vector2i(map_width / 2 + 16, map_height / 2 - 8), "reward_item": "item_yao"})
+	elif region_type == "town":
+		resources.append({"label": "田埂药草", "description": "田埂边长着几株常见药草，适合初行江湖的人练手采摘。", "kind": "herb", "tile": Vector2i(map_width - 12, map_height - 10), "reward_item": "item_red_flower"})
+		resources.append({"label": "茶棚食盒", "description": "茶棚老板见你赶路，塞给你一个热包子。", "kind": "cache", "tile": Vector2i(12, map_height / 2 + 7), "reward_item": "item_baozi"})
+	elif region_type == "sect":
+		resources.append({"label": "练功药罐", "description": "演武坪旁备着跌打药，弟子们用后会及时补上。", "kind": "herb", "tile": Vector2i(map_width / 2 - 12, map_height / 2 + 9), "reward_item": "item_yao"})
+		resources.append({"label": "香案供钱", "description": "香案上有几枚散钱，知客让你拿去添置路粮。", "kind": "coin", "tile": Vector2i(map_width / 2 + 12, 13), "reward_money": 3})
+	else:
+		resources.append({"label": "野草药坡", "description": "路边药坡长着几株常见药草。", "kind": "herb", "tile": Vector2i(12, 13), "reward_item": "item_red_flower"})
+		resources.append({"label": "破棚食盒", "description": "破棚木桌下有个食盒，里面还有一个包子。", "kind": "cache", "tile": Vector2i(map_width / 2 - 8, map_height / 2 + 9), "reward_item": "item_baozi"})
+
+	if _terrain_has_water(terrain):
+		resources.append({"label": "河边鱼篓", "description": "河边鱼篓压在水草旁，里面还有一尾活鱼。", "kind": "fish", "tile": Vector2i(map_width - 12, map_height / 2 - 7), "reward_item": "item_fish"})
+	elif _terrain_has_mountain(terrain):
+		resources.append({"label": "山壁矿点", "description": "山壁露出一点矿脉，虽然不能锻成兵器，也能换些银两。", "kind": "ore", "tile": Vector2i(map_width - 13, 12), "reward_money": 5})
+	elif _terrain_has_forest(terrain):
+		resources.append({"label": "林下药草", "description": "林下潮湿，药草长得比镇外更好。", "kind": "herb", "tile": Vector2i(13, 13), "reward_item": "item_red_flower"})
+	elif terrain.contains("desert") or terrain.contains("plateau"):
+		resources.append({"label": "沙下旧钱", "description": "黄沙里露出铜色边角，拨开后找到几枚旧钱。", "kind": "coin", "tile": Vector2i(map_width - 16, map_height - 12), "reward_money": 5})
+	return resources
+
 func _landmarks_for_region() -> Array:
 	var region_type := str(current_region.get("type", "wild"))
 	var region_id := str(current_region.get("id", ""))
@@ -657,6 +707,15 @@ func _landmark_tile(index: int) -> Vector2i:
 	]
 	return anchors[index % anchors.size()]
 
+func _resource_tile(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(12, 12),
+		Vector2i(map_width - 13, map_height - 11),
+		Vector2i(map_width / 2 + 15, 13),
+		Vector2i(map_width / 2 - 14, map_height - 12)
+	]
+	return anchors[index % anchors.size()]
+
 func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 	_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.ROAD)
 	match kind:
@@ -675,6 +734,20 @@ func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 			_set_tile(tile.x, tile.y, Tile.ROAD)
 		_:
 			_set_tile(tile.x, tile.y, Tile.ROAD)
+
+func _paint_resource_site(tile: Vector2i, kind: String) -> void:
+	match kind:
+		"herb", "flower":
+			_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 4, 3), Tile.GARDEN)
+			_set_tile(tile.x, tile.y, Tile.ROAD)
+		"fish":
+			_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.BRIDGE)
+			_set_tile(tile.x, tile.y, Tile.ROAD)
+		"ore":
+			_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 4, 3), Tile.MOUNTAIN)
+			_set_tile(tile.x, tile.y, Tile.ROAD)
+		_:
+			_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 4, 3), Tile.ROAD)
 
 func _add_region_travel_portals() -> void:
 	var region_id := str(current_region.get("id", ""))
@@ -954,7 +1027,7 @@ func _build_portal_labels() -> void:
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
-		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark":
+		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource":
 			var board := StyleBoxFlat.new()
 			if portal_type == "travel_region":
 				board.bg_color = Color(0.08, 0.16, 0.12, 0.74)
@@ -962,13 +1035,16 @@ func _build_portal_labels() -> void:
 			elif portal_type == "landmark":
 				board.bg_color = Color(0.16, 0.12, 0.07, 0.72)
 				board.border_color = Color(0.80, 0.68, 0.38, 0.56)
+			elif portal_type == "resource":
+				board.bg_color = Color(0.08, 0.14, 0.08, 0.70)
+				board.border_color = Color(0.58, 0.76, 0.38, 0.52)
 			else:
 				board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
 				board.border_color = Color(0.86, 0.58, 0.25, 0.55)
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark"
+		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -1209,6 +1285,8 @@ func _draw_portals() -> void:
 			color = Color(0.72, 0.84, 0.46, 0.82)
 		elif portal_type == "landmark":
 			color = Color(0.98, 0.76, 0.32, 0.84)
+		elif portal_type == "resource":
+			color = Color(0.58, 0.86, 0.40, 0.82)
 		elif portal_type == "exit_world" or portal_type == "exit_area":
 			color = Color(0.56, 0.78, 0.98, 0.75)
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)

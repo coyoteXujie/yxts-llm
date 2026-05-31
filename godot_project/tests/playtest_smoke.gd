@@ -59,6 +59,7 @@ func _run() -> void:
 	_check(GameData.get_neighbor_regions("qinghe", 4).size() >= 3, "平安镇应能计算相邻区域")
 	_check(not _first_portal(local_area, "travel_region").is_empty(), "平安镇应生成相邻区域转场入口")
 	_check(_portal_count(local_area, "landmark") >= 3, "平安镇应生成可互动地标")
+	_check(_portal_count(local_area, "resource") >= 2, "平安镇应生成每日资源点")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")

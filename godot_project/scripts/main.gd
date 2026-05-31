@@ -365,6 +365,8 @@ func _handle_enter_area() -> void:
 			_travel_to_linked_region(focused_portal)
 		"landmark":
 			_inspect_landmark(focused_portal)
+		"resource":
+			_inspect_resource(focused_portal)
 		"look":
 			EventBus.emit_toast("驿亭可歇脚探听，后续接入野外事件")
 		_:
@@ -456,6 +458,37 @@ func _inspect_landmark(portal: Dictionary) -> void:
 		GameState.reward_player(reward_exp, 0)
 		reward_parts.append("%d 点阅历" % reward_exp)
 	_show_landmark_discovery(portal, description, reward_parts, already_seen)
+
+func _inspect_resource(portal: Dictionary) -> void:
+	var region_id := str(local_area.current_region.get("id", "region"))
+	var portal_id := str(portal.get("id", "resource"))
+	var flag_key := "resource_%s_%s_last_day" % [region_id, portal_id]
+	var last_day := int(GameState.game_flags.get(flag_key, 0))
+	var already_seen := last_day == GameState.day
+	if already_seen:
+		_show_landmark_discovery(portal, str(portal.get("depleted_description", "这里今日已经搜寻过。")), [], true)
+		return
+	GameState.game_flags[flag_key] = GameState.day
+	var reward_parts: Array[String] = []
+	var item_id := str(portal.get("reward_item", ""))
+	var reward_count := int(portal.get("reward_count", 1))
+	var reward_money := int(portal.get("reward_money", 0))
+	var reward_exp := int(portal.get("reward_exp", 0))
+	if not item_id.is_empty():
+		GameState.add_item(item_id, max(1, reward_count))
+		var item := GameData.get_item(item_id)
+		var item_name := str(item.get("name", item_id))
+		if reward_count > 1:
+			reward_parts.append("%s x%d" % [item_name, reward_count])
+		else:
+			reward_parts.append(item_name)
+	if reward_money > 0:
+		GameState.add_money(reward_money)
+		reward_parts.append("%d 两银子" % reward_money)
+	if reward_exp > 0:
+		GameState.reward_player(reward_exp, 0)
+		reward_parts.append("%d 点阅历" % reward_exp)
+	_show_landmark_discovery(portal, str(portal.get("description", "这里有一点可用的物资。")), reward_parts, false)
 
 func _show_landmark_discovery(portal: Dictionary, description: String, rewards: Array[String], already_seen: bool) -> void:
 	if discovery_panel == null:
