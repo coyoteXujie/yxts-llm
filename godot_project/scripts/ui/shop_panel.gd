@@ -2,6 +2,8 @@ extends Control
 class_name ShopPanel
 
 var npc_data: Dictionary = {}
+var title_label: Label
+var money_label: Label
 var item_list: ItemList
 var item_preview: TextureRect
 var details: Label
@@ -11,6 +13,8 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
 	_build()
+	if not EventBus.player_changed.is_connected(_on_player_changed):
+		EventBus.player_changed.connect(_on_player_changed)
 
 func show_shop(data: Dictionary) -> void:
 	npc_data = data
@@ -33,11 +37,16 @@ func _build() -> void:
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 
-	var title := Label.new()
-	title.text = "商店"
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
-	box.add_child(title)
+	title_label = Label.new()
+	title_label.text = "商店"
+	title_label.add_theme_font_size_override("font_size", 26)
+	title_label.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	box.add_child(title_label)
+
+	money_label = Label.new()
+	money_label.add_theme_font_size_override("font_size", 15)
+	money_label.add_theme_color_override("font_color", Color(0.72, 0.68, 0.56))
+	box.add_child(money_label)
 
 	item_list = ItemList.new()
 	item_list.custom_minimum_size = Vector2(430, 270)
@@ -89,6 +98,9 @@ func _refresh() -> void:
 		return
 	item_list.clear()
 	item_ids.clear()
+	if title_label != null:
+		title_label.text = _shop_title()
+	_update_money_label()
 	var sell_items: Array = npc_data.get("sell_items", [])
 	for item_id in sell_items:
 		var item := GameData.get_item(str(item_id))
@@ -119,7 +131,24 @@ func _buy_selected() -> void:
 		return
 	var index := int(selected[0])
 	if index >= 0 and index < item_ids.size():
-		GameState.buy_item(item_ids[index])
+		if GameState.buy_item(item_ids[index]):
+			_update_money_label()
+
+func _shop_title() -> String:
+	var shop_name := str(npc_data.get("shop_name", "商店"))
+	var keeper := str(npc_data.get("name", "掌柜"))
+	if shop_name.is_empty() or shop_name == "商店":
+		return "%s的铺子" % keeper
+	return "%s · %s" % [shop_name, keeper]
+
+func _update_money_label() -> void:
+	if money_label == null:
+		return
+	money_label.text = "银两：%d" % int(GameState.player.get("money", 0))
+
+func _on_player_changed(_player: Dictionary) -> void:
+	if visible:
+		_update_money_label()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):

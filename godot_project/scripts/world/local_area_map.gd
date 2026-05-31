@@ -430,6 +430,8 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 		"personality": "精明、热情",
 		"pos_x": map_width / 2,
 		"pos_y": 6,
+		"shop_name": str(shop.get("name", "商铺")),
+		"shop_type": shop_id,
 		"sell_items": shop.get("sell_items", []),
 		"teach_skills": [],
 		"can_rest": bool(shop.get("can_rest", false)),
