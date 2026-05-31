@@ -136,10 +136,10 @@ func generate_map() -> void:
 	_paint_bridges()
 
 func _paint_world_biomes() -> void:
-	_rough_fill_rect(Rect2i(0, 0, 96, 8), Tile.MOUNTAIN)
+	_paint_mountain_biome(Rect2i(0, 0, 96, 8), Tile.GRASS, Tile.MOUNTAIN, 9)
 	_rough_fill_rect(Rect2i(0, 8, 15, 10), Tile.FOREST)
-	_rough_fill_rect(Rect2i(38, 5, 20, 12), Tile.SNOW)
-	_rough_fill_rect(Rect2i(30, 31, 30, 6), Tile.MOUNTAIN)
+	_paint_mountain_biome(Rect2i(38, 5, 20, 12), Tile.SNOW, Tile.MOUNTAIN, 7)
+	_paint_mountain_biome(Rect2i(30, 31, 30, 6), Tile.GRASS, Tile.MOUNTAIN, 8)
 	_rough_fill_rect(Rect2i(6, 39, 18, 11), Tile.DESERT)
 	_rough_fill_rect(Rect2i(4, 55, 22, 17), Tile.BAMBOO)
 	_rough_fill_rect(Rect2i(24, 54, 15, 14), Tile.FIELD)
@@ -147,8 +147,20 @@ func _paint_world_biomes() -> void:
 	_rough_fill_rect(Rect2i(68, 38, 18, 13), Tile.MARSH)
 	_rough_fill_rect(Rect2i(80, 42, 16, 12), Tile.FOREST)
 	_rough_fill_rect(Rect2i(73, 55, 22, 15), Tile.MARSH)
-	_rough_fill_rect(Rect2i(47, 9, 9, 7), Tile.CLIFF)
+	_paint_mountain_biome(Rect2i(47, 9, 9, 7), Tile.GRASS, Tile.CLIFF, 5)
 	_rough_fill_rect(Rect2i(54, 58, 14, 9), Tile.FIELD)
+
+func _paint_mountain_biome(rect: Rect2i, base_tile: int, obstacle_tile: int, density: int) -> void:
+	_rough_fill_rect(rect, base_tile)
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var seed: int = _tile_seed(x, y)
+			var ridge_band: bool = abs((y - rect.position.y) * 3 - (x - rect.position.x)) % 13 == 0
+			var should_peak: bool = seed % density == 0 or (ridge_band and seed % 3 == 0)
+			if should_peak:
+				_set_tile(x, y, obstacle_tile)
+				if seed % 5 == 0:
+					_set_tile(x + 1, y, obstacle_tile)
 
 func _paint_rivers() -> void:
 	_paint_line([Vector2i(-2, 16), Vector2i(16, 15), Vector2i(36, 17), Vector2i(60, 15), Vector2i(98, 13)], Tile.WATER, 1, true)

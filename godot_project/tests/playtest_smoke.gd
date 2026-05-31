@@ -6,7 +6,9 @@ const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 
 const WORLD_TILE_WATER := 2
 const WORLD_TILE_BUILDING := 3
+const WORLD_TILE_MOUNTAIN := 10
 const LOCAL_TILE_WATER := 2
+const LOCAL_TILE_MOUNTAIN := 8
 
 var failures: Array[String] = []
 
@@ -34,6 +36,7 @@ func _run() -> void:
 	_check(world_map.is_position_walkable(GameState.player_position), "玩家出生点应可通行")
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_WATER)), "世界地图水面应不可通行")
 	_check(not world_map.is_tile_walkable(_first_tile_with_id(world_map, WORLD_TILE_BUILDING)), "世界地图建筑应不可通行")
+	_check(_tile_ratio(world_map, WORLD_TILE_MOUNTAIN) < 0.18, "世界地图不应被山峰瓦片铺满")
 	_check(_actors_use_y_sort(world_map.npc_nodes), "世界层 NPC 应按脚底 Y 坐标排序")
 
 	var player = PLAYER_SCRIPT.new()
@@ -72,6 +75,11 @@ func _run() -> void:
 	await get_tree().process_frame
 	_check(not local_area.is_tile_walkable(_first_tile_with_id(local_area, LOCAL_TILE_WATER)), "临安局部水面应不可通行")
 
+	local_area.setup_region(GameData.get_region("emei_sacred"))
+	await get_tree().process_frame
+	_check(_tile_ratio(local_area, LOCAL_TILE_MOUNTAIN) < 0.32, "山地区域不应被山峰瓦片铺满")
+	_check(local_area.is_position_walkable(local_area.get_entry_position("world")), "山地区域入口应可通行")
+
 	test_root.queue_free()
 	if failures.is_empty():
 		print("PLAYTEST_SMOKE_OK")
@@ -109,6 +117,15 @@ func _portal_count(local_area, portal_type: String) -> int:
 		if str(portal.get("type", "")) == portal_type:
 			count += 1
 	return count
+
+func _tile_ratio(map_node, tile_id: int) -> float:
+	var count := 0
+	var total: int = max(1, int(map_node.map_width) * int(map_node.map_height))
+	for y in range(map_node.map_height):
+		for x in range(map_node.map_width):
+			if int(map_node.tiles[y][x]) == tile_id:
+				count += 1
+	return float(count) / float(total)
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:

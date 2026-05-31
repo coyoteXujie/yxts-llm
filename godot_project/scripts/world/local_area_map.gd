@@ -377,7 +377,7 @@ func _paint_town_hamlet_details(region_id: String, terrain: String) -> void:
 		_fill_rect(Rect2i(8, map_height - 13, 9, 5), Tile.GARDEN)
 
 func _generate_sect_region() -> void:
-	_reset_tiles(Tile.MOUNTAIN if str(current_region.get("terrain", "")).contains("snow") else Tile.GRASS)
+	_reset_tiles(Tile.GRASS)
 	_fill_rect(Rect2i(7, 6, map_width - 14, map_height - 12), Tile.GARDEN)
 	_paint_line([Vector2i(map_width / 2, 6), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 2)
 	_paint_line([Vector2i(12, map_height / 2), Vector2i(map_width - 13, map_height / 2)], Tile.ROAD, 1)
@@ -418,11 +418,11 @@ func _apply_sect_identity() -> void:
 func _generate_wild_region() -> void:
 	var terrain := str(current_region.get("terrain", "plain"))
 	var base := Tile.GRASS
-	if _terrain_has_mountain(terrain):
-		base = Tile.MOUNTAIN
-	elif _terrain_has_water(terrain):
+	if _terrain_has_water(terrain):
 		base = Tile.GRASS
 	elif terrain.contains("desert"):
+		base = Tile.FIELD
+	elif terrain.contains("plateau"):
 		base = Tile.FIELD
 	_reset_tiles(base)
 	_paint_line([Vector2i(5, map_height / 2), Vector2i(map_width / 2, map_height / 2 - 3), Vector2i(map_width - 6, map_height / 2 + 2)], Tile.ROAD, 1)
