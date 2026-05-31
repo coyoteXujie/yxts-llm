@@ -81,6 +81,7 @@ godot_project/
 - `WorldMap`：按地图文档程序化生成世界大图、处理可通行判定、NPC 生成和就近交互查询。
 - `LocalAreaMap`：承接世界地图进入后的城镇/门派/野外局部地图和商铺内景，负责区域内商铺入口、可互动地标/资源点、相邻区域路牌、返回世界入口、局部 NPC 摆放和内景碰撞。
 - `DiscoveryPanel`：展示地标、资源点和后续奇遇事件的标题、所在地、正文和奖励列表，替代只靠 toast 承载探索反馈。
+- `AtmosphereLayer`：承接昼夜、天气、危险度和区域地貌氛围，已按水乡、城市、城镇、山地、花林、荒漠、温泉、雪山、七派气场等主题绘制动态叠层。
 - `regions.json`：记录 73 个区域的 ID、名称、类型、压缩世界坐标、危险等级和描述。
 - `PlayerActor` / `NpcActor`：只负责表现、移动和自身数据引用；地图角色优先使用生成后的透明 PNG，未命中资源映射时再回退到拆件绘制。
 - `CombatSystem`：独立战斗状态机，后续可替换为完整门派招式系统。
@@ -126,6 +127,7 @@ godot_project/
 - `tools/generate_godot_art_assets.py` 生成第一批 Godot 可直接使用的 2D 美术资源：20 张地图瓦片、99 张 NPC 地图 sprite、41 张参考级 NPC archetype、99 张 NPC 对话头像、16 张玩家门派/性别 sprite、45 张角色拆件 PNG、22 张物品图标、41 张武学图标、73 张区域场景背景、8 张 UI 资源。
 - `godot_project/assets/world/tiles/` 保存当前世界地图和局部地图实际使用的 48x48 瓦片 PNG；道路、水面、建筑、商铺、桥、竹林、山体等瓦片已强化为更接近国风仙侠地图的表现。
 - `WorldMap` 已加入第一版伪 2.5D 表现：地貌边缘过渡、建筑/门派/山体高度叠层、`MapProp` 遮挡节点、世界层角色缩放和较远镜头，后续再逐步替换为正式 TileMapLayer/TileSet。
+- `AtmosphereLayer` 已加入地域主题动态氛围：临安/江陵水系有雾带与水光，城池/镇子有灯晕和市集微光，山地有云带，花间/花田有花瓣，荒漠有风沙，雪山有寒光，各门派有对应气场。
 - `LocalAreaMap` 在瓦片之上叠加局部环境层：水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌、商铺内景陈设和可遮挡树冠/屋檐层，避免局部城镇继续呈现纯色方格块。
 - `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，用于后续切场景或对话背景。
 - `godot_project/assets/characters/reference_map_sprites/` 保存当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype，由参考图抠图后转为透明 PNG。
