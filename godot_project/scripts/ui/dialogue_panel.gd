@@ -229,7 +229,7 @@ func _join_faction() -> void:
 		body_label.text = "拜师未成。"
 
 func _rest() -> void:
-	if str(npc_data.get("name", "")) != "平阿四":
+	if str(npc_data.get("name", "")) != "平阿四" and not bool(npc_data.get("can_rest", false)):
 		body_label.text = "这里不能住店休息。"
 		return
 	if GameState.rest(12):

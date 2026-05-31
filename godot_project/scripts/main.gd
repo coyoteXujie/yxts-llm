@@ -1,6 +1,7 @@
 extends Node2D
 
 const WORLD_MAP_SCRIPT := preload("res://scripts/world/world_map.gd")
+const LOCAL_AREA_SCRIPT := preload("res://scripts/world/local_area_map.gd")
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
@@ -16,6 +17,8 @@ const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 
 var world_map
+var local_area
+var active_map
 var player_actor
 var camera: Camera2D
 var hud
@@ -31,7 +34,9 @@ var cultivation_panel
 var world_map_panel
 var combat_system
 var focused_npc
+var focused_portal: Dictionary = {}
 var active_enemy_actor
+var world_return_position := Vector2.ZERO
 
 func _ready() -> void:
 	randomize()
@@ -39,9 +44,13 @@ func _ready() -> void:
 
 	world_map = WORLD_MAP_SCRIPT.new()
 	add_child(world_map)
+	local_area = LOCAL_AREA_SCRIPT.new()
+	local_area.hide()
+	add_child(local_area)
+	active_map = world_map
 
 	player_actor = PLAYER_SCRIPT.new()
-	player_actor.world_map = world_map
+	player_actor.world_map = active_map
 	player_actor.position = GameState.player_position
 	add_child(player_actor)
 
@@ -101,17 +110,30 @@ func _process(delta: float) -> void:
 	_update_camera_limits()
 
 	if not GameState.can_explore():
-		world_map.clear_highlights()
+		if active_map != null and active_map.has_method("clear_highlights"):
+			active_map.clear_highlights()
 		hud.set_prompt("")
 		return
 
 	_update_current_region()
 
-	focused_npc = world_map.get_nearest_npc(player_actor.position, 92.0, true)
-	world_map.focus_actor(focused_npc)
+	focused_npc = active_map.get_nearest_npc(player_actor.position, 92.0, true)
+	active_map.focus_actor(focused_npc)
+	focused_portal = {}
+	if active_map.has_method("get_nearest_portal"):
+		focused_portal = active_map.get_nearest_portal(player_actor.position, 80.0)
+		active_map.focus_portal(focused_portal)
 
 	if focused_npc == null:
-		hud.set_prompt("B 背包  J 任务  K 修炼  M 地图  F5/F9 存读档  Esc 菜单")
+		if not focused_portal.is_empty():
+			hud.set_prompt("E %s    B 背包  J 任务  K 修炼  M 地图" % _portal_prompt(focused_portal))
+		else:
+			var region := _current_region_for_entry()
+			var enter_prompt := _region_enter_prompt(region)
+			if not enter_prompt.is_empty():
+				hud.set_prompt("%s    B 背包  J 任务  K 修炼  M 地图" % enter_prompt)
+			else:
+				hud.set_prompt("B 背包  J 任务  K 修炼  M 地图  F5/F9 存读档  Esc 菜单")
 		return
 
 	if focused_npc.is_enemy():
@@ -150,8 +172,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_close_gameplay_panels()
 		world_map_panel.show_panel()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("enter_area"):
+		_handle_enter_area()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_save"):
-		GameState.save_game(player_actor.position)
+		GameState.save_game(_current_world_save_position())
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_load"):
 		GameState.load_game()
@@ -188,9 +213,9 @@ func _continue_game() -> void:
 
 func _start_new_game(config: Dictionary) -> void:
 	GameState.new_game(config)
+	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()
 	world_map.set_target_region(GameState.map_target_region_id)
-	player_actor.position = GameState.player_position
 	_update_current_region()
 	_close_gameplay_panels()
 	EventBus.emit_toast("新的江湖开始")
@@ -226,6 +251,8 @@ func _fast_travel_to_region(region_id: String) -> void:
 	var region := GameData.get_region(region_id)
 	if region.is_empty():
 		return
+	if active_map != world_map:
+		_switch_to_world_map(world_return_position)
 	var reason := GameState.get_fast_travel_block_reason(region_id)
 	if not reason.is_empty():
 		EventBus.emit_toast(reason)
@@ -254,7 +281,7 @@ func _start_combat_from_data(enemy: Dictionary) -> void:
 	combat_system.start(enemy)
 
 func _on_game_loaded(_snapshot: Dictionary) -> void:
-	player_actor.position = GameState.player_position
+	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()
 	world_map.apply_defeated_enemies()
 	world_map.set_target_region(GameState.map_target_region_id)
@@ -266,21 +293,130 @@ func _on_game_loaded(_snapshot: Dictionary) -> void:
 func _on_combat_finished(result: Dictionary) -> void:
 	if bool(result.get("victory", false)) and active_enemy_actor != null and is_instance_valid(active_enemy_actor):
 		GameState.mark_enemy_defeated(int(active_enemy_actor.data.get("id", -1)))
-		world_map.unregister_npc(active_enemy_actor)
+		if active_map != null and active_map.has_method("unregister_npc"):
+			active_map.unregister_npc(active_enemy_actor)
 		active_enemy_actor.queue_free()
 	active_enemy_actor = null
 
 func _update_camera_limits() -> void:
-	var rect: Rect2 = world_map.get_world_rect()
+	if active_map == null or camera == null:
+		return
+	var rect: Rect2 = active_map.get_world_rect()
 	camera.limit_left = int(rect.position.x)
 	camera.limit_top = int(rect.position.y)
 	camera.limit_right = int(rect.end.x)
 	camera.limit_bottom = int(rect.end.y)
 
 func _update_current_region() -> void:
-	var tile: Vector2i = world_map.world_to_tile(player_actor.position)
-	var region: Dictionary = world_map.get_region_at_world_position(player_actor.position)
+	var tile: Vector2i = active_map.world_to_tile(player_actor.position)
+	var region: Dictionary = active_map.get_region_at_world_position(player_actor.position)
+	if active_map == local_area and local_area.has_method("get_world_reference_tile"):
+		tile = local_area.get_world_reference_tile(player_actor.position)
 	GameState.update_current_region(region, tile)
+
+func _current_region_for_entry() -> Dictionary:
+	if active_map != world_map:
+		return {}
+	return world_map.get_region_at_world_position(player_actor.position)
+
+func _region_enter_prompt(region: Dictionary) -> String:
+	if region.is_empty():
+		return ""
+	if not _can_enter_region(region):
+		return ""
+	return "E 进入%s" % str(region.get("name", "区域"))
+
+func _portal_prompt(portal: Dictionary) -> String:
+	return str(portal.get("label", "入口"))
+
+func _handle_enter_area() -> void:
+	if active_map == world_map:
+		var region := _current_region_for_entry()
+		if region.is_empty():
+			EventBus.emit_toast("这里还不是可进入的区域")
+			return
+		if not _can_enter_region(region):
+			EventBus.emit_toast("这片区域暂未开放内景")
+			return
+		_enter_local_region(region)
+		return
+	if focused_portal.is_empty():
+		EventBus.emit_toast("附近没有可进入的入口")
+		return
+	var portal_type := str(focused_portal.get("type", ""))
+	match portal_type:
+		"exit_world":
+			_return_to_world()
+		"shop":
+			_enter_shop(focused_portal)
+		"exit_area":
+			_exit_shop_to_area()
+		"look":
+			EventBus.emit_toast("驿亭可歇脚探听，后续接入野外事件")
+		_:
+			EventBus.emit_toast("入口还没有接入")
+
+func _can_enter_region(region: Dictionary) -> bool:
+	var region_type := str(region.get("type", ""))
+	return region_type == "city" or region_type == "town" or region_type == "sect" or region_type == "wild"
+
+func _enter_local_region(region: Dictionary) -> void:
+	world_return_position = player_actor.position
+	world_map.hide()
+	local_area.setup_region(region)
+	local_area.show()
+	active_map = local_area
+	player_actor.world_map = active_map
+	player_actor.position = local_area.get_entry_position("world")
+	player_actor.velocity = Vector2.ZERO
+	focused_portal = {}
+	if camera != null:
+		camera.reset_smoothing()
+	_update_current_region()
+	EventBus.emit_toast("进入%s" % str(region.get("name", "区域")))
+
+func _enter_shop(portal: Dictionary) -> void:
+	local_area.enter_shop(portal)
+	player_actor.position = local_area.get_entry_position("shop")
+	player_actor.velocity = Vector2.ZERO
+	focused_portal = {}
+	if camera != null:
+		camera.reset_smoothing()
+	EventBus.emit_toast(str(portal.get("label", "进入商铺")))
+
+func _exit_shop_to_area() -> void:
+	player_actor.position = local_area.exit_shop()
+	player_actor.velocity = Vector2.ZERO
+	focused_portal = {}
+	if camera != null:
+		camera.reset_smoothing()
+	EventBus.emit_toast("回到街上")
+
+func _return_to_world() -> void:
+	_switch_to_world_map(world_return_position)
+	_update_current_region()
+	EventBus.emit_toast("返回世界地图")
+
+func _switch_to_world_map(position: Vector2) -> void:
+	if local_area != null:
+		local_area.hide()
+		local_area.clear_highlights()
+	if world_map != null:
+		world_map.show()
+	active_map = world_map
+	if player_actor != null:
+		player_actor.world_map = active_map
+		player_actor.position = position
+		player_actor.velocity = Vector2.ZERO
+	world_return_position = position
+	focused_portal = {}
+	if camera != null:
+		camera.reset_smoothing()
+
+func _current_world_save_position() -> Vector2:
+	if active_map == world_map:
+		return player_actor.position
+	return world_return_position
 
 func _register_inputs() -> void:
 	_add_key_action("move_up", [KEY_W, KEY_UP])
@@ -288,6 +424,7 @@ func _register_inputs() -> void:
 	_add_key_action("move_left", [KEY_A, KEY_LEFT])
 	_add_key_action("move_right", [KEY_D, KEY_RIGHT])
 	_add_key_action("interact", [KEY_T, KEY_ENTER])
+	_add_key_action("enter_area", [KEY_E])
 	_add_key_action("attack", [KEY_F])
 	_add_key_action("inventory", [KEY_B])
 	_add_key_action("journal", [KEY_J])

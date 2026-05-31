@@ -1,0 +1,663 @@
+extends Node2D
+class_name LocalAreaMap
+
+const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
+
+enum Tile {
+	GRASS,
+	ROAD,
+	WATER,
+	BUILDING,
+	SHOP,
+	WALL,
+	GARDEN,
+	FIELD,
+	MOUNTAIN,
+	BRIDGE,
+	FLOOR,
+	COUNTER,
+	CARPET
+}
+
+const SHOP_DEFINITIONS := {
+	"inn": {
+		"name": "客栈",
+		"keeper": "平阿四",
+		"description": "客栈掌柜，管吃住，也最先听见江湖消息。",
+		"sell_items": ["item_baozi", "item_chicken", "item_wine"],
+		"can_rest": true,
+		"accent": Color(0.86, 0.56, 0.26)
+	},
+	"medicine": {
+		"name": "药铺",
+		"keeper": "平一指",
+		"description": "坐堂郎中，出售金创药、生肌散和小还丹。",
+		"sell_items": ["item_yao", "item_shengji", "item_dan"],
+		"accent": Color(0.42, 0.72, 0.46)
+	},
+	"blacksmith": {
+		"name": "铁匠铺",
+		"keeper": "铁匠",
+		"description": "火炉旁的铁匠，出售刀剑与入门兵器。",
+		"sell_items": ["item_sword", "item_blade", "item_dagger", "item_whip", "item_hetun_blade"],
+		"accent": Color(0.82, 0.32, 0.20)
+	},
+	"tailor": {
+		"name": "布庄",
+		"keeper": "小裁缝",
+		"description": "布庄裁缝，出售布衣、细布衣和丝绸衣。",
+		"sell_items": ["item_cloth", "item_fine_cloth", "item_silk_cloth"],
+		"accent": Color(0.72, 0.54, 0.82)
+	},
+	"market": {
+		"name": "市集",
+		"keeper": "小商贩",
+		"description": "市集货郎，卖些吃食、花草和杂物。",
+		"sell_items": ["item_tang_hulu", "item_white_doufu", "item_green_doufu", "item_meat", "item_fish", "item_red_flower", "item_tea_flower"],
+		"accent": Color(0.90, 0.70, 0.28)
+	},
+	"teahouse": {
+		"name": "茶肆",
+		"keeper": "阿青",
+		"description": "茶肆女主人，出售豆腐、清茶与街巷消息。",
+		"sell_items": ["item_white_doufu", "item_green_doufu", "item_wine"],
+		"accent": Color(0.58, 0.78, 0.62)
+	}
+}
+
+var tile_size := GameData.TILE_SIZE
+var map_width := 64
+var map_height := 42
+var tiles: Array = []
+var current_region: Dictionary = {}
+var current_mode := "region"
+var portals: Array = []
+var portal_labels: Array[Label] = []
+var title_label: Label
+var npc_nodes: Array = []
+var highlighted_portal_id := ""
+var active_shop_id := ""
+var shop_return_tile := Vector2i.ZERO
+
+func setup_region(region: Dictionary) -> void:
+	current_region = region.duplicate(true)
+	current_mode = "region"
+	active_shop_id = ""
+	highlighted_portal_id = ""
+	_clear_npcs()
+	_clear_portal_labels()
+	_configure_region_size()
+	_generate_region_map()
+	_spawn_region_npcs()
+	_build_portal_labels()
+	_update_title_label()
+	queue_redraw()
+
+func enter_shop(portal: Dictionary) -> void:
+	var shop_id := str(portal.get("shop_id", ""))
+	if not SHOP_DEFINITIONS.has(shop_id):
+		return
+	active_shop_id = shop_id
+	current_mode = "shop"
+	var tile_data: Array = portal.get("tile", [map_width / 2, map_height / 2])
+	shop_return_tile = Vector2i(int(tile_data[0]), int(tile_data[1]))
+	highlighted_portal_id = ""
+	_clear_npcs()
+	_clear_portal_labels()
+	_configure_shop_size()
+	_generate_shop_map(shop_id)
+	_spawn_shopkeeper(shop_id)
+	_build_portal_labels()
+	_update_title_label()
+	queue_redraw()
+
+func exit_shop() -> Vector2:
+	var return_tile := shop_return_tile
+	setup_region(current_region)
+	return tile_to_world(return_tile + Vector2i(0, 1))
+
+func tile_to_world(tile: Vector2i) -> Vector2:
+	return Vector2(tile.x * tile_size + tile_size * 0.5, tile.y * tile_size + tile_size * 0.5)
+
+func world_to_tile(world_position: Vector2) -> Vector2i:
+	return Vector2i(floori(world_position.x / tile_size), floori(world_position.y / tile_size))
+
+func get_world_rect() -> Rect2:
+	return Rect2(Vector2.ZERO, Vector2(map_width * tile_size, map_height * tile_size))
+
+func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
+	return current_region
+
+func get_world_reference_tile(_world_position: Vector2) -> Vector2i:
+	var center: Array = current_region.get("center", [])
+	if center.size() >= 2:
+		return Vector2i(int(center[0]), int(center[1]))
+	return Vector2i.ZERO
+
+func get_entry_position(kind: String = "area") -> Vector2:
+	if current_mode == "shop":
+		return tile_to_world(Vector2i(map_width / 2, map_height - 4))
+	if kind == "world":
+		return tile_to_world(Vector2i(map_width / 2, map_height - 5))
+	return tile_to_world(Vector2i(map_width / 2, map_height / 2))
+
+func is_position_walkable(world_position: Vector2) -> bool:
+	return is_tile_walkable(world_to_tile(world_position))
+
+func is_tile_walkable(tile: Vector2i) -> bool:
+	if tile.x < 0 or tile.y < 0 or tile.x >= map_width or tile.y >= map_height:
+		return false
+	var tile_id := int(tiles[tile.y][tile.x])
+	return tile_id != Tile.WATER and tile_id != Tile.BUILDING and tile_id != Tile.SHOP and tile_id != Tile.WALL and tile_id != Tile.COUNTER
+
+func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true):
+	var best = null
+	var best_distance := radius
+	for actor in npc_nodes:
+		if not is_instance_valid(actor):
+			continue
+		if actor.is_enemy() and not include_enemies:
+			continue
+		var distance := world_position.distance_to(actor.position)
+		if distance <= best_distance:
+			best = actor
+			best_distance = distance
+	return best
+
+func get_nearest_portal(world_position: Vector2, radius: float) -> Dictionary:
+	var best := {}
+	var best_distance := radius
+	for portal in portals:
+		var tile_data: Array = portal.get("tile", [0, 0])
+		var pos := tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1])))
+		var distance := world_position.distance_to(pos)
+		if distance <= best_distance:
+			best = portal
+			best_distance = distance
+	return best
+
+func focus_portal(portal: Dictionary) -> void:
+	var next_id := str(portal.get("id", ""))
+	if highlighted_portal_id == next_id:
+		return
+	highlighted_portal_id = next_id
+	for label in portal_labels:
+		if not is_instance_valid(label):
+			continue
+		label.visible = label.name == highlighted_portal_id or current_mode == "shop"
+	queue_redraw()
+
+func clear_highlights() -> void:
+	for actor in npc_nodes:
+		if is_instance_valid(actor):
+			actor.set_highlight(false)
+	focus_portal({})
+
+func focus_actor(actor) -> void:
+	for npc in npc_nodes:
+		if is_instance_valid(npc):
+			npc.set_highlight(npc == actor)
+
+func unregister_npc(actor) -> void:
+	npc_nodes.erase(actor)
+
+func _configure_region_size() -> void:
+	var region_type := str(current_region.get("type", "wild"))
+	match region_type:
+		"city":
+			map_width = 80
+			map_height = 54
+		"town":
+			map_width = 58
+			map_height = 40
+		"sect":
+			map_width = 64
+			map_height = 44
+		_:
+			map_width = 72
+			map_height = 48
+
+func _configure_shop_size() -> void:
+	map_width = 28
+	map_height = 18
+
+func _reset_tiles(tile_id: int) -> void:
+	tiles.clear()
+	for y in range(map_height):
+		var row: Array = []
+		for _x in range(map_width):
+			row.append(tile_id)
+		tiles.append(row)
+
+func _generate_region_map() -> void:
+	portals.clear()
+	var region_type := str(current_region.get("type", "wild"))
+	match region_type:
+		"city":
+			_generate_city_region()
+		"town":
+			_generate_town_region()
+		"sect":
+			_generate_sect_region()
+		_:
+			_generate_wild_region()
+	_add_exit_portal()
+
+func _generate_city_region() -> void:
+	_reset_tiles(Tile.GRASS)
+	var profile := _region_profile()
+	_fill_rect(Rect2i(5, 5, map_width - 10, map_height - 10), Tile.ROAD)
+	_fill_rect(Rect2i(8, 8, map_width - 16, map_height - 16), Tile.GRASS)
+	_paint_line([Vector2i(8, map_height / 2), Vector2i(map_width - 9, map_height / 2)], Tile.ROAD, 2)
+	_paint_line([Vector2i(map_width / 2, 8), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 2)
+	_paint_line([Vector2i(14, 14), Vector2i(map_width - 14, map_height - 14)], Tile.ROAD, 1)
+	_fill_rect(Rect2i(11, 10, 14, 8), Tile.GARDEN)
+	_fill_rect(Rect2i(map_width - 27, 10, 16, 9), Tile.GARDEN if bool(profile.get("garden_city", false)) else Tile.BUILDING)
+	_fill_rect(Rect2i(12, map_height - 20, 14, 8), Tile.BUILDING)
+	_fill_rect(Rect2i(map_width - 27, map_height - 20, 15, 8), Tile.BUILDING)
+	_place_shops(_shop_plan_for_region())
+	_apply_city_identity(profile)
+
+func _generate_town_region() -> void:
+	_reset_tiles(Tile.FIELD)
+	_fill_rect(Rect2i(4, 5, map_width - 8, map_height - 10), Tile.GRASS)
+	_paint_line([Vector2i(4, map_height / 2), Vector2i(map_width - 5, map_height / 2)], Tile.ROAD, 2)
+	_paint_line([Vector2i(map_width / 2, 7), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 1)
+	_fill_rect(Rect2i(7, 8, 12, 7), Tile.BUILDING)
+	_fill_rect(Rect2i(map_width - 19, 8, 12, 7), Tile.BUILDING)
+	_fill_rect(Rect2i(8, map_height - 16, 14, 7), Tile.FIELD)
+	_place_shops(_shop_plan_for_region())
+	_apply_town_identity()
+
+func _generate_sect_region() -> void:
+	_reset_tiles(Tile.MOUNTAIN if str(current_region.get("terrain", "")).contains("snow") else Tile.GRASS)
+	_fill_rect(Rect2i(7, 6, map_width - 14, map_height - 12), Tile.GARDEN)
+	_paint_line([Vector2i(map_width / 2, 6), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 2)
+	_paint_line([Vector2i(12, map_height / 2), Vector2i(map_width - 13, map_height / 2)], Tile.ROAD, 1)
+	_fill_rect(Rect2i(map_width / 2 - 7, 8, 14, 8), Tile.BUILDING)
+	_fill_rect(Rect2i(12, map_height / 2 - 5, 12, 9), Tile.BUILDING)
+	_fill_rect(Rect2i(map_width - 24, map_height / 2 - 5, 12, 9), Tile.BUILDING)
+	_place_shops(["medicine", "market"])
+
+func _generate_wild_region() -> void:
+	var terrain := str(current_region.get("terrain", "plain"))
+	var base := Tile.GRASS
+	if terrain.contains("mountain") or terrain.contains("peak") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau"):
+		base = Tile.MOUNTAIN
+	elif _terrain_has_water(terrain):
+		base = Tile.GRASS
+	elif terrain.contains("desert"):
+		base = Tile.FIELD
+	_reset_tiles(base)
+	_paint_line([Vector2i(5, map_height / 2), Vector2i(map_width / 2, map_height / 2 - 3), Vector2i(map_width - 6, map_height / 2 + 2)], Tile.ROAD, 1)
+	if _terrain_has_water(terrain):
+		_paint_line([Vector2i(0, 14), Vector2i(map_width / 2, 18), Vector2i(map_width, 13)], Tile.WATER, 2)
+		_set_tile(map_width / 2, 17, Tile.BRIDGE)
+		_set_tile(map_width / 2 + 1, 17, Tile.BRIDGE)
+	if terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("garden"):
+		_fill_rect(Rect2i(7, 8, 12, 8), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width - 22, map_height - 15, 12, 8), Tile.GARDEN)
+	if terrain.contains("desert"):
+		_fill_rect(Rect2i(8, 8, 10, 6), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 20, map_height - 13, 10, 6), Tile.MOUNTAIN)
+	_fill_rect(Rect2i(map_width / 2 - 4, map_height / 2 - 8, 8, 5), Tile.BUILDING)
+	_add_portal("wild_rest", "驿亭", "look", Vector2i(map_width / 2, map_height / 2 - 2), "")
+
+func _apply_city_identity(profile: Dictionary) -> void:
+	var region_id := str(current_region.get("id", ""))
+	if bool(profile.get("water_city", false)):
+		_paint_line([Vector2i(9, 20), Vector2i(26, 22), Vector2i(52, 20), Vector2i(map_width - 9, 23)], Tile.WATER, 1)
+		_paint_line([Vector2i(24, 8), Vector2i(25, 27), Vector2i(22, map_height - 9)], Tile.WATER, 1)
+		_set_bridge_patch(Vector2i(map_width / 2, 21))
+		_set_bridge_patch(Vector2i(24, map_height / 2))
+	elif region_id == "jiangling":
+		_paint_line([Vector2i(4, 34), Vector2i(24, 32), Vector2i(48, 34), Vector2i(map_width - 4, 31)], Tile.WATER, 1)
+		_set_bridge_patch(Vector2i(map_width / 2, 33))
+		_set_bridge_patch(Vector2i(map_width - 17, 32))
+	elif region_id == "chengdu":
+		_fill_rect(Rect2i(9, 9, 14, 10), Tile.GARDEN)
+		_fill_rect(Rect2i(map_width - 25, map_height - 21, 13, 9), Tile.FIELD)
+		_fill_rect(Rect2i(map_width / 2 - 18, 9, 12, 7), Tile.GARDEN)
+	elif region_id == "changan":
+		_fill_rect(Rect2i(map_width / 2 - 4, 9, 8, 10), Tile.BUILDING)
+		_paint_line([Vector2i(map_width / 2, 10), Vector2i(map_width / 2, map_height - 7)], Tile.ROAD, 3)
+	elif region_id == "luoyang":
+		_fill_rect(Rect2i(map_width / 2 - 9, map_height / 2 - 6, 18, 12), Tile.ROAD)
+		_fill_rect(Rect2i(map_width / 2 - 13, map_height / 2 - 10, 6, 5), Tile.SHOP)
+		_fill_rect(Rect2i(map_width / 2 + 7, map_height / 2 + 5, 6, 5), Tile.SHOP)
+
+func _apply_town_identity() -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	if _terrain_has_water(terrain):
+		_paint_line([Vector2i(5, map_height / 2 - 7), Vector2i(map_width / 2, map_height / 2 - 5), Vector2i(map_width - 5, map_height / 2 - 8)], Tile.WATER, 1)
+		_set_bridge_patch(Vector2i(map_width / 2, map_height / 2 - 6))
+	elif terrain.contains("garden") or terrain.contains("field") or terrain.contains("plain"):
+		_fill_rect(Rect2i(7, map_height - 15, 14, 8), Tile.FIELD)
+		_fill_rect(Rect2i(map_width - 21, map_height - 15, 13, 8), Tile.GARDEN)
+	elif terrain.contains("mound") or terrain.contains("mountain") or terrain.contains("gorge"):
+		_fill_rect(Rect2i(6, 6, 11, 6), Tile.MOUNTAIN)
+		_fill_rect(Rect2i(map_width - 17, map_height - 13, 10, 6), Tile.MOUNTAIN)
+
+func _terrain_has_water(terrain: String) -> bool:
+	return terrain.contains("river") or terrain.contains("lake") or terrain.contains("water") or terrain.contains("canal") or terrain.contains("ford") or terrain.contains("tide") or terrain.contains("weir") or terrain.contains("marsh") or terrain.contains("spring")
+
+func _set_bridge_patch(center: Vector2i) -> void:
+	for y in range(center.y - 1, center.y + 2):
+		for x in range(center.x - 2, center.x + 3):
+			_set_tile(x, y, Tile.BRIDGE)
+
+func _place_shops(shop_ids: Array) -> void:
+	var positions := [
+		Vector2i(14, 15),
+		Vector2i(map_width - 15, 15),
+		Vector2i(14, map_height - 15),
+		Vector2i(map_width - 15, map_height - 15),
+		Vector2i(map_width / 2 - 9, 12),
+		Vector2i(map_width / 2 + 10, map_height - 13)
+	]
+	for index in range(min(shop_ids.size(), positions.size())):
+		_add_shop(str(shop_ids[index]), positions[index])
+
+func _add_shop(shop_id: String, door_tile: Vector2i) -> void:
+	if not SHOP_DEFINITIONS.has(shop_id):
+		return
+	_fill_rect(Rect2i(door_tile.x - 4, door_tile.y - 5, 8, 5), Tile.SHOP)
+	_fill_rect(Rect2i(door_tile.x - 2, door_tile.y - 1, 4, 2), Tile.ROAD)
+	var shop: Dictionary = SHOP_DEFINITIONS[shop_id]
+	_add_portal("shop_%s_%d_%d" % [shop_id, door_tile.x, door_tile.y], "进入%s" % str(shop.get("name", "商铺")), "shop", door_tile, shop_id)
+
+func _add_exit_portal() -> void:
+	_paint_line([Vector2i(map_width / 2, map_height - 8), Vector2i(map_width / 2, map_height - 2)], Tile.ROAD, 2)
+	_add_portal("exit_world", "返回世界", "exit_world", Vector2i(map_width / 2, map_height - 4), "")
+
+func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String) -> void:
+	portals.append({
+		"id": id,
+		"label": label,
+		"type": kind,
+		"tile": [tile.x, tile.y],
+		"shop_id": shop_id
+	})
+
+func _generate_shop_map(shop_id: String) -> void:
+	portals.clear()
+	_reset_tiles(Tile.FLOOR)
+	_fill_rect(Rect2i(0, 0, map_width, 1), Tile.WALL)
+	_fill_rect(Rect2i(0, map_height - 1, map_width, 1), Tile.WALL)
+	_fill_rect(Rect2i(0, 0, 1, map_height), Tile.WALL)
+	_fill_rect(Rect2i(map_width - 1, 0, 1, map_height), Tile.WALL)
+	_fill_rect(Rect2i(5, 4, map_width - 10, 3), Tile.COUNTER)
+	_fill_rect(Rect2i(4, 8, 5, 5), Tile.CARPET)
+	_fill_rect(Rect2i(map_width - 9, 8, 5, 5), Tile.CARPET)
+	if shop_id == "blacksmith":
+		_fill_rect(Rect2i(4, 4, 4, 4), Tile.WALL)
+	elif shop_id == "medicine":
+		_fill_rect(Rect2i(map_width - 8, 4, 4, 4), Tile.GARDEN)
+	elif shop_id == "inn":
+		_fill_rect(Rect2i(4, 10, 6, 3), Tile.COUNTER)
+		_fill_rect(Rect2i(map_width - 10, 10, 6, 3), Tile.COUNTER)
+	_add_portal("exit_area", "出门", "exit_area", Vector2i(map_width / 2, map_height - 3), "")
+
+func _spawn_region_npcs() -> void:
+	var region_id := str(current_region.get("id", ""))
+	if region_id.is_empty():
+		return
+	var placed := 0
+	for npc_data in GameData.get_npcs():
+		var tile := Vector2i(int(npc_data.get("pos_x", -1)), int(npc_data.get("pos_y", -1)))
+		var region := GameData.get_region_at_tile(tile)
+		if str(region.get("id", "")) != region_id:
+			continue
+		var local_data: Dictionary = npc_data.duplicate(true)
+		var local_tile := _local_npc_tile(int(local_data.get("id", placed)), placed)
+		local_data["pos_x"] = local_tile.x
+		local_data["pos_y"] = local_tile.y
+		_spawn_npc(local_data)
+		placed += 1
+		if placed >= 14:
+			break
+
+func _spawn_shopkeeper(shop_id: String) -> void:
+	var shop: Dictionary = SHOP_DEFINITIONS.get(shop_id, {})
+	if shop.is_empty():
+		return
+	var keeper := {
+		"id": 9300 + _shop_index(shop_id),
+		"name": str(shop.get("keeper", "掌柜")),
+		"npc_type": "normal",
+		"faction": "none",
+		"description": str(shop.get("description", "")),
+		"personality": "精明、热情",
+		"pos_x": map_width / 2,
+		"pos_y": 6,
+		"sell_items": shop.get("sell_items", []),
+		"teach_skills": [],
+		"can_rest": bool(shop.get("can_rest", false)),
+		"use_map_sprite": true,
+		"appearance": {
+			"accent": _color_to_array(shop.get("accent", Color(0.86, 0.66, 0.34)))
+		}
+	}
+	_spawn_npc(keeper)
+
+func _shop_index(shop_id: String) -> int:
+	var keys := SHOP_DEFINITIONS.keys()
+	for index in range(keys.size()):
+		if str(keys[index]) == shop_id:
+			return index
+	return 0
+
+func _spawn_npc(npc_data: Dictionary) -> void:
+	var actor = NPC_SCRIPT.new()
+	add_child(actor)
+	actor.setup(npc_data, tile_size)
+	npc_nodes.append(actor)
+
+func _clear_npcs() -> void:
+	for actor in npc_nodes:
+		if is_instance_valid(actor):
+			actor.queue_free()
+	npc_nodes.clear()
+
+func _build_portal_labels() -> void:
+	_clear_portal_labels()
+	for portal in portals:
+		var tile_data: Array = portal.get("tile", [0, 0])
+		var label := Label.new()
+		label.name = str(portal.get("id", ""))
+		label.text = str(portal.get("label", "入口"))
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) + Vector2(-68, -50)
+		label.size = Vector2(136, 24)
+		label.z_index = 7
+		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_color_override("font_color", Color(0.96, 0.82, 0.44))
+		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
+		label.add_theme_constant_override("shadow_offset_x", 1)
+		label.add_theme_constant_override("shadow_offset_y", 2)
+		label.visible = current_mode == "shop"
+		add_child(label)
+		portal_labels.append(label)
+
+func _clear_portal_labels() -> void:
+	for label in portal_labels:
+		if is_instance_valid(label):
+			label.queue_free()
+	portal_labels.clear()
+
+func _local_npc_tile(npc_id: int, index: int) -> Vector2i:
+	var candidates := [
+		Vector2i(map_width / 2 - 5, map_height / 2 - 3),
+		Vector2i(map_width / 2 + 5, map_height / 2 - 2),
+		Vector2i(map_width / 2 - 9, map_height / 2 + 5),
+		Vector2i(map_width / 2 + 9, map_height / 2 + 5),
+		Vector2i(12 + index * 3 % max(8, map_width - 24), map_height / 2),
+		Vector2i(map_width / 2, 11 + index * 3 % max(8, map_height - 20))
+	]
+	var start: int = abs(npc_id + index) % candidates.size()
+	for offset in range(candidates.size()):
+		var tile: Vector2i = candidates[(start + offset) % candidates.size()]
+		if is_tile_walkable(tile):
+			return tile
+	return Vector2i(map_width / 2, map_height / 2)
+
+func _shop_plan_for_region() -> Array:
+	var region_type := str(current_region.get("type", "wild"))
+	var region_id := str(current_region.get("id", ""))
+	if region_type == "city":
+		match region_id:
+			"linan":
+				return ["inn", "teahouse", "tailor", "market", "medicine", "blacksmith"]
+			"chengdu":
+				return ["inn", "medicine", "market", "blacksmith", "teahouse", "tailor"]
+			"jiangling":
+				return ["inn", "blacksmith", "medicine", "market", "tailor"]
+			"changan":
+				return ["inn", "blacksmith", "tailor", "medicine", "market"]
+			_:
+				return ["inn", "medicine", "blacksmith", "tailor", "market", "teahouse"]
+	if region_type == "town":
+		return ["inn", "market", "medicine", "blacksmith", "tailor"]
+	return ["market", "medicine"]
+
+func _region_profile() -> Dictionary:
+	var region_id := str(current_region.get("id", ""))
+	return {
+		"water_city": region_id == "linan",
+		"garden_city": region_id == "chengdu" or region_id == "linan"
+	}
+
+func _draw() -> void:
+	for y in range(map_height):
+		for x in range(map_width):
+			var tile_id: int = tiles[y][x]
+			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
+			draw_rect(rect, _tile_color(tile_id), true)
+			_draw_tile_detail(rect, tile_id, x, y)
+	_draw_portals()
+
+func _update_title_label() -> void:
+	if title_label == null:
+		title_label = Label.new()
+		title_label.position = Vector2(22, 8)
+		title_label.size = Vector2(420, 32)
+		title_label.z_index = 8
+		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		title_label.add_theme_font_size_override("font_size", 22)
+		title_label.add_theme_color_override("font_color", Color(0.94, 0.80, 0.48, 0.90))
+		title_label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.94))
+		title_label.add_theme_constant_override("shadow_offset_x", 1)
+		title_label.add_theme_constant_override("shadow_offset_y", 2)
+		add_child(title_label)
+	var title := str(current_region.get("name", "局部地图"))
+	if current_mode == "shop":
+		var shop: Dictionary = SHOP_DEFINITIONS.get(active_shop_id, {})
+		title = "%s · %s" % [str(current_region.get("name", "")), str(shop.get("name", "商铺"))]
+	title_label.text = title
+
+func _draw_portals() -> void:
+	for portal in portals:
+		var tile_data: Array = portal.get("tile", [0, 0])
+		var pos := tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1])))
+		var highlighted := str(portal.get("id", "")) == highlighted_portal_id
+		var color := Color(0.92, 0.70, 0.28, 0.78)
+		if str(portal.get("type", "")) == "exit_world" or str(portal.get("type", "")) == "exit_area":
+			color = Color(0.56, 0.78, 0.98, 0.75)
+		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
+		draw_circle(pos, 4.2 if highlighted else 3.0, color)
+
+func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	var seed := (x * 31 + y * 17) % 19
+	match tile_id:
+		Tile.ROAD:
+			draw_line(rect.position + Vector2(0, 28), rect.position + Vector2(48, 20), Color(0.78, 0.68, 0.48, 0.25), 1.6)
+			if (x + y) % 5 == 0:
+				draw_circle(rect.get_center() + Vector2(seed - 8, 6), 1.5, Color(0.24, 0.18, 0.12, 0.24))
+		Tile.WATER:
+			draw_line(rect.position + Vector2(5, 18), rect.position + Vector2(43, 15), Color(0.72, 0.88, 0.94, 0.24), 2.0)
+			draw_line(rect.position + Vector2(7, 32), rect.position + Vector2(41, 29), Color(0.08, 0.18, 0.26, 0.22), 1.4)
+		Tile.BUILDING, Tile.SHOP:
+			draw_polygon(PackedVector2Array([rect.position + Vector2(4, 18), rect.position + Vector2(24, 7), rect.position + Vector2(44, 18), rect.position + Vector2(38, 24), rect.position + Vector2(10, 24)]), PackedColorArray([Color(0.32, 0.15, 0.08, 0.58), Color(0.72, 0.40, 0.20, 0.64), Color(0.32, 0.15, 0.08, 0.58), Color(0.40, 0.22, 0.12, 0.58), Color(0.40, 0.22, 0.12, 0.58)]))
+			if tile_id == Tile.SHOP:
+				draw_rect(Rect2(rect.position + Vector2(12, 25), Vector2(24, 4)), Color(0.92, 0.68, 0.28, 0.45), true)
+		Tile.GARDEN:
+			draw_circle(rect.get_center() + Vector2(-6, 2), 9.0, Color(0.13, 0.34, 0.16, 0.38))
+			draw_circle(rect.get_center() + Vector2(7, -4), 7.0, Color(0.28, 0.48, 0.20, 0.34))
+		Tile.FIELD:
+			for i in range(3):
+				draw_line(rect.position + Vector2(5, 13 + i * 9), rect.position + Vector2(43, 8 + i * 9), Color(0.70, 0.70, 0.34, 0.28), 1.4)
+		Tile.MOUNTAIN:
+			draw_polygon(PackedVector2Array([rect.position + Vector2(5, 40), rect.position + Vector2(24, 9), rect.position + Vector2(43, 40)]), PackedColorArray([Color(0.22, 0.22, 0.20, 0.55), Color(0.54, 0.52, 0.46, 0.55), Color(0.18, 0.18, 0.17, 0.55)]))
+		Tile.FLOOR:
+			if (x + y) % 4 == 0:
+				draw_line(rect.position + Vector2(4, 34), rect.position + Vector2(44, 29), Color(0.48, 0.38, 0.24, 0.16), 1.2)
+		Tile.COUNTER:
+			draw_rect(Rect2(rect.position + Vector2(3, 8), Vector2(42, 27)), Color(0.30, 0.17, 0.09, 0.70), true)
+			draw_line(rect.position + Vector2(4, 13), rect.position + Vector2(44, 13), Color(0.82, 0.58, 0.28, 0.45), 2.0)
+		Tile.CARPET:
+			draw_rect(Rect2(rect.position + Vector2(6, 8), Vector2(36, 30)), Color(0.40, 0.13, 0.10, 0.42), true)
+			draw_rect(Rect2(rect.position + Vector2(9, 11), Vector2(30, 24)), Color(0.72, 0.45, 0.20, 0.18), false, 1.0)
+		Tile.BRIDGE:
+			draw_line(rect.position + Vector2(5, 18), rect.position + Vector2(43, 18), Color(0.68, 0.45, 0.22, 0.72), 3.0)
+			draw_line(rect.position + Vector2(5, 29), rect.position + Vector2(43, 29), Color(0.68, 0.45, 0.22, 0.72), 3.0)
+
+func _tile_color(tile_id: int) -> Color:
+	match tile_id:
+		Tile.ROAD:
+			return Color(0.54, 0.47, 0.34)
+		Tile.WATER:
+			return Color(0.14, 0.33, 0.45)
+		Tile.BUILDING:
+			return Color(0.40, 0.28, 0.18)
+		Tile.SHOP:
+			return Color(0.56, 0.37, 0.20)
+		Tile.WALL:
+			return Color(0.22, 0.18, 0.14)
+		Tile.GARDEN:
+			return Color(0.24, 0.40, 0.22)
+		Tile.FIELD:
+			return Color(0.40, 0.49, 0.25)
+		Tile.MOUNTAIN:
+			return Color(0.34, 0.35, 0.30)
+		Tile.BRIDGE:
+			return Color(0.42, 0.27, 0.14)
+		Tile.FLOOR:
+			return Color(0.46, 0.38, 0.25)
+		Tile.COUNTER:
+			return Color(0.31, 0.20, 0.12)
+		Tile.CARPET:
+			return Color(0.42, 0.18, 0.13)
+		_:
+			return Color(0.30, 0.45, 0.27)
+
+func _paint_line(points: Array, tile_id: int, radius: int = 0) -> void:
+	if points.size() < 2:
+		return
+	for index in range(points.size() - 1):
+		var start := Vector2(points[index].x, points[index].y)
+		var end := Vector2(points[index + 1].x, points[index + 1].y)
+		var steps := int(max(abs(end.x - start.x), abs(end.y - start.y)) * 3.0) + 1
+		for step in range(steps + 1):
+			var t := float(step) / float(max(steps, 1))
+			var point := start.lerp(end, t)
+			for ox in range(-radius, radius + 1):
+				for oy in range(-radius, radius + 1):
+					_set_tile(roundi(point.x) + ox, roundi(point.y) + oy, tile_id)
+
+func _fill_rect(rect: Rect2i, tile_id: int) -> void:
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			_set_tile(x, y, tile_id)
+
+func _set_tile(x: int, y: int, tile_id: int) -> void:
+	if x < 0 or y < 0 or x >= map_width or y >= map_height:
+		return
+	if tile_id == Tile.ROAD and tiles[y][x] == Tile.WATER:
+		tiles[y][x] = Tile.BRIDGE
+	else:
+		tiles[y][x] = tile_id
+
+func _color_to_array(color: Color) -> Array:
+	return [color.r, color.g, color.b]
