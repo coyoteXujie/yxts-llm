@@ -55,6 +55,7 @@ func _run() -> void:
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
 	_check(GameData.get_neighbor_regions("qinghe", 4).size() >= 3, "平安镇应能计算相邻区域")
 	_check(not _first_portal(local_area, "travel_region").is_empty(), "平安镇应生成相邻区域转场入口")
+	_check(_portal_count(local_area, "landmark") >= 3, "平安镇应生成可互动地标")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")
@@ -101,6 +102,13 @@ func _first_portal(local_area, portal_type: String) -> Dictionary:
 		if str(portal.get("type", "")) == portal_type:
 			return portal
 	return {}
+
+func _portal_count(local_area, portal_type: String) -> int:
+	var count := 0
+	for portal in local_area.portals:
+		if str(portal.get("type", "")) == portal_type:
+			count += 1
+	return count
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:

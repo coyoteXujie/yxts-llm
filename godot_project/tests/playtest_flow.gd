@@ -37,6 +37,17 @@ func _run() -> void:
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")
 		var travel_portal := _first_portal(main.local_area, "travel_region")
 		_check(not travel_portal.is_empty(), "平安镇应有通往相邻区域的路牌入口")
+		var landmark_portal := _first_reward_landmark(main.local_area)
+		_check(not landmark_portal.is_empty(), "平安镇应有带奖励的探索地标")
+		if not landmark_portal.is_empty():
+			var reward_item := str(landmark_portal.get("reward_item", ""))
+			var before_landmark_item_count := int(GameState.inventory.get(reward_item, 0))
+			main._inspect_landmark(landmark_portal)
+			await _frames(1)
+			_check(int(GameState.inventory.get(reward_item, 0)) == before_landmark_item_count + 1, "探索地标应发放一次性奖励")
+			main._inspect_landmark(landmark_portal)
+			await _frames(1)
+			_check(int(GameState.inventory.get(reward_item, 0)) == before_landmark_item_count + 1, "重复探索同一地标不应重复发奖")
 
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
@@ -103,6 +114,12 @@ func _check(condition: bool, message: String) -> void:
 func _first_portal(local_area, portal_type: String) -> Dictionary:
 	for portal in local_area.portals:
 		if str(portal.get("type", "")) == portal_type:
+			return portal
+	return {}
+
+func _first_reward_landmark(local_area) -> Dictionary:
+	for portal in local_area.portals:
+		if str(portal.get("type", "")) == "landmark" and not str(portal.get("reward_item", "")).is_empty():
 			return portal
 	return {}
 

@@ -356,6 +356,8 @@ func _handle_enter_area() -> void:
 			_exit_shop_to_area()
 		"travel_region":
 			_travel_to_linked_region(focused_portal)
+		"landmark":
+			_inspect_landmark(focused_portal)
 		"look":
 			EventBus.emit_toast("驿亭可歇脚探听，后续接入野外事件")
 		_:
@@ -421,6 +423,34 @@ func _travel_to_linked_region(portal: Dictionary) -> void:
 		camera.reset_smoothing()
 	_update_current_region()
 	EventBus.emit_toast("抵达%s" % str(target_region.get("name", target_id)))
+
+func _inspect_landmark(portal: Dictionary) -> void:
+	var region_id := str(local_area.current_region.get("id", "region"))
+	var portal_id := str(portal.get("id", "landmark"))
+	var flag_key := "landmark_%s_%s" % [region_id, portal_id]
+	var description := str(portal.get("description", "这里暂时没有更多线索。"))
+	if bool(GameState.game_flags.get(flag_key, false)):
+		EventBus.emit_toast(description)
+		return
+	GameState.game_flags[flag_key] = true
+	var reward_parts: Array[String] = []
+	var item_id := str(portal.get("reward_item", ""))
+	if not item_id.is_empty():
+		GameState.add_item(item_id, 1)
+		var item := GameData.get_item(item_id)
+		reward_parts.append(str(item.get("name", item_id)))
+	var reward_money := int(portal.get("reward_money", 0))
+	if reward_money > 0:
+		GameState.add_money(reward_money)
+		reward_parts.append("%d 两银子" % reward_money)
+	var reward_exp := int(portal.get("reward_exp", 0))
+	if reward_exp > 0:
+		GameState.reward_player(reward_exp, 0)
+		reward_parts.append("%d 点阅历" % reward_exp)
+	if reward_parts.is_empty():
+		EventBus.emit_toast(description)
+	else:
+		EventBus.emit_toast("%s 获得：%s" % [description, "，".join(reward_parts)])
 
 func _switch_to_world_map(position: Vector2) -> void:
 	if local_area != null:
