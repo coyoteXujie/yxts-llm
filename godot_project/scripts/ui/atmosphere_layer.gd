@@ -35,6 +35,7 @@ func _draw() -> void:
 	_draw_time_tint(canvas)
 	_draw_weather(canvas)
 	_draw_region_motif(canvas)
+	_draw_depth_haze(canvas)
 	_draw_vignette(canvas)
 
 func _draw_region_tint(canvas: Rect2) -> void:
@@ -375,3 +376,88 @@ func _draw_vignette(canvas: Rect2) -> void:
 	draw_rect(Rect2(Vector2(0, canvas.size.y - 48), Vector2(canvas.size.x, 48)), Color(0, 0, 0, edge_alpha), true)
 	draw_rect(Rect2(Vector2.ZERO, Vector2(48, canvas.size.y)), Color(0, 0, 0, edge_alpha * 0.82), true)
 	draw_rect(Rect2(Vector2(canvas.size.x - 48, 0), Vector2(48, canvas.size.y)), Color(0, 0, 0, edge_alpha * 0.82), true)
+
+func _draw_depth_haze(canvas: Rect2) -> void:
+	if region.is_empty():
+		return
+	var theme := _region_theme()
+	draw_rect(Rect2(Vector2(0, 0), Vector2(canvas.size.x, canvas.size.y * 0.16)), Color(0.72, 0.76, 0.70, 0.030), true)
+	for i in range(4):
+		var y := canvas.size.y * (0.16 + float(i) * 0.10) + sin(phase * 0.22 + float(i)) * 8.0
+		draw_rect(Rect2(Vector2(-40, y), Vector2(canvas.size.x + 80, 12.0 + float(i % 2) * 5.0)), Color(0.72, 0.76, 0.70, 0.018), true)
+	match theme:
+		"city", "town", "water_city":
+			_draw_foreground_eaves(canvas)
+		"forest", "flower", "flower_sect":
+			_draw_foreground_canopy(canvas, Color(0.02, 0.05, 0.025, 0.18))
+		"mountain", "snow", "snow_sect", "daoist_sect":
+			_draw_foreground_mountain_mist(canvas)
+		"desert":
+			_draw_foreground_sand_veil(canvas)
+		"sect", "flame_sect", "shadow_sect", "water_sect":
+			_draw_foreground_eaves(canvas, 0.12)
+			_draw_foreground_canopy(canvas, Color(0.02, 0.025, 0.018, 0.10))
+		_:
+			_draw_low_ground_shadow(canvas, 0.055)
+
+func _draw_foreground_eaves(canvas: Rect2, strength: float = 0.16) -> void:
+	var top_y := canvas.size.y * 0.055
+	for i in range(6):
+		var x := float(i) * canvas.size.x / 5.0 - 80.0 + sin(phase * 0.14 + float(i)) * 8.0
+		var width := canvas.size.x * 0.22
+		var points := PackedVector2Array([
+			Vector2(x, top_y),
+			Vector2(x + width * 0.50, top_y - 28.0),
+			Vector2(x + width, top_y),
+			Vector2(x + width - 18.0, top_y + 20.0),
+			Vector2(x + 18.0, top_y + 20.0)
+		])
+		var colors := PackedColorArray([
+			Color(0.04, 0.025, 0.014, strength),
+			Color(0.12, 0.07, 0.032, strength * 0.72),
+			Color(0.04, 0.025, 0.014, strength),
+			Color(0.02, 0.012, 0.008, strength * 1.15),
+			Color(0.02, 0.012, 0.008, strength * 1.15)
+		])
+		draw_polygon(points, colors)
+		draw_line(Vector2(x + 16.0, top_y + 20.0), Vector2(x + width - 16.0, top_y + 20.0), Color(0.82, 0.58, 0.28, strength * 0.45), 1.2)
+	_draw_low_ground_shadow(canvas, strength * 0.62)
+
+func _draw_foreground_canopy(canvas: Rect2, color: Color) -> void:
+	var top_points := PackedVector2Array([
+		Vector2(0, 0),
+		Vector2(canvas.size.x, 0),
+		Vector2(canvas.size.x, canvas.size.y * 0.12),
+		Vector2(canvas.size.x * 0.82, canvas.size.y * 0.09),
+		Vector2(canvas.size.x * 0.68, canvas.size.y * 0.15),
+		Vector2(canvas.size.x * 0.52, canvas.size.y * 0.10),
+		Vector2(canvas.size.x * 0.34, canvas.size.y * 0.17),
+		Vector2(canvas.size.x * 0.18, canvas.size.y * 0.10),
+		Vector2(0, canvas.size.y * 0.14)
+	])
+	var colors := PackedColorArray()
+	for _point in top_points:
+		colors.append(color)
+	draw_polygon(top_points, colors)
+	for i in range(10):
+		var x := fposmod(float(i * 149) + sin(phase * 0.18 + float(i)) * 16.0, canvas.size.x + 80.0) - 40.0
+		var y := canvas.size.y * (0.05 + float(i % 4) * 0.035)
+		draw_line(Vector2(x, y - 30.0), Vector2(x + 18.0, y + 42.0), Color(color.r, color.g, color.b, color.a * 0.70), 2.0)
+		draw_line(Vector2(x + 18.0, y + 5.0), Vector2(x + 48.0, y - 18.0), Color(color.r, color.g, color.b, color.a * 0.50), 1.5)
+	_draw_low_ground_shadow(canvas, color.a * 0.35)
+
+func _draw_foreground_mountain_mist(canvas: Rect2) -> void:
+	for i in range(5):
+		var y := canvas.size.y * (0.12 + float(i) * 0.12) + sin(phase * 0.18 + float(i)) * 10.0
+		draw_rect(Rect2(Vector2(-80.0, y), Vector2(canvas.size.x + 160.0, 18.0)), Color(0.78, 0.80, 0.76, 0.045), true)
+	draw_rect(Rect2(Vector2(0, canvas.size.y * 0.78), Vector2(canvas.size.x, canvas.size.y * 0.22)), Color(0.04, 0.045, 0.048, 0.055), true)
+
+func _draw_foreground_sand_veil(canvas: Rect2) -> void:
+	for i in range(5):
+		var y := canvas.size.y * (0.18 + float(i) * 0.13)
+		var x := fposmod(phase * (18.0 + float(i) * 2.0), 96.0) - 96.0
+		draw_line(Vector2(x, y), Vector2(canvas.size.x + x + 140.0, y - 34.0), Color(0.76, 0.58, 0.32, 0.055), 5.0)
+	_draw_low_ground_shadow(canvas, 0.045)
+
+func _draw_low_ground_shadow(canvas: Rect2, alpha: float) -> void:
+	draw_rect(Rect2(Vector2(0, canvas.size.y * 0.78), Vector2(canvas.size.x, canvas.size.y * 0.22)), Color(0.0, 0.0, 0.0, alpha), true)

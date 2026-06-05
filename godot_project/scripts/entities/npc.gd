@@ -152,7 +152,7 @@ func _draw() -> void:
 	if using_sprite_asset:
 		var map_scale := _map_actor_scale()
 		_draw_ground_marker(accent)
-		draw_circle(Vector2(3, 20 * map_scale), 14.0 * map_scale, Color(0, 0, 0, 0.18))
+		_draw_actor_shadow(Vector2(3, 22 * map_scale), Vector2(17.0 * map_scale, 5.2 * map_scale), 0.92)
 		_draw_aura(appearance, accent)
 		if highlighted:
 			draw_arc(Vector2.ZERO, 27.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
@@ -163,7 +163,7 @@ func _draw() -> void:
 	var scale := _build_scale(str(appearance.get("build", "standard"))) * MAP_ACTOR_SCALE * _map_actor_scale()
 
 	_draw_ground_marker(accent)
-	draw_circle(Vector2(3, 19 * MAP_ACTOR_SCALE), 15.0 * max(scale.x, 1.0), Color(0, 0, 0, 0.16))
+	_draw_actor_shadow(Vector2(3, 20 * MAP_ACTOR_SCALE), Vector2(17.0 * max(scale.x, 1.0), 5.0 * max(scale.y, 0.9)), 0.82)
 
 	draw_set_transform(Vector2.ZERO, 0.0, scale)
 	_draw_aura(appearance, accent)
@@ -204,6 +204,15 @@ func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 		colors.append(color)
 	draw_polygon(points, colors)
+
+func _draw_actor_shadow(center: Vector2, radius: Vector2, strength: float) -> void:
+	var hour := float(GameState.hour)
+	var noon_factor := clampf(1.0 - absf(hour - 12.0) / 8.0, 0.0, 1.0)
+	var stretch := 1.0 + (1.0 - noon_factor) * 0.38
+	var offset := Vector2(5.0 + (12.0 - hour) * 0.38, 1.8)
+	_draw_ellipse(center + offset, Vector2(radius.x * stretch, radius.y * 1.10), Color(0.0, 0.0, 0.0, 0.070 * strength))
+	_draw_ellipse(center + Vector2(1.5, 0.5), radius, Color(0.0, 0.0, 0.0, 0.18 * strength))
+	_draw_ellipse(center, radius * Vector2(0.58, 0.48), Color(0.0, 0.0, 0.0, 0.13 * strength))
 
 func _build_scale(build: String) -> Vector2:
 	match build:

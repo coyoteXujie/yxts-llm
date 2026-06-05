@@ -1665,6 +1665,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "欺软怕硬",
+    "combat_style": "brawler",
     "description": "镇上的小混混",
     "level": 4,
     "hp": 60,
@@ -1676,6 +1677,10 @@
     "damage": 5,
     "money": 30,
     "exp_reward": 15,
+    "loot": [
+      {"item": "item_baozi", "chance": 0.45},
+      {"item": "item_wine", "chance": 0.18}
+    ],
     "pos_x": 35,
     "pos_y": 16,
     "has_quests": false
@@ -1686,6 +1691,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "凶神恶煞",
+    "combat_style": "brute",
     "description": "流氓头子",
     "level": 7,
     "hp": 100,
@@ -1697,6 +1703,10 @@
     "damage": 8,
     "money": 100,
     "exp_reward": 30,
+    "loot": [
+      {"item": "item_yao", "chance": 0.45},
+      {"item": "item_baozi", "chance": 0.35}
+    ],
     "pos_x": 37,
     "pos_y": 18,
     "has_quests": false
@@ -1707,6 +1717,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "残暴无情",
+    "combat_style": "bandit_boss",
     "description": "臭名昭著的大盗",
     "level": 12,
     "hp": 320,
@@ -1718,6 +1729,10 @@
     "damage": 15,
     "money": 500,
     "exp_reward": 80,
+    "loot": [
+      {"item": "item_dagger", "chance": 0.35},
+      {"item": "item_shengji", "chance": 0.35}
+    ],
     "pos_x": 59,
     "pos_y": 36,
     "has_quests": false
@@ -1728,6 +1743,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "阴险狡诈",
+    "combat_style": "assassin",
     "description": "采花大盗，轻功了得",
     "level": 15,
     "hp": 320,
@@ -1739,6 +1755,10 @@
     "damage": 12,
     "money": 300,
     "exp_reward": 100,
+    "loot": [
+      {"item": "item_fine_cloth", "chance": 0.35},
+      {"item": "item_dagger", "chance": 0.22}
+    ],
     "pos_x": 40,
     "pos_y": 20,
     "has_quests": false
@@ -1749,6 +1769,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "冷酷无情",
+    "combat_style": "assassin",
     "description": "神秘黑衣人，来去无踪",
     "level": 18,
     "hp": 400,
@@ -1760,6 +1781,10 @@
     "damage": 18,
     "money": 500,
     "exp_reward": 120,
+    "loot": [
+      {"item": "item_dagger", "chance": 0.40},
+      {"item": "item_dan", "chance": 0.28}
+    ],
     "pos_x": 64,
     "pos_y": 34,
     "has_quests": false
@@ -1770,6 +1795,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "凶悍蛮横",
+    "combat_style": "brute",
     "description": "雪山脚下的土匪",
     "level": 10,
     "hp": 200,
@@ -1781,6 +1807,10 @@
     "damage": 10,
     "money": 200,
     "exp_reward": 50,
+    "loot": [
+      {"item": "item_yao", "chance": 0.30},
+      {"item": "item_meat", "chance": 0.35}
+    ],
     "pos_x": 56,
     "pos_y": 12,
     "has_quests": false
@@ -1791,6 +1821,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "残暴嗜血",
+    "combat_style": "bandit_boss",
     "description": "土匪头目",
     "level": 15,
     "hp": 350,
@@ -1802,6 +1833,10 @@
     "damage": 15,
     "money": 500,
     "exp_reward": 100,
+    "loot": [
+      {"item": "item_blade", "chance": 0.24},
+      {"item": "item_shengji", "chance": 0.35}
+    ],
     "pos_x": 58,
     "pos_y": 15,
     "has_quests": false
@@ -1812,6 +1847,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "凶猛野兽",
+    "combat_style": "beast",
     "description": "雪山上的猛兽",
     "level": 12,
     "hp": 280,
@@ -1823,6 +1859,9 @@
     "damage": 12,
     "money": 0,
     "exp_reward": 60,
+    "loot": [
+      {"item": "item_meat", "chance": 0.85}
+    ],
     "pos_x": 50,
     "pos_y": 6,
     "has_quests": false
@@ -1913,6 +1952,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "神秘莫测",
+    "combat_style": "boss",
     "description": "手持屠龙刀的神秘人，集多门派武功于一身",
     "level": 22,
     "hp": 520,
@@ -1924,6 +1964,10 @@
     "damage": 18,
     "money": 500,
     "exp_reward": 260,
+    "loot": [
+      {"item": "item_dan", "chance": 0.65},
+      {"item": "item_blade", "chance": 0.35}
+    ],
     "pos_x": 34,
     "pos_y": 21,
     "has_quests": true
@@ -1934,6 +1978,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "冷艳绝伦",
+    "combat_style": "assassin",
     "description": "使用绣花针的神秘女子，兼修太极和花间武功",
     "level": 28,
     "hp": 760,
@@ -1945,6 +1990,10 @@
     "damage": 24,
     "money": 520,
     "exp_reward": 380,
+    "loot": [
+      {"item": "item_silk_cloth", "chance": 0.35},
+      {"item": "item_dan", "chance": 0.45}
+    ],
     "pos_x": 88,
     "pos_y": 54,
     "has_quests": true
@@ -1955,6 +2004,7 @@
     "npc_type": "enemy",
     "faction": "none",
     "personality": "癫狂邪恶",
+    "combat_style": "boss",
     "description": "道德和尚的黑暗面，兼修雪山和太极武功",
     "level": 32,
     "hp": 920,
@@ -1966,6 +2016,10 @@
     "damage": 30,
     "money": 600,
     "exp_reward": 520,
+    "loot": [
+      {"item": "item_dan", "chance": 0.75},
+      {"item": "item_shengji", "chance": 0.55}
+    ],
     "pos_x": 55,
     "pos_y": 39,
     "has_quests": true

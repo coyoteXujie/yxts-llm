@@ -25,6 +25,7 @@ var defeated_enemies: Array = []
 var game_flags: Dictionary = {}
 var npc_memory: Dictionary = {}
 var region_state: Dictionary = {}
+var world_events: Array = []
 var active_quest: String = "初入平安镇"
 var day := 1
 var hour := 8.0
@@ -97,7 +98,9 @@ func new_game(config: Dictionary = {}) -> void:
 	game_flags = {}
 	npc_memory = {}
 	region_state = {}
+	world_events = []
 	active_quest = "初入平安镇"
+	_start_quest_silently("q_intro_town")
 	day = 1
 	hour = 8.0
 	weather = "晴朗"
@@ -106,6 +109,7 @@ func new_game(config: Dictionary = {}) -> void:
 	current_region_name = "未知之地"
 	current_tile = Vector2i(30, 17)
 	map_target_region_id = ""
+	append_world_event("story", "平安镇初闻", "你在平安镇醒来，江湖风声还只是客栈里的几句闲话。", "qinghe", 1)
 	set_mode(Mode.EXPLORE)
 	EventBus.player_changed.emit(player)
 	EventBus.inventory_changed.emit(inventory)
@@ -133,6 +137,7 @@ func update_current_region(region: Dictionary, tile: Vector2i) -> void:
 	if region_id.is_empty():
 		return
 	var previous_region_id := current_region_id
+	var discovered_before := region_state.has(region_id) and bool(region_state[region_id].get("discovered", false))
 	current_region_id = region_id
 	current_region_name = str(region.get("name", region_id))
 	var state := _ensure_region_state(region_id)
@@ -145,6 +150,8 @@ func update_current_region(region: Dictionary, tile: Vector2i) -> void:
 		_update_region_exploration(region, state)
 		changed = true
 	region_state[region_id] = state
+	if not discovered_before:
+		_record_region_discovery(region)
 	if changed:
 		EventBus.region_changed.emit(region, state)
 
@@ -181,6 +188,88 @@ func is_region_discovered(region_id: String) -> bool:
 
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
+
+func append_world_event(kind: String, title: String, description: String, region_id: String = "", severity: int = 1) -> Dictionary:
+	title = title.strip_edges()
+	description = description.strip_edges()
+	if title.is_empty() and description.is_empty():
+		return {}
+	for existing in world_events:
+		if typeof(existing) != TYPE_DICTIONARY:
+			continue
+		if int(existing.get("day", -1)) == day and str(existing.get("title", "")) == title:
+			return (existing as Dictionary).duplicate(true)
+	var region_name := current_region_name
+	if not region_id.is_empty():
+		var region := GameData.get_region(region_id)
+		if not region.is_empty():
+			region_name = str(region.get("name", region_id))
+	var event_id := "%d_%d_%d" % [day, int(hour * 100.0), abs(hash("%s:%s:%s" % [kind, title, description]))]
+	var event := {
+		"id": event_id,
+		"kind": kind,
+		"title": title,
+		"description": description,
+		"region_id": region_id,
+		"region_name": region_name,
+		"day": day,
+		"hour": hour,
+		"weather": weather,
+		"severity": clampi(severity, 1, 5)
+	}
+	world_events.append(event)
+	while world_events.size() > 30:
+		world_events.remove_at(0)
+	EventBus.world_events_changed.emit(get_recent_world_events(30))
+	if severity >= 4:
+		EventBus.emit_toast("江湖传闻：%s" % title)
+	return event.duplicate(true)
+
+func get_recent_world_events(max_count: int = 5) -> Array:
+	var count: int = clampi(max_count, 0, world_events.size())
+	var start: int = max(0, world_events.size() - count)
+	var result: Array = []
+	for index in range(start, world_events.size()):
+		if typeof(world_events[index]) == TYPE_DICTIONARY:
+			result.append((world_events[index] as Dictionary).duplicate(true))
+	return result
+
+func get_world_event_summary(max_count: int = 3) -> String:
+	var parts: Array[String] = []
+	for event in get_recent_world_events(max_count):
+		var entry: Dictionary = event
+		var title := str(entry.get("title", ""))
+		var description := str(entry.get("description", ""))
+		if description.length() > 34:
+			description = "%s..." % description.substr(0, 34)
+		if not title.is_empty() and not description.is_empty():
+			parts.append("%s：%s" % [title, description])
+		elif not title.is_empty():
+			parts.append(title)
+	if parts.is_empty():
+		return "暂无新的江湖传闻"
+	return "；".join(parts)
+
+func _record_region_discovery(region: Dictionary) -> void:
+	var region_id := str(region.get("id", ""))
+	if region_id.is_empty():
+		return
+	var region_name := str(region.get("name", region_id))
+	var region_type := str(region.get("type", "wild"))
+	var danger := int(region.get("danger", 1))
+	var severity := 1
+	if region_type == "city" or region_type == "sect":
+		severity = 2
+	if danger >= 4:
+		severity = 3
+	var description := "你抵达%s，记下了这里的道路、人声与危险。" % region_name
+	if region_type == "sect":
+		description = "你踏入%s地界，山门规矩和江湖目光同时落在身上。" % region_name
+	elif region_type == "city":
+		description = "你抵达%s，城中消息如水脉般汇入江湖。" % region_name
+	elif danger >= 4:
+		description = "你发现%s，路上杀机比寻常荒野更重。" % region_name
+	append_world_event("discovery", "发现%s" % region_name, description, region_id, severity)
 
 func set_map_target_region(region_id: String) -> void:
 	if map_target_region_id == region_id:
@@ -360,10 +449,10 @@ func apply_fast_travel_time(region_id: String) -> float:
 		EventBus.emit_toast(reason)
 		return -1.0
 	var travel_hours := estimate_fast_travel_hours(region_id)
-	_advance_clock(travel_hours)
+	advance_hours(travel_hours)
 	return travel_hours
 
-func _advance_clock(hours_to_add: float) -> void:
+func advance_hours(hours_to_add: float) -> void:
 	hour += maxf(hours_to_add, 0.0)
 	var day_changed := false
 	while hour >= 24.0:
@@ -444,6 +533,53 @@ func reward_player(exp_amount: int, money_amount: int) -> void:
 		player["mp"] = player["max_mp"]
 		EventBus.emit_toast("境界提升：等级 %d" % int(player["level"]))
 	EventBus.player_changed.emit(player)
+
+func grant_enemy_loot(enemy_data: Dictionary) -> Array[String]:
+	var awarded: Array[String] = []
+	var loot_entries: Array = enemy_data.get("loot", [])
+	if loot_entries.is_empty():
+		loot_entries = _default_enemy_loot(enemy_data)
+	for entry in loot_entries:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var chance := float(entry.get("chance", 1.0))
+		if randf() > chance:
+			continue
+		var item_id := str(entry.get("item", ""))
+		if GameData.get_item(item_id).is_empty():
+			continue
+		var min_count := int(entry.get("min", entry.get("count", 1)))
+		var max_count := int(entry.get("max", entry.get("count", min_count)))
+		var count := randi_range(max(1, min_count), max(max_count, min_count))
+		add_item(item_id, count)
+		var item_name := str(GameData.get_item(item_id).get("name", item_id))
+		if count > 1:
+			awarded.append("%s x%d" % [item_name, count])
+		else:
+			awarded.append(item_name)
+	return awarded
+
+func _default_enemy_loot(enemy_data: Dictionary) -> Array:
+	var name := str(enemy_data.get("name", ""))
+	var style := str(enemy_data.get("combat_style", ""))
+	if style == "beast" or name.contains("豹") or name.contains("兽"):
+		return [{"item": "item_meat", "chance": 0.85}]
+	if style == "assassin" or name.contains("盗"):
+		return [
+			{"item": "item_dagger", "chance": 0.22},
+			{"item": "item_yao", "chance": 0.45}
+		]
+	if style == "boss" or name.contains("神秘") or name.contains("头目"):
+		return [
+			{"item": "item_dan", "chance": 0.55},
+			{"item": "item_shengji", "chance": 0.40}
+		]
+	if name.contains("流氓") or style == "brawler":
+		return [
+			{"item": "item_baozi", "chance": 0.45},
+			{"item": "item_wine", "chance": 0.20}
+		]
+	return [{"item": "item_yao", "chance": 0.25}]
 
 func learn_skill(skill_id: String, level_gain: int = 1) -> int:
 	var next_level := int(learned_skills.get(skill_id, 0)) + level_gain
@@ -586,20 +722,17 @@ func rest(cost: int = 12) -> bool:
 		return false
 	heal_player(int(player.get("max_hp", 100)))
 	restore_mp(int(player.get("max_mp", 50)))
-	hour += 4.0
-	if hour >= 24.0:
-		hour -= 24.0
-		day += 1
-		_roll_weather()
-	EventBus.time_changed.emit(day, hour, weather)
+	advance_hours(4.0)
 	EventBus.emit_toast("休息完毕")
 	return true
 
 func accept_quest(quest_id: String) -> bool:
-	if active_quests.has(quest_id) or completed_quests.has(quest_id):
-		return false
 	var quest := GameData.get_quest(quest_id)
 	if quest.is_empty():
+		return false
+	var block_reason := get_quest_block_reason(quest_id)
+	if not block_reason.is_empty():
+		EventBus.emit_toast(block_reason)
 		return false
 	active_quests[quest_id] = {"progress": {}}
 	active_quest = str(quest.get("title", quest_id))
@@ -609,6 +742,47 @@ func accept_quest(quest_id: String) -> bool:
 	_check_quest_completion(quest_id)
 	EventBus.emit_toast("接到任务：%s" % active_quest)
 	return true
+
+func _start_quest_silently(quest_id: String) -> void:
+	if active_quests.has(quest_id) or completed_quests.has(quest_id):
+		return
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return
+	active_quests[quest_id] = {"progress": {}}
+	active_quest = str(quest.get("title", quest_id))
+	_sync_existing_objective_progress(quest_id)
+
+func can_accept_quest(quest_id: String) -> bool:
+	return get_quest_block_reason(quest_id).is_empty()
+
+func get_quest_block_reason(quest_id: String) -> String:
+	if quest_id.is_empty():
+		return "任务不存在"
+	if active_quests.has(quest_id):
+		return "任务已经在进行中"
+	if completed_quests.has(quest_id):
+		return "任务已经完成"
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return "任务不存在"
+	var min_level := int(quest.get("min_level", 0))
+	if min_level > 0 and int(player.get("level", 1)) < min_level:
+		return "等级达到 %d 后再来" % min_level
+	var required_faction := str(quest.get("required_faction", ""))
+	if not required_faction.is_empty() and str(player.get("faction", "none")) != required_faction:
+		return "需先拜入%s" % GameData.get_faction_name(required_faction)
+	var required_completed: Array = quest.get("requires_completed", [])
+	for required_id in required_completed:
+		var required_quest_id := str(required_id)
+		if not completed_quests.has(required_quest_id):
+			var required_quest := GameData.get_quest(required_quest_id)
+			return "需先完成【%s】" % str(required_quest.get("title", required_quest_id))
+	var required_flags: Array = quest.get("requires_flags", [])
+	for flag in required_flags:
+		if not bool(game_flags.get(str(flag), false)):
+			return "线索还不够"
+	return ""
 
 func progress_quest(kind: String, target: String, amount: int = 1) -> void:
 	var changed := false
@@ -676,7 +850,8 @@ func _complete_quest(quest_id: String) -> void:
 		var first_id := str(active_quests.keys()[0])
 		active_quest = str(GameData.get_quest(first_id).get("title", first_id))
 	else:
-		active_quest = "自由探索江湖"
+		active_quest = str(quest.get("next_hint", "自由探索江湖"))
+	_record_quest_world_event(quest_id, quest)
 	EventBus.quests_changed.emit()
 	EventBus.player_changed.emit(player)
 	EventBus.emit_toast("完成任务：%s" % str(quest.get("title", quest_id)))
@@ -686,6 +861,32 @@ func _complete_quest(quest_id: String) -> void:
 		EventBus.player_changed.emit(player)
 		EventBus.emit_toast("阶段通关：江湖初成")
 
+func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
+	var quest_title := str(quest.get("title", quest_id))
+	match quest_id:
+		"q_intro_town":
+			append_world_event("quest", "平安镇有人问路", "客栈与衙门都记住了你的名字，镇东的麻烦开始浮出水面。", "qinghe", 2)
+		"q_clear_thugs":
+			append_world_event("quest", "镇东恶徒受挫", "平安镇东路清静了些，但余党背后的线仍未断。", "qinghe", 3)
+		"q_flower_thief":
+			append_world_event("quest", "采花大盗伏诛", "镇上传开消息，说有少侠追上了轻功了得的采花大盗。", "qinghe", 3)
+		"q_hero_trial":
+			append_world_event("story", "江湖初成", "神秘人败退，洛阳旧案和暗影司的名字开始连在一起。", "luoyang", 4)
+		"q_main_luoyang_ashes":
+			append_world_event("story", "洛阳旧火重燃", "苏家旧案重新被人提起，武林盟旧卷也不再安静。", "luoyang", 4)
+		"q_main_shadow_letters":
+			append_world_event("story", "暗影书信现世", "两封密信牵出七派暗号，山门之间的信任有了裂纹。", "changan", 4)
+		"q_main_sect_warnings":
+			append_world_event("story", "七派风声渐紧", "太极、雪山、逍遥都听见了暗影司的脚步，夜路开始不太平。", "wudang", 4)
+		"q_main_shadow_watchers":
+			append_world_event("story", "暗影眼线暴露", "黑衣大盗带着半截密令败退，暗影司藏在路上的眼睛少了一只。", "changan", 4)
+		"q_main_broken_token":
+			append_world_event("story", "断令归卷", "断令花纹与武林盟旧卷对上，七派夜议已有了真正的证据。", "luoyang", 4)
+		"q_main_wulin_conclave":
+			append_world_event("story", "武林夜议成局", "七派可信之人开始合拢证据，暗影司幕后主使不再只是传闻。", "wudang", 5)
+		_:
+			append_world_event("quest", "完成%s" % quest_title, "你办完了%s，附近江湖人多了一桩谈资。" % quest_title, current_region_id, 2)
+
 func _objective_key(objective: Dictionary) -> String:
 	return "%s:%s" % [str(objective.get("type", "")), str(objective.get("target", ""))]
 
@@ -693,9 +894,14 @@ func get_quest_status_lines() -> Array[String]:
 	var lines: Array[String] = []
 	if active_quests.is_empty():
 		lines.append("暂无进行中的任务。")
+		if not active_quest.is_empty():
+			lines.append("线索：%s" % active_quest)
 	for quest_id in active_quests.keys():
 		var quest := GameData.get_quest(str(quest_id))
 		lines.append("【进行中】%s" % str(quest.get("title", quest_id)))
+		var description := str(quest.get("description", ""))
+		if not description.is_empty():
+			lines.append("  %s" % description)
 		var progress: Dictionary = active_quests[quest_id].get("progress", {})
 		var objectives: Array = quest.get("objectives", [])
 		for objective in objectives:
@@ -709,7 +915,39 @@ func get_quest_status_lines() -> Array[String]:
 		for quest_id in completed_quests:
 			var quest := GameData.get_quest(str(quest_id))
 			lines.append("  - %s" % str(quest.get("title", quest_id)))
+	var events := get_recent_world_events(5)
+	if not events.is_empty():
+		lines.append("")
+		lines.append("江湖传闻：")
+		for event in events:
+			var entry: Dictionary = event
+			lines.append("  - 第%d日 %s：%s" % [
+				int(entry.get("day", day)),
+				str(entry.get("title", "传闻")),
+				str(entry.get("description", ""))
+			])
 	return lines
+
+func get_active_quest_tracker() -> String:
+	if active_quests.is_empty():
+		return active_quest
+	for quest_id in active_quests.keys():
+		var quest := GameData.get_quest(str(quest_id))
+		var progress: Dictionary = active_quests[quest_id].get("progress", {})
+		var objectives: Array = quest.get("objectives", [])
+		for objective in objectives:
+			var key := _objective_key(objective)
+			var current := int(progress.get(key, 0))
+			var required := int(objective.get("count", 1))
+			if current < required:
+				return "%s：%s %d/%d" % [
+					str(quest.get("title", quest_id)),
+					str(objective.get("label", key)),
+					min(current, required),
+					required
+				]
+		return str(quest.get("title", quest_id))
+	return active_quest
 
 func mark_enemy_defeated(enemy_id: int) -> void:
 	if not defeated_enemies.has(enemy_id):
@@ -724,11 +962,12 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 		"learned_skills": learned_skills,
 		"active_quests": active_quests,
 		"completed_quests": completed_quests,
-		"defeated_enemies": defeated_enemies,
-		"game_flags": game_flags,
-		"npc_memory": npc_memory,
-		"region_state": region_state,
-		"active_quest": active_quest,
+			"defeated_enemies": defeated_enemies,
+			"game_flags": game_flags,
+			"npc_memory": npc_memory,
+			"region_state": region_state,
+			"world_events": world_events,
+			"active_quest": active_quest,
 		"day": day,
 		"hour": hour,
 		"weather": weather,
@@ -776,6 +1015,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	game_flags = snapshot.get("game_flags", {})
 	npc_memory = snapshot.get("npc_memory", {})
 	region_state = snapshot.get("region_state", {})
+	world_events = snapshot.get("world_events", [])
 	active_quest = str(snapshot.get("active_quest", "自由探索江湖"))
 	day = int(snapshot.get("day", 1))
 	hour = float(snapshot.get("hour", 8.0))
@@ -788,5 +1028,6 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	EventBus.player_changed.emit(player)
 	EventBus.inventory_changed.emit(inventory)
 	EventBus.quests_changed.emit()
+	EventBus.world_events_changed.emit(get_recent_world_events(30))
 	EventBus.time_changed.emit(day, hour, weather)
 	EventBus.map_target_changed.emit(map_target_region_id)

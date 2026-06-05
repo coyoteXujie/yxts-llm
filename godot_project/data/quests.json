@@ -4,6 +4,7 @@
     "title": "初入平安镇",
     "giver": "村长",
     "description": "村长让你先熟悉镇上的人情，去和客栈掌柜、捕快打听消息。",
+    "next_hint": "去找捕快接下【镇东除恶】，再准备出镇。",
     "objectives": [
       {"type": "talk", "target": "平阿四", "count": 1, "label": "拜访平阿四"},
       {"type": "talk", "target": "捕快", "count": 1, "label": "拜访捕快"}
@@ -15,6 +16,8 @@
     "title": "镇东除恶",
     "giver": "捕快",
     "description": "捕快请你清理镇东滋事的流氓。",
+    "requires_completed": ["q_intro_town"],
+    "next_hint": "镇东余党背后还有人，回去找捕快追问。",
     "objectives": [
       {"type": "kill", "target": "流氓", "count": 1, "label": "击败流氓"},
       {"type": "kill", "target": "流氓头", "count": 1, "label": "击败流氓头"}
@@ -36,6 +39,7 @@
     "title": "备些干粮",
     "giver": "平阿四",
     "description": "平阿四提醒你出门前买些吃食。",
+    "requires_completed": ["q_intro_town"],
     "objectives": [
       {"type": "collect", "target": "item_baozi", "count": 3, "label": "备好包子"}
     ],
@@ -56,6 +60,8 @@
     "title": "追捕采花大盗",
     "giver": "捕快",
     "description": "流氓背后还有采花大盗出没，捕快请你继续追查。",
+    "requires_completed": ["q_clear_thugs"],
+    "next_hint": "大侠想试你的身手，去镇上找他。",
     "objectives": [
       {"type": "kill", "target": "采花大盗", "count": 1, "label": "击败采花大盗"}
     ],
@@ -66,6 +72,9 @@
     "title": "英雄试炼",
     "giver": "大侠",
     "description": "大侠发现镇外神秘人暗中搅动江湖，请你前去试探并击败他。",
+    "requires_completed": ["q_flower_thief"],
+    "min_level": 2,
+    "next_hint": "平安镇的事暂告一段落，可以去洛阳寻找苏梦瑶。",
     "objectives": [
       {"type": "kill", "target": "神秘人", "count": 1, "label": "击败神秘人"}
     ],
@@ -76,6 +85,8 @@
     "title": "洛阳旧火",
     "giver": "苏梦瑶",
     "description": "苏梦瑶怀疑苏家旧宅大火并非意外。她让你先去长安寻找陈天行，再向洛阳武林盟执事赵无极打探旧案卷宗。",
+    "requires_completed": ["q_hero_trial"],
+    "next_hint": "带着旧案疑点去长安找陈天行。",
     "objectives": [
       {"type": "talk", "target": "陈天行", "count": 1, "label": "在长安找到陈天行"},
       {"type": "talk", "target": "赵无极", "count": 1, "label": "向赵无极打听苏家旧案"}
@@ -87,6 +98,8 @@
     "title": "暗影书信",
     "giver": "陈天行",
     "description": "陈天行指出苏家旧案背后可能牵连暗影司。他让你拜访八卦门玄机子和花间派花如玉，确认两封密信中的门派暗号。",
+    "requires_completed": ["q_main_luoyang_ashes"],
+    "next_hint": "密信牵出七派暗号，去找玄机子推演局势。",
     "objectives": [
       {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子辨认阵法暗号"},
       {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉辨认花间暗号"}
@@ -98,11 +111,57 @@
     "title": "七派风声",
     "giver": "玄机子",
     "description": "玄机子认为暗影司的动作不止针对洛阳。他让你走访几位掌门，确认七派是否已有异动。",
+    "requires_completed": ["q_main_shadow_letters"],
+    "next_hint": "七派风声已起，去找花如玉追查暗影司眼线。",
     "objectives": [
       {"type": "talk", "target": "太极真人", "count": 1, "label": "拜访太极真人"},
       {"type": "talk", "target": "冰魄", "count": 1, "label": "拜访雪山派冰魄"},
       {"type": "talk", "target": "逍遥子", "count": 1, "label": "拜访逍遥子"}
     ],
     "rewards": {"exp": 320, "money": 180, "daode": 3, "items": {"item_fine_cloth": 1}}
+  },
+  {
+    "id": "q_main_shadow_watchers",
+    "title": "暗影眼线",
+    "giver": "花如玉",
+    "description": "花如玉发现洛阳与长安之间有暗影司眼线活动。她让你分别向烈火和蛇王求证，再击败一名黑衣大盗夺回半截密令。",
+    "requires_completed": ["q_main_sect_warnings"],
+    "min_level": 3,
+    "next_hint": "半截密令到手，回长安找陈天行对证。",
+    "objectives": [
+      {"type": "talk", "target": "烈火", "count": 1, "label": "向烈火求证红莲线索"},
+      {"type": "talk", "target": "蛇王", "count": 1, "label": "向蛇王打听暗哨踪迹"},
+      {"type": "kill", "target": "黑衣大盗", "count": 1, "label": "击败黑衣大盗"}
+    ],
+    "rewards": {"exp": 420, "money": 260, "daode": 4, "items": {"item_dan": 1, "item_dagger": 1}}
+  },
+  {
+    "id": "q_main_broken_token",
+    "title": "断令归卷",
+    "giver": "陈天行",
+    "description": "陈天行确认半截密令来自暗影司旧部。他让你带着断令回见苏梦瑶，并让赵无极在武林盟旧卷中查出另一半的去向。",
+    "requires_completed": ["q_main_shadow_watchers"],
+    "next_hint": "断令指向七派夜议，去武当找太极真人。",
+    "objectives": [
+      {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "让苏梦瑶辨认断令花纹"},
+      {"type": "talk", "target": "赵无极", "count": 1, "label": "请赵无极翻查旧卷"}
+    ],
+    "rewards": {"exp": 360, "money": 220, "daode": 3, "items": {"item_shengji": 1}}
+  },
+  {
+    "id": "q_main_wulin_conclave",
+    "title": "武林夜议",
+    "giver": "太极真人",
+    "description": "太极真人决定召集可信掌门夜议暗影司。你需要请玄机子、花如玉和逍遥子带来各自掌握的证据，并清除路上拦截的绣花女。",
+    "requires_completed": ["q_main_broken_token"],
+    "min_level": 4,
+    "next_hint": "七派夜议已成，暗影司真正的幕后主使开始浮出水面。",
+    "objectives": [
+      {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子携阵图赴会"},
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉携密香证据赴会"},
+      {"type": "talk", "target": "逍遥子", "count": 1, "label": "请逍遥子带来暗路线索"},
+      {"type": "kill", "target": "绣花女", "count": 1, "label": "击败拦路绣花女"}
+    ],
+    "rewards": {"exp": 620, "money": 420, "daode": 6, "items": {"item_dan": 2, "item_fine_cloth": 1}}
   }
 ]

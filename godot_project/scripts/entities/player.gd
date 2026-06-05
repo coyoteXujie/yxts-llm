@@ -57,7 +57,7 @@ func _draw() -> void:
 	var ink := Color(0.08, 0.07, 0.06)
 	var bob := sin(walk_phase) * 1.5 if velocity.length() > 1.0 else 0.0
 
-	_draw_shadow(Vector2(3, 27), Vector2(30, 10), Color(0, 0, 0, 0.20))
+	_draw_actor_shadow(Vector2(4, 28), Vector2(34, 11), 1.0)
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
 		var target_height := 84.0
@@ -172,3 +172,12 @@ func _draw_shadow(center: Vector2, radius: Vector2, color: Color) -> void:
 		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 		colors.append(color)
 	draw_polygon(points, colors)
+
+func _draw_actor_shadow(center: Vector2, radius: Vector2, strength: float) -> void:
+	var hour := float(GameState.hour)
+	var noon_factor := clampf(1.0 - absf(hour - 12.0) / 8.0, 0.0, 1.0)
+	var stretch := 1.0 + (1.0 - noon_factor) * 0.42
+	var offset := Vector2(6.0 + (12.0 - hour) * 0.45, 2.0)
+	_draw_shadow(center + offset, Vector2(radius.x * stretch, radius.y * 1.10), Color(0.0, 0.0, 0.0, 0.08 * strength))
+	_draw_shadow(center + Vector2(2, 1), radius, Color(0.0, 0.0, 0.0, 0.20 * strength))
+	_draw_shadow(center, radius * Vector2(0.58, 0.50), Color(0.0, 0.0, 0.0, 0.16 * strength))

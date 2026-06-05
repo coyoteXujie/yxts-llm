@@ -14,6 +14,7 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 EventBus="*res://scripts/autoload/event_bus.gd"
 GameData="*res://scripts/autoload/game_data.gd"
 GameState="*res://scripts/autoload/game_state.gd"
+LLMDirector="*res://scripts/autoload/llm_director.gd"
 
 [display]
 

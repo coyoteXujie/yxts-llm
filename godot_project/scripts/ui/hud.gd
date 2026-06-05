@@ -10,6 +10,7 @@ var stats_label: Label
 var quest_label: Label
 var time_label: Label
 var region_label: Label
+var rumor_label: Label
 var prompt_label: Label
 var toast_label: Label
 var minimap
@@ -31,9 +32,11 @@ func _ready() -> void:
 	EventBus.toast_requested.connect(show_toast)
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.region_changed.connect(_on_region_changed)
+	EventBus.world_events_changed.connect(_on_world_events_changed)
 	_on_player_changed(GameState.player)
 	_on_time_changed(GameState.day, GameState.hour, GameState.weather)
 	_on_region_changed(GameData.get_region(GameState.current_region_id), GameState.get_region_state(GameState.current_region_id))
+	_on_world_events_changed(GameState.get_recent_world_events(1))
 
 func _process(delta: float) -> void:
 	if toast_timer > 0.0:
@@ -61,7 +64,7 @@ func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(440, 152)
+	panel.size = Vector2(460, 184)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
@@ -107,6 +110,13 @@ func _build_top_panel() -> void:
 	region_label.add_theme_font_size_override("font_size", 14)
 	region_label.add_theme_color_override("font_color", Color(0.76, 0.82, 0.70))
 	box.add_child(region_label)
+
+	rumor_label = Label.new()
+	rumor_label.custom_minimum_size = Vector2(410, 34)
+	rumor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rumor_label.add_theme_font_size_override("font_size", 13)
+	rumor_label.add_theme_color_override("font_color", Color(0.86, 0.74, 0.54))
+	box.add_child(rumor_label)
 
 func _build_minimap() -> void:
 	var panel := PanelContainer.new()
@@ -198,7 +208,7 @@ func _on_player_changed(player: Dictionary) -> void:
 		int(player.get("pot", 0)),
 		int(player.get("money", 0))
 	]
-	quest_label.text = "当前目标：%s" % GameState.active_quest
+	quest_label.text = "当前目标：%s" % GameState.get_active_quest_tracker()
 
 func _on_time_changed(day: int, hour: float, weather: String) -> void:
 	if time_label == null:
@@ -222,6 +232,25 @@ func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 	if not region_id.is_empty() and region_id != last_region_id:
 		last_region_id = region_id
 		_show_region_banner(region, state)
+
+func _on_world_events_changed(events: Array) -> void:
+	if rumor_label == null:
+		return
+	if events.is_empty():
+		rumor_label.text = "江湖传闻：暂无"
+		return
+	var latest: Dictionary = events[events.size() - 1]
+	var title := str(latest.get("title", "传闻"))
+	var description := str(latest.get("description", ""))
+	if description.length() > 26:
+		description = "%s..." % description.substr(0, 26)
+	var suffix := ""
+	if not description.is_empty():
+		suffix = " · %s" % description
+	rumor_label.text = "江湖传闻：%s%s" % [
+		title,
+		suffix
+	]
 
 func _show_region_banner(region: Dictionary, state: Dictionary) -> void:
 	if region_banner_panel == null or region_banner_label == null:

@@ -104,16 +104,16 @@ const DIALOGUES := {
 	"道德和尚": ["善恶一念，拳脚无眼。", "你若心存侠义，贫僧可指点基本内功。"],
 	"铁匠": ["刀剑要合手，太轻无力，太重碍身。", "出镇之前，最好备一件趁手兵刃。"],
 	"大侠": ["江湖不是擂台，能救人才算本事。", "你若能平定镇东，再来找我试招。"],
-	"苏梦瑶": ["我在洛阳等一个愿意听真相的人。", "苏家旧宅的大火不是意外，若你愿查，先去长安找陈天行。"],
-	"陈天行": ["说书只是遮眼法，真正的故事藏在卷宗后面。", "苏家的火、暗影司的线、武林盟的沉默，这三件事不是巧合。"],
-	"赵无极": ["洛阳城讲规矩，江湖人也不能例外。", "旧案若没有证据，贸然翻出来只会害人。"],
-	"玄机子": ["天机不可泄露，但阵眼可以指给有缘人。", "七派各守一角，若暗影司真动了手，先看谁的门规被破。"],
-	"花如玉": ["花会谢，人会变，只有旧疤不会自己消失。", "苏家的事，我知道一半，另一半在暗影司手里。"],
-	"烈火": ["这世道若腐烂到根，便该烧出一条新路。", "别拿朝廷规矩压我，红莲教只认血债。"],
-	"蛇王": ["明处的刀最容易躲，暗处的眼最难防。", "你若追查暗影司，先学会分辨谁在看你。"],
-	"太极真人": ["事有阴阳，局有虚实。", "年轻人，查案也如推手，急进则露破绽。"],
-	"冰魄": ["雪山不问俗世，但江湖寒意已经吹到山门。", "若你心不定，雪岭会先试你的胆。"],
-	"逍遥子": ["人生得意须尽欢，可惜江湖总有人不让人尽欢。", "你若看不清局，不妨先离局远一点。"],
+		"苏梦瑶": ["我在洛阳等一个愿意听真相的人。", "苏家旧宅的大火不是意外，若你愿查，先去长安找陈天行。", "母亲留下的玉佩背面有半枚花纹，我怀疑它不是家徽，而是暗号。"],
+		"陈天行": ["说书只是遮眼法，真正的故事藏在卷宗后面。", "苏家的火、暗影司的线、武林盟的沉默，这三件事不是巧合。", "如果有人盯上你，不要回头，先看路边茶盏有没有换过位置。"],
+		"赵无极": ["洛阳城讲规矩，江湖人也不能例外。", "旧案若没有证据，贸然翻出来只会害人。", "武林盟不是铁板一块，有些卷宗我能给你看，有些只能等夜里。"],
+		"玄机子": ["天机不可泄露，但阵眼可以指给有缘人。", "七派各守一角，若暗影司真动了手，先看谁的门规被破。", "密信上那一笔不像八卦门弟子写的，倒像有人故意学错。"],
+		"花如玉": ["花会谢，人会变，只有旧疤不会自己消失。", "苏家的事，我知道一半，另一半在暗影司手里。", "你若闻到甜香，先闭气，再想谁想让你开口。"],
+		"烈火": ["这世道若腐烂到根，便该烧出一条新路。", "别拿朝廷规矩压我，红莲教只认血债。", "暗影司若敢把手伸进红莲坛，我会让他们连影子都留不下。"],
+		"蛇王": ["明处的刀最容易躲，暗处的眼最难防。", "你若追查暗影司，先学会分辨谁在看你。", "长安来的黑衣人换了三次靴底，说明他走的是水路，不是官道。"],
+		"太极真人": ["事有阴阳，局有虚实。", "年轻人，查案也如推手，急进则露破绽。", "七派若要夜议，先要有人把最危险的那封信带上山。"],
+		"冰魄": ["雪山不问俗世，但江湖寒意已经吹到山门。", "若你心不定，雪岭会先试你的胆。", "雪地不会说谎，脚印会告诉你来人是逃命，还是追杀。"],
+		"逍遥子": ["人生得意须尽欢，可惜江湖总有人不让人尽欢。", "你若看不清局，不妨先离局远一点。", "暗线最怕旁观者，我站远些，反而看见他们藏得很近。"],
 	"韦扬": ["八卦门重根基，刀掌步法缺一不可。", "入门先练游龙步，再谈八阵变化。"],
 	"清照": ["花间武学讲究身法与气韵。", "心有杂念，花飞便失了灵动。"],
 	"清虚道人": ["太极无胜负，只有虚实。", "来者若能守静，贫道自会指点。"],
@@ -746,6 +746,34 @@ func _load_regions() -> void:
 
 func get_npcs() -> Array:
 	return npcs
+
+func build_region_encounter_enemy(region: Dictionary) -> Dictionary:
+	var region_id := str(region.get("id", "wild"))
+	var danger := int(region.get("danger", 1))
+	var terrain := str(region.get("terrain", ""))
+	var candidates: Array[String] = []
+	if terrain.contains("snow") or terrain.contains("mountain") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau"):
+		candidates = ["土匪甲", "雪豹"] if danger <= 3 else ["土匪头目", "独角大盗"]
+	elif terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("marsh"):
+		candidates = ["流氓头", "采花大盗"] if danger <= 3 else ["黑衣大盗", "独角大盗"]
+	elif terrain.contains("river") or terrain.contains("lake") or terrain.contains("water") or terrain.contains("ford") or terrain.contains("canal"):
+		candidates = ["流氓", "流氓头"] if danger <= 2 else ["采花大盗", "黑衣大盗"]
+	elif danger >= 4:
+		candidates = ["独角大盗", "黑衣大盗"]
+	elif danger >= 3:
+		candidates = ["流氓头", "采花大盗"]
+	else:
+		candidates = ["流氓"]
+	var index: int = int(abs(hash(region_id)) % maxi(1, candidates.size()))
+	var enemy: Dictionary = get_npc_by_name(candidates[index]).duplicate(true)
+	if enemy.is_empty():
+		enemy = get_npc_by_name("流氓").duplicate(true)
+	if enemy.is_empty():
+		return {}
+	enemy["encounter"] = true
+	enemy["source_region"] = region_id
+	enemy["id"] = -100000 - abs(hash(region_id)) % 900000
+	return enemy
 
 func get_regions() -> Array:
 	var result: Array = []

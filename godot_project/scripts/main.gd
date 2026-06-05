@@ -368,7 +368,7 @@ func _handle_enter_area() -> void:
 		"resource":
 			_inspect_resource(focused_portal)
 		"look":
-			EventBus.emit_toast("驿亭可歇脚探听，后续接入野外事件")
+			_inspect_roadside_event(focused_portal)
 		_:
 			EventBus.emit_toast("入口还没有接入")
 
@@ -501,6 +501,36 @@ func _show_landmark_discovery(portal: Dictionary, description: String, rewards: 
 		"rewards": rewards,
 		"already_seen": already_seen
 	})
+
+func _inspect_roadside_event(portal: Dictionary) -> void:
+	var region: Dictionary = local_area.current_region
+	var region_id := str(region.get("id", "region"))
+	var flag_key := "roadside_%s_last_day" % region_id
+	var already_seen := int(GameState.game_flags.get(flag_key, 0)) == GameState.day
+	if already_seen:
+		EventBus.emit_toast("今日已经在此歇过脚，继续赶路吧")
+		return
+	GameState.game_flags[flag_key] = GameState.day
+	GameState.advance_hours(0.5)
+	var danger := int(region.get("danger", 1))
+	var region_type := str(region.get("type", "wild"))
+	if region_type == "wild" and danger >= 3:
+		var enemy := GameData.build_region_encounter_enemy(region)
+		if not enemy.is_empty():
+			active_enemy_actor = null
+			EventBus.emit_toast("%s附近有埋伏" % str(region.get("name", "驿亭")))
+			combat_system.start(enemy)
+			return
+	var hp_gain := GameState.heal_player(12 + danger * 2)
+	var mp_gain := GameState.restore_mp(10 + danger * 2)
+	var rewards: Array[String] = []
+	if hp_gain > 0:
+		rewards.append("气血 +%d" % hp_gain)
+	if mp_gain > 0:
+		rewards.append("内力 +%d" % mp_gain)
+	_show_landmark_discovery({
+		"label": str(portal.get("label", "驿亭")),
+	}, "你在%s歇脚半个时辰，顺手向过路人打听了附近动静。" % str(portal.get("label", "驿亭")), rewards, false)
 
 func _switch_to_world_map(position: Vector2) -> void:
 	if local_area != null:

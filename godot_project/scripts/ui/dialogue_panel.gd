@@ -12,6 +12,8 @@ func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
 	_build()
+	if not LLMDirector.npc_line_ready.is_connected(_on_director_line_ready):
+		LLMDirector.npc_line_ready.connect(_on_director_line_ready)
 
 func show_npc(data: Dictionary) -> void:
 	npc_data = data
@@ -30,8 +32,8 @@ func close_panel() -> void:
 
 func _build() -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(180, 408)
-	panel.size = Vector2(920, 268)
+	panel.position = Vector2(150, 390)
+	panel.size = Vector2(980, 296)
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(panel)
 
@@ -40,14 +42,15 @@ func _build() -> void:
 	panel.add_child(root)
 
 	var portrait_frame := PanelContainer.new()
-	portrait_frame.custom_minimum_size = Vector2(170, 210)
+	portrait_frame.custom_minimum_size = Vector2(224, 224)
+	portrait_frame.clip_contents = true
 	portrait_frame.add_theme_stylebox_override("panel", _portrait_style())
 	root.add_child(portrait_frame)
 
 	portrait_texture = TextureRect.new()
-	portrait_texture.custom_minimum_size = Vector2(158, 198)
+	portrait_texture.custom_minimum_size = Vector2(212, 212)
 	portrait_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait_frame.add_child(portrait_texture)
 
 	var box := VBoxContainer.new()
@@ -66,7 +69,7 @@ func _build() -> void:
 	box.add_child(meta_label)
 
 	body_label = Label.new()
-	body_label.custom_minimum_size = Vector2(680, 92)
+	body_label.custom_minimum_size = Vector2(700, 118)
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_label.add_theme_font_size_override("font_size", 20)
 	body_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
@@ -119,16 +122,28 @@ func _talk() -> void:
 
 func _set_next_line() -> void:
 	var lines := GameData.get_dialogue_lines(str(npc_data.get("name", "")))
+	var director_line := LLMDirector.generate_npc_line(npc_data, talk_index)
+	LLMDirector.request_live_npc_line(npc_data)
 	if lines.is_empty():
-		body_label.text = "江湖路远，少侠保重。"
+		body_label.text = director_line if not director_line.is_empty() else "江湖路远，少侠保重。"
+		talk_index += 1
 		return
 	var line := str(lines[talk_index % lines.size()])
+	if not director_line.is_empty():
+		line = "%s\n%s" % [director_line, line]
 	if talk_index == 0:
 		var memory_line := _opening_memory_line()
 		if not memory_line.is_empty():
 			line = "%s\n%s" % [memory_line, line]
 	body_label.text = line
 	talk_index += 1
+
+func _on_director_line_ready(npc_name: String, line: String) -> void:
+	if not visible or body_label == null:
+		return
+	if npc_name != str(npc_data.get("name", "")) or line.strip_edges().is_empty():
+		return
+	body_label.text = line.strip_edges()
 
 func _update_meta() -> void:
 	if meta_label == null:
@@ -193,6 +208,7 @@ func _quest() -> void:
 	if quests.is_empty():
 		body_label.text = "%s 暂时没有事情托付给你。" % str(npc_data.get("name", "对方"))
 		return
+	var blocked_lines: Array[String] = []
 	for quest in quests:
 		var quest_id := str(quest.get("id", ""))
 		if GameState.completed_quests.has(quest_id):
@@ -200,10 +216,20 @@ func _quest() -> void:
 		if GameState.active_quests.has(quest_id):
 			body_label.text = "任务进行中：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
 			return
+		var block_reason := GameState.get_quest_block_reason(quest_id)
+		if not block_reason.is_empty():
+			blocked_lines.append("【%s】%s" % [str(quest.get("title", quest_id)), block_reason])
+			continue
 		GameState.accept_quest(quest_id)
 		GameState.record_npc_interaction(npc_data, "quest_accept")
 		_update_meta()
 		body_label.text = "接下任务：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
+		return
+	if not blocked_lines.is_empty():
+		body_label.text = "%s 沉吟片刻：眼下还不到时候。\n%s" % [
+			str(npc_data.get("name", "对方")),
+			"\n".join(blocked_lines.slice(0, 3))
+		]
 		return
 	body_label.text = "%s 点点头：你已经帮了不少忙。" % str(npc_data.get("name", "对方"))
 

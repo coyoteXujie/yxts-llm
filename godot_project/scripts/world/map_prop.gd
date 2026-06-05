@@ -64,7 +64,17 @@ func _draw_texture_prop() -> void:
 	var draw_scale := float(tile_size) / 96.0
 	var size := Vector2(prop_texture.get_width(), prop_texture.get_height()) * draw_scale
 	var top_left := Vector2(-size.x * 0.5, -size.y + float(tile_size) * 0.24)
+	_draw_texture_shadow(size)
 	draw_texture_rect(prop_texture, Rect2(top_left, size), false)
+
+func _draw_texture_shadow(size: Vector2) -> void:
+	var shadow_width := clampf(size.x * 0.54, float(tile_size) * 0.28, float(tile_size) * 0.95)
+	var shadow_height := clampf(size.y * 0.085, float(tile_size) * 0.07, float(tile_size) * 0.18)
+	var center := Vector2(size.x * 0.05, float(tile_size) * 0.15)
+	var hour := float(GameState.hour)
+	var stretch := 1.0 + clampf(absf(hour - 12.0) / 8.0, 0.0, 1.0) * 0.35
+	_draw_ellipse_poly(center + Vector2(5.0 + (12.0 - hour) * 0.35, 2.0), Vector2(shadow_width * stretch, shadow_height * 1.18), Color(0.0, 0.0, 0.0, 0.075))
+	_draw_ellipse_poly(center, Vector2(shadow_width * 0.72, shadow_height * 0.72), Color(0.0, 0.0, 0.0, 0.12))
 
 func _draw_roof(base: Color = Color(0.30, 0.12, 0.06), highlight: Color = Color(0.68, 0.36, 0.17), has_sign: bool = false) -> void:
 	var w := float(tile_size)
