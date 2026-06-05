@@ -1,13 +1,18 @@
 extends Control
 class_name QuestPanel
 
+var tabs: TabContainer
 var quest_text: RichTextLabel
+var rumor_text: RichTextLabel
+var relation_text: RichTextLabel
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
 	_build()
 	EventBus.quests_changed.connect(_refresh)
+	if not EventBus.world_events_changed.is_connected(_on_world_events_changed):
+		EventBus.world_events_changed.connect(_on_world_events_changed)
 
 func show_panel() -> void:
 	_refresh()
@@ -35,12 +40,16 @@ func _build() -> void:
 	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
 	box.add_child(title)
 
-	quest_text = RichTextLabel.new()
-	quest_text.custom_minimum_size = Vector2(700, 390)
-	quest_text.fit_content = false
-	quest_text.bbcode_enabled = false
-	quest_text.add_theme_font_size_override("normal_font_size", 17)
-	box.add_child(quest_text)
+	tabs = TabContainer.new()
+	tabs.custom_minimum_size = Vector2(700, 390)
+	box.add_child(tabs)
+
+	quest_text = _make_text_tab("任务")
+	tabs.add_child(quest_text)
+	rumor_text = _make_text_tab("江湖")
+	tabs.add_child(rumor_text)
+	relation_text = _make_text_tab("人物")
+	tabs.add_child(relation_text)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
@@ -48,10 +57,69 @@ func _build() -> void:
 	close_button.pressed.connect(close_panel)
 	box.add_child(close_button)
 
+func _make_text_tab(tab_name: String) -> RichTextLabel:
+	var text := RichTextLabel.new()
+	text.name = tab_name
+	text.custom_minimum_size = Vector2(700, 360)
+	text.fit_content = false
+	text.bbcode_enabled = false
+	text.add_theme_font_size_override("normal_font_size", 17)
+	return text
+
 func _refresh() -> void:
 	if quest_text == null:
 		return
 	quest_text.text = "\n".join(GameState.get_quest_status_lines())
+	rumor_text.text = "\n".join(_world_event_lines())
+	relation_text.text = "\n".join(_relation_lines())
+
+func _on_world_events_changed(_events: Array) -> void:
+	if visible:
+		_refresh()
+
+func _world_event_lines() -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("【江湖风声】")
+	var events := GameState.get_recent_world_events(12)
+	if events.is_empty():
+		lines.append("暂无新的江湖传闻。")
+		return lines
+	for event in events:
+		var entry: Dictionary = event
+		var title := str(entry.get("title", "传闻"))
+		var description := str(entry.get("description", ""))
+		var region := str(entry.get("region_name", ""))
+		var region_prefix := "%s · " % region if not region.is_empty() else ""
+		lines.append("第%d日  %s%s" % [int(entry.get("day", GameState.day)), region_prefix, title])
+		if not description.is_empty():
+			lines.append("  %s" % description)
+	return lines
+
+func _relation_lines() -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("【人物关系】")
+	var names: Array = GameState.CORE_RUMOR_NPCS
+	for npc_name_value in names:
+		var npc_name := str(npc_name_value)
+		var npc := GameData.get_npc_by_name(npc_name)
+		if npc.is_empty():
+			continue
+		var memory := GameState.get_npc_memory(npc_name)
+		var relation := GameState.get_npc_relation_label(npc_name)
+		var favor := int(memory.get("favor", 0))
+		var favor_text := "%d" % favor
+		if favor >= 0:
+			favor_text = "+%d" % favor
+		var faction := GameData.get_faction_name(str(npc.get("faction", "none")))
+		lines.append("%s  ·  %s  ·  %s %s" % [npc_name, faction, relation, favor_text])
+		var memories: Array = memory.get("memories", [])
+		if memories.is_empty():
+			lines.append("  暂无特别记忆。")
+		else:
+			var start: int = max(0, memories.size() - 2)
+			for index in range(start, memories.size()):
+				lines.append("  %s" % str(memories[index]))
+	return lines
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
