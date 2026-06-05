@@ -3,6 +3,7 @@ extends Node
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
+const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
 
 var failures: Array[String] = []
 var combat_result: Dictionary = {}
@@ -71,6 +72,13 @@ func _run() -> void:
 	var director_line := LLMDirector.generate_npc_line(GameData.get_npc_by_name("苏梦瑶"), 0)
 	_check(director_line.find("【") >= 0 and director_line.length() > 20, "LLMDirector 离线台词应包含世界上下文")
 	_check(JSON.stringify(LLMDirector.build_prompt_messages(GameData.get_npc_by_name("苏梦瑶"))).find("recent_events") >= 0, "LLM prompt 应带最近江湖传闻")
+	var dialogue_panel = DIALOGUE_PANEL_SCRIPT.new()
+	add_child(dialogue_panel)
+	dialogue_panel.show_npc(GameData.get_npc_by_name("苏梦瑶"))
+	_check(dialogue_panel.relation_label.text.length() > 2, "对话面板应显示 NPC 关系摘要")
+	_check(dialogue_panel.memory_label.text.find("第") >= 0, "对话面板应显示 NPC 近期记忆")
+	_check(dialogue_panel.rumor_label.text.length() > 4, "对话面板应显示江湖风声")
+	dialogue_panel.queue_free()
 	var ambient_line := LLMDirector.generate_ambient_npc_line(GameData.get_npc_by_name("蛇王"), 80.0, true)
 	_check(ambient_line.length() > 6 and ambient_line.find("【") < 0, "地图 NPC 气泡应生成短环境台词")
 	var npc_actor = NPC_SCRIPT.new()

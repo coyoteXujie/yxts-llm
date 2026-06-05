@@ -5,6 +5,10 @@ var npc_data: Dictionary = {}
 var title_label: Label
 var body_label: Label
 var meta_label: Label
+var relation_label: Label
+var favor_bar: ProgressBar
+var memory_label: Label
+var rumor_label: Label
 var portrait_texture: TextureRect
 var talk_index := 0
 
@@ -32,28 +36,29 @@ func close_panel() -> void:
 
 func _build() -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(150, 390)
-	panel.size = Vector2(980, 296)
+	panel.position = Vector2(84, 366)
+	panel.size = Vector2(1112, 330)
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(panel)
 
 	var root := HBoxContainer.new()
-	root.add_theme_constant_override("separation", 16)
+	root.add_theme_constant_override("separation", 14)
 	panel.add_child(root)
 
 	var portrait_frame := PanelContainer.new()
-	portrait_frame.custom_minimum_size = Vector2(224, 224)
+	portrait_frame.custom_minimum_size = Vector2(210, 250)
 	portrait_frame.clip_contents = true
 	portrait_frame.add_theme_stylebox_override("panel", _portrait_style())
 	root.add_child(portrait_frame)
 
 	portrait_texture = TextureRect.new()
-	portrait_texture.custom_minimum_size = Vector2(212, 212)
+	portrait_texture.custom_minimum_size = Vector2(198, 238)
 	portrait_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait_frame.add_child(portrait_texture)
 
 	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(586, 0)
 	box.add_theme_constant_override("separation", 8)
 	root.add_child(box)
 
@@ -63,13 +68,14 @@ func _build() -> void:
 	box.add_child(title_label)
 
 	meta_label = Label.new()
+	meta_label.custom_minimum_size = Vector2(560, 34)
 	meta_label.add_theme_font_size_override("font_size", 15)
 	meta_label.add_theme_color_override("font_color", Color(0.72, 0.69, 0.62))
 	meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(meta_label)
 
 	body_label = Label.new()
-	body_label.custom_minimum_size = Vector2(700, 118)
+	body_label.custom_minimum_size = Vector2(560, 126)
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body_label.add_theme_font_size_override("font_size", 20)
 	body_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
@@ -115,6 +121,57 @@ func _build() -> void:
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
+	var side_box := VBoxContainer.new()
+	side_box.custom_minimum_size = Vector2(234, 250)
+	side_box.add_theme_constant_override("separation", 9)
+	root.add_child(side_box)
+
+	var relation_title := Label.new()
+	relation_title.text = "关系"
+	relation_title.add_theme_font_size_override("font_size", 16)
+	relation_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	side_box.add_child(relation_title)
+
+	relation_label = Label.new()
+	relation_label.custom_minimum_size = Vector2(224, 24)
+	relation_label.add_theme_font_size_override("font_size", 15)
+	relation_label.add_theme_color_override("font_color", Color(0.88, 0.84, 0.72))
+	relation_label.clip_text = true
+	side_box.add_child(relation_label)
+
+	favor_bar = ProgressBar.new()
+	favor_bar.custom_minimum_size = Vector2(224, 14)
+	favor_bar.min_value = 0
+	favor_bar.max_value = 100
+	favor_bar.show_percentage = false
+	side_box.add_child(favor_bar)
+
+	var memory_title := Label.new()
+	memory_title.text = "近期记忆"
+	memory_title.add_theme_font_size_override("font_size", 16)
+	memory_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	side_box.add_child(memory_title)
+
+	memory_label = Label.new()
+	memory_label.custom_minimum_size = Vector2(224, 76)
+	memory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	memory_label.add_theme_font_size_override("font_size", 13)
+	memory_label.add_theme_color_override("font_color", Color(0.78, 0.76, 0.67))
+	side_box.add_child(memory_label)
+
+	var rumor_title := Label.new()
+	rumor_title.text = "江湖风声"
+	rumor_title.add_theme_font_size_override("font_size", 16)
+	rumor_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	side_box.add_child(rumor_title)
+
+	rumor_label = Label.new()
+	rumor_label.custom_minimum_size = Vector2(224, 52)
+	rumor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rumor_label.add_theme_font_size_override("font_size", 13)
+	rumor_label.add_theme_color_override("font_color", Color(0.78, 0.76, 0.67))
+	side_box.add_child(rumor_label)
+
 func _talk() -> void:
 	GameState.record_npc_interaction(npc_data, "talk")
 	_update_meta()
@@ -157,11 +214,52 @@ func _update_meta() -> void:
 	var personality := str(npc_data.get("personality", ""))
 	if not personality.is_empty():
 		parts.append("性格：%s" % personality)
-	parts.append("关系：%s %d" % [GameState.get_npc_relation_label(npc_name), int(memory.get("favor", 0))])
-	var memories: Array = memory.get("memories", [])
-	if not memories.is_empty():
-		parts.append("记忆：%s" % str(memories[memories.size() - 1]))
 	meta_label.text = "  |  ".join(parts)
+	_update_relation_sidebar(npc_name, memory)
+
+func _update_relation_sidebar(npc_name: String, memory: Dictionary) -> void:
+	if relation_label == null:
+		return
+	var relation := GameState.get_npc_relation_label(npc_name)
+	var favor := int(memory.get("favor", 0))
+	relation_label.text = "%s  %s" % [relation, _favor_tone(favor)]
+	favor_bar.value = clampi(favor + 50, 0, 100)
+	var memories: Array = memory.get("memories", [])
+	var memory_lines: Array[String] = []
+	var start: int = max(0, memories.size() - 3)
+	for index in range(start, memories.size()):
+		memory_lines.append(str(memories[index]))
+	if memory_lines.is_empty():
+		memory_label.text = "尚无特别记忆。"
+	else:
+		memory_label.text = "\n".join(memory_lines)
+	rumor_label.text = _short_rumor_text()
+
+func _favor_tone(favor: int) -> String:
+	if favor >= 70:
+		return "愿意托底"
+	if favor >= 30:
+		return "语气熟络"
+	if favor >= 10:
+		return "略有信任"
+	if favor < 0:
+		return "仍有戒心"
+	return "正在观望"
+
+func _short_rumor_text() -> String:
+	var events := GameState.get_recent_world_events(2)
+	if events.is_empty():
+		return "暂无新的江湖传闻。"
+	var lines: Array[String] = []
+	for event in events:
+		var entry: Dictionary = event
+		var title := str(entry.get("title", "传闻"))
+		var region := str(entry.get("region_name", ""))
+		if region.is_empty():
+			lines.append(title)
+		else:
+			lines.append("%s：%s" % [region, title])
+	return "\n".join(lines)
 
 func _opening_memory_line() -> String:
 	var npc_name := str(npc_data.get("name", ""))
