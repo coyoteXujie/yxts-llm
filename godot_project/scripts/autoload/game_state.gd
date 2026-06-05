@@ -43,6 +43,18 @@ const FAST_TRAVEL_REGION_TYPES := {
 	"town": true,
 	"sect": true
 }
+const CORE_RUMOR_NPCS := [
+	"苏梦瑶",
+	"陈天行",
+	"赵无极",
+	"玄机子",
+	"花如玉",
+	"烈火",
+	"蛇王",
+	"太极真人",
+	"冰魄",
+	"逍遥子"
+]
 
 func _ready() -> void:
 	new_game()
@@ -220,6 +232,7 @@ func append_world_event(kind: String, title: String, description: String, region
 	world_events.append(event)
 	while world_events.size() > 30:
 		world_events.remove_at(0)
+	_spread_world_event_to_npc_memory(event)
 	EventBus.world_events_changed.emit(get_recent_world_events(30))
 	if severity >= 4:
 		EventBus.emit_toast("江湖传闻：%s" % title)
@@ -454,13 +467,11 @@ func apply_fast_travel_time(region_id: String) -> float:
 
 func advance_hours(hours_to_add: float) -> void:
 	hour += maxf(hours_to_add, 0.0)
-	var day_changed := false
 	while hour >= 24.0:
 		hour -= 24.0
 		day += 1
-		day_changed = true
-	if day_changed:
 		_roll_weather()
+		_run_daily_world_pulse()
 	EventBus.time_changed.emit(day, hour, weather)
 
 func _region_center_tile(region: Dictionary) -> Vector2i:
@@ -480,11 +491,154 @@ func advance_time(delta: float) -> void:
 		hour -= 24.0
 		day += 1
 		_roll_weather()
+		_run_daily_world_pulse()
 	EventBus.time_changed.emit(day, hour, weather)
 
 func _roll_weather() -> void:
 	var options := ["晴朗", "多云", "细雨", "薄雾", "飞雪"]
 	weather = options[randi_range(0, options.size() - 1)]
+
+func _run_daily_world_pulse() -> void:
+	var flag_key := "world_pulse_day_%d" % day
+	if bool(game_flags.get(flag_key, false)):
+		return
+	game_flags[flag_key] = true
+	var pulse_event: Dictionary = _build_daily_world_pulse_event()
+	if pulse_event.is_empty():
+		return
+	append_world_event(
+		str(pulse_event.get("kind", "world_pulse")),
+		str(pulse_event.get("title", "每日风声")),
+		str(pulse_event.get("description", "")),
+		str(pulse_event.get("region_id", current_region_id)),
+		int(pulse_event.get("severity", 2))
+	)
+
+func _build_daily_world_pulse_event() -> Dictionary:
+	var region: Dictionary = _select_daily_pulse_region()
+	if region.is_empty():
+		return {}
+	var region_id := str(region.get("id", current_region_id))
+	var region_name := str(region.get("name", current_region_name))
+	var danger := int(region.get("danger", 1))
+	var stage := _current_story_stage()
+	var selector: int = abs(hash("%d:%s:%s:%s" % [day, region_id, weather, stage])) % 4
+	var title := ""
+	var description := ""
+	var severity := 2
+	match selector:
+		0:
+			title = "%s驿路风声" % region_name
+			description = "%s一带%s，脚夫说有陌生人沿着旧路打听%s。" % [region_name, _weather_world_phrase(), stage]
+			severity = 2 + int(danger >= 3)
+		1:
+			title = "%s山门传书" % region_name
+			description = "%s附近有人快马递信，信上反复提到%s。" % [region_name, stage]
+			severity = 3 if stage.contains("暗影") or stage.contains("七派") else 2
+		2:
+			title = "%s夜里见影" % region_name
+			description = "%s夜间多了几道不报姓名的脚印，客栈里都说这不像寻常盗匪。" % region_name
+			severity = 3 + int(danger >= 4)
+		_:
+			title = "江湖天气转冷"
+			description = "%s%s，商旅改了行程，也把%s的风声带到了路口。" % [region_name, _weather_world_phrase(), stage]
+			severity = 2
+	return {
+		"kind": "world_pulse",
+		"title": title,
+		"description": description,
+		"region_id": region_id,
+		"severity": clampi(severity, 2, 4)
+	}
+
+func _select_daily_pulse_region() -> Dictionary:
+	var candidates: Array = []
+	for region_id in region_state.keys():
+		var state: Dictionary = region_state.get(region_id, {})
+		if not bool(state.get("discovered", false)):
+			continue
+		var region := GameData.get_region(str(region_id))
+		if not region.is_empty():
+			candidates.append(region)
+	if not current_region_id.is_empty():
+		var current := GameData.get_region(current_region_id)
+		if not current.is_empty() and not candidates.has(current):
+			candidates.append(current)
+	if not map_target_region_id.is_empty():
+		var target := GameData.get_region(map_target_region_id)
+		if not target.is_empty() and not candidates.has(target):
+			candidates.append(target)
+	if candidates.is_empty():
+		var fallback := GameData.get_region("qinghe")
+		return fallback if not fallback.is_empty() else {}
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("danger", 1)) > int(b.get("danger", 1))
+	)
+	var limit: int = mini(candidates.size(), 6)
+	var index: int = abs(hash("%d:%s:%s" % [day, weather, active_quest])) % limit
+	return (candidates[index] as Dictionary).duplicate(true)
+
+func _current_story_stage() -> String:
+	if completed_quests.has("q_main_wulin_conclave"):
+		return "暗影司幕后主使"
+	if completed_quests.has("q_main_broken_token"):
+		return "七派夜议"
+	if completed_quests.has("q_main_shadow_watchers"):
+		return "断令和暗影眼线"
+	if completed_quests.has("q_main_shadow_letters"):
+		return "七派暗号"
+	if completed_quests.has("q_hero_trial"):
+		return "洛阳旧案"
+	if not active_quest.is_empty() and active_quest != "初入平安镇":
+		return active_quest
+	return "平安镇新来的少侠"
+
+func _weather_world_phrase() -> String:
+	match weather:
+		"细雨":
+			return "雨声压低"
+		"薄雾":
+			return "雾色很重"
+		"飞雪":
+			return "雪路难行"
+		"多云":
+			return "云影不散"
+		_:
+			return "天色清明"
+
+func _spread_world_event_to_npc_memory(event: Dictionary) -> void:
+	var severity := int(event.get("severity", 1))
+	if severity < 2:
+		return
+	var title := str(event.get("title", ""))
+	if title.is_empty():
+		return
+	var targets := _world_event_memory_targets(event)
+	var region_name := str(event.get("region_name", ""))
+	for npc_name in targets:
+		if str(npc_name).is_empty():
+			continue
+		var state := _ensure_npc_memory(str(npc_name))
+		var source := "%s：" % region_name if not region_name.is_empty() else ""
+		_append_npc_memory(state, "听闻%s%s" % [source, title])
+		npc_memory[str(npc_name)] = state
+
+func _world_event_memory_targets(event: Dictionary) -> Array[String]:
+	var targets: Array[String] = []
+	var severity := int(event.get("severity", 1))
+	if severity >= 4:
+		for npc_name in CORE_RUMOR_NPCS:
+			targets.append(str(npc_name))
+		return targets
+	var count := 3 if severity == 2 else 5
+	var offset: int = abs(hash("%s:%s:%d" % [
+		str(event.get("title", "")),
+		str(event.get("region_id", "")),
+		day
+	])) % CORE_RUMOR_NPCS.size()
+	for index in range(count):
+		targets.append(str(CORE_RUMOR_NPCS[(offset + index) % CORE_RUMOR_NPCS.size()]))
+	return targets
 
 func damage_player(amount: int) -> int:
 	var hp := int(player.get("hp", 0))

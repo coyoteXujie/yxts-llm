@@ -24,6 +24,18 @@ func _run() -> void:
 	_check(GameState.completed_quests.has("q_intro_town"), "完成两次拜访后应完成初始任务")
 	_check(GameState.can_accept_quest("q_clear_thugs"), "初始任务完成后应解锁镇东除恶")
 	_check(GameState.get_world_event_summary(3).find("平安镇") >= 0, "完成初始任务后应更新江湖传闻")
+	var event_count_before_pulse := GameState.get_recent_world_events(30).size()
+	GameState.advance_hours(16.5)
+	_check(GameState.day == 2, "跨天推进应进入第二日")
+	var pulse_events_json := JSON.stringify(GameState.get_recent_world_events(8))
+	_check(GameState.get_recent_world_events(30).size() > event_count_before_pulse, "跨天应生成每日江湖风声")
+	_check(pulse_events_json.find("world_pulse") >= 0, "每日江湖风声应标记为 world_pulse")
+	var rumor_reached_npc := false
+	for npc_name in ["苏梦瑶", "陈天行", "赵无极", "玄机子", "花如玉", "烈火", "蛇王", "太极真人", "冰魄", "逍遥子"]:
+		if JSON.stringify(GameState.get_npc_memory(str(npc_name))).find("听闻") >= 0:
+			rumor_reached_npc = true
+			break
+	_check(rumor_reached_npc, "每日江湖风声应写入部分核心 NPC 记忆")
 	_check(GameData.get_npc_portrait_path("苏梦瑶").find("portraits_v2") >= 0, "苏梦瑶应使用新生成主线头像")
 	_check(GameData.get_npc_portrait_path("陈天行").find("portraits_v2") >= 0, "陈天行应使用新生成主线头像")
 	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("陈天行")), "陈天行新头像文件应存在")
