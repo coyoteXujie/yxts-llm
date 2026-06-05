@@ -19,6 +19,8 @@ const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 
 const WORLD_CAMERA_ZOOM := Vector2(0.92, 0.92)
 const LOCAL_CAMERA_ZOOM := Vector2(0.98, 0.98)
+const AMBIENT_NPC_INTERVAL := 6.8
+const AMBIENT_NPC_RADIUS := 430.0
 
 var world_map
 var local_area
@@ -42,6 +44,8 @@ var focused_npc
 var focused_portal: Dictionary = {}
 var active_enemy_actor
 var world_return_position := Vector2.ZERO
+var ambient_npc_timer := 2.0
+var ambient_npc_round := 0
 
 func _ready() -> void:
 	randomize()
@@ -119,6 +123,8 @@ func _process(delta: float) -> void:
 	if not GameState.can_explore():
 		if active_map != null and active_map.has_method("clear_highlights"):
 			active_map.clear_highlights()
+		if active_map != null and active_map.has_method("clear_ambient_lines"):
+			active_map.clear_ambient_lines()
 		hud.set_prompt("")
 		return
 
@@ -130,6 +136,8 @@ func _process(delta: float) -> void:
 	if active_map.has_method("get_nearest_portal"):
 		focused_portal = active_map.get_nearest_portal(player_actor.position, 80.0)
 		active_map.focus_portal(focused_portal)
+
+	_update_ambient_npc_lines(delta)
 
 	if focused_npc == null:
 		if not focused_portal.is_empty():
@@ -240,6 +248,8 @@ func _close_gameplay_panels() -> void:
 	discovery_panel.hide()
 
 func _open_dialogue(npc: Dictionary) -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	GameState.progress_quest("talk", str(npc.get("name", "")), 1)
 	GameState.set_mode(GameState.Mode.DIALOGUE)
 	dialogue_panel.show_npc(npc)
@@ -287,6 +297,8 @@ func _fast_travel_to_region(region_id: String) -> void:
 	EventBus.emit_toast("抵达%s，用时 %.1f 时辰" % [str(region.get("name", region_id)), travel_hours])
 
 func _start_combat_from_data(enemy: Dictionary) -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	active_enemy_actor = focused_npc
 	combat_system.start(enemy)
 
@@ -323,6 +335,33 @@ func _update_current_region() -> void:
 	if active_map == local_area and local_area.has_method("get_world_reference_tile"):
 		tile = local_area.get_world_reference_tile(player_actor.position)
 	GameState.update_current_region(region, tile)
+
+func _update_ambient_npc_lines(delta: float) -> void:
+	if active_map == null or player_actor == null or not active_map.has_method("get_nearby_npcs"):
+		return
+	ambient_npc_timer -= delta
+	if ambient_npc_timer > 0.0:
+		return
+	ambient_npc_timer = AMBIENT_NPC_INTERVAL + float((ambient_npc_round * 17) % 9) * 0.22
+	ambient_npc_round += 1
+	var nearby: Array = active_map.get_nearby_npcs(player_actor.position, AMBIENT_NPC_RADIUS, false, 6)
+	if nearby.is_empty():
+		return
+	var available: Array = []
+	for actor in nearby:
+		if not is_instance_valid(actor):
+			continue
+		if actor.has_method("has_active_ambient_line") and actor.has_active_ambient_line():
+			continue
+		available.append(actor)
+	if available.is_empty():
+		return
+	var index: int = ambient_npc_round % available.size()
+	var actor = available[index]
+	var distance: float = player_actor.position.distance_to(actor.position)
+	var line: String = LLMDirector.generate_ambient_npc_line(actor.data, distance, actor == focused_npc)
+	if not line.is_empty() and actor.has_method("show_ambient_line"):
+		actor.show_ambient_line(line)
 
 func _current_region_for_entry() -> Dictionary:
 	if active_map != world_map:
@@ -377,6 +416,8 @@ func _can_enter_region(region: Dictionary) -> bool:
 	return region_type == "city" or region_type == "town" or region_type == "sect" or region_type == "wild"
 
 func _enter_local_region(region: Dictionary) -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	world_return_position = player_actor.position
 	world_map.hide()
 	local_area.setup_region(region)
@@ -386,6 +427,7 @@ func _enter_local_region(region: Dictionary) -> void:
 	player_actor.position = local_area.get_entry_position("world")
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
+	ambient_npc_timer = 1.2
 	if camera != null:
 		_apply_camera_zoom()
 		camera.reset_smoothing()
@@ -393,19 +435,25 @@ func _enter_local_region(region: Dictionary) -> void:
 	EventBus.emit_toast("进入%s" % str(region.get("name", "区域")))
 
 func _enter_shop(portal: Dictionary) -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	local_area.enter_shop(portal)
 	player_actor.position = local_area.get_entry_position("shop")
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
+	ambient_npc_timer = 1.2
 	if camera != null:
 		_apply_camera_zoom()
 		camera.reset_smoothing()
 	EventBus.emit_toast(str(portal.get("label", "进入商铺")))
 
 func _exit_shop_to_area() -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	player_actor.position = local_area.exit_shop()
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
+	ambient_npc_timer = 1.2
 	if camera != null:
 		_apply_camera_zoom()
 		camera.reset_smoothing()
@@ -417,6 +465,8 @@ func _return_to_world() -> void:
 	EventBus.emit_toast("返回世界地图")
 
 func _travel_to_linked_region(portal: Dictionary) -> void:
+	if active_map != null and active_map.has_method("clear_ambient_lines"):
+		active_map.clear_ambient_lines()
 	var target_id := str(portal.get("target_region_id", ""))
 	var target_region := GameData.get_region(target_id)
 	if target_region.is_empty():
@@ -427,6 +477,7 @@ func _travel_to_linked_region(portal: Dictionary) -> void:
 	player_actor.position = local_area.get_entry_position(str(portal.get("entry_kind", "area")))
 	player_actor.velocity = Vector2.ZERO
 	focused_portal = {}
+	ambient_npc_timer = 1.2
 	if camera != null:
 		_apply_camera_zoom()
 		camera.reset_smoothing()
@@ -536,6 +587,8 @@ func _switch_to_world_map(position: Vector2) -> void:
 	if local_area != null:
 		local_area.hide()
 		local_area.clear_highlights()
+		if local_area.has_method("clear_ambient_lines"):
+			local_area.clear_ambient_lines()
 	if world_map != null:
 		world_map.show()
 	active_map = world_map
@@ -545,6 +598,7 @@ func _switch_to_world_map(position: Vector2) -> void:
 		player_actor.velocity = Vector2.ZERO
 	world_return_position = position
 	focused_portal = {}
+	ambient_npc_timer = 1.2
 	if camera != null:
 		_apply_camera_zoom()
 		camera.reset_smoothing()

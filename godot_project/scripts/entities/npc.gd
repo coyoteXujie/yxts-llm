@@ -5,12 +5,16 @@ var data: Dictionary = {}
 var highlighted := false
 var tile_size := 48
 var name_label: Label
+var ambient_panel: PanelContainer
+var ambient_label: Label
 var sprite_node: Sprite2D
 var sprite_outline_node: Sprite2D
 var using_sprite_asset := false
+var ambient_timer := 0.0
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.78
+const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
 	data = new_data
@@ -27,12 +31,23 @@ func setup(new_data: Dictionary, new_tile_size: int) -> void:
 	queue_redraw()
 
 func _ready() -> void:
+	set_process(true)
 	if data.is_empty():
 		z_index = int(position.y)
 	_ensure_label()
 	_refresh_label_visibility()
 	if not data.is_empty():
 		_refresh_sprite_asset()
+
+func _process(delta: float) -> void:
+	if ambient_panel == null or not ambient_panel.visible:
+		return
+	ambient_timer -= delta
+	if ambient_timer <= 0.0:
+		clear_ambient_line()
+		return
+	var fade := clampf(ambient_timer / 0.65, 0.0, 1.0)
+	ambient_panel.modulate.a = fade if ambient_timer < 0.65 else 1.0
 
 func is_enemy() -> bool:
 	return str(data.get("npc_type", "normal")) == "enemy"
@@ -46,6 +61,25 @@ func set_highlight(value: bool) -> void:
 	highlighted = value
 	_refresh_label_visibility()
 	queue_redraw()
+
+func show_ambient_line(line: String, duration: float = 5.2) -> void:
+	line = line.strip_edges()
+	if line.is_empty():
+		return
+	_ensure_ambient_bubble()
+	ambient_label.text = _trim_ambient_line(line)
+	ambient_panel.position = _ambient_bubble_position()
+	ambient_panel.modulate.a = 1.0
+	ambient_panel.show()
+	ambient_timer = duration
+
+func clear_ambient_line() -> void:
+	ambient_timer = 0.0
+	if ambient_panel != null:
+		ambient_panel.hide()
+
+func has_active_ambient_line() -> bool:
+	return ambient_panel != null and ambient_panel.visible and ambient_timer > 0.0
 
 func _ensure_label() -> void:
 	if name_label != null:
@@ -65,6 +99,58 @@ func _ensure_label() -> void:
 	name_label.z_index = 3
 	add_child(name_label)
 	_refresh_label_visibility()
+
+func _ensure_ambient_bubble() -> void:
+	if ambient_panel != null:
+		return
+	ambient_panel = PanelContainer.new()
+	ambient_panel.hide()
+	ambient_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ambient_panel.z_index = 5
+	ambient_panel.custom_minimum_size = Vector2(AMBIENT_BUBBLE_WIDTH, 0)
+	ambient_panel.add_theme_stylebox_override("panel", _ambient_bubble_style())
+	add_child(ambient_panel)
+
+	ambient_label = Label.new()
+	ambient_label.custom_minimum_size = Vector2(AMBIENT_BUBBLE_WIDTH - 18.0, 0)
+	ambient_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ambient_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ambient_label.add_theme_font_size_override("font_size", 13)
+	ambient_label.add_theme_color_override("font_color", Color(0.96, 0.91, 0.78))
+	ambient_label.add_theme_color_override("font_shadow_color", Color(0.03, 0.025, 0.02, 0.82))
+	ambient_label.add_theme_constant_override("shadow_offset_x", 1)
+	ambient_label.add_theme_constant_override("shadow_offset_y", 1)
+	ambient_panel.add_child(ambient_label)
+
+func _ambient_bubble_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.07, 0.045, 0.035, 0.86)
+	style.border_color = Color(0.78, 0.58, 0.32, 0.62)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 7
+	style.corner_radius_top_right = 7
+	style.corner_radius_bottom_left = 7
+	style.corner_radius_bottom_right = 7
+	style.content_margin_left = 9
+	style.content_margin_right = 9
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
+	return style
+
+func _ambient_bubble_position() -> Vector2:
+	var map_scale := _map_actor_scale()
+	var y := -132.0 * map_scale
+	if is_master():
+		y -= 10.0
+	return Vector2(-AMBIENT_BUBBLE_WIDTH * 0.5, y)
+
+func _trim_ambient_line(line: String) -> String:
+	if line.length() <= 34:
+		return line
+	return "%s..." % line.substr(0, 34)
 
 func _refresh_label_visibility() -> void:
 	if name_label == null:

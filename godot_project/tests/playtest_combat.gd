@@ -2,6 +2,7 @@ extends Node
 
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
+const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 
 var failures: Array[String] = []
 var combat_result: Dictionary = {}
@@ -58,6 +59,16 @@ func _run() -> void:
 	var director_line := LLMDirector.generate_npc_line(GameData.get_npc_by_name("苏梦瑶"), 0)
 	_check(director_line.find("【") >= 0 and director_line.length() > 20, "LLMDirector 离线台词应包含世界上下文")
 	_check(JSON.stringify(LLMDirector.build_prompt_messages(GameData.get_npc_by_name("苏梦瑶"))).find("recent_events") >= 0, "LLM prompt 应带最近江湖传闻")
+	var ambient_line := LLMDirector.generate_ambient_npc_line(GameData.get_npc_by_name("蛇王"), 80.0, true)
+	_check(ambient_line.length() > 6 and ambient_line.find("【") < 0, "地图 NPC 气泡应生成短环境台词")
+	var npc_actor = NPC_SCRIPT.new()
+	add_child(npc_actor)
+	npc_actor.setup(GameData.get_npc_by_name("蛇王"), GameData.TILE_SIZE)
+	npc_actor.show_ambient_line(ambient_line, 1.0)
+	_check(npc_actor.has_active_ambient_line(), "NPC 应能显示地图环境气泡")
+	npc_actor.clear_ambient_line()
+	_check(not npc_actor.has_active_ambient_line(), "NPC 应能清除地图环境气泡")
+	npc_actor.queue_free()
 
 	GameState.player["level"] = 3
 	GameState.completed_quests.append("q_main_sect_warnings")

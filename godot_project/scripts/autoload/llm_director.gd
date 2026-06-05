@@ -51,6 +51,30 @@ func generate_npc_line(npc_data: Dictionary, turn_index: int = 0) -> String:
 		return "【风声】江湖路远，今日也有新的传闻。"
 	return "\n".join(lines.slice(0, 2))
 
+func generate_ambient_npc_line(npc_data: Dictionary, distance_to_player: float = 0.0, emphasized: bool = false) -> String:
+	var npc_name := str(npc_data.get("name", "路人"))
+	if npc_name.is_empty():
+		return ""
+	var event_hint := _recent_event_hint()
+	var quest := _active_quest_title()
+	var weather_hint := _weather_hint()
+	var relation := GameState.get_npc_relation_label(npc_name)
+	var variants := _ambient_variants(npc_name, npc_data, event_hint, quest, weather_hint, relation)
+	if variants.is_empty():
+		return ""
+	var seed_text := "%s:%s:%d:%d:%d" % [
+		npc_name,
+		GameState.current_region_id,
+		GameState.day,
+		int(GameState.hour * 10.0),
+		int(distance_to_player)
+	]
+	var index: int = abs(hash(seed_text)) % variants.size()
+	var line := str(variants[index]).strip_edges()
+	if emphasized and not event_hint.is_empty():
+		line = event_hint
+	return _trim_ambient_line(line)
+
 func request_live_npc_line(npc_data: Dictionary) -> bool:
 	if not is_live_backend_configured() or _request_busy or _http == null:
 		return false
@@ -137,6 +161,65 @@ func _world_line(npc_name: String, turn_index: int) -> String:
 		"%s%s，%s听见风里有不寻常的脚步。" % [region, weather_hint, npc_name]
 	]
 	return variants[abs(hash("%s:%d:%s" % [npc_name, turn_index, quest])) % variants.size()]
+
+func _ambient_variants(npc_name: String, npc_data: Dictionary, event_hint: String, quest: String, weather_hint: String, relation: String) -> Array[String]:
+	var region := GameState.current_region_name
+	if region.is_empty() or region == "未知之地":
+		region = "路上"
+	var lines: Array[String] = []
+	if not event_hint.is_empty():
+		lines.append(event_hint)
+	match npc_name:
+		"苏梦瑶":
+			lines.append("苏家旧火还没灭，只是藏进了卷宗。")
+			lines.append("玉佩上的半纹，迟早会指向暗影司。")
+		"陈天行":
+			lines.append("茶盏换了位置，说明有人刚来过。")
+			lines.append("说书人最怕的不是冷场，是有人听懂了。")
+		"赵无极":
+			lines.append("没有证据的热血，只会烧到自己人。")
+			lines.append("武林盟的旧卷，今晚不能再沉默。")
+		"玄机子":
+			lines.append("阵眼一动，七派都在局中。")
+			lines.append("卦象不怕乱，只怕有人故意拨错。")
+		"花如玉":
+			lines.append("闻到甜香时，先闭气，再说话。")
+			lines.append("花会骗人，旧疤不会。")
+		"烈火":
+			lines.append("暗影司敢伸手，就别怪火烧得太快。")
+			lines.append("有些规矩烂了，就该烧干净。")
+		"蛇王":
+			lines.append("明处的刀容易躲，暗处的眼难防。")
+			lines.append("水路来的脚印，和官道不一样。")
+		"太极真人":
+			lines.append("急进则露破绽，查案也如推手。")
+			lines.append("越大的局，越要从轻处拨开。")
+		"冰魄":
+			lines.append("雪地不会说谎，脚印会。")
+			lines.append("南边来的寒意，不是天上落的。")
+		"逍遥子":
+			lines.append("离局远一点，反而看得清谁在落子。")
+			lines.append("酒盏放歪，是提醒你路也歪了。")
+	var npc_type := str(npc_data.get("npc_type", "normal"))
+	if npc_type == "enemy":
+		lines.append("少侠若再近一步，就凭本事说话。")
+	elif bool(npc_data.get("is_master", false)) or npc_type == "master":
+		lines.append("%s%s，山门消息传得比风还快。" % [region, weather_hint])
+	elif not quest.is_empty() and quest != "自由探索江湖":
+		lines.append("近来都在传%s，少侠也听见了吧。" % quest)
+	else:
+		lines.append("%s%s，路上人声比昨日杂。" % [region, weather_hint])
+	if relation == "好友" or relation == "知己" or relation == "挚友":
+		lines.append("你来了，有些话便能说得更明白。")
+	elif relation == "疏远" or relation == "敌视":
+		lines.append("你我之间，还没到能交底的时候。")
+	return lines
+
+func _trim_ambient_line(line: String) -> String:
+	line = line.replace("\n", " ").strip_edges()
+	if line.length() <= 28:
+		return line
+	return "%s..." % line.substr(0, 28)
 
 func _weather_hint() -> String:
 	match GameState.weather:

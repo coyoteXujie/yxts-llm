@@ -251,6 +251,34 @@ func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bo
 			best_distance = distance
 	return best
 
+func get_nearby_npcs(world_position: Vector2, radius: float, include_enemies: bool = true, limit: int = 6) -> Array:
+	var found: Array = []
+	for actor in npc_nodes:
+		if not is_instance_valid(actor):
+			continue
+		if actor.is_enemy() and not include_enemies:
+			continue
+		var distance := world_position.distance_to(actor.position)
+		if distance <= radius:
+			found.append({
+				"actor": actor,
+				"distance": distance
+			})
+	found.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("distance", 0.0)) < float(b.get("distance", 0.0))
+	)
+	var result: Array = []
+	for entry in found:
+		result.append(entry.get("actor"))
+		if result.size() >= limit:
+			break
+	return result
+
+func clear_ambient_lines() -> void:
+	for actor in npc_nodes:
+		if is_instance_valid(actor) and actor.has_method("clear_ambient_line"):
+			actor.clear_ambient_line()
+
 func get_nearest_portal(world_position: Vector2, radius: float) -> Dictionary:
 	var best := {}
 	var best_distance := radius
