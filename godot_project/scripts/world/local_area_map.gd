@@ -105,6 +105,10 @@ const SIDE_VIEW_PARALLAX_DRIFT := 0.28
 const SIDE_VIEW_SETPIECE_COUNT := 12
 const SIDE_VIEW_SETPIECE_ALPHA := 0.36
 const SIDE_VIEW_SETPIECE_DEPTH_BANDS := 3
+const SIDE_VIEW_STREET_FACADE_COUNT := 11
+const SIDE_VIEW_STREET_FACADE_ALPHA := 0.44
+const SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA := 0.36
+const SIDE_VIEW_STREET_SIGN_COUNT := 8
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1459,6 +1463,7 @@ func _draw_side_view_stage() -> void:
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
 	_draw_side_view_silhouettes(size, palette)
 	_draw_side_view_midground(size, palette)
+	_draw_side_view_street_facades(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
 	_draw_side_view_ambient(size, palette)
@@ -1621,6 +1626,137 @@ func _draw_stage_city_facades(size: Vector2, y: float, accent: Color) -> void:
 		var pole_x := size.x * (0.10 + float(i) * 0.16)
 		draw_line(Vector2(pole_x, y - tile_size * 0.82), Vector2(pole_x, y + tile_size * 0.20), Color(0.03, 0.020, 0.012, 0.38), 2.0)
 		draw_circle(Vector2(pole_x + tile_size * 0.10, y - tile_size * 0.42), tile_size * 0.05, Color(1.0, 0.62, 0.22, 0.20))
+
+func _draw_side_view_street_facades(size: Vector2, palette: Dictionary) -> void:
+	var region_type := str(current_region.get("type", "wild"))
+	if region_type == "city" or region_type == "town":
+		_draw_stage_continuous_shopfronts(size, palette)
+	elif region_type == "sect":
+		_draw_stage_sect_hall_facade(size, palette)
+
+func _draw_stage_continuous_shopfronts(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var base_y := size.y * 0.525
+	var top_y := base_y - tile_size * 2.46
+	draw_rect(Rect2(Vector2(0.0, top_y - tile_size * 0.26), Vector2(size.x, tile_size * 2.86)), Color(0.012, 0.008, 0.006, SIDE_VIEW_STREET_FACADE_ALPHA * 0.30), true)
+	var unit_span := size.x / float(maxi(1, SIDE_VIEW_STREET_FACADE_COUNT - 1))
+	for i in range(SIDE_VIEW_STREET_FACADE_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_STREET_FACADE_COUNT - 1))
+		var x := lerpf(-tile_size * 1.18, size.x - tile_size * 0.26, t)
+		var width := tile_size * (1.20 + float((i * 5) % 4) * 0.12)
+		var height := tile_size * (1.42 + float((i * 7) % 5) * 0.13)
+		var alpha := SIDE_VIEW_STREET_FACADE_ALPHA * (0.72 + float(i % 3) * 0.08)
+		_draw_stage_shopfront_unit(x + unit_span * 0.05 * sin(float(i) * 1.41), base_y, width, height, accent, alpha, i)
+	_draw_stage_street_roof_depth(size, base_y, accent)
+	for i in range(SIDE_VIEW_STREET_SIGN_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_STREET_SIGN_COUNT - 1))
+		var x := lerpf(tile_size * 0.42, size.x - tile_size * 0.42, t)
+		var y := base_y - tile_size * (1.28 + float(i % 3) * 0.16)
+		_draw_stage_street_hanging_sign(x, y, accent, SIDE_VIEW_STREET_FACADE_ALPHA * 0.78, i)
+
+func _draw_stage_shopfront_unit(x: float, base_y: float, width: float, height: float, accent: Color, alpha: float, index: int) -> void:
+	var side_depth := tile_size * (0.18 + float(index % 3) * 0.035)
+	var top := base_y - height
+	var wall_color := Color(0.045, 0.025, 0.014, alpha)
+	var side_color := Color(0.022, 0.014, 0.009, alpha * 0.82)
+	var trim_color := Color(accent.r, accent.g, accent.b, alpha * 0.25)
+	var body := Rect2(Vector2(x, top), Vector2(width, height))
+	draw_polygon(PackedVector2Array([
+		body.position,
+		body.position + Vector2(body.size.x, -side_depth * 0.18),
+		body.position + body.size + Vector2(side_depth, -side_depth * 0.12),
+		body.position + Vector2(0.0, body.size.y)
+	]), PackedColorArray([
+		wall_color.lightened(0.08),
+		wall_color,
+		side_color,
+		wall_color.darkened(0.12)
+	]))
+	var roof_y := top - tile_size * 0.12
+	draw_polygon(PackedVector2Array([
+		Vector2(x - tile_size * 0.14, roof_y + tile_size * 0.32),
+		Vector2(x + width * 0.50, roof_y - tile_size * 0.28),
+		Vector2(x + width + tile_size * 0.22, roof_y + tile_size * 0.30),
+		Vector2(x + width + side_depth, roof_y + tile_size * 0.48),
+		Vector2(x - tile_size * 0.04, roof_y + tile_size * 0.54)
+	]), PackedColorArray([
+		Color(0.08, 0.038, 0.020, alpha),
+		Color(accent.r, accent.g, accent.b, alpha * 0.46),
+		Color(0.06, 0.030, 0.018, alpha),
+		Color(0.020, 0.012, 0.008, alpha * 0.95),
+		Color(0.025, 0.014, 0.009, alpha * 0.95)
+	]))
+	var door_w := width * (0.28 + float(index % 2) * 0.08)
+	var door_x := x + width * (0.36 + float((index + 1) % 3) * 0.06)
+	draw_rect(Rect2(Vector2(door_x, base_y - height * 0.54), Vector2(door_w, height * 0.54)), Color(0.012, 0.008, 0.006, alpha * 0.78), true)
+	draw_line(Vector2(door_x + door_w * 0.50, base_y - height * 0.50), Vector2(door_x + door_w * 0.50, base_y - tile_size * 0.10), Color(0.0, 0.0, 0.0, alpha * 0.36), 1.2)
+	var window := Rect2(Vector2(x + width * 0.10, base_y - height * 0.70), Vector2(width * 0.28, height * 0.18))
+	draw_rect(window, Color(accent.r, accent.g, accent.b, alpha * 0.15), true)
+	draw_line(window.position + Vector2(window.size.x * 0.50, 0.0), window.position + Vector2(window.size.x * 0.50, window.size.y), Color(0.0, 0.0, 0.0, alpha * 0.24), 1.0)
+	draw_line(Vector2(x, base_y - height * 0.34), Vector2(x + width + side_depth, base_y - height * 0.36), trim_color, 2.0)
+	draw_line(Vector2(x + width + side_depth, top + tile_size * 0.20), Vector2(x + width + side_depth, base_y - tile_size * 0.10), Color(0.0, 0.0, 0.0, alpha * 0.26), 1.4)
+
+func _draw_stage_street_roof_depth(size: Vector2, base_y: float, accent: Color) -> void:
+	var roof_y := base_y - tile_size * 2.42
+	draw_polygon(PackedVector2Array([
+		Vector2(-tile_size * 0.50, roof_y + tile_size * 0.62),
+		Vector2(size.x * 0.08, roof_y + tile_size * 0.26),
+		Vector2(size.x * 0.92, roof_y + tile_size * 0.16),
+		Vector2(size.x + tile_size * 0.60, roof_y + tile_size * 0.54),
+		Vector2(size.x + tile_size * 0.35, roof_y + tile_size * 0.86),
+		Vector2(-tile_size * 0.36, roof_y + tile_size * 0.98)
+	]), PackedColorArray([
+		Color(0.020, 0.012, 0.008, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA),
+		Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA * 0.40),
+		Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA * 0.34),
+		Color(0.018, 0.011, 0.008, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA),
+		Color(0.010, 0.007, 0.005, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA * 1.08),
+		Color(0.012, 0.008, 0.006, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA * 1.04)
+	]))
+	for i in range(9):
+		var t := float(i) / 8.0
+		var x := lerpf(0.0, size.x, t)
+		draw_line(Vector2(x, roof_y + tile_size * 0.50), Vector2(x + tile_size * 0.62, roof_y + tile_size * 0.83), Color(0.0, 0.0, 0.0, SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA * 0.34), 1.1)
+
+func _draw_stage_street_hanging_sign(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var sway := sin(stage_visual_phase * 0.82 + float(index) * 0.67) * tile_size * 0.035
+	draw_line(Vector2(x, y - tile_size * 0.38), Vector2(x + sway, y), Color(0.52, 0.34, 0.17, alpha * 0.90), 1.1)
+	var sign_size := Vector2(tile_size * (0.38 + float(index % 3) * 0.06), tile_size * 0.22)
+	var rect := Rect2(Vector2(x + sway - sign_size.x * 0.5, y), sign_size)
+	draw_rect(rect, Color(0.11, 0.044, 0.022, alpha), true)
+	draw_rect(rect.grow(-2.0), Color(accent.r, accent.g, accent.b, alpha * 0.34), true)
+	if index % 2 == 0:
+		var lamp := Vector2(x + sway + sign_size.x * 0.70, y + sign_size.y * 0.62)
+		var pulse := 0.5 + sin(stage_visual_phase * 2.4 + float(index)) * 0.5
+		draw_line(lamp + Vector2(0.0, -tile_size * 0.18), lamp, Color(0.72, 0.42, 0.18, alpha * 0.55), 1.0)
+		draw_circle(lamp, tile_size * 0.055, Color(1.0, 0.66, 0.24, alpha * (0.36 + pulse * 0.16)))
+
+func _draw_stage_sect_hall_facade(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var base_y := size.y * 0.525
+	var center_x := size.x * 0.50
+	var width := size.x * 0.54
+	var height := tile_size * 2.20
+	draw_rect(Rect2(Vector2(center_x - width * 0.50, base_y - height), Vector2(width, height)), Color(0.034, 0.026, 0.019, SIDE_VIEW_STREET_FACADE_ALPHA * 0.68), true)
+	draw_polygon(PackedVector2Array([
+		Vector2(center_x - width * 0.58, base_y - height + tile_size * 0.16),
+		Vector2(center_x, base_y - height - tile_size * 0.58),
+		Vector2(center_x + width * 0.58, base_y - height + tile_size * 0.16),
+		Vector2(center_x + width * 0.48, base_y - height + tile_size * 0.44),
+		Vector2(center_x - width * 0.48, base_y - height + tile_size * 0.44)
+	]), PackedColorArray([
+		Color(0.04, 0.030, 0.022, SIDE_VIEW_STREET_FACADE_ALPHA),
+		Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_FACADE_ALPHA * 0.48),
+		Color(0.04, 0.030, 0.022, SIDE_VIEW_STREET_FACADE_ALPHA),
+		Color(0.020, 0.016, 0.012, SIDE_VIEW_STREET_FACADE_ALPHA * 0.92),
+		Color(0.020, 0.016, 0.012, SIDE_VIEW_STREET_FACADE_ALPHA * 0.92)
+	]))
+	for i in range(6):
+		var t := float(i) / 5.0
+		var x := lerpf(center_x - width * 0.42, center_x + width * 0.42, t)
+		draw_rect(Rect2(Vector2(x - tile_size * 0.08, base_y - height * 0.66), Vector2(tile_size * 0.16, height * 0.66)), Color(0.018, 0.014, 0.010, SIDE_VIEW_STREET_FACADE_ALPHA * 0.78), true)
+		draw_line(Vector2(x + tile_size * 0.06, base_y - height * 0.62), Vector2(x + tile_size * 0.06, base_y - tile_size * 0.14), Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_FACADE_ALPHA * 0.16), 1.0)
+	draw_arc(Vector2(center_x, base_y - tile_size * 0.20), tile_size * 2.15, PI * 0.08, PI * 0.92, 48, Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_FACADE_ALPHA * 0.22), 2.0)
 
 func _draw_stage_sect_steps(size: Vector2, y: float, accent: Color) -> void:
 	var center_x := size.x * 0.50
