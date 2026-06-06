@@ -30,9 +30,15 @@ var sprite_rim_base_position := Vector2.ZERO
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
 const BASE_SPRITE_HEIGHT := 118.0
+const BASE_SPRITE_WIDTH := 80.0
 const MASTER_SPRITE_HEIGHT := 146.0
+const MASTER_SPRITE_WIDTH := 88.0
 const ENEMY_SPRITE_HEIGHT := 142.0
+const ENEMY_SPRITE_WIDTH := 86.0
 const STAGE_PRESENCE_SCALE := 1.38
+const STAGE_BASE_SPRITE_WIDTH := 100.0
+const STAGE_MASTER_SPRITE_WIDTH := 112.0
+const STAGE_ENEMY_SPRITE_WIDTH := 110.0
 const STAGE_MASTER_EXTRA_SCALE := 1.09
 const STAGE_ENEMY_EXTRA_SCALE := 1.11
 const STAGE_SPRITE_MIN_SCALE := 1.22
@@ -330,13 +336,19 @@ func _refresh_sprite_asset() -> void:
 	sprite_rim_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()
 	var target_height := BASE_SPRITE_HEIGHT
-	var target_width := 80.0
+	var target_width := BASE_SPRITE_WIDTH
 	if is_master():
 		target_height = MASTER_SPRITE_HEIGHT
-		target_width = 88.0
+		target_width = MASTER_SPRITE_WIDTH
 	if is_enemy():
 		target_height = ENEMY_SPRITE_HEIGHT
-		target_width = 86.0
+		target_width = ENEMY_SPRITE_WIDTH
+	if _is_stage_actor():
+		target_width = STAGE_BASE_SPRITE_WIDTH
+		if is_master():
+			target_width = STAGE_MASTER_SPRITE_WIDTH
+		elif is_enemy():
+			target_width = STAGE_ENEMY_SPRITE_WIDTH
 	if str(data.get("name", "")) == "神秘人":
 		target_height = 114.0
 		target_width = 96.0

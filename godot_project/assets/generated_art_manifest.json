@@ -24,7 +24,7 @@
     "cliff": "res://assets/world/tiles/tile_cliff.png"
   },
   "npc_map_sprites": {
-    "平阿四": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
+    "平阿四": "res://assets/characters/npc/map_sprites_v2/ping_asi_stage_v2.png",
     "店小二": "res://assets/characters/reference_map_sprites/waiter_ref.png",
     "阎商": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
     "葛朗台": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
@@ -38,7 +38,7 @@
     "何喜": "res://assets/characters/reference_map_sprites/wanderer_ref.png",
     "小裁缝": "res://assets/characters/reference_map_sprites/waiter_ref.png",
     "何裁缝": "res://assets/characters/reference_map_sprites/waiter_ref.png",
-    "捕快": "res://assets/characters/reference_map_sprites/constable_ref.png",
+    "捕快": "res://assets/characters/npc/map_sprites_v2/constable_stage_v2.png",
     "巡捕": "res://assets/characters/reference_map_sprites/constable_ref.png",
     "衙役": "res://assets/characters/reference_map_sprites/constable_ref.png",
     "老夫子": "res://assets/characters/reference_map_sprites/scholar_ref.png",
