@@ -101,6 +101,9 @@ def main() -> int:
         for item_id in quest.get("rewards", {}).get("items", {}).keys():
             if item_id not in item_ids:
                 errors.append(f"quest {quest.get('id')} rewards missing item {item_id}")
+        for skill_id in quest.get("rewards", {}).get("skills", {}).keys():
+            if skill_id not in skill_ids:
+                errors.append(f"quest {quest.get('id')} rewards missing skill {skill_id}")
 
     for npc_name, sprite_path in sprite_assets.items():
         if npc_name not in npc_names:

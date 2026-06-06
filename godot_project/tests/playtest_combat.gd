@@ -55,6 +55,12 @@ func _run() -> void:
 	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("冰魄")), "冰魄新头像文件应存在")
 	_check(GameData.get_npc_portrait_path("逍遥子").find("portraits_v2") >= 0, "逍遥子应使用新生成主线头像")
 	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("逍遥子")), "逍遥子新头像文件应存在")
+	_run_faction_questline_checks()
+	GameState.new_game({
+		"name": "战斗测试",
+		"gender": "male",
+		"faction": "none"
+	})
 	var qinghe := GameData.get_region("qinghe")
 	GameState.update_current_region(qinghe, Vector2i(0, 0))
 	var stage = COMBAT_STAGE_SCRIPT.new()
@@ -172,3 +178,44 @@ func _run() -> void:
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
+
+func _run_faction_questline_checks() -> void:
+	var lines := [
+		{"faction": "bagua", "entry": "q_bagua_entry", "entry_skill": "kf_bagua_blade", "quests": ["q_bagua_entry", "q_bagua_patrol", "q_bagua_array_trial"], "final_skill": "kf_hunyuan"},
+		{"faction": "flower", "entry": "q_flower_entry", "entry_skill": "kf_huafei", "quests": ["q_flower_entry", "q_flower_whispers", "q_flower_thief_trace"], "final_skill": "kf_sanhua"},
+		{"faction": "honglian", "entry": "q_honglian_entry", "entry_skill": "kf_hexiang", "quests": ["q_honglian_entry", "q_honglian_embers", "q_honglian_oath"], "final_skill": "kf_tongji"},
+		{"faction": "naja", "entry": "q_naja_entry", "entry_skill": "kf_renshu", "quests": ["q_naja_entry", "q_naja_scout", "q_naja_shadow"], "final_skill": "kf_yidao"},
+		{"faction": "taiji", "entry": "q_taiji_entry", "entry_skill": "kf_taiji_sword", "quests": ["q_taiji_entry", "q_taiji_medicine", "q_taiji_balance"], "final_skill": "kf_xuanxu"},
+		{"faction": "xueshan", "entry": "q_xueshan_entry", "entry_skill": "kf_taxue", "quests": ["q_xueshan_entry", "q_xueshan_patrol", "q_xueshan_ice"], "final_skill": "kf_xueying"},
+		{"faction": "xiaoyao", "entry": "q_xiaoyao_entry", "entry_skill": "kf_xiaoyao_you", "quests": ["q_xiaoyao_entry", "q_xiaoyao_old_route", "q_xiaoyao_beiming"], "final_skill": "kf_xiaowuxiang"}
+	]
+	GameState.new_game({"name": "门派限制测试", "gender": "male", "faction": "none"})
+	_check(not GameState.can_accept_quest("q_flower_entry"), "未拜入门派不应接花间入门任务")
+	for line in lines:
+		var faction_id := str(line.get("faction", "none"))
+		GameState.new_game({"name": "门派任务测试", "gender": "male", "faction": faction_id})
+		GameState.player["level"] = 8
+		_check(GameState.can_accept_quest(str(line.get("entry", ""))), "%s 入门任务应可接" % GameData.get_faction_name(faction_id))
+		for quest_id_value in line.get("quests", []):
+			var quest_id := str(quest_id_value)
+			_check(GameState.accept_quest(quest_id), "应能接取门派任务 %s" % quest_id)
+			_fulfill_quest_objectives(quest_id)
+			_check(GameState.completed_quests.has(quest_id), "门派任务应能完成 %s" % quest_id)
+		_check(int(GameState.learned_skills.get(str(line.get("entry_skill", "")), 0)) >= 2, "%s 入门武学应练到 2 级" % GameData.get_faction_name(faction_id))
+		_check(int(GameState.learned_skills.get(str(line.get("final_skill", "")), 0)) >= 1, "%s 任务线应奖励最终武学" % GameData.get_faction_name(faction_id))
+
+func _fulfill_quest_objectives(quest_id: String) -> void:
+	var quest := GameData.get_quest(quest_id)
+	var objectives: Array = quest.get("objectives", [])
+	for objective in objectives:
+		var kind := str(objective.get("type", ""))
+		var target := str(objective.get("target", ""))
+		var required := int(objective.get("count", 1))
+		if kind == "skill":
+			var current := int(GameState.learned_skills.get(target, 0))
+			if current < required:
+				GameState.learn_skill(target, required - current)
+		elif kind == "collect":
+			GameState.add_item(target, required)
+		else:
+			GameState.progress_quest(kind, target, required)

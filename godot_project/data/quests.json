@@ -49,11 +49,283 @@
     "id": "q_bagua_entry",
     "title": "八卦入门",
     "giver": "韦扬",
-    "description": "韦扬让你先拜入八卦门，再练出一点游龙步法的根基。",
+    "description": "韦扬让你先拜入八卦门，再把八卦刀练出一点根基。",
+    "required_faction": "bagua",
+    "next_hint": "八卦门要看你能否稳住山门巡防，去听武师教头安排。",
     "objectives": [
-      {"type": "skill", "target": "kf_bagua_blade", "count": 1, "label": "请教八卦刀"}
+      {"type": "skill", "target": "kf_bagua_blade", "count": 2, "label": "八卦刀练到 2 级"}
     ],
-    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_blade": 1}}
+    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_blade": 1}, "skills": {"kf_youlong": 1}}
+  },
+  {
+    "id": "q_bagua_patrol",
+    "title": "山门巡阵",
+    "giver": "韦扬",
+    "description": "八卦门近来有人窥探阵图。韦扬让你先问武师教头巡防布置，再击退镇外滋事的流氓头。",
+    "required_faction": "bagua",
+    "requires_completed": ["q_bagua_entry"],
+    "next_hint": "巡阵有功，去请玄机子验看阵图残页。",
+    "objectives": [
+      {"type": "talk", "target": "武师教头", "count": 1, "label": "询问巡防布置"},
+      {"type": "kill", "target": "流氓头", "count": 1, "label": "击退窥探山门的流氓头"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 2, "items": {"item_yao": 1}, "skills": {"kf_bagua_palm": 1}}
+  },
+  {
+    "id": "q_bagua_array_trial",
+    "title": "八阵残页",
+    "giver": "玄机子",
+    "description": "玄机子发现残页上有暗影司旧记号，让你带着阵图残页追查黑衣大盗。",
+    "required_faction": "bagua",
+    "requires_completed": ["q_bagua_patrol"],
+    "next_hint": "八卦门已承认你的本门身份，可继续闯荡江湖。",
+    "objectives": [
+      {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子验看阵图"},
+      {"type": "kill", "target": "黑衣大盗", "count": 1, "label": "夺回八阵残页"}
+    ],
+    "rewards": {"exp": 260, "money": 130, "daode": 3, "items": {"item_dan": 1}, "skills": {"kf_bazhen": 1, "kf_hunyuan": 1}}
+  },
+  {
+    "id": "q_flower_entry",
+    "title": "花间入门",
+    "giver": "清照",
+    "description": "清照要你先拜入花间派，并将花飞剑法练到能护住花圃的程度。",
+    "required_faction": "flower",
+    "next_hint": "花间弟子最重耳目，去找隐娘与苏梦瑶打听花信。",
+    "objectives": [
+      {"type": "skill", "target": "kf_huafei", "count": 2, "label": "花飞剑法练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_red_flower": 1}, "skills": {"kf_meihua": 1}}
+  },
+  {
+    "id": "q_flower_whispers",
+    "title": "花信暗香",
+    "giver": "清照",
+    "description": "花间派暗线传来不稳的香信。清照让你向隐娘和苏梦瑶确认消息，再备一朵红花作暗号。",
+    "required_faction": "flower",
+    "requires_completed": ["q_flower_entry"],
+    "next_hint": "香信指向采花大盗的旧路，去找花如玉求证。",
+    "objectives": [
+      {"type": "talk", "target": "隐娘", "count": 1, "label": "向隐娘确认暗线"},
+      {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "向苏梦瑶确认旧事"},
+      {"type": "collect", "target": "item_red_flower", "count": 1, "label": "备好红花暗号"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 2, "items": {"item_tea_flower": 1}, "skills": {"kf_huatuan": 1}}
+  },
+  {
+    "id": "q_flower_thief_trace",
+    "title": "花径追凶",
+    "giver": "花如玉",
+    "description": "花如玉确认采花大盗与暗影司香线有关，让你追上大盗并带回线索。",
+    "required_faction": "flower",
+    "requires_completed": ["q_flower_whispers"],
+    "next_hint": "花间派已把你列入可信名册。",
+    "objectives": [
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "向花如玉求证香线"},
+      {"type": "kill", "target": "采花大盗", "count": 1, "label": "击败采花大盗"}
+    ],
+    "rewards": {"exp": 260, "money": 130, "daode": 3, "items": {"item_silk_cloth": 1}, "skills": {"kf_sanhua": 1}}
+  },
+  {
+    "id": "q_honglian_entry",
+    "title": "红莲入教",
+    "giver": "于红儒",
+    "description": "于红儒让你拜入红莲教后，先把鹤翔术练稳，以免在火阵中乱了脚步。",
+    "required_faction": "honglian",
+    "next_hint": "红莲教要查香火与粮道，去找方长老领差。",
+    "objectives": [
+      {"type": "skill", "target": "kf_hexiang", "count": 2, "label": "鹤翔术练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 0, "items": {"item_wine": 1}, "skills": {"kf_taizu": 1}}
+  },
+  {
+    "id": "q_honglian_embers",
+    "title": "香火余烬",
+    "giver": "方长老",
+    "description": "方长老怀疑有人在教众之间挑拨。你需要分别询问白衣教众和红衣教众，并备些熟肉安抚巡夜弟子。",
+    "required_faction": "honglian",
+    "requires_completed": ["q_honglian_entry"],
+    "next_hint": "余烬背后牵出山外大盗，去找烈火求证。",
+    "objectives": [
+      {"type": "talk", "target": "白衣教众", "count": 1, "label": "询问白衣教众"},
+      {"type": "talk", "target": "红衣教众", "count": 1, "label": "询问红衣教众"},
+      {"type": "collect", "target": "item_meat", "count": 1, "label": "备好巡夜熟肉"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 1, "items": {"item_yao": 1}, "skills": {"kf_pifeng": 1}}
+  },
+  {
+    "id": "q_honglian_oath",
+    "title": "烈火誓约",
+    "giver": "烈火",
+    "description": "烈火认出独角大盗曾替暗影司运火药，让你击败大盗，替红莲教断一条旧账。",
+    "required_faction": "honglian",
+    "requires_completed": ["q_honglian_embers"],
+    "next_hint": "红莲教承认你的誓约，江湖上开始有人记住你的火令。",
+    "objectives": [
+      {"type": "talk", "target": "烈火", "count": 1, "label": "向烈火领火令"},
+      {"type": "kill", "target": "独角大盗", "count": 1, "label": "击败独角大盗"}
+    ],
+    "rewards": {"exp": 270, "money": 140, "daode": 2, "items": {"item_shengji": 1}, "skills": {"kf_jiaoyi": 1, "kf_tongji": 1}}
+  },
+  {
+    "id": "q_naja_entry",
+    "title": "那迦入门",
+    "giver": "钟央",
+    "description": "钟央让你拜入那迦派后，将忍术练到能够藏住脚步。",
+    "required_faction": "naja",
+    "next_hint": "那迦派要试你的耳目，去见十三卫。",
+    "objectives": [
+      {"type": "skill", "target": "kf_renshu", "count": 2, "label": "忍术练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 0, "items": {"item_dagger": 1}, "skills": {"kf_wuying": 1}}
+  },
+  {
+    "id": "q_naja_scout",
+    "title": "蛇影探路",
+    "giver": "钟央",
+    "description": "十三卫发现黑衣大盗在山外换哨。钟央让你先听十三卫回报，再截下那名大盗。",
+    "required_faction": "naja",
+    "requires_completed": ["q_naja_entry"],
+    "next_hint": "蛇影已至，去让蛇王看一看你的刀路。",
+    "objectives": [
+      {"type": "talk", "target": "十三卫", "count": 1, "label": "听十三卫回报"},
+      {"type": "kill", "target": "黑衣大盗", "count": 1, "label": "截下换哨大盗"}
+    ],
+    "rewards": {"exp": 190, "money": 95, "daode": 1, "items": {"item_yao": 1}, "skills": {"kf_wufa": 1}}
+  },
+  {
+    "id": "q_naja_shadow",
+    "title": "蛇王试刃",
+    "giver": "蛇王",
+    "description": "蛇王要你追一名惯走暗路的采花大盗，以试那迦派刀路是否够快。",
+    "required_faction": "naja",
+    "requires_completed": ["q_naja_scout"],
+    "next_hint": "那迦派默许你独自行走暗线。",
+    "objectives": [
+      {"type": "talk", "target": "蛇王", "count": 1, "label": "请蛇王点明暗路"},
+      {"type": "kill", "target": "采花大盗", "count": 1, "label": "击败采花大盗"}
+    ],
+    "rewards": {"exp": 270, "money": 140, "daode": 1, "items": {"item_hetun_blade": 1}, "skills": {"kf_yidao": 1}}
+  },
+  {
+    "id": "q_taiji_entry",
+    "title": "太极入门",
+    "giver": "清虚道人",
+    "description": "清虚道人让你拜入太极门后，先把太极剑法练到圆转不滞。",
+    "required_faction": "taiji",
+    "next_hint": "太极门重在调息，去帮采药道人备药。",
+    "objectives": [
+      {"type": "skill", "target": "kf_taiji_sword", "count": 2, "label": "太极剑法练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 2, "items": {"item_yao": 1}, "skills": {"kf_wanliu": 1}}
+  },
+  {
+    "id": "q_taiji_medicine",
+    "title": "松下采药",
+    "giver": "清虚道人",
+    "description": "清虚道人让你协助采药道人照看伤药，并把金创药送回观中备用。",
+    "required_faction": "taiji",
+    "requires_completed": ["q_taiji_entry"],
+    "next_hint": "药已备齐，太极真人要你去平一桩外魔。",
+    "objectives": [
+      {"type": "talk", "target": "采药道人", "count": 1, "label": "协助采药道人"},
+      {"type": "collect", "target": "item_yao", "count": 1, "label": "备好金创药"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 3, "items": {"item_dan": 1}, "skills": {"kf_taiji_force": 1}}
+  },
+  {
+    "id": "q_taiji_balance",
+    "title": "玄门平魔",
+    "giver": "太极真人",
+    "description": "太极真人说魔化和尚身上有阴阳失衡之相，让你以太极心法平息这场祸端。",
+    "required_faction": "taiji",
+    "requires_completed": ["q_taiji_medicine"],
+    "next_hint": "太极门认可你的玄门根基。",
+    "objectives": [
+      {"type": "talk", "target": "太极真人", "count": 1, "label": "听太极真人讲阴阳"},
+      {"type": "kill", "target": "魔化和尚", "count": 1, "label": "击败魔化和尚"}
+    ],
+    "rewards": {"exp": 280, "money": 150, "daode": 4, "items": {"item_shengji": 1}, "skills": {"kf_xuanxu": 1}}
+  },
+  {
+    "id": "q_xueshan_entry",
+    "title": "雪山入门",
+    "giver": "白瑞德",
+    "description": "白瑞德让你拜入雪山派后，先把踏雪无痕练到能在雪径上站稳。",
+    "required_faction": "xueshan",
+    "next_hint": "雪径初稳，去听万刃安排巡山。",
+    "objectives": [
+      {"type": "skill", "target": "kf_taxue", "count": 2, "label": "踏雪无痕练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_meat": 1}, "skills": {"kf_xueshan_sword": 1}}
+  },
+  {
+    "id": "q_xueshan_patrol",
+    "title": "雪岭巡山",
+    "giver": "白瑞德",
+    "description": "万刃说雪豹近来逼近山门。白瑞德命你巡过雪径，替弟子清出一条路。",
+    "required_faction": "xueshan",
+    "requires_completed": ["q_xueshan_entry"],
+    "next_hint": "雪豹已退，冰魄要考你一段寒劲。",
+    "objectives": [
+      {"type": "talk", "target": "万刃", "count": 1, "label": "听万刃安排巡山"},
+      {"type": "kill", "target": "雪豹", "count": 1, "label": "驱退雪豹"}
+    ],
+    "rewards": {"exp": 190, "money": 95, "daode": 2, "items": {"item_yao": 1}, "skills": {"kf_xueshang": 1}}
+  },
+  {
+    "id": "q_xueshan_ice",
+    "title": "寒岭断匪",
+    "giver": "冰魄",
+    "description": "冰魄发现土匪头目趁风雪劫掠山脚，让你以雪山剑意断其退路。",
+    "required_faction": "xueshan",
+    "requires_completed": ["q_xueshan_patrol"],
+    "next_hint": "雪山派已把你视作能独当一面的弟子。",
+    "objectives": [
+      {"type": "talk", "target": "冰魄", "count": 1, "label": "向冰魄请教寒劲"},
+      {"type": "kill", "target": "土匪头目", "count": 1, "label": "击败土匪头目"}
+    ],
+    "rewards": {"exp": 280, "money": 150, "daode": 3, "items": {"item_shengji": 1}, "skills": {"kf_xueying": 1}}
+  },
+  {
+    "id": "q_xiaoyao_entry",
+    "title": "逍遥入门",
+    "giver": "逍遥子",
+    "description": "逍遥子收徒不重门规，只要你把逍遥游练到能随风转身。",
+    "required_faction": "xiaoyao",
+    "next_hint": "逍遥子要你走一趟旧友路线，先访李白和陈天行。",
+    "objectives": [
+      {"type": "skill", "target": "kf_xiaoyao_you", "count": 2, "label": "逍遥游练到 2 级"}
+    ],
+    "rewards": {"exp": 120, "money": 60, "daode": 1, "items": {"item_wine": 1}, "skills": {"kf_lingbo": 1}}
+  },
+  {
+    "id": "q_xiaoyao_old_route",
+    "title": "旧友风路",
+    "giver": "逍遥子",
+    "description": "逍遥子让你带一句闲话给李白，再听陈天行说一段长安风声。",
+    "required_faction": "xiaoyao",
+    "requires_completed": ["q_xiaoyao_entry"],
+    "next_hint": "旧友风路已通，逍遥子愿传你北冥旧学。",
+    "objectives": [
+      {"type": "talk", "target": "李白", "count": 1, "label": "拜访李白"},
+      {"type": "talk", "target": "陈天行", "count": 1, "label": "拜访陈天行"}
+    ],
+    "rewards": {"exp": 180, "money": 90, "daode": 2, "items": {"item_dan": 1}, "skills": {"kf_beiming": 1, "kf_liuyang": 1}}
+  },
+  {
+    "id": "q_xiaoyao_beiming",
+    "title": "北冥试心",
+    "giver": "逍遥子",
+    "description": "逍遥子要你以北冥心法稳住内息，再击退神秘人，证明自己不会被奇功反噬。",
+    "required_faction": "xiaoyao",
+    "requires_completed": ["q_xiaoyao_old_route"],
+    "next_hint": "逍遥派已许你自在行走江湖。",
+    "objectives": [
+      {"type": "skill", "target": "kf_beiming", "count": 1, "label": "习得北冥神功"},
+      {"type": "kill", "target": "神秘人", "count": 1, "label": "击退神秘人"}
+    ],
+    "rewards": {"exp": 300, "money": 160, "daode": 3, "items": {"item_dan": 1}, "skills": {"kf_xiaowuxiang": 1}}
   },
   {
     "id": "q_flower_thief",

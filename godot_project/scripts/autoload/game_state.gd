@@ -1268,6 +1268,9 @@ func _complete_quest(quest_id: String) -> void:
 	var items: Dictionary = rewards.get("items", {})
 	for item_id in items.keys():
 		add_item(str(item_id), int(items[item_id]))
+	var skills: Dictionary = rewards.get("skills", {})
+	for skill_id in skills.keys():
+		learn_skill(str(skill_id), int(skills[skill_id]))
 	if not active_quests.is_empty():
 		var first_id := str(active_quests.keys()[0])
 		active_quest = str(GameData.get_quest(first_id).get("title", first_id))
