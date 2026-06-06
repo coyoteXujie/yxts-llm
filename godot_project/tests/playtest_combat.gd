@@ -72,9 +72,30 @@ func _run() -> void:
 	_check(stage.background_texture != null, "2.5D 战斗舞台应加载当前区域背景")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 1, "kind": "damage", "target": "enemy"}]
+		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]
 	})
 	_check(stage.event_timer > 0.0, "2.5D 战斗舞台应响应战斗事件")
+	_check(stage.effect_style == "impact", "普通攻击应使用基础命中特效")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 2, "kind": "damage", "target": "enemy", "source": "雪山剑法", "amount": 28}]
+	})
+	_check(stage.effect_style == "ice", "雪山剑法应触发冰雪剑气特效")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 3, "kind": "damage", "target": "enemy", "source": "天山六阳掌", "amount": 36}]
+	})
+	_check(stage.effect_style == "fire", "天山六阳掌应触发火焰掌风特效")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 4, "kind": "damage", "target": "enemy", "source": "忍术", "amount": 18}]
+	})
+	_check(stage.effect_style == "poison", "忍术应触发毒雾特效")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 5, "kind": "damage", "target": "enemy", "source": "八卦刀", "amount": 24}]
+	})
+	_check(stage.effect_style == "blade", "八卦刀应触发刀光特效")
 	stage.queue_free()
 	var director_line := LLMDirector.generate_npc_line(GameData.get_npc_by_name("苏梦瑶"), 0)
 	_check(director_line.find("【") >= 0 and director_line.length() > 20, "LLMDirector 离线台词应包含世界上下文")

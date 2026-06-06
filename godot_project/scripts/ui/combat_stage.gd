@@ -13,6 +13,9 @@ var last_event_id := 0
 var event_timer := 0.0
 var event_kind := ""
 var event_target := ""
+var event_source := ""
+var event_amount := 0
+var effect_style := "impact"
 var pulse := 0.0
 
 func _ready() -> void:
@@ -33,6 +36,9 @@ func setup(enemy_data: Dictionary) -> void:
 	event_timer = 0.0
 	event_kind = ""
 	event_target = ""
+	event_source = ""
+	event_amount = 0
+	effect_style = "impact"
 	_refresh_assets()
 	queue_redraw()
 
@@ -47,6 +53,9 @@ func clear() -> void:
 	event_timer = 0.0
 	event_kind = ""
 	event_target = ""
+	event_source = ""
+	event_amount = 0
+	effect_style = "impact"
 	queue_redraw()
 
 func _refresh_assets() -> void:
@@ -95,6 +104,9 @@ func _consume_latest_event() -> void:
 	last_event_id = event_id
 	event_kind = str(latest.get("kind", "damage"))
 	event_target = str(latest.get("target", "enemy"))
+	event_source = str(latest.get("source", ""))
+	event_amount = int(latest.get("amount", 0))
+	effect_style = _effect_style(event_kind, event_source)
 	event_timer = 0.48
 
 func _draw() -> void:
@@ -300,21 +312,28 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		_draw_miss_wisp(finish, alpha)
 		return
 	if event_kind == "heal" or event_kind == "mp" or event_kind == "guard":
-		_draw_focus_ring(start, color, alpha)
+		_draw_focus_ring(start, color, alpha, effect_style)
 		return
-	var points := PackedVector2Array([
-		start.lerp(finish, 0.22),
-		start.lerp(finish, 0.50) + Vector2(16.0, -30.0),
-		start.lerp(finish, 0.82),
-		start.lerp(finish, 0.52) + Vector2(-8.0, 22.0)
-	])
-	draw_polyline(points, Color(color.r, color.g, color.b, 0.80 * alpha), 5.5, true)
-	draw_polyline(points, Color(1.0, 0.92, 0.70, 0.50 * alpha), 2.0, true)
-	for i in range(5):
-		var spark_origin := finish + Vector2(cos(float(i) * 1.2) * 12.0, sin(float(i) * 1.2) * 10.0)
-		draw_line(spark_origin, spark_origin + Vector2(18.0 - i * 4.0, -10.0 + i * 4.0), Color(color.r, color.g, color.b, 0.56 * alpha), 1.7)
+	match effect_style:
+		"blade":
+			_draw_blade_slash(start, finish, color, alpha)
+		"sword":
+			_draw_sword_qi(start, finish, color, alpha)
+		"palm":
+			_draw_palm_wave(start, finish, color, alpha)
+		"fire":
+			_draw_fire_burst(start, finish, alpha)
+		"poison":
+			_draw_poison_mist(start, finish, alpha)
+		"ice":
+			_draw_ice_shards(start, finish, alpha)
+		"shadow":
+			_draw_shadow_strike(start, finish, alpha)
+		_:
+			_draw_impact_arc(start, finish, color, alpha)
+	_draw_hit_sparks(finish, color, alpha)
 	if event_kind == "phase" or event_kind == "stun":
-		_draw_focus_ring(finish, color, alpha)
+		_draw_focus_ring(finish, color, alpha, effect_style)
 	var fog_rect := Rect2(rect.position + Vector2(rect.size.x * 0.18, rect.size.y * 0.72), Vector2(rect.size.x * 0.64, 22.0))
 	_draw_soft_band(fog_rect, Color(color.r, color.g, color.b, 0.10 * alpha))
 
@@ -323,9 +342,120 @@ func _draw_miss_wisp(center: Vector2, alpha: float) -> void:
 		var offset := Vector2(cos(float(i) * 1.5 + pulse) * 18.0, sin(float(i) * 1.8 + pulse) * 8.0)
 		draw_arc(center + offset, 13.0 + i * 3.0, 0.2, PI * 1.4, 18, Color(0.82, 0.84, 0.86, 0.42 * alpha), 1.6)
 
-func _draw_focus_ring(center: Vector2, color: Color, alpha: float) -> void:
+func _draw_focus_ring(center: Vector2, color: Color, alpha: float, style: String = "focus") -> void:
 	for i in range(3):
 		draw_arc(center, 24.0 + i * 10.0, 0.0, TAU, 48, Color(color.r, color.g, color.b, 0.30 * alpha / float(i + 1)), 2.2)
+	if style == "guard":
+		for i in range(4):
+			var angle := float(i) * PI * 0.5 + pulse * 0.6
+			var a := center + Vector2(cos(angle), sin(angle)) * 25.0
+			var b := center + Vector2(cos(angle + 0.56), sin(angle + 0.56)) * 34.0
+			draw_line(a, b, Color(0.96, 0.82, 0.42, 0.38 * alpha), 2.0)
+
+func _draw_impact_arc(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var points := PackedVector2Array([
+		start.lerp(finish, 0.22),
+		start.lerp(finish, 0.50) + Vector2(16.0, -30.0),
+		start.lerp(finish, 0.82),
+		start.lerp(finish, 0.52) + Vector2(-8.0, 22.0)
+	])
+	draw_polyline(points, Color(color.r, color.g, color.b, 0.80 * alpha), 5.5, true)
+	draw_polyline(points, Color(1.0, 0.92, 0.70, 0.50 * alpha), 2.0, true)
+
+func _draw_blade_slash(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	var center := start.lerp(finish, 0.62)
+	for i in range(3):
+		var spread := float(i - 1) * 13.0
+		var points := PackedVector2Array([
+			start.lerp(finish, 0.16 + i * 0.05) + normal * (30.0 + spread),
+			center + normal * (4.0 + spread * 0.35) + Vector2(0.0, -30.0 + i * 5.0),
+			finish + normal * (-27.0 + spread * 0.25)
+		])
+		draw_polyline(points, Color(color.r, color.g, color.b, 0.66 * alpha / float(i + 1)), 7.0 - i * 1.5, true)
+	draw_line(start + normal * 20.0, finish - normal * 17.0, Color(1.0, 0.96, 0.78, 0.58 * alpha), 2.2)
+
+func _draw_sword_qi(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	var beam_start := start.lerp(finish, 0.18)
+	var beam_end := finish + dir * 22.0
+	for i in range(3):
+		var offset := normal * float(i - 1) * 6.0
+		draw_line(beam_start + offset, beam_end + offset * 0.35, Color(0.72, 0.88, 1.0, 0.22 * alpha), 8.0 - i * 1.8)
+	draw_line(beam_start, beam_end, Color(0.98, 0.98, 0.86, 0.78 * alpha), 2.0)
+	for i in range(5):
+		var t := float(i) / 4.0
+		var p := beam_start.lerp(beam_end, t)
+		draw_line(p - normal * (10.0 + t * 7.0), p + normal * (8.0 + t * 6.0), Color(color.r, color.g, color.b, 0.26 * alpha), 1.3)
+
+func _draw_palm_wave(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	for i in range(4):
+		var center := start.lerp(finish, 0.30 + float(i) * 0.17)
+		var radius := 18.0 + float(i) * 8.0
+		draw_arc(center, radius, -0.7, 0.7, 28, Color(color.r, color.g, color.b, 0.30 * alpha), 2.1)
+		draw_line(center - normal * radius * 0.52, center + normal * radius * 0.52, Color(0.96, 0.92, 0.72, 0.13 * alpha), 1.2)
+	draw_circle(finish, 22.0, Color(color.r, color.g, color.b, 0.11 * alpha))
+	draw_line(start + dir * 24.0, finish - dir * 18.0, Color(0.95, 0.90, 0.62, 0.28 * alpha), 3.0)
+
+func _draw_fire_burst(start: Vector2, finish: Vector2, alpha: float) -> void:
+	var fire := Color(1.0, 0.33, 0.10, 1.0)
+	var gold := Color(1.0, 0.76, 0.22, 1.0)
+	_draw_impact_arc(start, finish, fire, alpha)
+	for i in range(9):
+		var angle := float(i) * TAU / 9.0 + pulse * 0.45
+		var length := 16.0 + float((i * 7) % 13)
+		var origin := finish + Vector2(cos(angle), sin(angle) * 0.65) * 10.0
+		draw_line(origin, origin + Vector2(cos(angle), sin(angle)) * length, Color(gold.r, gold.g, gold.b, 0.50 * alpha), 2.0)
+		draw_circle(origin + Vector2(cos(angle), sin(angle)) * length, 2.0, Color(fire.r, fire.g, fire.b, 0.34 * alpha))
+
+func _draw_poison_mist(start: Vector2, finish: Vector2, alpha: float) -> void:
+	var poison := Color(0.42, 0.86, 0.26, 1.0)
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	for i in range(8):
+		var t := float(i) / 7.0
+		var center := start.lerp(finish, t) + normal * sin(t * PI * 2.0 + pulse) * 16.0
+		var radius := Vector2(15.0 + float(i % 3) * 5.0, 6.0 + float(i % 2) * 4.0)
+		_draw_ellipse(center, radius, Color(poison.r, poison.g, poison.b, 0.13 * alpha))
+	draw_line(start, finish, Color(0.76, 1.0, 0.52, 0.24 * alpha), 2.0)
+
+func _draw_ice_shards(start: Vector2, finish: Vector2, alpha: float) -> void:
+	var ice := Color(0.62, 0.88, 1.0, 1.0)
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	draw_line(start, finish, Color(0.90, 0.97, 1.0, 0.62 * alpha), 2.4)
+	for i in range(7):
+		var t := 0.20 + float(i) * 0.10
+		var center := start.lerp(finish, t) + normal * float((i % 3) - 1) * 10.0
+		var tip := center + dir * (18.0 + float(i % 2) * 7.0)
+		var shard := PackedVector2Array([center - normal * 4.0, tip, center + normal * 5.0, center - dir * 8.0])
+		draw_polygon(shard, PackedColorArray([
+			Color(ice.r, ice.g, ice.b, 0.10 * alpha),
+			Color(0.96, 1.0, 1.0, 0.54 * alpha),
+			Color(ice.r, ice.g, ice.b, 0.18 * alpha),
+			Color(0.35, 0.62, 0.78, 0.08 * alpha)
+		]))
+	draw_arc(finish, 25.0, 0.0, TAU, 36, Color(0.74, 0.92, 1.0, 0.26 * alpha), 1.8)
+
+func _draw_shadow_strike(start: Vector2, finish: Vector2, alpha: float) -> void:
+	var shadow := Color(0.18, 0.08, 0.26, 1.0)
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	for i in range(4):
+		var offset := normal * float(i - 1) * 8.0 + Vector2(0.0, float(i) * 3.0)
+		draw_line(start + offset, finish + offset - dir * float(i) * 6.0, Color(shadow.r, shadow.g, shadow.b, 0.46 * alpha), 5.2 - i * 0.7)
+	draw_line(start, finish, Color(0.86, 0.70, 1.0, 0.30 * alpha), 1.6)
+
+func _draw_hit_sparks(finish: Vector2, color: Color, alpha: float) -> void:
+	var spark_count := 7 if event_amount >= 30 else 5
+	for i in range(spark_count):
+		var spark_origin := finish + Vector2(cos(float(i) * 1.2) * 12.0, sin(float(i) * 1.2) * 10.0)
+		var length := 16.0 + float((i * 5) % 9)
+		draw_line(spark_origin, spark_origin + Vector2(length - i * 3.0, -10.0 + i * 4.0), Color(color.r, color.g, color.b, 0.56 * alpha), 1.7)
 
 func _draw_foreground(rect: Rect2) -> void:
 	var bottom_fog := Color(0.90, 0.84, 0.70, 0.13 + sin(pulse * 0.7) * 0.025)
@@ -390,6 +520,42 @@ func _event_color(kind: String, target: String) -> Color:
 			return Color(0.64, 0.82, 1.0)
 		_:
 			return Color(1.0, 0.35, 0.22) if target == "player" else Color(1.0, 0.78, 0.34)
+
+func _effect_style(kind: String, source: String) -> String:
+	if kind == "heal" or kind == "mp":
+		return "focus"
+	if kind == "guard":
+		return "guard"
+	if kind == "miss":
+		return "miss"
+	if kind == "phase":
+		return "shadow"
+	if kind == "stun":
+		return "palm"
+	var text := source.to_lower()
+	if source.is_empty() or source.contains("普通"):
+		return "impact"
+	if source.contains("雪") or source.contains("冰") or source.contains("霜"):
+		return "ice"
+	if source.contains("火") or source.contains("炎") or source.contains("阳") or source.contains("莲"):
+		return "fire"
+	if source.contains("毒") or source.contains("忍") or source.contains("雾"):
+		return "poison"
+	if source.contains("影") or source.contains("暗"):
+		return "shadow"
+	if source.contains("剑"):
+		return "sword"
+	if source.contains("刀") or source.contains("劈") or source.contains("斩"):
+		return "blade"
+	if source.contains("掌") or source.contains("拳") or source.contains("击") or source.contains("爪"):
+		return "palm"
+	if text.contains("blade"):
+		return "blade"
+	if text.contains("sword"):
+		return "sword"
+	if text.contains("palm") or text.contains("fist"):
+		return "palm"
+	return "impact"
 
 func _terrain_color(terrain: String, region_type: String) -> Color:
 	if terrain.contains("snow"):
