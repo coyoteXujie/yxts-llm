@@ -270,7 +270,24 @@ func _run() -> void:
 	GameState.progress_quest("kill", "暗影司影主", 1)
 	_check(GameState.completed_quests.has("q_main_shadow_citadel"), "影司总坛应能完成")
 	_check(GameState.get_world_event_summary(6).find("影司总坛") >= 0, "影司总坛完成后应写入终章传闻")
-	_check(str(GameState.active_quest).find("暗影司总坛已破") >= 0, "主线尾声应留下后续分支提示")
+	_check(str(GameState.active_quest).find("回洛阳找苏梦瑶") >= 0, "影司总坛后应指向总坛余烬")
+	GameState.player["level"] = 8
+	_check(GameState.can_accept_quest("q_main_after_shadow"), "影司总坛后应解锁总坛余烬")
+	GameState.accept_quest("q_main_after_shadow")
+	GameState.progress_quest("talk", "苏梦瑶", 1)
+	GameState.progress_quest("talk", "陈天行", 1)
+	GameState.progress_quest("talk", "花如玉", 1)
+	_check(GameState.completed_quests.has("q_main_after_shadow"), "总坛余烬应能完成")
+	_check(GameState.get_world_event_summary(6).find("总坛余烬") >= 0, "总坛余烬完成后应写入尾声传闻")
+	_check(GameState.can_accept_quest("q_main_old_case_closure"), "总坛余烬后应解锁旧案终册")
+	GameState.accept_quest("q_main_old_case_closure")
+	GameState.progress_quest("talk", "赵无极", 1)
+	GameState.progress_quest("talk", "太极真人", 1)
+	GameState.progress_quest("talk", "玄机子", 1)
+	GameState.progress_quest("talk", "苏梦瑶", 1)
+	_check(GameState.completed_quests.has("q_main_old_case_closure"), "旧案终册应能完成")
+	_check(GameState.get_world_event_summary(6).find("旧案终册") >= 0, "旧案终册完成后应写入尾声传闻")
+	_check(str(GameState.active_quest).find("江湖进入尾声分支") >= 0, "主线终册后应留下多结局扩展提示")
 
 	GameState.player["attack"] = 42
 	GameState.player["defense"] = 24

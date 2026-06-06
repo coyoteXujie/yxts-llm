@@ -983,6 +983,10 @@ func _select_daily_pulse_region() -> Dictionary:
 	return (candidates[index] as Dictionary).duplicate(true)
 
 func _current_story_stage() -> String:
+	if completed_quests.has("q_main_old_case_closure"):
+		return "旧案终册"
+	if completed_quests.has("q_main_after_shadow"):
+		return "总坛余烬"
 	if completed_quests.has("q_main_shadow_citadel"):
 		return "影司总坛余波"
 	if completed_quests.has("q_main_blood_moon"):
@@ -1462,6 +1466,10 @@ func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
 			append_world_event("story", "无面账册归卷", "无面君失手，苏家账册把暗影司总坛方位推到了七派眼前。", "luoyang", 5)
 		"q_main_shadow_citadel":
 			append_world_event("story", "影司总坛暂破", "暗影司影主败退，总坛暗道被封，江湖各派终于有了短暂喘息。", "daba_mtn", 5)
+		"q_main_after_shadow":
+			append_world_event("story", "总坛余烬未灭", "苏梦瑶、陈天行与花间暗线开始清点暗影司残部，苏家旧账终于能翻到最后几页。", "luoyang", 5)
+		"q_main_old_case_closure":
+			append_world_event("story", "旧案终册落印", "武林盟与七派共同落印，苏家旧案暂得收束；江湖尾声的路开始分岔。", "luoyang", 6)
 		_:
 			append_world_event("quest", "完成%s" % quest_title, "你办完了%s，附近江湖人多了一桩谈资。" % quest_title, current_region_id, 2)
 

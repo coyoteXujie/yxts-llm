@@ -473,12 +473,43 @@
     "description": "逍遥子由苏家账册推演出暗影司总坛暗道。你需要请玄机子破阵、请花如玉压住密香机关，最终直面暗影司影主。",
     "requires_completed": ["q_main_blood_moon"],
     "min_level": 7,
-    "next_hint": "暗影司总坛已破，江湖暂得喘息；后续分支与多结局仍需继续扩展。",
+    "next_hint": "暗影司总坛已破，但旧账还未收束，回洛阳找苏梦瑶商议余波。",
     "objectives": [
       {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子推演总坛机关阵"},
       {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉破解密香机关"},
       {"type": "kill", "target": "暗影司影主", "count": 1, "label": "击败暗影司影主"}
     ],
     "rewards": {"exp": 1280, "money": 960, "daode": 12, "items": {"item_dan": 3, "item_shengji": 2, "item_hetun_blade": 1}}
+  },
+  {
+    "id": "q_main_after_shadow",
+    "title": "总坛余烬",
+    "giver": "苏梦瑶",
+    "description": "暗影司总坛虽破，苏家旧账和七派裂痕仍在。苏梦瑶请你回洛阳核对账册，再去长安听陈天行确认暗影司残部去向。",
+    "requires_completed": ["q_main_shadow_citadel"],
+    "min_level": 8,
+    "next_hint": "余烬未灭，去找赵无极把旧案终册交入武林盟。",
+    "objectives": [
+      {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "与苏梦瑶核对苏家账册"},
+      {"type": "talk", "target": "陈天行", "count": 1, "label": "向陈天行确认残部去向"},
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉收拢花间暗线"}
+    ],
+    "rewards": {"exp": 900, "money": 520, "daode": 6, "items": {"item_dan": 1, "item_shengji": 1}}
+  },
+  {
+    "id": "q_main_old_case_closure",
+    "title": "旧案终册",
+    "giver": "赵无极",
+    "description": "赵无极愿以武林盟名义封存苏家旧案终册，但需要七派共同承认。你需要请太极真人和玄机子落印，再回苏梦瑶处定下旧案结语。",
+    "requires_completed": ["q_main_after_shadow"],
+    "min_level": 8,
+    "next_hint": "苏家旧案暂得收束，江湖进入尾声分支；多结局与长期世界变化仍需继续扩展。",
+    "objectives": [
+      {"type": "talk", "target": "赵无极", "count": 1, "label": "请赵无极接收旧案终册"},
+      {"type": "talk", "target": "太极真人", "count": 1, "label": "请太极真人为七派落印"},
+      {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子补全阵图旁证"},
+      {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "与苏梦瑶定下旧案结语"}
+    ],
+    "rewards": {"exp": 1100, "money": 680, "daode": 10, "items": {"item_dan": 2, "item_silk_cloth": 1}}
   }
 ]
