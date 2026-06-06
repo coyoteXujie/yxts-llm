@@ -53,7 +53,16 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.LOCAL_STAGE_PRESENCE_SCALE >= 1.15, "玩家局部横版舞台应叠加额外角色存在感缩放")
 	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_RIM_ALPHA >= 0.18, "玩家局部横版舞台应有更明确的贴图轮廓高光")
+	_check(PLAYER_SCRIPT.PLAYER_WEAPON_SILHOUETTE_ALPHA >= 0.30, "玩家局部横版舞台应保留武侠武器剪影层")
+	_check(PLAYER_SCRIPT.PLAYER_CLOTH_LAYER_ALPHA >= 0.24, "玩家局部横版舞台应保留衣摆前后层")
+	_check(PLAYER_SCRIPT.PLAYER_MOTION_AFTERIMAGE_ALPHA >= 0.10, "玩家移动应保留横版舞台残影反馈")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
+	player.facing = Vector2.LEFT
+	_check(player._facing_side() < 0.0, "玩家横版舞台侧向层应响应向左朝向")
+	player.facing = Vector2.RIGHT
+	_check(player._facing_side() > 0.0, "玩家横版舞台侧向层应响应向右朝向")
+	player.facing = Vector2.DOWN
 	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 108.0, "NPC 地图贴图基础高度不应继续偏小")
 	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.28, "NPC 局部横版舞台应叠加额外角色存在感缩放")
 	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE > 1.0 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE > 1.0, "掌门/敌人应在局部横版舞台获得额外体量")

@@ -9,6 +9,11 @@ const LOCAL_STAGE_PRESENCE_SCALE := 1.18
 const STEP_DUST_RADIUS := Vector2(10.0, 3.2)
 const PLAYER_CONTACT_GLOW_ALPHA := 0.13
 const PLAYER_FACTION_MOTES := 10
+const PLAYER_STAGE_RIM_ALPHA := 0.20
+const PLAYER_WEAPON_SILHOUETTE_ALPHA := 0.34
+const PLAYER_CLOTH_LAYER_ALPHA := 0.28
+const PLAYER_MOTION_AFTERIMAGE_ALPHA := 0.12
+const PLAYER_GUARD_LINE_ALPHA := 0.22
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -95,12 +100,17 @@ func _draw() -> void:
 		var draw_size := texture_size * factor * Vector2(1.0 + step_sway * 0.018, breath - step_sway * 0.006)
 		var foot_y := 35.0 * depth_scale + bob
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
+		var facing_side := _facing_side()
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		if stage_actor:
+			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving)
+			_draw_stage_player_back_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
-		_draw_sprite_rim_light(top_left, draw_size, trim)
+		if stage_actor:
+			_draw_stage_player_front_layers(top_left, draw_size, trim, moving, facing_side)
+		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
@@ -207,6 +217,11 @@ func _is_side_view_stage() -> bool:
 		return bool(world_map.call("is_side_view_stage_active"))
 	return false
 
+func _facing_side() -> float:
+	if absf(facing.x) > 0.20:
+		return -1.0 if facing.x < 0.0 else 1.0
+	return 1.0
+
 func _refresh_sprite_texture(force: bool = false) -> void:
 	var gender := str(GameState.player.get("gender", "male"))
 	if gender != "female":
@@ -252,6 +267,56 @@ func _draw_step_dust(moving: bool, depth_scale: float) -> void:
 	_draw_shadow(base + side * 7.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.8 + step * 0.45), Color(0.74, 0.64, 0.42, alpha))
 	_draw_shadow(base - side * 6.0 * depth_scale + dir * 5.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.58 + (1.0 - step) * 0.35), Color(0.68, 0.58, 0.38, alpha * 0.72))
 
+func _draw_stage_motion_afterimage(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool) -> void:
+	if not moving or sprite_texture == null:
+		return
+	var dir := facing.normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.DOWN
+	var step := absf(sin(walk_phase))
+	var offset := -dir * clampf(draw_size.y * 0.055, 4.0, 9.0)
+	var alpha := PLAYER_MOTION_AFTERIMAGE_ALPHA * (0.45 + step * 0.55)
+	draw_texture_rect(sprite_texture, Rect2(top_left + offset, draw_size), false, Color(accent.r, accent.g, accent.b, alpha))
+
+func _draw_stage_player_back_layers(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var flutter := sin(walk_phase * (1.45 if moving else 0.78))
+	var cloak_color := accent.darkened(0.36)
+	var shoulder := top_left + Vector2(draw_size.x * (0.50 + 0.12 * side), draw_size.y * 0.30)
+	var hip := top_left + Vector2(draw_size.x * (0.46 + 0.10 * side), draw_size.y * 0.64)
+	var hem_outer := top_left + Vector2(draw_size.x * (0.42 + 0.22 * side + flutter * 0.018), draw_size.y * 0.91)
+	var hem_inner := top_left + Vector2(draw_size.x * (0.42 - 0.08 * side), draw_size.y * 0.84)
+	draw_polygon(PackedVector2Array([shoulder, hip, hem_outer, hem_inner]), PackedColorArray([
+		Color(cloak_color.r, cloak_color.g, cloak_color.b, PLAYER_CLOTH_LAYER_ALPHA * 0.72),
+		Color(cloak_color.r, cloak_color.g, cloak_color.b, PLAYER_CLOTH_LAYER_ALPHA),
+		Color(cloak_color.r, cloak_color.g, cloak_color.b, PLAYER_CLOTH_LAYER_ALPHA * 0.58),
+		Color(cloak_color.r, cloak_color.g, cloak_color.b, PLAYER_CLOTH_LAYER_ALPHA * 0.46)
+	]))
+	var blade_base := top_left + Vector2(draw_size.x * (0.50 + 0.16 * side), draw_size.y * 0.36)
+	var blade_tip := top_left + Vector2(draw_size.x * (0.56 + 0.30 * side), draw_size.y * 0.04)
+	var blade_width := clampf(draw_size.x * 0.026, 2.0, 3.8)
+	draw_line(blade_base, blade_tip, Color(0.86, 0.88, 0.80, PLAYER_WEAPON_SILHOUETTE_ALPHA), blade_width)
+	draw_line(blade_base + Vector2(-3.5 * side, 3.5), blade_base + Vector2(5.0 * side, 12.0), Color(accent.r, accent.g, accent.b, PLAYER_WEAPON_SILHOUETTE_ALPHA * 0.80), blade_width * 1.12)
+
+func _draw_stage_player_front_layers(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var flutter := sin(walk_phase * (1.60 if moving else 0.86))
+	var waist_y := top_left.y + draw_size.y * 0.53
+	var belt_left := top_left + Vector2(draw_size.x * 0.28, draw_size.y * 0.52)
+	var belt_right := top_left + Vector2(draw_size.x * 0.72, draw_size.y * 0.52 + flutter * 1.6)
+	var belt_width := clampf(draw_size.x * 0.030, 2.6, 4.6)
+	draw_line(belt_left, belt_right, Color(accent.r, accent.g, accent.b, PLAYER_STAGE_RIM_ALPHA * 1.40), belt_width)
+	var flap_top := top_left + Vector2(draw_size.x * (0.50 + 0.035 * side), draw_size.y * 0.54)
+	var flap_low_a := top_left + Vector2(draw_size.x * (0.46 + 0.055 * side + flutter * 0.014), draw_size.y * 0.84)
+	var flap_low_b := top_left + Vector2(draw_size.x * (0.57 + 0.085 * side + flutter * 0.018), draw_size.y * 0.80)
+	var shadow_accent := accent.darkened(0.24)
+	draw_polygon(PackedVector2Array([flap_top, flap_low_b, flap_low_a]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, PLAYER_CLOTH_LAYER_ALPHA * 0.92),
+		Color(accent.r, accent.g, accent.b, PLAYER_CLOTH_LAYER_ALPHA * 0.44),
+		Color(shadow_accent.r, shadow_accent.g, shadow_accent.b, PLAYER_CLOTH_LAYER_ALPHA * 0.62)
+	]))
+	var guard_start := Vector2(top_left.x + draw_size.x * (0.51 + 0.10 * side), waist_y - draw_size.y * 0.11)
+	var guard_end := guard_start + Vector2(draw_size.x * 0.17 * side, draw_size.y * (0.08 + flutter * 0.010))
+	draw_line(guard_start, guard_end, Color(1.0, 0.92, 0.62, PLAYER_GUARD_LINE_ALPHA), clampf(draw_size.x * 0.018, 1.5, 2.8))
+
 func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2, trim: Color, moving: bool, stage_actor: bool = false) -> void:
 	var waist_y := foot_y - draw_size.y * 0.46
 	var flutter := sin(walk_phase * (1.3 if moving else 0.75))
@@ -293,8 +358,9 @@ func _draw_player_idle_motes(accent: Color, depth_scale: float) -> void:
 		var alpha := 0.045 + float(i % 3) * 0.012
 		draw_circle(pos, (1.2 + float(i % 2) * 0.35) * depth_scale, Color(accent.r, accent.g, accent.b, alpha))
 
-func _draw_sprite_rim_light(top_left: Vector2, draw_size: Vector2, accent: Color) -> void:
+func _draw_sprite_rim_light(top_left: Vector2, draw_size: Vector2, accent: Color, stage_actor: bool = false) -> void:
+	var rim_alpha := PLAYER_STAGE_RIM_ALPHA if stage_actor else PLAYER_STAGE_RIM_ALPHA * 0.80
 	var left := top_left + Vector2(draw_size.x * 0.20, draw_size.y * 0.18)
 	var right := top_left + Vector2(draw_size.x * 0.80, draw_size.y * 0.72)
-	draw_line(left, right, Color(accent.r, accent.g, accent.b, 0.16), 1.8)
-	draw_line(top_left + Vector2(draw_size.x * 0.22, draw_size.y * 0.05), top_left + Vector2(draw_size.x * 0.72, draw_size.y * 0.14), Color(1.0, 0.96, 0.78, 0.10), 1.2)
+	draw_line(left, right, Color(accent.r, accent.g, accent.b, rim_alpha), 1.8)
+	draw_line(top_left + Vector2(draw_size.x * 0.22, draw_size.y * 0.05), top_left + Vector2(draw_size.x * 0.72, draw_size.y * 0.14), Color(1.0, 0.96, 0.78, rim_alpha * 0.62), 1.2)
