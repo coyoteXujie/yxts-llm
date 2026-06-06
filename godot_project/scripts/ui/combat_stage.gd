@@ -6,6 +6,12 @@ const ENEMY_STAGE_HEIGHT := 154.0
 const ACTOR_AFTERIMAGE_ALPHA := 0.22
 const CONTACT_GLOW_ALPHA := 0.18
 const DAMAGE_NUMBER_RISE := 28.0
+const COMBAT_EVENT_DURATION := 0.48
+const HIT_SHAKE_PIXELS := 5.5
+const HEAVY_HIT_SHAKE_PIXELS := 8.0
+const HIT_FREEZE_WINDOW := 0.17
+const IMPACT_SPEED_LINE_COUNT := 9
+const GROUND_CRACK_COUNT := 5
 
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
@@ -22,6 +28,7 @@ var event_target := ""
 var event_source := ""
 var event_amount := 0
 var effect_style := "impact"
+var event_shake_strength := 0.0
 var pulse := 0.0
 
 func _ready() -> void:
@@ -45,6 +52,7 @@ func setup(enemy_data: Dictionary) -> void:
 	event_source = ""
 	event_amount = 0
 	effect_style = "impact"
+	event_shake_strength = 0.0
 	_refresh_assets()
 	queue_redraw()
 
@@ -62,6 +70,7 @@ func clear() -> void:
 	event_source = ""
 	event_amount = 0
 	effect_style = "impact"
+	event_shake_strength = 0.0
 	queue_redraw()
 
 func _refresh_assets() -> void:
@@ -113,18 +122,23 @@ func _consume_latest_event() -> void:
 	event_source = str(latest.get("source", ""))
 	event_amount = int(latest.get("amount", 0))
 	effect_style = _effect_style(event_kind, event_source)
-	event_timer = 0.48
+	event_shake_strength = _event_shake_strength(event_kind, effect_style, event_amount)
+	event_timer = COMBAT_EVENT_DURATION
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	if rect.size.x < 100.0 or rect.size.y < 80.0:
 		return
+	var shake := _stage_shake_offset()
+	draw_set_transform(shake, 0.0, Vector2.ONE)
 	_draw_backplate(rect)
 	_draw_background(rect)
 	_draw_parallax_silhouette(rect)
 	_draw_lane(rect)
 	_draw_combatants(rect)
 	_draw_foreground(rect)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_impact_overlay(rect)
 	_draw_frame(rect)
 
 func _draw_backplate(rect: Rect2) -> void:
@@ -235,17 +249,18 @@ func _draw_combatants(rect: Rect2) -> void:
 	var ground_y := _ground_y(rect)
 	var player_foot := Vector2(rect.position.x + rect.size.x * 0.28, ground_y + 40.0)
 	var enemy_foot := Vector2(rect.position.x + rect.size.x * 0.72, ground_y + 35.0)
-	var impact := clampf(event_timer / 0.48, 0.0, 1.0)
+	var impact := _event_life_ratio()
 	var player_lunge := 0.0
 	var enemy_lunge := 0.0
 	var player_hurt := 0.0
 	var enemy_hurt := 0.0
+	var hit_hold := _hit_freeze_alpha()
 	if event_timer > 0.0 and event_target == "enemy":
-		player_lunge = sin(impact * PI) * 18.0
-		enemy_hurt = sin(impact * PI * 2.0) * 5.0
+		player_lunge = sin(impact * PI) * (18.0 + hit_hold * 7.0)
+		enemy_hurt = sin(impact * PI * 2.0) * (5.0 + hit_hold * 3.0)
 	elif event_timer > 0.0 and event_target == "player":
-		enemy_lunge = sin(impact * PI) * 18.0
-		player_hurt = sin(impact * PI * 2.0) * -5.0
+		enemy_lunge = sin(impact * PI) * (18.0 + hit_hold * 7.0)
+		player_hurt = sin(impact * PI * 2.0) * -(5.0 + hit_hold * 3.0)
 	var action_alpha := sin(impact * PI) if event_timer > 0.0 else 0.0
 	var player_action := action_alpha if event_target == "enemy" else 0.0
 	var enemy_action := action_alpha if event_target == "player" else 0.0
@@ -334,7 +349,7 @@ func _draw_bar(pos: Vector2, width: float, value: int, max_value: int, color: Co
 func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2) -> void:
 	if event_timer <= 0.0:
 		return
-	var impact := clampf(event_timer / 0.48, 0.0, 1.0)
+	var impact := _event_life_ratio()
 	var alpha := sin(impact * PI)
 	var start := player_foot - Vector2(-26.0, 82.0)
 	var finish := enemy_foot - Vector2(35.0, 82.0)
@@ -350,6 +365,7 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		_draw_damage_number(start, event_amount, event_kind, color, alpha)
 		return
 	_draw_attack_ground_streak(start, finish, color, alpha)
+	_draw_impact_speed_lines(rect, start, finish, color, alpha)
 	match effect_style:
 		"blade":
 			_draw_blade_slash(start, finish, color, alpha)
@@ -368,6 +384,7 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		_:
 			_draw_impact_arc(start, finish, color, alpha)
 	_draw_hit_sparks(finish, color, alpha)
+	_draw_ground_cracks(finish + Vector2(0.0, 86.0), color, alpha)
 	_draw_damage_number(finish, event_amount, event_kind, color, alpha)
 	if event_kind == "phase" or event_kind == "stun":
 		_draw_focus_ring(finish, color, alpha, effect_style)
@@ -391,7 +408,7 @@ func _draw_damage_number(center: Vector2, amount: int, kind: String, color: Colo
 		text = "GUARD"
 	elif kind == "stun":
 		text = "STUN"
-	var life := 1.0 - clampf(event_timer / 0.48, 0.0, 1.0)
+	var life := 1.0 - _event_life_ratio()
 	var rise := life * DAMAGE_NUMBER_RISE
 	var width := maxf(52.0, float(text.length()) * 12.0)
 	var pos := center + Vector2(-width * 0.5, -46.0 - rise)
@@ -518,6 +535,49 @@ func _draw_hit_sparks(finish: Vector2, color: Color, alpha: float) -> void:
 		var length := 16.0 + float((i * 5) % 9)
 		draw_line(spark_origin, spark_origin + Vector2(length - i * 3.0, -10.0 + i * 4.0), Color(color.r, color.g, color.b, 0.56 * alpha), 1.7)
 
+func _draw_impact_speed_lines(rect: Rect2, start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var hit_hold := _hit_freeze_alpha()
+	if alpha <= 0.02 or hit_hold <= 0.01:
+		return
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	var center := start.lerp(finish, 0.58)
+	for i in range(IMPACT_SPEED_LINE_COUNT):
+		var spread := (float(i) - float(IMPACT_SPEED_LINE_COUNT - 1) * 0.5) * 13.5
+		var length := 42.0 + float((i * 11) % 28)
+		var origin := center - dir * (38.0 + float(i % 3) * 11.0) + normal * spread
+		var end := origin + dir * length + normal * sin(pulse + float(i)) * 3.0
+		var line_alpha := (0.10 + float(i % 3) * 0.035) * alpha * hit_hold
+		draw_line(origin, end, Color(1.0, 0.94, 0.70, line_alpha), 1.4 + float(i % 2) * 0.7)
+		if rect.has_point(end):
+			draw_circle(end, 1.2, Color(color.r, color.g, color.b, line_alpha * 1.3))
+
+func _draw_ground_cracks(center: Vector2, color: Color, alpha: float) -> void:
+	var hit_hold := _hit_freeze_alpha()
+	if alpha <= 0.02 or hit_hold <= 0.01:
+		return
+	for i in range(GROUND_CRACK_COUNT):
+		var angle := -0.78 + float(i) * 0.39 + sin(pulse * 0.8 + float(i)) * 0.04
+		var length := 18.0 + float((i * 9) % 17) + event_shake_strength * 1.6
+		var start := center + Vector2(cos(angle), sin(angle) * 0.38) * 7.0
+		var end := start + Vector2(cos(angle), sin(angle) * 0.46) * length
+		draw_line(start + Vector2(1.0, 1.5), end + Vector2(1.0, 1.5), Color(0.0, 0.0, 0.0, 0.24 * alpha * hit_hold), 2.4)
+		draw_line(start, end, Color(color.r, color.g, color.b, 0.20 * alpha * hit_hold), 1.5)
+
+func _draw_impact_overlay(rect: Rect2) -> void:
+	if event_timer <= 0.0 or event_shake_strength <= 0.0:
+		return
+	var hit_hold := _hit_freeze_alpha()
+	if hit_hold <= 0.01:
+		return
+	var color := _event_color(event_kind, event_target)
+	draw_rect(rect, Color(1.0, 0.92, 0.68, 0.055 * hit_hold), true)
+	var center_x := rect.position.x + rect.size.x * (0.72 if event_target == "enemy" else 0.28)
+	var center := Vector2(center_x, rect.position.y + rect.size.y * 0.50)
+	for i in range(4):
+		var radius := 44.0 + float(i) * 28.0
+		draw_arc(center, radius, -0.35, TAU - 0.35, 64, Color(color.r, color.g, color.b, 0.16 * hit_hold / float(i + 1)), 2.0)
+
 func _draw_foreground(rect: Rect2) -> void:
 	var bottom_fog := Color(0.90, 0.84, 0.70, 0.13 + sin(pulse * 0.7) * 0.025)
 	_draw_soft_band(Rect2(rect.position + Vector2(0.0, rect.size.y * 0.78), Vector2(rect.size.x, 40.0)), bottom_fog)
@@ -564,6 +624,41 @@ func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 
 func _ground_y(rect: Rect2) -> float:
 	return rect.position.y + rect.size.y * 0.64
+
+func _event_life_ratio() -> float:
+	return clampf(event_timer / COMBAT_EVENT_DURATION, 0.0, 1.0)
+
+func _hit_freeze_alpha() -> float:
+	if event_timer <= 0.0 or event_shake_strength <= 0.0:
+		return 0.0
+	var distance := absf(_event_life_ratio() - 0.50)
+	return clampf(1.0 - distance / HIT_FREEZE_WINDOW, 0.0, 1.0)
+
+func _stage_shake_offset() -> Vector2:
+	var hit_hold := _hit_freeze_alpha()
+	if hit_hold <= 0.01:
+		return Vector2.ZERO
+	var strength := event_shake_strength * hit_hold
+	var direction := 1.0 if event_target == "enemy" else -1.0
+	return Vector2(
+		sin(pulse * 82.0 + float(last_event_id) * 1.7) * strength * direction,
+		cos(pulse * 73.0 + float(last_event_id) * 0.9) * strength * 0.42
+	)
+
+func _event_shake_strength(kind: String, style: String, amount: int) -> float:
+	if kind != "damage" and kind != "phase" and kind != "stun":
+		return 0.0
+	var strength := HIT_SHAKE_PIXELS
+	if amount >= 30 or kind == "phase" or kind == "stun":
+		strength = HEAVY_HIT_SHAKE_PIXELS
+	match style:
+		"fire", "blade", "palm", "shadow":
+			strength *= 1.12
+		"poison", "ice":
+			strength *= 0.88
+		_:
+			strength *= 1.0
+	return strength
 
 func _event_color(kind: String, target: String) -> Color:
 	match kind:

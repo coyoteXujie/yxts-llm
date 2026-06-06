@@ -74,12 +74,19 @@ func _run() -> void:
 	_check(COMBAT_STAGE_SCRIPT.ENEMY_STAGE_HEIGHT >= 148.0, "2.5D 战斗舞台敌人不应继续偏小")
 	_check(COMBAT_STAGE_SCRIPT.ACTOR_AFTERIMAGE_ALPHA > 0.16, "2.5D 战斗舞台应保留出招残影")
 	_check(COMBAT_STAGE_SCRIPT.CONTACT_GLOW_ALPHA > 0.12, "2.5D 战斗舞台应保留脚下接触光")
+	_check(COMBAT_STAGE_SCRIPT.HIT_SHAKE_PIXELS >= 5.0, "2.5D 战斗舞台命中应保留屏幕震动强度")
+	_check(COMBAT_STAGE_SCRIPT.IMPACT_SPEED_LINE_COUNT >= 8, "2.5D 战斗舞台命中应绘制速度线")
+	_check(COMBAT_STAGE_SCRIPT.GROUND_CRACK_COUNT >= 5, "2.5D 战斗舞台重击应绘制地面裂纹")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]
 	})
 	_check(stage.event_timer > 0.0, "2.5D 战斗舞台应响应战斗事件")
 	_check(stage.effect_style == "impact", "普通攻击应使用基础命中特效")
+	_check(stage.event_shake_strength >= COMBAT_STAGE_SCRIPT.HIT_SHAKE_PIXELS, "伤害事件应触发命中震动")
+	stage.event_timer = COMBAT_STAGE_SCRIPT.COMBAT_EVENT_DURATION * 0.5
+	_check(stage._hit_freeze_alpha() > 0.80, "伤害事件命中点应产生短暂停顿强调")
+	_check(stage._stage_shake_offset().length() > 0.0, "伤害事件命中点应产生舞台偏移")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 2, "kind": "damage", "target": "enemy", "source": "雪山剑法", "amount": 28}]
@@ -100,6 +107,11 @@ func _run() -> void:
 		"events": [{"id": 5, "kind": "damage", "target": "enemy", "source": "八卦刀", "amount": 24}]
 	})
 	_check(stage.effect_style == "blade", "八卦刀应触发刀光特效")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 6, "kind": "heal", "target": "enemy", "source": "回气", "amount": 12}]
+	})
+	_check(stage.event_shake_strength == 0.0, "治疗/回气事件不应触发命中震动")
 	stage.queue_free()
 	var director_line := LLMDirector.generate_npc_line(GameData.get_npc_by_name("苏梦瑶"), 0)
 	_check(director_line.find("【") >= 0 and director_line.length() > 20, "LLMDirector 离线台词应包含世界上下文")
