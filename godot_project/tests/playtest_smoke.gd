@@ -202,6 +202,8 @@ func _run() -> void:
 	_check(_actors_have_stage_pose_overlay(local_area.npc_nodes), "局部地图 NPC 应显示贴图前方姿态线")
 	_check(_actors_have_stage_body_overlays(local_area.npc_nodes), "局部地图 NPC 应显示躯干、腰带和武器辉光前层")
 	_check(_actors_have_stage_activity(local_area.npc_nodes), "局部地图 NPC 应具备职业/行为视觉提示")
+	_check(NPC_SCRIPT.STAGE_IDLE_GESTURE_COUNT >= 4, "局部地图 NPC 应保留待机手势层")
+	_check(NPC_SCRIPT.STAGE_IDLE_GESTURE_ALPHA >= 0.18, "局部地图 NPC 待机手势层应有足够可见度")
 	_check(_actors_have_stage_lane_anchor(local_area.npc_nodes), "局部地图 NPC 应绑定最近横版平台带锚点")
 	_check(_actors_face_stage_center(local_area.npc_nodes, stage_rect.size.x * 0.5), "局部地图 NPC 应根据站位面向舞台中心")
 	_check(_stage_labels_and_bubbles_clear_actor_heads(local_area.npc_nodes), "局部横版舞台 NPC 放大后姓名牌/气泡应避开头部")

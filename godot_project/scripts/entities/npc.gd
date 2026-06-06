@@ -55,6 +55,8 @@ const STAGE_ACTIVITY_CUE_ALPHA := 0.26
 const STAGE_ACTIVITY_SWAY_PIXELS := 4.8
 const STAGE_ACTIVITY_PROP_SCALE := 1.0
 const STAGE_ACTIVITY_GLOW_ALPHA := 0.18
+const STAGE_IDLE_GESTURE_COUNT := 4
+const STAGE_IDLE_GESTURE_ALPHA := 0.20
 const STAGE_LANE_LOCK_ALPHA := 0.20
 const STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const STAGE_FACING_CUE_ALPHA := 0.18
@@ -406,6 +408,7 @@ func _draw() -> void:
 		_draw_aura(appearance, accent)
 		_draw_stage_identity_cues(appearance, accent, map_scale)
 		_draw_stage_activity_cue(accent, map_scale)
+		_draw_stage_idle_gesture_cue(accent, map_scale)
 		if highlighted:
 			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 			draw_circle(Vector2(0, 31 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
@@ -790,6 +793,42 @@ func _draw_stage_activity_cue(accent: Color, map_scale: float) -> void:
 			_draw_activity_threat(role_color, alpha, phase, prop_scale)
 		_:
 			_draw_activity_wander(hand, side, role_color, alpha, phase, prop_scale)
+
+func _draw_stage_idle_gesture_cue(accent: Color, map_scale: float) -> void:
+	if not _is_stage_actor():
+		return
+	var npc_id := int(data.get("id", 0))
+	var phase := visual_phase * 0.92 + float(npc_id % 41) * 0.19
+	var pulse := 0.5 + sin(phase) * 0.5
+	var side := _stage_facing_side()
+	var role_color := _stage_role_color(accent)
+	var lane_offset := _stage_lane_visual_offset() * 0.55
+	var alpha := STAGE_IDLE_GESTURE_ALPHA * (0.66 + pulse * 0.26)
+	var hand := Vector2(side * (22.0 + sin(phase * 0.76) * 2.0) * map_scale, (-11.0 * map_scale) + lane_offset)
+	if is_master():
+		for i in range(STAGE_IDLE_GESTURE_COUNT):
+			var layer := float(i) / float(maxi(1, STAGE_IDLE_GESTURE_COUNT - 1))
+			var center := Vector2(side * (10.0 + layer * 3.0) * map_scale, (-4.0 - layer * 2.2) * map_scale + lane_offset)
+			draw_arc(center, (18.0 + layer * 4.5 + pulse * 2.0) * map_scale, PI * (0.06 + layer * 0.03), PI * (0.90 - layer * 0.02), 28, Color(role_color.r, role_color.g, role_color.b, alpha * (0.76 - layer * 0.10)), 1.1 + layer * 0.25)
+	elif is_enemy():
+		for i in range(STAGE_IDLE_GESTURE_COUNT):
+			var layer := float(i)
+			var y := (12.0 - layer * 4.2 + sin(phase + layer) * 0.8) * map_scale + lane_offset
+			var start := Vector2(-side * (27.0 - layer * 2.0) * map_scale, y)
+			var end := Vector2(side * (28.0 + layer * 1.5) * map_scale, y - (7.0 + layer * 1.8) * map_scale)
+			draw_line(start, end, Color(role_color.r, role_color.g, role_color.b, alpha * (0.86 - layer * 0.10)), 1.4 + layer * 0.18)
+	elif bool(data.get("has_quests", false)):
+		for i in range(STAGE_IDLE_GESTURE_COUNT):
+			var angle := phase * 0.28 + float(i) * TAU / float(STAGE_IDLE_GESTURE_COUNT)
+			var pos := hand + Vector2(cos(angle) * 8.0 * map_scale, sin(angle) * 3.2 * map_scale)
+			draw_circle(pos, 1.5 * map_scale, Color(0.98, 0.78, 0.28, alpha * 1.10))
+		draw_line(hand + Vector2(-side * 7.0, 3.0) * map_scale, hand + Vector2(side * 6.0, -5.0) * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.74), 1.0)
+	else:
+		for i in range(STAGE_IDLE_GESTURE_COUNT):
+			var layer := float(i) / float(maxi(1, STAGE_IDLE_GESTURE_COUNT - 1))
+			var start := hand + Vector2(-side * (3.0 + layer * 3.0), 2.0 + layer * 1.4) * map_scale
+			var end := start + Vector2(side * (12.0 + layer * 2.0), -5.0 - pulse * 1.6) * map_scale
+			draw_line(start, end, Color(role_color.r, role_color.g, role_color.b, alpha * (0.72 - layer * 0.10)), 0.9 + layer * 0.12)
 
 func _draw_activity_tray(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
 	var tray_center := hand + Vector2(side * 8.0, 8.0) * prop_scale
