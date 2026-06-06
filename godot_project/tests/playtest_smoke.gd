@@ -27,6 +27,9 @@ func _run() -> void:
 		"gender": "male",
 		"faction": "none"
 	})
+	var story_hint := GameState.get_active_story_quest_hint()
+	_check(not story_hint.is_empty() and story_hint.contains("下一步"), "系统应生成主线/任务下一步指引")
+	_check(story_hint.contains("平阿四") or story_hint.contains("捕快"), "初始任务指引应点出可行动目标")
 
 	var test_root := Node2D.new()
 	add_child(test_root)

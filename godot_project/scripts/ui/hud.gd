@@ -8,6 +8,7 @@ var mp_bar: ProgressBar
 var name_label: Label
 var stats_label: Label
 var quest_label: Label
+var quest_hint_label: Label
 var time_label: Label
 var region_label: Label
 var rumor_label: Label
@@ -29,6 +30,7 @@ func _ready() -> void:
 	_build_region_banner()
 	_build_toast()
 	EventBus.player_changed.connect(_on_player_changed)
+	EventBus.quests_changed.connect(_on_quests_changed)
 	EventBus.toast_requested.connect(show_toast)
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.region_changed.connect(_on_region_changed)
@@ -64,7 +66,7 @@ func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(460, 184)
+	panel.size = Vector2(460, 210)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
@@ -100,6 +102,13 @@ func _build_top_panel() -> void:
 	quest_label.add_theme_font_size_override("font_size", 15)
 	quest_label.add_theme_color_override("font_color", Color(0.70, 0.86, 0.68))
 	box.add_child(quest_label)
+
+	quest_hint_label = Label.new()
+	quest_hint_label.custom_minimum_size = Vector2(410, 20)
+	quest_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	quest_hint_label.add_theme_font_size_override("font_size", 14)
+	quest_hint_label.add_theme_color_override("font_color", Color(0.94, 0.78, 0.42))
+	box.add_child(quest_hint_label)
 
 	time_label = Label.new()
 	time_label.add_theme_font_size_override("font_size", 14)
@@ -208,7 +217,16 @@ func _on_player_changed(player: Dictionary) -> void:
 		int(player.get("pot", 0)),
 		int(player.get("money", 0))
 	]
-	quest_label.text = "当前目标：%s" % GameState.get_active_quest_tracker()
+	_refresh_quest_labels()
+
+func _on_quests_changed() -> void:
+	_refresh_quest_labels()
+
+func _refresh_quest_labels() -> void:
+	if quest_label != null:
+		quest_label.text = "当前目标：%s" % GameState.get_active_quest_tracker()
+	if quest_hint_label != null:
+		quest_hint_label.text = GameState.get_active_story_quest_hint()
 
 func _on_time_changed(day: int, hour: float, weather: String) -> void:
 	if time_label == null:

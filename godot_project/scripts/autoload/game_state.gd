@@ -57,6 +57,12 @@ const CORE_RUMOR_NPCS := [
 	"冰魄",
 	"逍遥子"
 ]
+const STORY_QUEST_PRIORITY := [
+	"q_intro_town",
+	"q_clear_thugs",
+	"q_flower_thief",
+	"q_hero_trial"
+]
 const STORY_CHOICE_DEFINITIONS := [
 	{
 		"id": "choice_conclave_public",
@@ -1524,6 +1530,10 @@ func _objective_key(objective: Dictionary) -> String:
 
 func get_quest_status_lines() -> Array[String]:
 	var lines: Array[String] = []
+	var active_hint := get_active_story_quest_hint()
+	if not active_hint.is_empty():
+		lines.append(active_hint)
+		lines.append("")
 	if active_quests.is_empty():
 		lines.append("暂无进行中的任务。")
 		if not active_quest.is_empty():
@@ -1586,6 +1596,87 @@ func get_active_quest_tracker() -> String:
 				]
 		return str(quest.get("title", quest_id))
 	return active_quest
+
+func get_active_story_quest_hint() -> String:
+	var quest_id := _primary_active_quest_id()
+	if quest_id.is_empty():
+		if active_quest.is_empty() or active_quest == "自由探索江湖":
+			return "下一步：打开任务日志查看可接线索，或去地图寻找任务标记。"
+		return "下一步：%s" % active_quest
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return ""
+	var objective := _first_incomplete_objective(quest_id)
+	if objective.is_empty():
+		return "下一步：%s 目标已达成，等待任务结算。" % str(quest.get("title", quest_id))
+	var label := str(objective.get("label", _objective_key(objective)))
+	var detail := _objective_hint(objective)
+	if detail.is_empty():
+		detail = label
+	return "下一步：%s · %s" % [str(quest.get("title", quest_id)), detail]
+
+func _primary_active_quest_id() -> String:
+	for quest_id in active_quests.keys():
+		var id := str(quest_id)
+		if id.begins_with("q_main_"):
+			return id
+	for story_id in STORY_QUEST_PRIORITY:
+		if active_quests.has(story_id):
+			return story_id
+	if active_quests.is_empty():
+		return ""
+	return str(active_quests.keys()[0])
+
+func _first_incomplete_objective(quest_id: String) -> Dictionary:
+	if not active_quests.has(quest_id):
+		return {}
+	var quest := GameData.get_quest(quest_id)
+	var quest_state: Dictionary = active_quests.get(quest_id, {})
+	var progress: Dictionary = quest_state.get("progress", {})
+	var objectives: Array = quest.get("objectives", [])
+	for objective in objectives:
+		var objective_data: Dictionary = objective
+		var key := _objective_key(objective_data)
+		var current := int(progress.get(key, 0))
+		var required := int(objective_data.get("count", 1))
+		if current < required:
+			return objective_data
+	return {}
+
+func _objective_hint(objective: Dictionary) -> String:
+	var kind := str(objective.get("type", ""))
+	var target := str(objective.get("target", ""))
+	var label := str(objective.get("label", _objective_key(objective)))
+	match kind:
+		"talk":
+			return _target_action_hint(target, "找%s交谈" % target)
+		"kill":
+			return _target_action_hint(target, "击败%s" % target)
+		"collect":
+			return "%s；可从商铺、掉落或探索中取得" % label
+		"skill":
+			return "%s；打开修炼面板提升对应武学" % label
+		_:
+			return label
+
+func _target_action_hint(target: String, action_text: String) -> String:
+	var region := _target_region(target)
+	if region.is_empty():
+		return action_text
+	var region_id := str(region.get("id", ""))
+	var region_name := str(region.get("name", region_id))
+	if region_id == current_region_id:
+		return "在%s%s" % [region_name, action_text]
+	return "前往%s%s" % [region_name, action_text]
+
+func _target_region(target: String) -> Dictionary:
+	var npc := GameData.get_npc_by_name(target)
+	if npc.is_empty():
+		return {}
+	var tile := Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
+	if tile.x < 0 or tile.y < 0:
+		return {}
+	return GameData.get_region_at_tile(tile)
 
 func mark_enemy_defeated(enemy_id: int) -> void:
 	if not defeated_enemies.has(enemy_id):
