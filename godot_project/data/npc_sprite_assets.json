@@ -97,5 +97,8 @@
   "蛇王": "res://assets/characters/reference_map_sprites/naja_assassin_ref.png",
   "太极真人": "res://assets/characters/reference_map_sprites/taiji_master_ref.png",
   "冰魄": "res://assets/characters/reference_map_sprites/xueshan_master_ref.png",
-  "逍遥子": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png"
+  "逍遥子": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png",
+  "血月使者": "res://assets/characters/reference_map_sprites/assassin_ref.png",
+  "无面君": "res://assets/characters/reference_map_sprites/boss_ref.png",
+  "暗影司影主": "res://assets/characters/reference_map_sprites/boss_ref.png"
 }

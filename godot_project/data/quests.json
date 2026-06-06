@@ -435,5 +435,50 @@
       {"type": "kill", "target": "绣花女", "count": 1, "label": "击败拦路绣花女"}
     ],
     "rewards": {"exp": 620, "money": 420, "daode": 6, "items": {"item_dan": 2, "item_fine_cloth": 1}}
+  },
+  {
+    "id": "q_main_hidden_master",
+    "title": "幕后暗主",
+    "giver": "苏梦瑶",
+    "description": "夜议之后，苏梦瑶确认苏家旧案背后还有一枚血月残印。她请你先找陈天行核对暗影司旧账，再向蛇王打探血月使者的潜伏路线，并击败血月使者夺回残印。",
+    "requires_completed": ["q_main_wulin_conclave"],
+    "min_level": 5,
+    "next_hint": "血月残印露出无面主事的名字，回长安找陈天行。",
+    "objectives": [
+      {"type": "talk", "target": "陈天行", "count": 1, "label": "向陈天行核对暗影司旧账"},
+      {"type": "talk", "target": "蛇王", "count": 1, "label": "向蛇王打探血月使者路线"},
+      {"type": "kill", "target": "血月使者", "count": 1, "label": "击败血月使者"}
+    ],
+    "rewards": {"exp": 760, "money": 520, "daode": 6, "items": {"item_dan": 2, "item_shengji": 1}}
+  },
+  {
+    "id": "q_main_blood_moon",
+    "title": "血月残印",
+    "giver": "陈天行",
+    "description": "陈天行从血月残印中认出无面君的暗记。他让你拜访冰魄与太极真人，确认暗影司是否曾以旧怨挑拨七派，再击败无面君夺回苏家账册。",
+    "requires_completed": ["q_main_hidden_master"],
+    "min_level": 6,
+    "next_hint": "苏家账册已经揭开总坛方位，去找逍遥子推演暗道。",
+    "objectives": [
+      {"type": "talk", "target": "冰魄", "count": 1, "label": "请冰魄辨认雪山旧怨记录"},
+      {"type": "talk", "target": "太极真人", "count": 1, "label": "请太极真人核对武林盟旧盟约"},
+      {"type": "kill", "target": "无面君", "count": 1, "label": "击败无面君"}
+    ],
+    "rewards": {"exp": 920, "money": 680, "daode": 8, "items": {"item_dan": 2, "item_shengji": 1}}
+  },
+  {
+    "id": "q_main_shadow_citadel",
+    "title": "影司总坛",
+    "giver": "逍遥子",
+    "description": "逍遥子由苏家账册推演出暗影司总坛暗道。你需要请玄机子破阵、请花如玉压住密香机关，最终直面暗影司影主。",
+    "requires_completed": ["q_main_blood_moon"],
+    "min_level": 7,
+    "next_hint": "暗影司总坛已破，江湖暂得喘息；后续分支与多结局仍需继续扩展。",
+    "objectives": [
+      {"type": "talk", "target": "玄机子", "count": 1, "label": "请玄机子推演总坛机关阵"},
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉破解密香机关"},
+      {"type": "kill", "target": "暗影司影主", "count": 1, "label": "击败暗影司影主"}
+    ],
+    "rewards": {"exp": 1280, "money": 960, "daode": 12, "items": {"item_dan": 3, "item_shengji": 2, "item_hetun_blade": 1}}
   }
 ]

@@ -55,6 +55,12 @@ func _run() -> void:
 	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("冰魄")), "冰魄新头像文件应存在")
 	_check(GameData.get_npc_portrait_path("逍遥子").find("portraits_v2") >= 0, "逍遥子应使用新生成主线头像")
 	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("逍遥子")), "逍遥子新头像文件应存在")
+	_check(GameData.get_npc_portrait_path("血月使者").find("portraits_v2") >= 0, "血月使者应使用新生成反派头像")
+	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("血月使者")), "血月使者新头像文件应存在")
+	_check(GameData.get_npc_portrait_path("无面君").find("portraits_v2") >= 0, "无面君应使用新生成反派头像")
+	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("无面君")), "无面君新头像文件应存在")
+	_check(GameData.get_npc_portrait_path("暗影司影主").find("portraits_v2") >= 0, "暗影司影主应使用新生成反派头像")
+	_check(FileAccess.file_exists(GameData.get_npc_portrait_path("暗影司影主")), "暗影司影主新头像文件应存在")
 	_run_faction_questline_checks()
 	GameState.new_game({
 		"name": "战斗测试",
@@ -141,6 +147,9 @@ func _run() -> void:
 	_check(not npc_actor.has_active_ambient_line(), "NPC 应能清除地图环境气泡")
 	npc_actor.queue_free()
 
+	GameState.progress_quest("talk", "平阿四", 1)
+	GameState.progress_quest("talk", "捕快", 1)
+	_check(GameState.completed_quests.has("q_intro_town"), "后期主线回归测试应先清理新手任务")
 	GameState.player["level"] = 3
 	GameState.completed_quests.append("q_main_sect_warnings")
 	_check(GameState.can_accept_quest("q_main_shadow_watchers"), "七派风声后应解锁暗影眼线")
@@ -158,6 +167,38 @@ func _run() -> void:
 	_check(GameState.completed_quests.has("q_main_broken_token"), "断令归卷应能完成")
 	GameState.player["level"] = 4
 	_check(GameState.can_accept_quest("q_main_wulin_conclave"), "断令归卷后应解锁武林夜议")
+	GameState.accept_quest("q_main_wulin_conclave")
+	GameState.progress_quest("talk", "玄机子", 1)
+	GameState.progress_quest("talk", "花如玉", 1)
+	GameState.progress_quest("talk", "逍遥子", 1)
+	GameState.progress_quest("kill", "绣花女", 1)
+	_check(GameState.completed_quests.has("q_main_wulin_conclave"), "武林夜议应能完成")
+	_check(GameState.get_world_event_summary(6).find("武林夜议") >= 0, "武林夜议完成后应写入江湖传闻")
+	GameState.player["level"] = 5
+	_check(GameState.can_accept_quest("q_main_hidden_master"), "武林夜议后应解锁幕后暗主")
+	GameState.accept_quest("q_main_hidden_master")
+	GameState.progress_quest("talk", "陈天行", 1)
+	GameState.progress_quest("talk", "蛇王", 1)
+	GameState.progress_quest("kill", "血月使者", 1)
+	_check(GameState.completed_quests.has("q_main_hidden_master"), "幕后暗主应能完成")
+	_check(GameState.get_world_event_summary(6).find("血月残印") >= 0, "幕后暗主完成后应写入血月残印传闻")
+	GameState.player["level"] = 6
+	_check(GameState.can_accept_quest("q_main_blood_moon"), "幕后暗主后应解锁血月残印")
+	GameState.accept_quest("q_main_blood_moon")
+	GameState.progress_quest("talk", "冰魄", 1)
+	GameState.progress_quest("talk", "太极真人", 1)
+	GameState.progress_quest("kill", "无面君", 1)
+	_check(GameState.completed_quests.has("q_main_blood_moon"), "血月残印应能完成")
+	_check(GameState.get_world_event_summary(6).find("无面账册") >= 0, "血月残印完成后应写入无面账册传闻")
+	GameState.player["level"] = 7
+	_check(GameState.can_accept_quest("q_main_shadow_citadel"), "血月残印后应解锁影司总坛")
+	GameState.accept_quest("q_main_shadow_citadel")
+	GameState.progress_quest("talk", "玄机子", 1)
+	GameState.progress_quest("talk", "花如玉", 1)
+	GameState.progress_quest("kill", "暗影司影主", 1)
+	_check(GameState.completed_quests.has("q_main_shadow_citadel"), "影司总坛应能完成")
+	_check(GameState.get_world_event_summary(6).find("影司总坛") >= 0, "影司总坛完成后应写入终章传闻")
+	_check(str(GameState.active_quest).find("暗影司总坛已破") >= 0, "主线尾声应留下后续分支提示")
 
 	GameState.player["attack"] = 42
 	GameState.player["defense"] = 24

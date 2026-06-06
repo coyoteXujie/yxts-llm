@@ -97,5 +97,8 @@
   "蛇王": "res://assets/characters/npc/portraits_v2/shewang.png",
   "太极真人": "res://assets/characters/npc/portraits_v2/taiji_zhenren.png",
   "冰魄": "res://assets/characters/npc/portraits_v2/bingpo.png",
-  "逍遥子": "res://assets/characters/npc/portraits_v2/xiaoyaozi.png"
+  "逍遥子": "res://assets/characters/npc/portraits_v2/xiaoyaozi.png",
+  "血月使者": "res://assets/characters/npc/portraits_v2/xueyue_shizhe.png",
+  "无面君": "res://assets/characters/npc/portraits_v2/wumianjun.png",
+  "暗影司影主": "res://assets/characters/npc/portraits_v2/yingzhu.png"
 }

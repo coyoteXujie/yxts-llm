@@ -847,6 +847,12 @@ func _select_daily_pulse_region() -> Dictionary:
 	return (candidates[index] as Dictionary).duplicate(true)
 
 func _current_story_stage() -> String:
+	if completed_quests.has("q_main_shadow_citadel"):
+		return "影司总坛余波"
+	if completed_quests.has("q_main_blood_moon"):
+		return "影司总坛"
+	if completed_quests.has("q_main_hidden_master"):
+		return "血月残印"
 	if completed_quests.has("q_main_wulin_conclave"):
 		return "暗影司幕后主使"
 	if completed_quests.has("q_main_broken_token"):
@@ -1309,6 +1315,12 @@ func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
 			append_world_event("story", "断令归卷", "断令花纹与武林盟旧卷对上，七派夜议已有了真正的证据。", "luoyang", 4)
 		"q_main_wulin_conclave":
 			append_world_event("story", "武林夜议成局", "七派可信之人开始合拢证据，暗影司幕后主使不再只是传闻。", "wudang", 5)
+		"q_main_hidden_master":
+			append_world_event("story", "血月残印现世", "血月使者败退，暗影司旧账里第一次露出无面主事的名字。", "changan", 5)
+		"q_main_blood_moon":
+			append_world_event("story", "无面账册归卷", "无面君失手，苏家账册把暗影司总坛方位推到了七派眼前。", "luoyang", 5)
+		"q_main_shadow_citadel":
+			append_world_event("story", "影司总坛暂破", "暗影司影主败退，总坛暗道被封，江湖各派终于有了短暂喘息。", "daba_mtn", 5)
 		_:
 			append_world_event("quest", "完成%s" % quest_title, "你办完了%s，附近江湖人多了一桩谈资。" % quest_title, current_region_id, 2)
 

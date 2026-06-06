@@ -122,7 +122,10 @@
     "蛇王": "res://assets/characters/reference_map_sprites/naja_assassin_ref.png",
     "太极真人": "res://assets/characters/reference_map_sprites/taiji_master_ref.png",
     "冰魄": "res://assets/characters/reference_map_sprites/xueshan_master_ref.png",
-    "逍遥子": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png"
+    "逍遥子": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png",
+    "血月使者": "res://assets/characters/reference_map_sprites/assassin_ref.png",
+    "无面君": "res://assets/characters/reference_map_sprites/boss_ref.png",
+    "暗影司影主": "res://assets/characters/reference_map_sprites/boss_ref.png"
   },
   "reference_npc_archetypes": {
     "assassin_flower_ref": "res://assets/characters/reference_map_sprites/assassin_flower_ref.png",
@@ -266,7 +269,10 @@
     "蛇王": "res://assets/characters/npc/portraits/portrait_307.png",
     "太极真人": "res://assets/characters/npc/portraits/portrait_308.png",
     "冰魄": "res://assets/characters/npc/portraits/portrait_309.png",
-    "逍遥子": "res://assets/characters/npc/portraits/portrait_310.png"
+    "逍遥子": "res://assets/characters/npc/portraits/portrait_310.png",
+    "血月使者": "res://assets/characters/npc/portraits_v2/xueyue_shizhe.png",
+    "无面君": "res://assets/characters/npc/portraits_v2/wumianjun.png",
+    "暗影司影主": "res://assets/characters/npc/portraits_v2/yingzhu.png"
   },
   "player_map_sprites": {
     "male_none": "res://assets/characters/player/player_male_none.png",
@@ -502,9 +508,9 @@
   },
   "counts": {
     "tiles": 20,
-    "npc_map_sprites": 99,
+    "npc_map_sprites": 102,
     "reference_npc_archetypes": 41,
-    "npc_portraits": 99,
+    "npc_portraits": 102,
     "player_map_sprites": 16,
     "parts": 45,
     "item_icons": 22,
