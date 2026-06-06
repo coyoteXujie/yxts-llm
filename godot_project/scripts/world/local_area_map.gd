@@ -113,6 +113,10 @@ const SIDE_VIEW_UPPER_WALKWAY_COUNT := 4
 const SIDE_VIEW_UPPER_WALKWAY_ALPHA := 0.34
 const SIDE_VIEW_STAIR_LINK_COUNT := 3
 const SIDE_VIEW_BALCONY_LANTERN_COUNT := 7
+const SIDE_VIEW_LIVING_ACTOR_COUNT := 12
+const SIDE_VIEW_LIVING_ACTOR_ALPHA := 0.30
+const SIDE_VIEW_LIVING_ACTOR_SPEED := 0.18
+const SIDE_VIEW_LIVING_ACTION_ARC_COUNT := 7
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1471,6 +1475,7 @@ func _draw_side_view_stage() -> void:
 	_draw_side_view_upper_platforms(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
+	_draw_side_view_living_silhouettes(size, palette)
 	_draw_side_view_ambient(size, palette)
 	_draw_side_view_foreground(size, palette)
 
@@ -1921,6 +1926,182 @@ func _draw_stage_balcony_lanterns(size: Vector2, upper_y: float, accent: Color, 
 		draw_circle(lamp, tile_size * (0.16 + pulse * 0.06), Color(1.0, 0.56, 0.18, alpha * 0.070))
 		draw_rect(Rect2(lamp - Vector2(tile_size * 0.055, tile_size * 0.060), Vector2(tile_size * 0.11, tile_size * 0.13)), Color(0.92, 0.30, 0.16, alpha * 0.58), true)
 		draw_circle(lamp, tile_size * 0.034, Color(accent.r, accent.g, accent.b, alpha * (0.50 + pulse * 0.18)))
+
+func _draw_side_view_living_silhouettes(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	var lane_top := size.y * 0.535
+	var lane_bottom := size.y * 0.705
+	for i in range(SIDE_VIEW_LIVING_ACTOR_COUNT):
+		var lane := i % 3
+		var lane_t := float(lane) / 2.0
+		var scale := lerpf(0.52, 0.90, lane_t)
+		var direction := 1.0 if i % 2 == 0 else -0.76
+		var speed := SIDE_VIEW_LIVING_ACTOR_SPEED * (0.68 + float((i * 5) % 7) * 0.055)
+		var drift := stage_visual_phase * tile_size * speed * direction
+		var seed_x := float((i * 173 + 47) % 1000) / 1000.0
+		var x := fposmod(seed_x * size.x + drift, size.x + tile_size * 2.4) - tile_size * 1.2
+		var y := lerpf(lane_top, lane_bottom, lane_t) + sin(stage_visual_phase * 0.34 + float(i) * 0.79) * tile_size * 0.035
+		var alpha := SIDE_VIEW_LIVING_ACTOR_ALPHA * (0.50 + lane_t * 0.46)
+		var role := _stage_living_actor_role(region_type, terrain, i)
+		_draw_stage_living_actor(Vector2(x, y), scale, accent, alpha, i, role)
+	if region_type == "city" or region_type == "town":
+		_draw_stage_window_watchers(size, accent)
+	elif region_type == "sect":
+		_draw_stage_training_arcs(size, accent)
+	elif _terrain_has_water(terrain):
+		_draw_stage_living_boats(size, accent)
+
+func _stage_living_actor_role(region_type: String, terrain: String, index: int) -> String:
+	if region_type == "city" or region_type == "town":
+		match index % 5:
+			0:
+				return "porter"
+			1:
+				return "vendor"
+			2:
+				return "guard"
+			3:
+				return "wanderer"
+			_:
+				return "pedestrian"
+	if region_type == "sect":
+		return "disciple" if index % 3 != 0 else "meditate"
+	if _terrain_has_water(terrain):
+		return "boatman" if index % 2 == 0 else "traveler"
+	if _terrain_has_forest(terrain):
+		return "traveler" if index % 2 == 0 else "herbalist"
+	if _terrain_has_mountain(terrain):
+		return "guard" if index % 4 == 0 else "traveler"
+	return "wanderer"
+
+func _draw_stage_living_actor(pos: Vector2, scale: float, accent: Color, alpha: float, index: int, role: String) -> void:
+	var bob := sin(stage_visual_phase * (1.2 + float(index % 3) * 0.14) + float(index) * 0.81) * tile_size * 0.018 * scale
+	var foot := pos + Vector2(0.0, bob)
+	var height := tile_size * 0.58 * scale
+	var body_width := tile_size * 0.15 * scale
+	var head_radius := tile_size * 0.052 * scale
+	var shoulder := foot + Vector2(0.0, -height * 0.66)
+	var head := foot + Vector2(0.0, -height * 0.92)
+	var ink := Color(0.010, 0.008, 0.006, alpha)
+	var cloth := Color(accent.r, accent.g, accent.b, alpha * 0.34)
+	draw_line(foot + Vector2(-body_width * 1.25, tile_size * 0.05 * scale), foot + Vector2(body_width * 1.35, tile_size * 0.01 * scale), Color(0.0, 0.0, 0.0, alpha * 0.42), maxf(1.0, tile_size * 0.020 * scale))
+	draw_polygon(PackedVector2Array([
+		shoulder + Vector2(-body_width, -tile_size * 0.02 * scale),
+		shoulder + Vector2(body_width * 0.92, -tile_size * 0.04 * scale),
+		foot + Vector2(body_width * 0.82, -tile_size * 0.13 * scale),
+		foot + Vector2(body_width * 0.25, 0.0),
+		foot + Vector2(-body_width * 0.78, -tile_size * 0.08 * scale)
+	]), PackedColorArray([
+		cloth,
+		ink.lightened(0.16),
+		ink,
+		Color(0.0, 0.0, 0.0, alpha * 0.92),
+		ink
+	]))
+	draw_circle(head, head_radius, ink.lightened(0.10))
+	draw_line(shoulder + Vector2(-body_width * 0.74, tile_size * 0.03 * scale), foot + Vector2(-body_width * 1.04, -height * 0.30), Color(0.0, 0.0, 0.0, alpha * 0.80), maxf(1.0, tile_size * 0.018 * scale))
+	draw_line(shoulder + Vector2(body_width * 0.80, tile_size * 0.03 * scale), foot + Vector2(body_width * 1.08, -height * 0.34), Color(0.0, 0.0, 0.0, alpha * 0.76), maxf(1.0, tile_size * 0.018 * scale))
+	draw_line(foot + Vector2(-body_width * 0.42, -height * 0.16), foot + Vector2(-body_width * 0.92, tile_size * 0.02 * scale), Color(0.0, 0.0, 0.0, alpha * 0.82), maxf(1.0, tile_size * 0.018 * scale))
+	draw_line(foot + Vector2(body_width * 0.36, -height * 0.16), foot + Vector2(body_width * 0.88, tile_size * 0.01 * scale), Color(0.0, 0.0, 0.0, alpha * 0.76), maxf(1.0, tile_size * 0.018 * scale))
+	match role:
+		"porter":
+			_draw_stage_actor_porter_prop(shoulder, body_width, scale, alpha)
+		"vendor":
+			_draw_stage_actor_vendor_prop(shoulder, body_width, accent, scale, alpha)
+		"guard":
+			_draw_stage_actor_weapon_prop(shoulder, body_width, accent, scale, alpha)
+		"disciple":
+			_draw_stage_actor_training_prop(shoulder, body_width, accent, scale, alpha, index)
+		"meditate":
+			_draw_stage_actor_meditation_prop(foot, accent, scale, alpha, index)
+		"boatman":
+			_draw_stage_actor_boat_oar(shoulder, body_width, scale, alpha)
+		"herbalist":
+			_draw_stage_actor_herb_prop(foot, body_width, accent, scale, alpha)
+		"traveler", "wanderer":
+			_draw_stage_actor_travel_prop(foot, body_width, scale, alpha)
+
+func _draw_stage_actor_porter_prop(shoulder: Vector2, body_width: float, scale: float, alpha: float) -> void:
+	var y := shoulder.y - tile_size * 0.03 * scale
+	draw_line(shoulder + Vector2(-body_width * 2.6, 0.0), shoulder + Vector2(body_width * 2.9, -tile_size * 0.08 * scale), Color(0.0, 0.0, 0.0, alpha * 0.72), maxf(1.0, tile_size * 0.016 * scale))
+	draw_circle(shoulder + Vector2(-body_width * 3.0, tile_size * 0.08 * scale), tile_size * 0.055 * scale, Color(0.33, 0.20, 0.10, alpha * 0.62))
+	draw_circle(Vector2(shoulder.x + body_width * 3.1, y + tile_size * 0.13 * scale), tile_size * 0.052 * scale, Color(0.33, 0.20, 0.10, alpha * 0.58))
+
+func _draw_stage_actor_vendor_prop(shoulder: Vector2, body_width: float, accent: Color, scale: float, alpha: float) -> void:
+	var tray := shoulder + Vector2(body_width * 2.2, tile_size * 0.12 * scale)
+	draw_line(shoulder + Vector2(body_width * 0.6, tile_size * 0.03 * scale), tray, Color(0.0, 0.0, 0.0, alpha * 0.76), maxf(1.0, tile_size * 0.016 * scale))
+	draw_rect(Rect2(tray - Vector2(tile_size * 0.095, tile_size * 0.026) * scale, Vector2(tile_size * 0.19, tile_size * 0.052) * scale), Color(0.40, 0.23, 0.11, alpha * 0.64), true)
+	draw_circle(tray + Vector2(tile_size * 0.03, -tile_size * 0.06) * scale, tile_size * 0.032 * scale, Color(accent.r, accent.g, accent.b, alpha * 0.50))
+
+func _draw_stage_actor_weapon_prop(shoulder: Vector2, body_width: float, accent: Color, scale: float, alpha: float) -> void:
+	var start := shoulder + Vector2(body_width * 1.2, tile_size * 0.06 * scale)
+	var end := start + Vector2(tile_size * 0.25 * scale, -tile_size * 0.62 * scale)
+	draw_line(start, end, Color(0.0, 0.0, 0.0, alpha * 0.84), maxf(1.0, tile_size * 0.014 * scale))
+	draw_line(end - Vector2(tile_size * 0.06, -tile_size * 0.08) * scale, end + Vector2(tile_size * 0.07, tile_size * 0.04) * scale, Color(accent.r, accent.g, accent.b, alpha * 0.56), maxf(1.0, tile_size * 0.012 * scale))
+
+func _draw_stage_actor_training_prop(shoulder: Vector2, body_width: float, accent: Color, scale: float, alpha: float, index: int) -> void:
+	var hand := shoulder + Vector2(body_width * 1.8, tile_size * 0.08 * scale)
+	var blade := hand + Vector2(tile_size * (0.34 + float(index % 2) * 0.08) * scale, -tile_size * 0.18 * scale)
+	draw_line(hand, blade, Color(accent.r, accent.g, accent.b, alpha * 0.62), maxf(1.0, tile_size * 0.018 * scale))
+	draw_arc(hand, tile_size * 0.25 * scale, -0.58, 0.42, 14, Color(accent.r, accent.g, accent.b, alpha * 0.28), maxf(1.0, tile_size * 0.010 * scale))
+
+func _draw_stage_actor_meditation_prop(foot: Vector2, accent: Color, scale: float, alpha: float, index: int) -> void:
+	var pulse := 0.5 + sin(stage_visual_phase * 1.6 + float(index)) * 0.5
+	draw_arc(foot + Vector2(0.0, -tile_size * 0.16 * scale), tile_size * (0.20 + pulse * 0.035) * scale, PI * 0.06, PI * 0.94, 24, Color(accent.r, accent.g, accent.b, alpha * 0.30), maxf(1.0, tile_size * 0.012 * scale))
+
+func _draw_stage_actor_boat_oar(shoulder: Vector2, body_width: float, scale: float, alpha: float) -> void:
+	var start := shoulder + Vector2(-body_width * 0.8, tile_size * 0.04 * scale)
+	var end := start + Vector2(-tile_size * 0.40 * scale, tile_size * 0.52 * scale)
+	draw_line(start, end, Color(0.0, 0.0, 0.0, alpha * 0.70), maxf(1.0, tile_size * 0.014 * scale))
+	draw_line(end, end + Vector2(tile_size * 0.12, tile_size * 0.03) * scale, Color(0.60, 0.38, 0.17, alpha * 0.52), maxf(1.0, tile_size * 0.018 * scale))
+
+func _draw_stage_actor_herb_prop(foot: Vector2, body_width: float, accent: Color, scale: float, alpha: float) -> void:
+	var basket := foot + Vector2(body_width * 1.7, -tile_size * 0.12 * scale)
+	draw_circle(basket, tile_size * 0.070 * scale, Color(0.26, 0.18, 0.09, alpha * 0.62))
+	draw_line(basket, basket + Vector2(tile_size * 0.08, -tile_size * 0.12) * scale, Color(accent.r, accent.g, accent.b, alpha * 0.46), maxf(1.0, tile_size * 0.012 * scale))
+	draw_line(basket, basket + Vector2(-tile_size * 0.06, -tile_size * 0.10) * scale, Color(0.08, 0.18, 0.06, alpha * 0.52), maxf(1.0, tile_size * 0.012 * scale))
+
+func _draw_stage_actor_travel_prop(foot: Vector2, body_width: float, scale: float, alpha: float) -> void:
+	var bag := foot + Vector2(-body_width * 1.45, -tile_size * 0.29 * scale)
+	draw_circle(bag, tile_size * 0.060 * scale, Color(0.22, 0.13, 0.07, alpha * 0.66))
+	draw_line(bag + Vector2(tile_size * 0.03, -tile_size * 0.05) * scale, foot + Vector2(-body_width * 0.2, -tile_size * 0.45 * scale), Color(0.0, 0.0, 0.0, alpha * 0.50), maxf(1.0, tile_size * 0.010 * scale))
+
+func _draw_stage_window_watchers(size: Vector2, accent: Color) -> void:
+	for i in range(6):
+		var t := float(i) / 5.0
+		var x := lerpf(size.x * 0.08, size.x * 0.90, t) + sin(float(i) * 0.88) * tile_size * 0.28
+		var y := size.y * (0.362 + float(i % 2) * 0.036)
+		var pulse := 0.5 + sin(stage_visual_phase * 1.5 + float(i) * 0.7) * 0.5
+		draw_rect(Rect2(Vector2(x - tile_size * 0.13, y - tile_size * 0.17), Vector2(tile_size * 0.26, tile_size * 0.25)), Color(0.02, 0.014, 0.010, SIDE_VIEW_LIVING_ACTOR_ALPHA * 0.42), true)
+		draw_circle(Vector2(x, y - tile_size * 0.03), tile_size * 0.050, Color(0.0, 0.0, 0.0, SIDE_VIEW_LIVING_ACTOR_ALPHA * 0.58))
+		draw_line(Vector2(x - tile_size * 0.06, y + tile_size * 0.05), Vector2(x + tile_size * 0.07, y + tile_size * 0.05), Color(accent.r, accent.g, accent.b, SIDE_VIEW_LIVING_ACTOR_ALPHA * (0.22 + pulse * 0.10)), 1.0)
+
+func _draw_stage_training_arcs(size: Vector2, accent: Color) -> void:
+	for i in range(SIDE_VIEW_LIVING_ACTION_ARC_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_LIVING_ACTION_ARC_COUNT - 1))
+		var center := Vector2(lerpf(size.x * 0.14, size.x * 0.86, t), size.y * (0.51 + float(i % 2) * 0.08))
+		var phase := sin(stage_visual_phase * 1.3 + float(i) * 0.74)
+		draw_arc(center, tile_size * (0.32 + float(i % 3) * 0.035), -0.52 + phase * 0.05, 0.56 + phase * 0.05, 16, Color(accent.r, accent.g, accent.b, SIDE_VIEW_LIVING_ACTOR_ALPHA * 0.20), 1.2)
+
+func _draw_stage_living_boats(size: Vector2, accent: Color) -> void:
+	for i in range(4):
+		var x := fposmod(float(i * 263) - stage_visual_phase * tile_size * 0.13, size.x + tile_size * 2.0) - tile_size
+		var y := size.y * (0.575 + float(i % 2) * 0.052)
+		var alpha := SIDE_VIEW_LIVING_ACTOR_ALPHA * 0.46
+		draw_polygon(PackedVector2Array([
+			Vector2(x - tile_size * 0.38, y),
+			Vector2(x + tile_size * 0.54, y - tile_size * 0.04),
+			Vector2(x + tile_size * 0.34, y + tile_size * 0.17),
+			Vector2(x - tile_size * 0.26, y + tile_size * 0.18)
+		]), PackedColorArray([
+			Color(0.04, 0.026, 0.016, alpha),
+			Color(accent.r, accent.g, accent.b, alpha * 0.34),
+			Color(0.018, 0.012, 0.008, alpha * 1.06),
+			Color(0.026, 0.016, 0.010, alpha)
+		]))
+		_draw_stage_living_actor(Vector2(x + tile_size * 0.08, y - tile_size * 0.02), 0.46, accent, SIDE_VIEW_LIVING_ACTOR_ALPHA * 0.48, i, "boatman")
 
 func _draw_stage_sect_steps(size: Vector2, y: float, accent: Color) -> void:
 	var center_x := size.x * 0.50
