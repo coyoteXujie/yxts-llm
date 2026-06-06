@@ -96,6 +96,9 @@ const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
 const SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA := 0.46
 const SIDE_VIEW_PLATFORM_EDGE_ALPHA := 0.42
 const SIDE_VIEW_NEAR_PROP_COUNT := 14
+const SIDE_VIEW_FLOOR_DETAIL_ALPHA := 0.16
+const SIDE_VIEW_FLOOR_DETAIL_COUNT := 36
+const SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA := 0.18
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1660,6 +1663,8 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		_with_alpha(floor_color.darkened(0.26), SIDE_VIEW_STAGE_LANE_ALPHA + 0.06)
 	]))
 	_draw_stage_depth_guides(size, palette)
+	_draw_stage_perspective_edges(size, palette, top_y, bottom_y)
+	_draw_stage_floor_material(size, palette, top_y, bottom_y)
 	for i in range(11):
 		var t := float(i) / 10.0
 		var y := lerpf(top_y + tile_size * 0.22, bottom_y - tile_size * 0.36, t)
@@ -1671,6 +1676,36 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		draw_line(Vector2(x, top_y + tile_size * 0.10), Vector2(x - size.x * 0.08, bottom_y), Color(0.0, 0.0, 0.0, 0.05), 1.2)
 	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
 	_draw_stage_platform_lip(size, palette, top_y, bottom_y)
+
+func _draw_stage_perspective_edges(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var shadow := Color(0.0, 0.0, 0.0, SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA)
+	draw_line(Vector2(size.x * 0.07, top_y + tile_size * 0.08), Vector2(size.x * -0.025, bottom_y + tile_size * 0.10), shadow, 3.0)
+	draw_line(Vector2(size.x * 0.93, top_y), Vector2(size.x * 1.025, bottom_y), shadow, 3.0)
+	draw_line(Vector2(size.x * 0.10, top_y + tile_size * 0.18), Vector2(size.x * 0.015, bottom_y - tile_size * 0.46), Color(accent.r, accent.g, accent.b, SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA * 0.62), 1.4)
+	draw_line(Vector2(size.x * 0.90, top_y + tile_size * 0.10), Vector2(size.x * 0.985, bottom_y - tile_size * 0.55), Color(accent.r, accent.g, accent.b, SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA * 0.52), 1.4)
+
+func _draw_stage_floor_material(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	for i in range(SIDE_VIEW_FLOOR_DETAIL_COUNT):
+		var seed := _tile_seed(i + 31, int(size.y) + i * 11)
+		var t := float(seed % 997) / 996.0
+		var u := float((int(seed / 7) % 991)) / 990.0
+		var y := lerpf(top_y + tile_size * 0.34, bottom_y - tile_size * 0.34, t)
+		var inset := lerpf(size.x * 0.12, size.x * -0.025, t)
+		var x := lerpf(inset + tile_size * 0.40, size.x - inset - tile_size * 0.40, u)
+		var alpha := SIDE_VIEW_FLOOR_DETAIL_ALPHA * (0.45 + t * 0.55)
+		if i % 3 == 0:
+			var length := tile_size * (0.18 + float(seed % 5) * 0.045)
+			draw_line(Vector2(x, y), Vector2(x + length, y - tile_size * 0.035), Color(0.0, 0.0, 0.0, alpha), 1.0 + t * 1.2)
+			var light_floor := floor_color.lightened(0.20)
+			draw_line(Vector2(x + length * 0.22, y + tile_size * 0.035), Vector2(x + length * 0.72, y + tile_size * 0.005), Color(light_floor.r, light_floor.g, light_floor.b, alpha * 0.46), 0.8)
+		else:
+			var radius := Vector2(tile_size * (0.045 + float(seed % 4) * 0.012), tile_size * (0.014 + float(seed % 3) * 0.006))
+			_draw_ellipse_poly(Vector2(x, y), radius, Color(0.0, 0.0, 0.0, alpha * 0.78))
+			if i % 7 == 0:
+				draw_circle(Vector2(x + tile_size * 0.035, y - tile_size * 0.018), tile_size * 0.018, Color(accent.r, accent.g, accent.b, alpha * 0.92))
 
 func _draw_stage_platform_lip(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
 	var accent: Color = palette["accent"]

@@ -4,6 +4,8 @@ class_name LocalStageForeground
 const TOP_EAVE_COUNT := 9
 const FOREGROUND_MIST_BANDS := 4
 const SIDE_OCCLUDER_COUNT := 7
+const BOTTOM_OCCLUDER_COUNT := 10
+const BOTTOM_OCCLUDER_ALPHA := 0.24
 
 var current_region: Dictionary = {}
 var map_size := Vector2.ZERO
@@ -28,6 +30,7 @@ func _draw() -> void:
 	var accent := _accent_color(region_type, terrain)
 	_draw_top_depth(accent, region_type, terrain)
 	_draw_side_occluders(accent, region_type, terrain)
+	_draw_bottom_occluders(accent, region_type, terrain)
 	_draw_foreground_mist(accent, terrain)
 	_draw_bottom_vignette(accent)
 
@@ -146,6 +149,45 @@ func _draw_side_occluders(accent: Color, region_type: String, terrain: String) -
 		elif _terrain_has_forest(terrain):
 			draw_line(Vector2(left_x, map_size.y), Vector2(left_x + tile_size * 0.18, y - height), Color(0.004, 0.030, 0.012, left_alpha + 0.08), 3.2 + t * 2.0)
 			draw_line(Vector2(right_x, map_size.y), Vector2(right_x - tile_size * 0.18, y - height * 0.92), Color(0.004, 0.030, 0.012, right_alpha + 0.06), 3.0 + t * 1.7)
+
+func _draw_bottom_occluders(accent: Color, region_type: String, terrain: String) -> void:
+	for i in range(BOTTOM_OCCLUDER_COUNT):
+		var t := float(i) / float(maxi(1, BOTTOM_OCCLUDER_COUNT - 1))
+		var seed := int(map_size.x) + i * 197
+		var x := fposmod(float(seed * 29), map_size.x + tile_size * 1.4) - tile_size * 0.70
+		var y := map_size.y * (0.865 + float((int(seed / 11) % 9)) * 0.012)
+		var alpha := BOTTOM_OCCLUDER_ALPHA * (0.62 + t * 0.38)
+		if region_type == "city" or region_type == "town":
+			var w := tile_size * (0.34 + float(i % 3) * 0.08)
+			var h := tile_size * (0.18 + float((i + 1) % 3) * 0.055)
+			draw_rect(Rect2(Vector2(x, y - h), Vector2(w, h)), Color(0.035, 0.020, 0.012, alpha), true)
+			draw_line(Vector2(x, y - h), Vector2(x + w, y - h - tile_size * 0.045), Color(accent.r, accent.g, accent.b, alpha * 0.58), 1.2)
+		elif region_type == "sect":
+			var stone_w := tile_size * (0.42 + float(i % 2) * 0.10)
+			draw_polygon(PackedVector2Array([
+				Vector2(x, y),
+				Vector2(x + stone_w * 0.18, y - tile_size * 0.14),
+				Vector2(x + stone_w, y - tile_size * 0.08),
+				Vector2(x + stone_w * 1.10, y + tile_size * 0.08),
+				Vector2(x + stone_w * 0.12, y + tile_size * 0.10)
+			]), PackedColorArray([
+				Color(0.018, 0.016, 0.013, alpha),
+				Color(accent.r, accent.g, accent.b, alpha * 0.46),
+				Color(0.030, 0.026, 0.020, alpha * 0.84),
+				Color(0.012, 0.010, 0.008, alpha),
+				Color(0.014, 0.012, 0.009, alpha)
+			]))
+		elif _terrain_has_forest(terrain):
+			var height := tile_size * (0.32 + float(i % 4) * 0.08)
+			draw_line(Vector2(x, map_size.y), Vector2(x + tile_size * 0.14, y - height), Color(0.004, 0.040, 0.015, alpha + 0.06), 2.0)
+			draw_line(Vector2(x + tile_size * 0.14, y - height * 0.68), Vector2(x + tile_size * 0.46, y - height * 0.82), Color(accent.r, accent.g, accent.b, alpha * 0.54), 1.2)
+		elif terrain.contains("snow"):
+			_draw_ellipse(x + tile_size * 0.18, y, Vector2(tile_size * 0.24, tile_size * 0.065), Color(0.82, 0.94, 1.0, alpha * 0.72))
+			draw_line(Vector2(x, y), Vector2(x + tile_size * 0.42, y - tile_size * 0.035), Color(1.0, 1.0, 1.0, alpha * 0.40), 1.0)
+		else:
+			_draw_ellipse(x + tile_size * 0.18, y, Vector2(tile_size * (0.18 + float(i % 3) * 0.04), tile_size * 0.052), Color(0.0, 0.0, 0.0, alpha))
+			if i % 3 == 0:
+				draw_line(Vector2(x + tile_size * 0.10, y), Vector2(x + tile_size * 0.24, y - tile_size * 0.20), Color(accent.r, accent.g, accent.b, alpha * 0.58), 1.2)
 
 func _draw_foreground_mist(accent: Color, terrain: String) -> void:
 	var base_color := Color(accent.r, accent.g, accent.b, 0.09)
