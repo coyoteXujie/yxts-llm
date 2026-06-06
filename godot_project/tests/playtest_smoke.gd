@@ -65,6 +65,11 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_IDLE_FOCUS_ALPHA >= 0.18, "玩家局部横版舞台待机时应保留头部/视线关注层")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_FACTION_SIGIL_ALPHA >= 0.16, "玩家局部横版舞台应保留门派/主角气质提示层")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_IDLE_CLOTH_SWAY_ALPHA >= 0.20, "玩家局部横版舞台待机时应保留衣摆轻摆层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_POSE_RIG_ALPHA >= 0.26, "玩家局部横版舞台应保留前后肢体动作姿态层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_ARM_SWING_ALPHA >= 0.24, "玩家局部横版舞台移动时应保留手臂摆动层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_STEP_ARC_ALPHA >= 0.18, "玩家局部横版舞台应保留步幅轨迹弧")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_IDLE_GUARD_ALPHA >= 0.16, "玩家局部横版舞台待机时应保留守势气口")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_CENTERLINE_ALPHA >= 0.20, "玩家局部横版舞台应保留重心/躯干中心线")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	player.facing = Vector2.LEFT
 	_check(player._facing_side() < 0.0, "玩家横版舞台侧向层应响应向左朝向")
