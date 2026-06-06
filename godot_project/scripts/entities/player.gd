@@ -14,6 +14,9 @@ const PLAYER_WEAPON_SILHOUETTE_ALPHA := 0.34
 const PLAYER_CLOTH_LAYER_ALPHA := 0.28
 const PLAYER_MOTION_AFTERIMAGE_ALPHA := 0.12
 const PLAYER_GUARD_LINE_ALPHA := 0.22
+const PLAYER_STAGE_FOOT_ANCHOR_ALPHA := 0.24
+const PLAYER_STAGE_WEAPON_POSE_ALPHA := 0.34
+const PLAYER_STAGE_SHOULDER_GLOW_ALPHA := 0.20
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -105,11 +108,14 @@ func _draw() -> void:
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		if stage_actor:
 			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving)
+			_draw_stage_player_footwork(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_back_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		if stage_actor:
 			_draw_stage_player_front_layers(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_weapon_pose(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_shoulder_glow(top_left, draw_size, trim, moving, facing_side)
 		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
@@ -316,6 +322,42 @@ func _draw_stage_player_front_layers(top_left: Vector2, draw_size: Vector2, acce
 	var guard_start := Vector2(top_left.x + draw_size.x * (0.51 + 0.10 * side), waist_y - draw_size.y * 0.11)
 	var guard_end := guard_start + Vector2(draw_size.x * 0.17 * side, draw_size.y * (0.08 + flutter * 0.010))
 	draw_line(guard_start, guard_end, Color(1.0, 0.92, 0.62, PLAYER_GUARD_LINE_ALPHA), clampf(draw_size.x * 0.018, 1.5, 2.8))
+
+func _draw_stage_player_footwork(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var step := sin(walk_phase) if moving else sin(walk_phase * 0.55) * 0.32
+	var foot_y := top_left.y + draw_size.y * 0.965
+	var center_x := top_left.x + draw_size.x * 0.50
+	var spread := draw_size.x * (0.18 if moving else 0.145)
+	var left := Vector2(center_x - spread + step * draw_size.x * 0.028, foot_y)
+	var right := Vector2(center_x + spread - step * draw_size.x * 0.024, foot_y - draw_size.y * 0.012)
+	var radius := Vector2(draw_size.x * 0.082, draw_size.y * 0.017)
+	_draw_shadow(left, radius, Color(0.0, 0.0, 0.0, PLAYER_STAGE_FOOT_ANCHOR_ALPHA * 0.72))
+	_draw_shadow(right, radius * Vector2(0.94, 0.90), Color(0.0, 0.0, 0.0, PLAYER_STAGE_FOOT_ANCHOR_ALPHA * 0.62))
+	draw_line(left + Vector2(-radius.x * 0.48, 0.0), right + Vector2(radius.x * 0.42, -draw_size.y * 0.012), Color(accent.r, accent.g, accent.b, PLAYER_STAGE_FOOT_ANCHOR_ALPHA * 0.52), 1.2)
+	if moving:
+		var dust_side := Vector2(side * draw_size.x * 0.11, draw_size.y * 0.010)
+		_draw_shadow(left - dust_side, radius * Vector2(1.28, 0.72), Color(0.72, 0.62, 0.42, PLAYER_STAGE_FOOT_ANCHOR_ALPHA * 0.30))
+
+func _draw_stage_player_weapon_pose(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var phase := sin(walk_phase * (1.25 if moving else 0.68))
+	var waist := top_left + Vector2(draw_size.x * (0.52 + 0.06 * side), draw_size.y * 0.55)
+	var hand := waist + Vector2(draw_size.x * (0.23 + phase * 0.018) * side, draw_size.y * (0.06 + phase * 0.010))
+	var tip := hand + Vector2(draw_size.x * (0.26 + (0.06 if moving else 0.02)) * side, -draw_size.y * (0.14 + phase * 0.016))
+	var alpha := PLAYER_STAGE_WEAPON_POSE_ALPHA * (0.72 + absf(phase) * 0.24)
+	draw_line(waist, hand, Color(accent.r, accent.g, accent.b, alpha * 0.70), clampf(draw_size.x * 0.020, 1.6, 3.0))
+	draw_line(hand, tip, Color(0.96, 0.92, 0.76, alpha), clampf(draw_size.x * 0.014, 1.2, 2.2))
+	draw_line(tip - Vector2(side * draw_size.x * 0.030, -draw_size.y * 0.010), tip + Vector2(side * draw_size.x * 0.048, draw_size.y * 0.022), Color(1.0, 0.86, 0.46, alpha * 0.48), 1.0)
+	if moving:
+		draw_line(hand - Vector2(side * draw_size.x * 0.08, -draw_size.y * 0.018), tip, Color(1.0, 0.78, 0.36, alpha * 0.30), 1.2)
+
+func _draw_stage_player_shoulder_glow(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var pulse := 0.55 + sin(walk_phase * (1.4 if moving else 0.74)) * 0.45
+	var shoulder_a := top_left + Vector2(draw_size.x * (0.36 + 0.08 * side), draw_size.y * 0.245)
+	var shoulder_b := top_left + Vector2(draw_size.x * (0.58 + 0.10 * side), draw_size.y * 0.292)
+	var hip := top_left + Vector2(draw_size.x * (0.55 + 0.05 * side), draw_size.y * 0.62)
+	var alpha := PLAYER_STAGE_SHOULDER_GLOW_ALPHA * (0.55 + pulse * 0.38)
+	draw_line(shoulder_a, shoulder_b, Color(1.0, 0.92, 0.62, alpha), clampf(draw_size.x * 0.014, 1.2, 2.0))
+	draw_line(shoulder_b, hip, Color(accent.r, accent.g, accent.b, alpha * 0.72), clampf(draw_size.x * 0.011, 1.0, 1.8))
 
 func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2, trim: Color, moving: bool, stage_actor: bool = false) -> void:
 	var waist_y := foot_y - draw_size.y * 0.46

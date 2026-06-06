@@ -118,6 +118,9 @@ func _run() -> void:
 	_check(_actors_marked_stage(local_area.npc_nodes), "局部地图 NPC 应标记为横版舞台角色")
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
 	_check(_actors_have_stage_rim(local_area.npc_nodes), "局部地图 NPC 应显示舞台贴图轮廓高光")
+	_check(_actors_have_stage_pose_overlay(local_area.npc_nodes), "局部地图 NPC 应显示贴图前方姿态线")
+	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
+	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
@@ -143,6 +146,9 @@ func _run() -> void:
 	player._refresh_stage_depth_scale()
 	_check(player.stage_depth_scale > 1.08, "玩家在局部地图前景站位应明显放大")
 	_check(player.get_map_actor_visual_scale() > player.stage_depth_scale, "玩家局部横版地图应在景深外叠加舞台角色缩放")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_FOOT_ANCHOR_ALPHA >= 0.20, "玩家局部横版地图应显示脚步锚点")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_WEAPON_POSE_ALPHA >= 0.30, "玩家局部横版地图应显示前持武器姿态")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_SHOULDER_GLOW_ALPHA >= 0.16, "玩家局部横版地图应显示肩部高光姿态层")
 	player.world_map = world_map
 	player.position = GameState.player_position
 	player._refresh_stage_depth_scale()
@@ -278,6 +284,16 @@ func _actors_have_stage_rim(nodes: Array) -> bool:
 		if not bool(actor.data.get("stage_actor", false)):
 			continue
 		if actor.sprite_rim_node != null and actor.sprite_rim_node.visible:
+			return true
+	return false
+
+func _actors_have_stage_pose_overlay(nodes: Array) -> bool:
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		if actor.stage_pose_line_node != null and actor.stage_pose_line_node.visible and actor.stage_pose_line_node.points.size() >= 3:
 			return true
 	return false
 
