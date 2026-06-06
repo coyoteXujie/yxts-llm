@@ -643,6 +643,7 @@ var npc_portrait_assets: Dictionary = {}
 var item_icon_assets: Dictionary = {}
 var skill_icon_assets: Dictionary = {}
 var scene_background_assets: Dictionary = {}
+var stage_layer_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
@@ -667,6 +668,7 @@ func load_database() -> void:
 	_load_item_icon_assets()
 	_load_skill_icon_assets()
 	_load_scene_background_assets()
+	_load_stage_layer_assets()
 	_load_regions()
 
 func _load_items() -> void:
@@ -715,6 +717,23 @@ func _load_skill_icon_assets() -> void:
 func _load_scene_background_assets() -> void:
 	scene_background_assets.clear()
 	_load_asset_mapping("res://data/scene_background_assets.json", scene_background_assets)
+
+func _load_stage_layer_assets() -> void:
+	stage_layer_assets.clear()
+	var file := FileAccess.open("res://data/stage_layer_assets.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for region_id in parsed.keys():
+		var entry = parsed[region_id]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var layers := {}
+		for layer_name in entry.keys():
+			layers[str(layer_name)] = str(entry[layer_name])
+		stage_layer_assets[str(region_id)] = layers
 
 func _load_asset_mapping(path: String, target: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -930,6 +949,14 @@ func get_skill_icon_path(skill_id: String) -> String:
 
 func get_scene_background_path(region_id: String) -> String:
 	return str(scene_background_assets.get(region_id, ""))
+
+func get_stage_layer_assets(region_id: String) -> Dictionary:
+	var layers: Dictionary = stage_layer_assets.get(region_id, {})
+	return layers.duplicate(true)
+
+func get_stage_layer_path(region_id: String, layer_name: String) -> String:
+	var layers: Dictionary = stage_layer_assets.get(region_id, {})
+	return str(layers.get(layer_name, ""))
 
 func load_texture(path: String, use_mipmaps: bool = false) -> Texture2D:
 	if path.is_empty():

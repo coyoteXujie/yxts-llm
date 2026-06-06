@@ -14,16 +14,21 @@ const HANGING_FOREGROUND_COUNT := 8
 const HANGING_FOREGROUND_ALPHA := 0.28
 const FRONT_SETPIECE_COUNT := 6
 const FRONT_SETPIECE_ALPHA := 0.30
+const PAINTED_FOREGROUND_LAYER_ALPHA := 0.68
+const PAINTED_FOREGROUND_LAYER_MIST_ALPHA := 0.10
+const PAINTED_FOREGROUND_LAYER_EDGE_ALPHA := 0.18
 
 var current_region: Dictionary = {}
 var map_size := Vector2.ZERO
 var tile_size := 48
 var visual_phase := 0.0
+var painted_foreground_texture: Texture2D
 
 func setup_region(region: Dictionary, new_map_size: Vector2, new_tile_size: int) -> void:
 	current_region = region.duplicate(true)
 	map_size = new_map_size
 	tile_size = new_tile_size
+	_load_painted_foreground_layer()
 	queue_redraw()
 
 func set_visual_phase(value: float) -> void:
@@ -43,8 +48,39 @@ func _draw() -> void:
 	_draw_front_depth_frames(accent, region_type, terrain)
 	_draw_front_setpieces(accent, region_type, terrain)
 	_draw_bottom_occluders(accent, region_type, terrain)
+	_draw_painted_foreground_layer(accent)
 	_draw_foreground_mist(accent, terrain)
 	_draw_bottom_vignette(accent)
+
+func _load_painted_foreground_layer() -> void:
+	painted_foreground_texture = null
+	var region_id := str(current_region.get("id", ""))
+	if region_id.is_empty():
+		return
+	var path := GameData.get_stage_layer_path(region_id, "foreground")
+	if path.is_empty():
+		return
+	painted_foreground_texture = GameData.load_texture(path, true)
+
+func _draw_painted_foreground_layer(accent: Color) -> void:
+	if painted_foreground_texture == null:
+		return
+	var rect := Rect2(Vector2.ZERO, map_size)
+	draw_texture_rect(painted_foreground_texture, rect, false, Color(1.0, 1.0, 1.0, PAINTED_FOREGROUND_LAYER_ALPHA))
+	_draw_soft_rect(
+		Rect2(Vector2(0.0, map_size.y * 0.66), Vector2(map_size.x, map_size.y * 0.24)),
+		Color(accent.r, accent.g, accent.b, PAINTED_FOREGROUND_LAYER_MIST_ALPHA)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2.ZERO, Vector2(map_size.x * 0.10, map_size.y)),
+		Color(0.0, 0.0, 0.0, PAINTED_FOREGROUND_LAYER_EDGE_ALPHA),
+		Color(0.0, 0.0, 0.0, 0.0)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2(map_size.x * 0.90, 0.0), Vector2(map_size.x * 0.10, map_size.y)),
+		Color(0.0, 0.0, 0.0, 0.0),
+		Color(0.0, 0.0, 0.0, PAINTED_FOREGROUND_LAYER_EDGE_ALPHA)
+	)
 
 func _draw_top_depth(accent: Color, region_type: String, terrain: String) -> void:
 	if region_type == "city" or region_type == "town":
@@ -581,6 +617,14 @@ func _draw_soft_rect(rect: Rect2, color: Color) -> void:
 		rect.position + rect.size,
 		rect.position + Vector2(0.0, rect.size.y)
 	]), PackedColorArray([clear, clear, color, color]))
+
+func _draw_stage_horizontal_gradient(rect: Rect2, left_color: Color, right_color: Color) -> void:
+	draw_polygon(PackedVector2Array([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y)
+	]), PackedColorArray([left_color, right_color, right_color, left_color]))
 
 func _draw_ellipse(x: float, y: float, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

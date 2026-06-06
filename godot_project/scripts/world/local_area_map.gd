@@ -150,9 +150,6 @@ const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.82
 const STAGE_DEPTH_MAX_SCALE := 1.16
-const STAGE_MIDGROUND_LAYER_TEXTURES := {
-	"qinghe": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png"
-}
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -213,7 +210,7 @@ func _load_region_scene_background() -> void:
 	var path := GameData.get_scene_background_path(region_id)
 	if not path.is_empty():
 		scene_background_texture = GameData.load_texture(path, true)
-	var layer_path := str(STAGE_MIDGROUND_LAYER_TEXTURES.get(region_id, ""))
+	var layer_path := GameData.get_stage_layer_path(region_id, "midground")
 	if not layer_path.is_empty():
 		scene_midground_layer_texture = GameData.load_texture(layer_path, true)
 

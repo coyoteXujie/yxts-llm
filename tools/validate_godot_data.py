@@ -29,6 +29,7 @@ def main() -> int:
     item_icon_assets = load_json("item_icon_assets.json")
     skill_icon_assets = load_json("skill_icon_assets.json")
     scene_background_assets = load_json("scene_background_assets.json")
+    stage_layer_assets = load_json("stage_layer_assets.json")
 
     item_ids = {item["id"] for item in items}
     npc_names = {npc["name"] for npc in npcs}
@@ -143,6 +144,20 @@ def main() -> int:
         if not asset_path.exists():
             errors.append(f"scene background path missing for {region_id}: {background_path}")
 
+    allowed_stage_layers = {"midground", "foreground"}
+    for region_id, layers in stage_layer_assets.items():
+        if region_id not in region_id_set:
+            errors.append(f"stage layer mapping references missing region {region_id}")
+        if not isinstance(layers, dict):
+            errors.append(f"stage layer mapping for {region_id} must be an object")
+            continue
+        for layer_name, layer_path in layers.items():
+            if layer_name not in allowed_stage_layers:
+                errors.append(f"stage layer mapping for {region_id} has unknown layer {layer_name}")
+            asset_path = ROOT / "godot_project" / str(layer_path).removeprefix("res://")
+            if not asset_path.exists():
+                errors.append(f"stage layer path missing for {region_id}.{layer_name}: {layer_path}")
+
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -150,7 +165,8 @@ def main() -> int:
 
     print(
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
-        f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} scenes={len(scene_background_assets)}"
+        f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
+        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)}"
     )
     return 0
 
