@@ -2,7 +2,9 @@ extends CharacterBody2D
 class_name PlayerActor
 
 const SPEED := 190.0
-const DRAW_SCALE := 0.86
+const DRAW_SCALE := 1.0
+const SPRITE_TARGET_HEIGHT := 104.0
+const SPRITE_TARGET_WIDTH := 84.0
 
 var movement_enabled := true
 var world_map: Node = null
@@ -17,6 +19,12 @@ func _ready() -> void:
 	if not EventBus.player_changed.is_connected(_on_player_changed):
 		EventBus.player_changed.connect(_on_player_changed)
 	_refresh_sprite_texture()
+	set_process(true)
+
+func _process(delta: float) -> void:
+	var moving := movement_enabled and velocity.length() > 1.0
+	walk_phase += delta * (10.5 if moving else 1.45)
+	queue_redraw()
 
 func _physics_process(_delta: float) -> void:
 	if not movement_enabled:
@@ -36,7 +44,6 @@ func _physics_process(_delta: float) -> void:
 	if input_vector != Vector2.ZERO:
 		input_vector = input_vector.normalized()
 		facing = input_vector
-		walk_phase += 0.18
 		queue_redraw()
 
 	var previous_position := position
@@ -55,21 +62,26 @@ func _draw() -> void:
 	var trim := GameData.get_faction_color(faction).lightened(0.18)
 	var skin := Color(0.88, 0.73, 0.58)
 	var ink := Color(0.08, 0.07, 0.06)
-	var bob := sin(walk_phase) * 1.5 if velocity.length() > 1.0 else 0.0
+	var moving := velocity.length() > 1.0
+	var bob := sin(walk_phase) * 3.2 if moving else sin(walk_phase) * 0.75
+	var lean := clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45
 
-	_draw_actor_shadow(Vector2(4, 28), Vector2(34, 11), 1.0)
+	_draw_actor_shadow(Vector2(4, 32), Vector2(42, 13), 1.0)
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
-		var target_height := 84.0
-		var target_width := 66.0
+		var target_height := SPRITE_TARGET_HEIGHT
+		var target_width := SPRITE_TARGET_WIDTH
 		var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
-		var draw_size := texture_size * factor
-		var top_left := Vector2(-draw_size.x * 0.5, 31.0 - draw_size.y + bob)
-		var outline_rect := Rect2(top_left - Vector2(2.0, 1.0), draw_size + Vector2(4.0, 4.0))
+		var breath := 1.0 + sin(walk_phase * 0.72) * (0.010 if moving else 0.018)
+		var step_sway := absf(sin(walk_phase)) if moving else 0.0
+		var draw_size := texture_size * factor * Vector2(1.0 + step_sway * 0.018, breath - step_sway * 0.006)
+		var foot_y := 35.0 + bob
+		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
+		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		var dir := facing.normalized()
-		draw_line(Vector2(0, 2 + bob), dir * 16.0 + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.16), 1.8)
+		draw_line(Vector2(0, 4 + bob), dir * 18.0 + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
 		return
 	draw_set_transform(Vector2(0, bob), 0.0, Vector2.ONE * DRAW_SCALE)
 

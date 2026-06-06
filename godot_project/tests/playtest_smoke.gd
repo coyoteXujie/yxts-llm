@@ -48,6 +48,7 @@ func _run() -> void:
 	test_root.add_child(player)
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
+	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 100.0, "玩家地图角色显示不应继续偏小")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
 	test_root.add_child(local_area)
@@ -59,6 +60,7 @@ func _run() -> void:
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
+	_check(_max_textured_actor_height(local_area.npc_nodes) >= 90.0, "局部地图 NPC 贴图显示不应继续偏小")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
@@ -171,6 +173,15 @@ func _textured_prop_count(nodes: Array) -> int:
 		if is_instance_valid(prop) and prop.prop_texture != null:
 			count += 1
 	return count
+
+func _max_textured_actor_height(nodes: Array) -> float:
+	var max_height := 0.0
+	for actor in nodes:
+		if not is_instance_valid(actor) or actor.sprite_node == null or actor.sprite_node.texture == null:
+			continue
+		var texture_size: Vector2 = actor.sprite_node.texture.get_size()
+		max_height = maxf(max_height, texture_size.y * actor.sprite_node.scale.y)
+	return max_height
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:

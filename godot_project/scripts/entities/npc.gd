@@ -11,9 +11,17 @@ var sprite_node: Sprite2D
 var sprite_outline_node: Sprite2D
 var using_sprite_asset := false
 var ambient_timer := 0.0
+var visual_phase := 0.0
+var sprite_base_scale := Vector2.ONE
+var sprite_outline_base_scale := Vector2.ONE
+var sprite_base_position := Vector2.ZERO
+var sprite_outline_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
-const MAP_ACTOR_SCALE := 0.78
+const MAP_ACTOR_SCALE := 0.92
+const BASE_SPRITE_HEIGHT := 94.0
+const MASTER_SPRITE_HEIGHT := 106.0
+const ENEMY_SPRITE_HEIGHT := 102.0
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -40,14 +48,15 @@ func _ready() -> void:
 		_refresh_sprite_asset()
 
 func _process(delta: float) -> void:
-	if ambient_panel == null or not ambient_panel.visible:
-		return
-	ambient_timer -= delta
-	if ambient_timer <= 0.0:
-		clear_ambient_line()
-		return
-	var fade := clampf(ambient_timer / 0.65, 0.0, 1.0)
-	ambient_panel.modulate.a = fade if ambient_timer < 0.65 else 1.0
+	visual_phase += delta * _idle_motion_speed()
+	_update_sprite_motion()
+	if ambient_panel != null and ambient_panel.visible:
+		ambient_timer -= delta
+		if ambient_timer <= 0.0:
+			clear_ambient_line()
+			return
+		var fade := clampf(ambient_timer / 0.65, 0.0, 1.0)
+		ambient_panel.modulate.a = fade if ambient_timer < 0.65 else 1.0
 
 func is_enemy() -> bool:
 	return str(data.get("npc_type", "normal")) == "enemy"
@@ -166,7 +175,7 @@ func _visual_offset() -> Vector2:
 	return Vector2(ox, oy)
 
 func _map_actor_scale() -> float:
-	return clamp(float(data.get("map_actor_scale", 1.0)), 0.45, 1.15)
+	return clamp(float(data.get("map_actor_scale", 1.0)), 0.55, 1.25)
 
 func _refresh_sprite_asset() -> void:
 	if not bool(data.get("use_map_sprite", USE_FULL_SPRITES_ON_MAP)):
@@ -196,30 +205,36 @@ func _refresh_sprite_asset() -> void:
 	sprite_outline_node.texture = texture
 	sprite_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()
-	var target_height := 82.0
-	var target_width := 72.0
+	var target_height := BASE_SPRITE_HEIGHT
+	var target_width := 80.0
 	if is_master():
-		target_height = 90.0
-		target_width = 78.0
+		target_height = MASTER_SPRITE_HEIGHT
+		target_width = 88.0
 	if is_enemy():
-		target_height = 88.0
-		target_width = 76.0
+		target_height = ENEMY_SPRITE_HEIGHT
+		target_width = 86.0
 	if str(data.get("name", "")) == "神秘人":
-		target_height = 94.0
-		target_width = 82.0
+		target_height = 114.0
+		target_width = 96.0
 	var map_scale := _map_actor_scale()
 	target_height *= map_scale
 	target_width *= map_scale
 	var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
-	sprite_outline_node.scale = Vector2.ONE * factor * 1.045
-	sprite_outline_node.position = Vector2(0, -7 * map_scale + 1.2)
+	sprite_outline_base_scale = Vector2.ONE * factor * 1.05
+	sprite_outline_base_position = Vector2(0, -9 * map_scale + 1.4)
+	sprite_outline_node.scale = sprite_outline_base_scale
+	sprite_outline_node.position = sprite_outline_base_position
 	sprite_outline_node.visible = true
-	sprite_node.scale = Vector2.ONE * factor
-	sprite_node.position = Vector2(0, -7 * map_scale)
+	sprite_base_scale = Vector2.ONE * factor
+	sprite_base_position = Vector2(0, -9 * map_scale)
+	sprite_node.scale = sprite_base_scale
+	sprite_node.position = sprite_base_position
 	sprite_node.visible = true
 	using_sprite_asset = true
 	if name_label != null:
 		name_label.z_index = 3
+		name_label.position = Vector2(-58, -92 * map_scale)
+	_update_sprite_motion()
 
 func _clear_sprite_asset() -> void:
 	using_sprite_asset = false
@@ -238,11 +253,11 @@ func _draw() -> void:
 	if using_sprite_asset:
 		var map_scale := _map_actor_scale()
 		_draw_ground_marker(accent)
-		_draw_actor_shadow(Vector2(3, 22 * map_scale), Vector2(17.0 * map_scale, 5.2 * map_scale), 0.92)
+		_draw_actor_shadow(Vector2(3, 25 * map_scale), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
 		_draw_aura(appearance, accent)
 		if highlighted:
-			draw_arc(Vector2.ZERO, 27.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
-			draw_circle(Vector2(0, 27 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
+			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
+			draw_circle(Vector2(0, 31 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
 		return
 
 	var skin := _color(appearance.get("skin", [0.84, 0.68, 0.52]), Color(0.84, 0.68, 0.52))
@@ -280,7 +295,30 @@ func _draw_ground_marker(accent: Color) -> void:
 		color = Color(0.76, 0.12, 0.09, 0.30)
 	_draw_ellipse(Vector2(0, 26 * map_scale), Vector2(15 * map_scale, 4.5 * map_scale), color)
 	if bool(data.get("has_quests", false)):
-		draw_circle(Vector2(15 * map_scale, -38 * map_scale), 3.5, Color(0.98, 0.78, 0.28, 0.95))
+		draw_circle(Vector2(17 * map_scale, -50 * map_scale), 3.8, Color(0.98, 0.78, 0.28, 0.95))
+
+func _idle_motion_speed() -> float:
+	if is_enemy():
+		return 1.35
+	if is_master():
+		return 0.95
+	return 1.10
+
+func _update_sprite_motion() -> void:
+	if not using_sprite_asset or sprite_node == null or sprite_outline_node == null:
+		return
+	var npc_id := int(data.get("id", 0))
+	var phase := visual_phase + float(npc_id % 29) * 0.31
+	var wave := sin(phase)
+	var soft_step := sin(phase * 0.55)
+	var height_pulse := 1.0 + wave * (0.010 if is_enemy() else 0.014)
+	var width_pulse := 1.0 - wave * 0.004
+	var float_y := wave * (0.36 if is_master() else 0.48)
+	var sway_x := soft_step * (0.38 if is_master() else 0.55)
+	sprite_node.scale = sprite_base_scale * Vector2(width_pulse, height_pulse)
+	sprite_outline_node.scale = sprite_outline_base_scale * Vector2(width_pulse, height_pulse)
+	sprite_node.position = sprite_base_position + Vector2(sway_x, float_y)
+	sprite_outline_node.position = sprite_outline_base_position + Vector2(sway_x, float_y + 0.25)
 
 func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
