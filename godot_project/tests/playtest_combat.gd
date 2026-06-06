@@ -83,6 +83,9 @@ func _run() -> void:
 	_check(COMBAT_STAGE_SCRIPT.HIT_SHAKE_PIXELS >= 5.0, "2.5D 战斗舞台命中应保留屏幕震动强度")
 	_check(COMBAT_STAGE_SCRIPT.IMPACT_SPEED_LINE_COUNT >= 8, "2.5D 战斗舞台命中应绘制速度线")
 	_check(COMBAT_STAGE_SCRIPT.GROUND_CRACK_COUNT >= 5, "2.5D 战斗舞台重击应绘制地面裂纹")
+	_check(COMBAT_STAGE_SCRIPT.ACTOR_LUNGE_PIXELS >= 30.0, "2.5D 战斗舞台角色出招应有明显前冲")
+	_check(COMBAT_STAGE_SCRIPT.ACTOR_HURT_RECOIL_PIXELS >= 16.0, "2.5D 战斗舞台角色受击应有明显后退")
+	_check(COMBAT_STAGE_SCRIPT.HURT_FLASH_ALPHA >= 0.35, "2.5D 战斗舞台受击应保留闪红/闪白反馈")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]
@@ -93,29 +96,60 @@ func _run() -> void:
 	stage.event_timer = COMBAT_STAGE_SCRIPT.COMBAT_EVENT_DURATION * 0.5
 	_check(stage._hit_freeze_alpha() > 0.80, "伤害事件命中点应产生短暂停顿强调")
 	_check(stage._stage_shake_offset().length() > 0.0, "伤害事件命中点应产生舞台偏移")
+	var player_base := Vector2(110.0, 230.0)
+	var enemy_base := Vector2(410.0, 226.0)
+	var player_attack_pose: Dictionary = stage._actor_pose("player", player_base)
+	var enemy_hurt_pose: Dictionary = stage._actor_pose("enemy", enemy_base)
+	var player_attack_foot: Vector2 = player_attack_pose.get("foot", player_base)
+	var enemy_hurt_foot: Vector2 = enemy_hurt_pose.get("foot", enemy_base)
+	_check(player_attack_foot.x > player_base.x + COMBAT_STAGE_SCRIPT.ACTOR_LUNGE_PIXELS * 0.70, "玩家攻击姿态应向敌人前冲")
+	_check(float(player_attack_pose.get("action", 0.0)) > 0.85, "玩家攻击姿态应进入高强度动作态")
+	_check(float(player_attack_pose.get("afterimage", 0.0)) > 0.85, "玩家攻击姿态应触发残影")
+	_check(enemy_hurt_foot.x > enemy_base.x + COMBAT_STAGE_SCRIPT.ACTOR_HURT_RECOIL_PIXELS * 0.80, "敌人受击姿态应后退")
+	_check(float(enemy_hurt_pose.get("flash", 0.0)) > 0.85, "敌人受击姿态应闪红")
+	_check(float(enemy_hurt_pose.get("scale_y", 1.0)) < 0.92, "敌人受击姿态应压缩体态")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 2, "kind": "damage", "target": "enemy", "source": "雪山剑法", "amount": 28}]
+		"events": [{"id": 2, "kind": "damage", "target": "player", "source": "爪击", "amount": 12}]
+	})
+	stage.event_timer = COMBAT_STAGE_SCRIPT.COMBAT_EVENT_DURATION * 0.5
+	var enemy_attack_pose: Dictionary = stage._actor_pose("enemy", enemy_base)
+	var player_hurt_pose: Dictionary = stage._actor_pose("player", player_base)
+	var enemy_attack_foot: Vector2 = enemy_attack_pose.get("foot", enemy_base)
+	var player_hurt_foot: Vector2 = player_hurt_pose.get("foot", player_base)
+	_check(enemy_attack_foot.x < enemy_base.x - COMBAT_STAGE_SCRIPT.ACTOR_LUNGE_PIXELS * 0.70, "敌人攻击姿态应向玩家前冲")
+	_check(player_hurt_foot.x < player_base.x - COMBAT_STAGE_SCRIPT.ACTOR_HURT_RECOIL_PIXELS * 0.80, "玩家受击姿态应后退")
+	stage.event_timer = 0.0
+	stage.snapshot = {"enemy": {"hp": 10, "max_hp": 75}}
+	var enemy_low_pose: Dictionary = stage._actor_pose("enemy", enemy_base)
+	_check(float(enemy_low_pose.get("low_hp", 0.0)) > 0.40, "低血量敌人应进入虚弱姿态")
+	stage.snapshot = {"enemy": {"hp": 0, "max_hp": 75}}
+	var enemy_downed_pose: Dictionary = stage._actor_pose("enemy", enemy_base)
+	_check(bool(enemy_downed_pose.get("collapsed", false)), "零血量敌人应进入倒地姿态")
+	_check(float(enemy_downed_pose.get("scale_y", 1.0)) < 0.55, "倒地姿态应压低角色高度")
+	stage.update_snapshot({
+		"enemy": GameData.get_npc_by_name("流氓"),
+		"events": [{"id": 3, "kind": "damage", "target": "enemy", "source": "雪山剑法", "amount": 28}]
 	})
 	_check(stage.effect_style == "ice", "雪山剑法应触发冰雪剑气特效")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 3, "kind": "damage", "target": "enemy", "source": "天山六阳掌", "amount": 36}]
+		"events": [{"id": 4, "kind": "damage", "target": "enemy", "source": "天山六阳掌", "amount": 36}]
 	})
 	_check(stage.effect_style == "fire", "天山六阳掌应触发火焰掌风特效")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 4, "kind": "damage", "target": "enemy", "source": "忍术", "amount": 18}]
+		"events": [{"id": 5, "kind": "damage", "target": "enemy", "source": "忍术", "amount": 18}]
 	})
 	_check(stage.effect_style == "poison", "忍术应触发毒雾特效")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 5, "kind": "damage", "target": "enemy", "source": "八卦刀", "amount": 24}]
+		"events": [{"id": 6, "kind": "damage", "target": "enemy", "source": "八卦刀", "amount": 24}]
 	})
 	_check(stage.effect_style == "blade", "八卦刀应触发刀光特效")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
-		"events": [{"id": 6, "kind": "heal", "target": "enemy", "source": "回气", "amount": 12}]
+		"events": [{"id": 7, "kind": "heal", "target": "enemy", "source": "回气", "amount": 12}]
 	})
 	_check(stage.event_shake_strength == 0.0, "治疗/回气事件不应触发命中震动")
 	stage.queue_free()

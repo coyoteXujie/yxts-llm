@@ -12,6 +12,14 @@ const HEAVY_HIT_SHAKE_PIXELS := 8.0
 const HIT_FREEZE_WINDOW := 0.17
 const IMPACT_SPEED_LINE_COUNT := 9
 const GROUND_CRACK_COUNT := 5
+const ACTOR_LUNGE_PIXELS := 32.0
+const ACTOR_WINDUP_PIXELS := 11.0
+const ACTOR_RECOVER_PIXELS := 8.0
+const ACTOR_HURT_RECOIL_PIXELS := 17.0
+const ACTOR_ATTACK_STRETCH := 0.08
+const ACTOR_HURT_SQUASH := 0.12
+const HURT_FLASH_ALPHA := 0.42
+const LOW_HP_STANCE_THRESHOLD := 0.30
 
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
@@ -249,62 +257,150 @@ func _draw_combatants(rect: Rect2) -> void:
 	var ground_y := _ground_y(rect)
 	var player_foot := Vector2(rect.position.x + rect.size.x * 0.28, ground_y + 40.0)
 	var enemy_foot := Vector2(rect.position.x + rect.size.x * 0.72, ground_y + 35.0)
-	var impact := _event_life_ratio()
-	var player_lunge := 0.0
-	var enemy_lunge := 0.0
-	var player_hurt := 0.0
-	var enemy_hurt := 0.0
-	var hit_hold := _hit_freeze_alpha()
-	if event_timer > 0.0 and event_target == "enemy":
-		player_lunge = sin(impact * PI) * (18.0 + hit_hold * 7.0)
-		enemy_hurt = sin(impact * PI * 2.0) * (5.0 + hit_hold * 3.0)
-	elif event_timer > 0.0 and event_target == "player":
-		enemy_lunge = sin(impact * PI) * (18.0 + hit_hold * 7.0)
-		player_hurt = sin(impact * PI * 2.0) * -(5.0 + hit_hold * 3.0)
-	var action_alpha := sin(impact * PI) if event_timer > 0.0 else 0.0
-	var player_action := action_alpha if event_target == "enemy" else 0.0
-	var enemy_action := action_alpha if event_target == "player" else 0.0
-	var player_draw_foot := player_foot + Vector2(player_lunge + player_hurt, 0.0)
-	var enemy_draw_foot := enemy_foot + Vector2(-enemy_lunge + enemy_hurt, 0.0)
-	_draw_actor_shadow(player_draw_foot, 1.08 + player_action * 0.08)
-	_draw_actor_shadow(enemy_draw_foot, 1.15 + enemy_action * 0.08)
+	var player_pose := _actor_pose("player", player_foot)
+	var enemy_pose := _actor_pose("enemy", enemy_foot)
+	var player_draw_foot: Vector2 = player_pose.get("foot", player_foot)
+	var enemy_draw_foot: Vector2 = enemy_pose.get("foot", enemy_foot)
+	var player_action := float(player_pose.get("action", 0.0))
+	var enemy_action := float(enemy_pose.get("action", 0.0))
+	var player_shadow_scale := 1.08 + player_action * 0.08 + float(player_pose.get("low_hp", 0.0)) * 0.04
+	var enemy_shadow_scale := 1.15 + enemy_action * 0.08 + float(enemy_pose.get("low_hp", 0.0)) * 0.04
+	_draw_actor_shadow(player_draw_foot, player_shadow_scale)
+	_draw_actor_shadow(enemy_draw_foot, enemy_shadow_scale)
 	_draw_actor_contact_light(player_draw_foot, accent_color, 0.90 + player_action * 0.45, 1.0)
 	_draw_actor_contact_light(enemy_draw_foot, Color(0.78, 0.18, 0.12), 0.82 + enemy_action * 0.45, 1.08)
-	_draw_actor_afterimage(player_texture, player_draw_foot - Vector2(18.0 + player_lunge * 0.55, 0.0), PLAYER_STAGE_HEIGHT, accent_color.lightened(0.22), player_action)
-	_draw_actor_afterimage(enemy_texture, enemy_draw_foot + Vector2(18.0 + enemy_lunge * 0.55, 0.0), ENEMY_STAGE_HEIGHT, Color(0.95, 0.32, 0.18), enemy_action)
-	_draw_player_actor(player_draw_foot, player_action)
-	_draw_enemy_actor(enemy_draw_foot, enemy_action)
+	_draw_actor_afterimage(player_texture, player_draw_foot + Vector2(float(player_pose.get("afterimage_x", 0.0)), 0.0), PLAYER_STAGE_HEIGHT, accent_color.lightened(0.22), float(player_pose.get("afterimage", 0.0)))
+	_draw_actor_afterimage(enemy_texture, enemy_draw_foot + Vector2(float(enemy_pose.get("afterimage_x", 0.0)), 0.0), ENEMY_STAGE_HEIGHT, Color(0.95, 0.32, 0.18), float(enemy_pose.get("afterimage", 0.0)))
+	_draw_player_actor(player_pose)
+	_draw_enemy_actor(enemy_pose)
 	_draw_status_bars(player_foot, enemy_foot)
 	_draw_action_effects(rect, player_foot, enemy_foot)
 
-func _draw_player_actor(foot: Vector2, action_intensity: float = 0.0) -> void:
+func _actor_pose(side: String, base_foot: Vector2) -> Dictionary:
+	var hp_ratio := _actor_hp_ratio(side)
+	var low_hp := 0.0
+	if hp_ratio > 0.0 and hp_ratio <= LOW_HP_STANCE_THRESHOLD:
+		low_hp = clampf((LOW_HP_STANCE_THRESHOLD - hp_ratio) / LOW_HP_STANCE_THRESHOLD, 0.0, 1.0)
+	var pose := {
+		"foot": base_foot,
+		"action": 0.0,
+		"hurt": 0.0,
+		"flash": 0.0,
+		"scale_x": 1.0 + low_hp * 0.04,
+		"scale_y": 1.0 - low_hp * 0.07,
+		"lift": -low_hp * 3.0,
+		"afterimage": 0.0,
+		"afterimage_x": 0.0,
+		"low_hp": low_hp,
+		"collapsed": false
+	}
+	if hp_ratio <= 0.0:
+		pose["scale_x"] = 1.34
+		pose["scale_y"] = 0.42
+		pose["lift"] = 0.0
+		pose["collapsed"] = true
+		pose["foot"] = base_foot + Vector2(0.0, 8.0)
+		return pose
+	if event_timer <= 0.0:
+		return pose
+	var hostile_event := event_kind == "damage" or event_kind == "phase" or event_kind == "stun" or event_kind == "miss"
+	if not hostile_event:
+		return pose
+	var attacker_side := "player" if event_target == "enemy" else "enemy"
+	var elapsed := 1.0 - _event_life_ratio()
+	var windup := _pose_window(elapsed, 0.16, 0.17)
+	var drive := _pose_window(elapsed, 0.48, 0.27)
+	var recover := _pose_window(elapsed, 0.78, 0.24)
+	var hit_hold := _hit_freeze_alpha()
+	if side == attacker_side:
+		var direction := 1.0 if side == "player" else -1.0
+		var lunge := drive * (ACTOR_LUNGE_PIXELS + hit_hold * 8.0)
+		var windback := windup * ACTOR_WINDUP_PIXELS
+		var settle := recover * ACTOR_RECOVER_PIXELS
+		var attack_foot: Vector2 = pose["foot"]
+		pose["foot"] = attack_foot + Vector2(direction * (lunge - windback - settle), -drive * 4.0 + windup * 1.5)
+		pose["scale_x"] = float(pose["scale_x"]) + drive * ACTOR_ATTACK_STRETCH - windup * 0.03
+		pose["scale_y"] = float(pose["scale_y"]) + windup * 0.05 - drive * 0.04
+		pose["action"] = clampf(maxf(drive, windup * 0.55) + hit_hold * 0.20, 0.0, 1.0)
+		pose["afterimage"] = clampf(drive + hit_hold * 0.35, 0.0, 1.0)
+		pose["afterimage_x"] = -direction * (24.0 + lunge * 0.65)
+	elif event_kind != "miss" and side == event_target:
+		var hurt_direction := -1.0 if side == "player" else 1.0
+		var hurt_wave := sin(elapsed * PI * 3.0) * (1.0 - hit_hold) * 3.0
+		var hurt_foot: Vector2 = pose["foot"]
+		pose["foot"] = hurt_foot + Vector2(hurt_direction * (hit_hold * ACTOR_HURT_RECOIL_PIXELS + hurt_wave), hit_hold * 2.5)
+		pose["scale_x"] = float(pose["scale_x"]) + hit_hold * ACTOR_HURT_SQUASH
+		pose["scale_y"] = float(pose["scale_y"]) - hit_hold * ACTOR_HURT_SQUASH
+		pose["hurt"] = hit_hold
+		pose["flash"] = hit_hold
+	return pose
+
+func _actor_hp_ratio(side: String) -> float:
+	if side == "player":
+		var player_max := maxi(1, int(GameState.player.get("max_hp", 1)))
+		var player_hp := int(GameState.player.get("hp", player_max))
+		return clampf(float(maxi(0, player_hp)) / float(player_max), 0.0, 1.0)
+	var current_enemy: Dictionary = snapshot.get("enemy", enemy)
+	var enemy_max := maxi(1, int(current_enemy.get("max_hp", enemy.get("max_hp", 1))))
+	var enemy_hp := int(current_enemy.get("hp", enemy.get("hp", enemy_max)))
+	return clampf(float(maxi(0, enemy_hp)) / float(enemy_max), 0.0, 1.0)
+
+func _actor_tint(side: String, base: Color, pose: Dictionary) -> Color:
+	var tint := base
+	var flash := float(pose.get("flash", 0.0))
+	if flash > 0.01:
+		var flash_color := Color(1.0, 0.58, 0.44, 1.0) if side == "enemy" else Color(1.0, 0.66, 0.55, 1.0)
+		tint = tint.lerp(flash_color, clampf(flash * 0.64, 0.0, 0.64))
+	var low_hp := float(pose.get("low_hp", 0.0))
+	if low_hp > 0.01:
+		tint = tint.lerp(Color(0.78, 0.72, 0.66, 1.0), low_hp * 0.30)
+	if bool(pose.get("collapsed", false)):
+		tint = tint.darkened(0.28)
+	return tint
+
+func _draw_player_actor(pose: Dictionary) -> void:
+	var foot: Vector2 = pose.get("foot", Vector2.ZERO)
+	var action_intensity := float(pose.get("action", 0.0))
 	if player_texture != null:
-		_draw_actor_texture(player_texture, foot, PLAYER_STAGE_HEIGHT + action_intensity * 8.0, Color(1.0, 1.0, 1.0, 1.0), action_intensity)
+		var tint := _actor_tint("player", Color(1.0, 1.0, 1.0, 1.0), pose)
+		_draw_actor_texture(player_texture, foot, PLAYER_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity, pose)
 	else:
 		_draw_actor_fallback(foot, accent_color, "你")
 
-func _draw_enemy_actor(foot: Vector2, action_intensity: float = 0.0) -> void:
+func _draw_enemy_actor(pose: Dictionary) -> void:
+	var foot: Vector2 = pose.get("foot", Vector2.ZERO)
+	var action_intensity := float(pose.get("action", 0.0))
 	if enemy_texture != null:
-		var tint := Color(1.0, 0.96, 0.91, 1.0)
-		if event_timer > 0.0 and event_target == "enemy" and event_kind == "damage":
-			tint = Color(1.0, 0.70, 0.58, 1.0)
-		_draw_actor_texture(enemy_texture, foot, ENEMY_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity)
+		var tint := _actor_tint("enemy", Color(1.0, 0.96, 0.91, 1.0), pose)
+		_draw_actor_texture(enemy_texture, foot, ENEMY_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity, pose)
 	else:
 		_draw_actor_fallback(foot, Color(0.62, 0.18, 0.14), str(enemy.get("name", "敌")))
 
-func _draw_actor_texture(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, action_intensity: float = 0.0) -> void:
+func _draw_actor_texture(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, action_intensity: float = 0.0, pose: Dictionary = {}) -> void:
 	var texture_size := texture.get_size()
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
 		return
-	var factor := target_height / texture_size.y
-	var draw_size := texture_size * factor
-	var top_left := foot - Vector2(draw_size.x * 0.5, draw_size.y + action_intensity * 5.0)
+	var scale_x := maxf(0.24, float(pose.get("scale_x", 1.0)))
+	var scale_y := maxf(0.24, float(pose.get("scale_y", 1.0)))
+	var lift := float(pose.get("lift", 0.0))
+	var collapsed := bool(pose.get("collapsed", false))
+	var factor := maxf(24.0, target_height * scale_y) / texture_size.y
+	var draw_size := Vector2(texture_size.x * factor * scale_x, texture_size.y * factor)
+	var anchor_y := draw_size.y + action_intensity * 5.0 + lift
+	if collapsed:
+		anchor_y = draw_size.y * 0.54
+	var top_left := foot - Vector2(draw_size.x * 0.5, anchor_y)
 	var outline := Rect2(top_left - Vector2(3.0, 1.5), draw_size + Vector2(6.0, 5.0))
 	draw_texture_rect(texture, outline, false, Color(0.0, 0.0, 0.0, 0.46 + action_intensity * 0.08))
 	if action_intensity > 0.01:
 		draw_texture_rect(texture, Rect2(top_left - Vector2(1.5, 1.5), draw_size), false, Color(tint.r, tint.g, tint.b, 0.12 * action_intensity))
 	draw_texture_rect(texture, Rect2(top_left, draw_size), false, tint)
+	var flash := float(pose.get("flash", 0.0))
+	if flash > 0.01:
+		draw_texture_rect(texture, Rect2(top_left - Vector2(2.0, 0.0), draw_size + Vector2(4.0, 0.0)), false, Color(1.0, 0.32, 0.18, HURT_FLASH_ALPHA * flash))
 	var rim_alpha := 0.13 + action_intensity * 0.10
+	if float(pose.get("low_hp", 0.0)) > 0.01:
+		rim_alpha += 0.05
 	draw_line(top_left + Vector2(draw_size.x * 0.20, draw_size.y * 0.12), top_left + Vector2(draw_size.x * 0.78, draw_size.y * 0.70), Color(1.0, 0.92, 0.62, rim_alpha), 1.8)
 
 func _draw_actor_afterimage(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, alpha: float) -> void:
@@ -633,6 +729,9 @@ func _hit_freeze_alpha() -> float:
 		return 0.0
 	var distance := absf(_event_life_ratio() - 0.50)
 	return clampf(1.0 - distance / HIT_FREEZE_WINDOW, 0.0, 1.0)
+
+func _pose_window(value: float, center: float, radius: float) -> float:
+	return clampf(1.0 - absf(value - center) / maxf(0.001, radius), 0.0, 1.0)
 
 func _stage_shake_offset() -> Vector2:
 	var hit_hold := _hit_freeze_alpha()
