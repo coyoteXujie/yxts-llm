@@ -218,6 +218,11 @@ func _run() -> void:
 	_check(GameState.world_events.size() > previous_event_count, "快速旅行应写入旅行事件")
 	_check(GameState.resolve_fast_travel_risk(travel_plan).is_empty(), "低风险驿路不应触发旅途后果")
 	player.world_map = local_area
+	player.facing = Vector2.DOWN
+	player.position = Vector2(stage_rect.size.x * 0.25, stage_rect.size.y * 0.62)
+	_check(player._facing_side() > 0.0, "玩家局部横版舞台左侧待机应面向舞台中心")
+	player.position = Vector2(stage_rect.size.x * 0.75, stage_rect.size.y * 0.62)
+	_check(player._facing_side() < 0.0, "玩家局部横版舞台右侧待机应面向舞台中心")
 	var front_lane_y := stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO
 	if not lane_positions.is_empty():
 		front_lane_y = float(lane_positions[lane_positions.size() - 1])

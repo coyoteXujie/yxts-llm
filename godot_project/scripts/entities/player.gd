@@ -275,6 +275,8 @@ func _is_side_view_stage() -> bool:
 func _facing_side() -> float:
 	if absf(facing.x) > 0.20:
 		return -1.0 if facing.x < 0.0 else 1.0
+	if _is_side_view_stage() and world_map != null and world_map.has_method("get_stage_actor_facing_side"):
+		return float(world_map.call("get_stage_actor_facing_side", position))
 	return 1.0
 
 func _refresh_sprite_texture(force: bool = false) -> void:
