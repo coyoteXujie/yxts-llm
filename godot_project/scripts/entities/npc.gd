@@ -44,6 +44,10 @@ const STAGE_GROUND_LOCK_ALPHA := 0.24
 const STAGE_TORSO_LINE_ALPHA := 0.24
 const STAGE_SASH_LINE_ALPHA := 0.22
 const STAGE_WEAPON_GLOW_ALPHA := 0.24
+const STAGE_ACTIVITY_CUE_ALPHA := 0.26
+const STAGE_ACTIVITY_SWAY_PIXELS := 4.8
+const STAGE_ACTIVITY_PROP_SCALE := 1.0
+const STAGE_ACTIVITY_GLOW_ALPHA := 0.18
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -347,6 +351,7 @@ func _draw() -> void:
 		_draw_stage_foot_anchors(accent, map_scale)
 		_draw_aura(appearance, accent)
 		_draw_stage_identity_cues(appearance, accent, map_scale)
+		_draw_stage_activity_cue(accent, map_scale)
 		if highlighted:
 			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 			draw_circle(Vector2(0, 31 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
@@ -603,6 +608,149 @@ func _draw_stage_identity_cues(_appearance: Dictionary, accent: Color, map_scale
 		draw_line(cue_pos + Vector2(-3.0, -4.0) * map_scale, cue_pos + Vector2(3.0, 4.0) * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 1.20), 1.4)
 	else:
 		draw_arc(Vector2(0.0, 18.0 * map_scale), 24.0 * map_scale, PI * 0.12, PI * 0.88, 28, Color(role_color.r, role_color.g, role_color.b, alpha * 0.50), 1.4)
+
+func _draw_stage_activity_cue(accent: Color, map_scale: float) -> void:
+	if not _is_stage_actor():
+		return
+	var activity := _stage_activity_type()
+	if activity.is_empty():
+		return
+	var npc_id := int(data.get("id", 0))
+	var phase := visual_phase * 1.18 + float(npc_id % 37) * 0.23
+	var pulse := 0.5 + sin(phase) * 0.5
+	var sway := sin(phase * 0.83) * STAGE_ACTIVITY_SWAY_PIXELS
+	var side := -1.0 if npc_id % 2 == 0 else 1.0
+	var role_color := _stage_role_color(accent)
+	var alpha := STAGE_ACTIVITY_CUE_ALPHA * (0.72 + pulse * 0.28)
+	var hand := Vector2(side * (27.0 + sway) * map_scale, -7.0 * map_scale)
+	var prop_scale := map_scale * STAGE_ACTIVITY_PROP_SCALE
+	match activity:
+		"service":
+			_draw_activity_tray(hand, side, role_color, alpha, phase, prop_scale)
+		"patrol":
+			_draw_activity_lantern(hand, side, role_color, alpha, phase, prop_scale)
+		"scroll":
+			_draw_activity_scroll(hand, side, role_color, alpha, prop_scale)
+		"herb":
+			_draw_activity_herb_basket(hand, side, role_color, alpha, phase, prop_scale)
+		"forge":
+			_draw_activity_forge(hand, side, role_color, alpha, phase, prop_scale)
+		"meditate":
+			_draw_activity_meditate(role_color, alpha, phase, prop_scale)
+		"threat":
+			_draw_activity_threat(role_color, alpha, phase, prop_scale)
+		_:
+			_draw_activity_wander(hand, side, role_color, alpha, phase, prop_scale)
+
+func _draw_activity_tray(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var tray_center := hand + Vector2(side * 8.0, 8.0) * prop_scale
+	draw_line(tray_center + Vector2(-13.0, 0.0) * prop_scale, tray_center + Vector2(14.0, -1.0) * prop_scale, Color(0.52, 0.32, 0.16, alpha * 1.15), 2.2 * prop_scale)
+	draw_circle(tray_center + Vector2(-6.0, -3.0) * prop_scale, 3.0 * prop_scale, Color(0.92, 0.80, 0.55, alpha * 0.92))
+	draw_circle(tray_center + Vector2(5.0, -3.5) * prop_scale, 2.7 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.78))
+	for i in range(3):
+		var x := (-6.0 + float(i) * 5.0) * prop_scale
+		var rise := (6.0 + sin(phase + float(i)) * 1.8) * prop_scale
+		draw_line(tray_center + Vector2(x, -7.0 * prop_scale), tray_center + Vector2(x + side * 2.0 * prop_scale, -7.0 * prop_scale - rise), Color(0.96, 0.90, 0.72, alpha * 0.36), 1.0 * prop_scale)
+
+func _draw_activity_lantern(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var pole_top := hand + Vector2(side * 4.0, -22.0) * prop_scale
+	var pole_bottom := hand + Vector2(side * 9.0, 12.0) * prop_scale
+	var lamp := hand + Vector2(side * 16.0, -13.0 + sin(phase) * 1.6) * prop_scale
+	draw_line(pole_top, pole_bottom, Color(0.28, 0.19, 0.11, alpha * 0.96), 1.7 * prop_scale)
+	draw_line(pole_top, lamp + Vector2(-side * 3.0, -4.0) * prop_scale, Color(0.32, 0.22, 0.13, alpha * 0.82), 1.2 * prop_scale)
+	draw_circle(lamp, 12.0 * prop_scale, Color(1.0, 0.65, 0.24, STAGE_ACTIVITY_GLOW_ALPHA * 0.72))
+	draw_rect(Rect2(lamp - Vector2(5.0, 6.0) * prop_scale, Vector2(10.0, 12.0) * prop_scale), Color(0.92, 0.34, 0.18, alpha * 0.88), true)
+	draw_line(lamp + Vector2(-5.0, -1.0) * prop_scale, lamp + Vector2(5.0, -1.0) * prop_scale, Color(1.0, 0.86, 0.42, alpha), 1.2 * prop_scale)
+	draw_circle(lamp, 2.3 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha))
+
+func _draw_activity_scroll(hand: Vector2, side: float, role_color: Color, alpha: float, prop_scale: float) -> void:
+	var scroll_pos := hand + Vector2(side * 9.0, 7.0) * prop_scale
+	var rect := Rect2(scroll_pos - Vector2(7.0, 11.0) * prop_scale, Vector2(14.0, 22.0) * prop_scale)
+	draw_rect(rect, Color(0.87, 0.76, 0.53, alpha * 0.94), true)
+	draw_rect(rect, Color(0.36, 0.22, 0.12, alpha * 0.86), false, 1.1 * prop_scale)
+	for i in range(3):
+		var y := scroll_pos.y + (-5.0 + float(i) * 5.2) * prop_scale
+		draw_line(Vector2(scroll_pos.x - 4.5 * prop_scale, y), Vector2(scroll_pos.x + 4.5 * prop_scale, y), Color(0.18, 0.12, 0.08, alpha * 0.58), 0.9 * prop_scale)
+	draw_circle(scroll_pos + Vector2(side * 7.0, -11.0) * prop_scale, 2.1 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha))
+
+func _draw_activity_herb_basket(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var basket := hand + Vector2(side * 11.0, 12.0) * prop_scale
+	_draw_ellipse(basket, Vector2(9.0, 4.2) * prop_scale, Color(0.42, 0.25, 0.12, alpha * 0.88))
+	draw_arc(basket + Vector2(0.0, -1.5) * prop_scale, 8.5 * prop_scale, PI, TAU, 18, Color(0.62, 0.40, 0.18, alpha), 1.6 * prop_scale)
+	for i in range(5):
+		var angle := phase * 0.18 + float(i) * 0.92
+		var leaf := basket + Vector2(cos(angle) * 6.0, -7.0 - absf(sin(angle)) * 4.0) * prop_scale
+		draw_line(basket + Vector2(0.0, -3.0) * prop_scale, leaf, Color(0.28, 0.62, 0.28, alpha * 0.82), 1.1 * prop_scale)
+		draw_circle(leaf, 1.6 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.64))
+
+func _draw_activity_forge(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var hammer_head := hand + Vector2(side * 13.0, -11.0 + sin(phase) * 2.4) * prop_scale
+	var hammer_handle := hand + Vector2(side * 2.0, 9.0) * prop_scale
+	draw_line(hammer_handle, hammer_head, Color(0.39, 0.24, 0.12, alpha), 2.4 * prop_scale)
+	draw_rect(Rect2(hammer_head - Vector2(5.0, 3.0) * prop_scale, Vector2(10.0, 6.0) * prop_scale), Color(0.58, 0.56, 0.50, alpha), true)
+	var spark_origin := hand + Vector2(side * 22.0, 8.0) * prop_scale
+	for i in range(5):
+		var angle := phase + float(i) * TAU / 5.0
+		var spark := spark_origin + Vector2(cos(angle) * 8.0, sin(angle) * 5.0) * prop_scale
+		draw_line(spark_origin, spark, Color(1.0, 0.58, 0.18, alpha * 0.86), 1.0 * prop_scale)
+		draw_circle(spark, 1.2 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha))
+
+func _draw_activity_meditate(role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var center := Vector2(0.0, 1.0 * prop_scale)
+	draw_arc(center, 35.0 * prop_scale, -0.18, PI + 0.18, 46, Color(role_color.r, role_color.g, role_color.b, alpha * 0.78), 1.8 * prop_scale)
+	draw_arc(center + Vector2(0.0, 3.0) * prop_scale, 24.0 * prop_scale, PI * 0.08, PI * 0.92, 32, Color(0.96, 0.86, 0.52, alpha * 0.36), 1.2 * prop_scale)
+	for i in range(6):
+		var angle := phase * 0.46 + float(i) * TAU / 6.0
+		var pos := center + Vector2(cos(angle) * 30.0, sin(angle) * 8.0) * prop_scale
+		draw_circle(pos, 1.4 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.92))
+
+func _draw_activity_threat(role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var lift := sin(phase * 0.76) * 2.0 * prop_scale
+	draw_line(Vector2(-33.0, 11.0) * prop_scale, Vector2(34.0, -7.0) * prop_scale + Vector2(0.0, lift), Color(role_color.r, role_color.g, role_color.b, alpha * 1.05), 2.4 * prop_scale)
+	draw_line(Vector2(-24.0, 22.0) * prop_scale, Vector2(23.0, 4.0) * prop_scale + Vector2(0.0, lift), Color(1.0, 0.76, 0.44, alpha * 0.48), 1.4 * prop_scale)
+	draw_circle(Vector2(24.0, 2.0) * prop_scale + Vector2(0.0, lift), 3.0 * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.96))
+
+func _draw_activity_wander(hand: Vector2, side: float, role_color: Color, alpha: float, phase: float, prop_scale: float) -> void:
+	var satchel := hand + Vector2(side * 10.0, 12.0) * prop_scale
+	_draw_ellipse(satchel, Vector2(6.0, 8.0) * prop_scale, Color(0.35, 0.22, 0.12, alpha * 0.82))
+	draw_line(satchel + Vector2(-side * 3.5, -8.0) * prop_scale, satchel + Vector2(side * 5.0, 7.0) * prop_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.78), 1.2 * prop_scale)
+	var tassel_start := satchel + Vector2(side * 5.5, 5.0) * prop_scale
+	var tassel_end := tassel_start + Vector2(side * (5.0 + sin(phase) * 2.0), 7.0) * prop_scale
+	draw_line(tassel_start, tassel_end, Color(0.96, 0.82, 0.42, alpha * 0.72), 1.2 * prop_scale)
+
+func _stage_activity_type() -> String:
+	var explicit_activity := str(data.get("stage_activity", "")).strip_edges()
+	if not explicit_activity.is_empty():
+		return explicit_activity
+	if is_enemy():
+		return "threat"
+	if is_master():
+		return "meditate"
+	var shop_type := str(data.get("shop_type", ""))
+	match shop_type:
+		"apothecary":
+			return "herb"
+		"blacksmith":
+			return "forge"
+		"inn", "tea_house", "market", "cloth_shop":
+			return "service"
+	var npc_name := str(data.get("name", ""))
+	if _npc_name_in(npc_name, ["平阿四", "店小二", "小商贩", "阿青", "小裁缝", "掌柜", "布庄掌柜", "茶博士"]):
+		return "service"
+	if _npc_name_in(npc_name, ["捕快", "巡捕", "衙役", "赵无极"]):
+		return "patrol"
+	if _npc_name_in(npc_name, ["老夫子", "书童", "知客道人", "王辞", "李白"]):
+		return "scroll"
+	if _npc_name_in(npc_name, ["平一指", "采药道人", "药铺掌柜"]):
+		return "herb"
+	if _npc_name_in(npc_name, ["铁匠", "铁匠铺掌柜"]):
+		return "forge"
+	if bool(data.get("has_quests", false)):
+		return "scroll"
+	return "wander"
+
+func _npc_name_in(npc_name: String, names: Array) -> bool:
+	return names.has(npc_name)
 
 func _stage_role_color(accent: Color) -> Color:
 	if is_enemy():

@@ -79,6 +79,9 @@ func _run() -> void:
 	_check(NPC_SCRIPT.STAGE_TORSO_LINE_ALPHA >= 0.20, "NPC 局部横版舞台应保留躯干姿态线")
 	_check(NPC_SCRIPT.STAGE_SASH_LINE_ALPHA >= 0.18, "NPC 局部横版舞台应保留腰带/衣摆动态线")
 	_check(NPC_SCRIPT.STAGE_WEAPON_GLOW_ALPHA >= 0.20, "NPC 局部横版舞台应保留武器辉光层")
+	_check(NPC_SCRIPT.STAGE_ACTIVITY_CUE_ALPHA >= 0.22, "NPC 局部横版舞台应保留职业/行为提示层")
+	_check(NPC_SCRIPT.STAGE_ACTIVITY_SWAY_PIXELS >= 4.0, "NPC 局部横版舞台职业/行为提示应有轻微动态")
+	_check(NPC_SCRIPT.STAGE_ACTIVITY_GLOW_ALPHA >= 0.14, "NPC 局部横版舞台职业/行为提示应保留光效")
 	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
@@ -137,6 +140,7 @@ func _run() -> void:
 	_check(_actors_have_stage_rim(local_area.npc_nodes), "局部地图 NPC 应显示舞台贴图轮廓高光")
 	_check(_actors_have_stage_pose_overlay(local_area.npc_nodes), "局部地图 NPC 应显示贴图前方姿态线")
 	_check(_actors_have_stage_body_overlays(local_area.npc_nodes), "局部地图 NPC 应显示躯干、腰带和武器辉光前层")
+	_check(_actors_have_stage_activity(local_area.npc_nodes), "局部地图 NPC 应具备职业/行为视觉提示")
 	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
 	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -327,6 +331,18 @@ func _actors_have_stage_body_overlays(nodes: Array) -> bool:
 		if has_torso and has_sash and has_weapon_glow:
 			return true
 	return false
+
+func _actors_have_stage_activity(nodes: Array) -> bool:
+	var seen := {}
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		var activity := str(actor._stage_activity_type())
+		if not activity.is_empty():
+			seen[activity] = true
+	return seen.size() >= 3
 
 func _stage_role_scale_bonus() -> bool:
 	var normal = NPC_SCRIPT.new()
