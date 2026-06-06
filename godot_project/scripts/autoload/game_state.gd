@@ -91,6 +91,40 @@ const STORY_CHOICE_DEFINITIONS := [
 		"daode": 1,
 		"money": 80,
 		"items": {"item_shengji": 1}
+	},
+	{
+		"id": "choice_epilogue_mercy",
+		"group": "epilogue_path",
+		"flag": "story_epilogue_mercy",
+		"npcs": ["苏梦瑶", "太极真人"],
+		"title": "清算有度",
+		"description": "封存旧案后只清点首恶和暗线证据，给被胁迫的小人物留一条改过路。",
+		"requires_completed": ["q_main_old_case_closure"],
+		"blocks_completed": ["q_main_epilogue_mercy", "q_main_epilogue_reckoning"],
+		"region_id": "luoyang",
+		"event_title": "清算有度",
+		"event_description": "你决定把旧案清算压在首恶与铁证上，七派开始收束余波而不是扩大仇怨。",
+		"memory": "你选择清算有度，愿给被胁迫的人留一条回头路。",
+		"daode": 8,
+		"money": 0,
+		"items": {"item_dan": 1}
+	},
+	{
+		"id": "choice_epilogue_reckoning",
+		"group": "epilogue_path",
+		"flag": "story_epilogue_reckoning",
+		"npcs": ["陈天行", "赵无极"],
+		"title": "追剿残影",
+		"description": "趁暗影司总坛新破继续清剿残部，换来更干净的江湖，但会把许多旧怨翻到明面。",
+		"requires_completed": ["q_main_old_case_closure"],
+		"blocks_completed": ["q_main_epilogue_mercy", "q_main_epilogue_reckoning"],
+		"region_id": "changan",
+		"event_title": "追剿残影",
+		"event_description": "你决定趁势追剿暗影司残部，武林盟与几路暗线开始连夜清查。",
+		"memory": "你选择追剿残影，宁可翻出旧怨也不让暗影司残部蛰伏。",
+		"daode": 2,
+		"money": 160,
+		"items": {"item_shengji": 1}
 	}
 ]
 
@@ -983,6 +1017,14 @@ func _select_daily_pulse_region() -> Dictionary:
 	return (candidates[index] as Dictionary).duplicate(true)
 
 func _current_story_stage() -> String:
+	if completed_quests.has("q_main_epilogue_mercy"):
+		return "江湖留灯"
+	if completed_quests.has("q_main_epilogue_reckoning"):
+		return "残影清剿"
+	if bool(game_flags.get("story_epilogue_mercy", false)):
+		return "江湖留灯"
+	if bool(game_flags.get("story_epilogue_reckoning", false)):
+		return "残影清剿"
 	if completed_quests.has("q_main_old_case_closure"):
 		return "旧案终册"
 	if completed_quests.has("q_main_after_shadow"):
@@ -1470,6 +1512,10 @@ func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
 			append_world_event("story", "总坛余烬未灭", "苏梦瑶、陈天行与花间暗线开始清点暗影司残部，苏家旧账终于能翻到最后几页。", "luoyang", 5)
 		"q_main_old_case_closure":
 			append_world_event("story", "旧案终册落印", "武林盟与七派共同落印，苏家旧案暂得收束；江湖尾声的路开始分岔。", "luoyang", 6)
+		"q_main_epilogue_mercy":
+			append_world_event("story", "江湖留灯", "苏梦瑶与七派共同封存旧案，只清点首恶和铁证，几处被胁迫的暗线得以改过。", "luoyang", 6)
+		"q_main_epilogue_reckoning":
+			append_world_event("story", "残影清剿", "陈天行与武林盟连夜清查暗影司残部，几条蛰伏多年的旧怨被翻到明面。", "changan", 6)
 		_:
 			append_world_event("quest", "完成%s" % quest_title, "你办完了%s，附近江湖人多了一桩谈资。" % quest_title, current_region_id, 2)
 

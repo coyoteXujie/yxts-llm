@@ -287,7 +287,45 @@ func _run() -> void:
 	GameState.progress_quest("talk", "苏梦瑶", 1)
 	_check(GameState.completed_quests.has("q_main_old_case_closure"), "旧案终册应能完成")
 	_check(GameState.get_world_event_summary(6).find("旧案终册") >= 0, "旧案终册完成后应写入尾声传闻")
-	_check(str(GameState.active_quest).find("江湖进入尾声分支") >= 0, "主线终册后应留下多结局扩展提示")
+	_check(str(GameState.active_quest).find("决定尾声走向") >= 0, "主线终册后应指向尾声抉择")
+	var epilogue_choices := GameState.get_available_story_choices()
+	var epilogue_choice_ids: Array[String] = []
+	for choice in epilogue_choices:
+		epilogue_choice_ids.append(str(choice.get("id", "")))
+	_check(epilogue_choice_ids.has("choice_epilogue_mercy"), "旧案终册后应出现清算有度抉择")
+	_check(epilogue_choice_ids.has("choice_epilogue_reckoning"), "旧案终册后应出现追剿残影抉择")
+	var before_epilogue_daode := int(GameState.player.get("daode", 0))
+	_check(GameState.choose_story_branch("choice_epilogue_mercy"), "应能选择清算有度尾声")
+	_check(bool(GameState.game_flags.get("story_epilogue_mercy", false)), "清算有度应写入尾声旗标")
+	_check(str(GameState.game_flags.get("story_choice_epilogue_path", "")) == "choice_epilogue_mercy", "尾声同组抉择应锁定已选路线")
+	_check(not GameState.choose_story_branch("choice_epilogue_reckoning"), "尾声分支选择后不应再选择另一条")
+	_check(int(GameState.player.get("daode", 0)) >= before_epilogue_daode + 8, "清算有度应提高道德")
+	_check(GameState.can_accept_quest("q_main_epilogue_mercy"), "清算有度后应解锁江湖留灯")
+	_check(not GameState.can_accept_quest("q_main_epilogue_reckoning"), "清算有度后不应解锁残影清剿")
+	GameState.accept_quest("q_main_epilogue_mercy")
+	GameState.progress_quest("talk", "苏梦瑶", 1)
+	GameState.progress_quest("talk", "太极真人", 1)
+	GameState.progress_quest("talk", "花如玉", 1)
+	GameState.progress_quest("talk", "逍遥子", 1)
+	_check(GameState.completed_quests.has("q_main_epilogue_mercy"), "江湖留灯应能完成")
+	_check(GameState.get_world_event_summary(6).find("江湖留灯") >= 0, "江湖留灯完成后应写入尾声传闻")
+	_check(str(GameState.active_quest).find("后续仍需扩展真正的多结局") >= 0, "江湖留灯后应留下长期扩展提示")
+	GameState.new_game({
+		"name": "尾声分支测试",
+		"gender": "female",
+		"faction": "none"
+	})
+	GameState.player["level"] = 9
+	GameState.completed_quests.append("q_main_old_case_closure")
+	_check(GameState.choose_story_branch("choice_epilogue_reckoning"), "应能在独立尾声测试中选择追剿残影")
+	_check(GameState.can_accept_quest("q_main_epilogue_reckoning"), "追剿残影后应解锁残影清剿")
+	GameState.accept_quest("q_main_epilogue_reckoning")
+	GameState.progress_quest("talk", "陈天行", 1)
+	GameState.progress_quest("talk", "赵无极", 1)
+	GameState.progress_quest("talk", "蛇王", 1)
+	GameState.progress_quest("talk", "冰魄", 1)
+	_check(GameState.completed_quests.has("q_main_epilogue_reckoning"), "残影清剿应能完成")
+	_check(GameState.get_world_event_summary(6).find("残影清剿") >= 0, "残影清剿完成后应写入尾声传闻")
 
 	GameState.player["attack"] = 42
 	GameState.player["defense"] = 24

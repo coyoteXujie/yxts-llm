@@ -503,7 +503,7 @@
     "description": "赵无极愿以武林盟名义封存苏家旧案终册，但需要七派共同承认。你需要请太极真人和玄机子落印，再回苏梦瑶处定下旧案结语。",
     "requires_completed": ["q_main_after_shadow"],
     "min_level": 8,
-    "next_hint": "苏家旧案暂得收束，江湖进入尾声分支；多结局与长期世界变化仍需继续扩展。",
+    "next_hint": "苏家旧案暂得收束，去找苏梦瑶或陈天行决定尾声走向。",
     "objectives": [
       {"type": "talk", "target": "赵无极", "count": 1, "label": "请赵无极接收旧案终册"},
       {"type": "talk", "target": "太极真人", "count": 1, "label": "请太极真人为七派落印"},
@@ -511,5 +511,39 @@
       {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "与苏梦瑶定下旧案结语"}
     ],
     "rewards": {"exp": 1100, "money": 680, "daode": 10, "items": {"item_dan": 2, "item_silk_cloth": 1}}
+  },
+  {
+    "id": "q_main_epilogue_mercy",
+    "title": "江湖留灯",
+    "giver": "苏梦瑶",
+    "description": "你决定清算有度。苏梦瑶希望用苏家旧案给江湖留一盏灯：请太极真人约束七派、请花如玉安置被胁迫的暗线，再把结语交还洛阳。",
+    "requires_completed": ["q_main_old_case_closure"],
+    "requires_flags": ["story_epilogue_mercy"],
+    "min_level": 9,
+    "next_hint": "你选择为江湖留灯，旧案暂歇；后续仍需扩展真正的多结局、声望和长期世界变化。",
+    "objectives": [
+      {"type": "talk", "target": "苏梦瑶", "count": 1, "label": "与苏梦瑶写下旧案结语"},
+      {"type": "talk", "target": "太极真人", "count": 1, "label": "请太极真人约束七派清算"},
+      {"type": "talk", "target": "花如玉", "count": 1, "label": "请花如玉安置被胁迫暗线"},
+      {"type": "talk", "target": "逍遥子", "count": 1, "label": "请逍遥子封存总坛暗道图"}
+    ],
+    "rewards": {"exp": 1300, "money": 720, "daode": 14, "items": {"item_dan": 2, "item_shengji": 1}}
+  },
+  {
+    "id": "q_main_epilogue_reckoning",
+    "title": "残影清剿",
+    "giver": "陈天行",
+    "description": "你决定追剿残影。陈天行把残部路线拆成三路：请赵无极动用武林盟旧卷，找蛇王压住南路暗线，再请冰魄确认北境旧怨是否被暗影司重新挑起。",
+    "requires_completed": ["q_main_old_case_closure"],
+    "requires_flags": ["story_epilogue_reckoning"],
+    "min_level": 9,
+    "next_hint": "你选择清剿残影，暗影司余党暂退；后续仍需扩展真正的多结局、声望和长期世界变化。",
+    "objectives": [
+      {"type": "talk", "target": "陈天行", "count": 1, "label": "与陈天行拆分残部路线"},
+      {"type": "talk", "target": "赵无极", "count": 1, "label": "请赵无极调出武林盟旧卷"},
+      {"type": "talk", "target": "蛇王", "count": 1, "label": "请蛇王压住南路暗线"},
+      {"type": "talk", "target": "冰魄", "count": 1, "label": "请冰魄核对北境旧怨"}
+    ],
+    "rewards": {"exp": 1300, "money": 980, "daode": 6, "items": {"item_shengji": 2, "item_dan": 1}}
   }
 ]
