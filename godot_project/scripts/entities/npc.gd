@@ -55,6 +55,8 @@ const STAGE_ACTIVITY_CUE_ALPHA := 0.26
 const STAGE_ACTIVITY_SWAY_PIXELS := 4.8
 const STAGE_ACTIVITY_PROP_SCALE := 1.0
 const STAGE_ACTIVITY_GLOW_ALPHA := 0.18
+const STAGE_LANE_LOCK_ALPHA := 0.20
+const STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -222,6 +224,16 @@ func _map_actor_scale() -> float:
 func _is_stage_actor() -> bool:
 	return bool(data.get("stage_actor", false))
 
+func _stage_lane_visual_offset() -> float:
+	if not _is_stage_actor():
+		return 0.0
+	var strength := clampf(float(data.get("stage_lane_strength", 0.0)), 0.0, 1.0)
+	return clampf(
+		float(data.get("stage_lane_offset_y", 0.0)) * strength * 0.36,
+		-STAGE_LANE_MAX_VISUAL_OFFSET,
+		STAGE_LANE_MAX_VISUAL_OFFSET
+	)
+
 func _refresh_sprite_asset() -> void:
 	if not bool(data.get("use_map_sprite", USE_FULL_SPRITES_ON_MAP)):
 		_clear_sprite_asset()
@@ -378,11 +390,12 @@ func _draw() -> void:
 
 	if using_sprite_asset:
 		var map_scale := _map_actor_scale()
-		_draw_ground_marker(accent)
-		_draw_actor_shadow(Vector2(3, 25 * map_scale), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
-		_draw_stage_ground_lock(accent, map_scale)
-		_draw_contact_light(accent, map_scale)
-		_draw_stage_foot_anchors(accent, map_scale)
+		var lane_offset := _stage_lane_visual_offset()
+		_draw_ground_marker(accent, lane_offset)
+		_draw_actor_shadow(Vector2(3, 25 * map_scale + lane_offset * 0.82), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
+		_draw_stage_ground_lock(accent, map_scale, lane_offset)
+		_draw_contact_light(accent, map_scale, lane_offset)
+		_draw_stage_foot_anchors(accent, map_scale, lane_offset)
 		_draw_aura(appearance, accent)
 		_draw_stage_identity_cues(appearance, accent, map_scale)
 		_draw_stage_activity_cue(accent, map_scale)
@@ -416,7 +429,7 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 		draw_circle(Vector2(0, 27), 3.0, Color(0.95, 0.74, 0.28, 0.95))
 
-func _draw_ground_marker(accent: Color) -> void:
+func _draw_ground_marker(accent: Color, lane_offset_y: float = 0.0) -> void:
 	var map_scale := _map_actor_scale()
 	var npc_id := int(data.get("id", 0))
 	var pulse := 0.5 + 0.5 * sin(visual_phase + float(npc_id % 17) * 0.37)
@@ -428,7 +441,7 @@ func _draw_ground_marker(accent: Color) -> void:
 		color = Color(accent.r, accent.g, accent.b, 0.27 + pulse * 0.08)
 	elif is_enemy():
 		color = Color(0.76, 0.12, 0.09, 0.27 + pulse * 0.08)
-	_draw_ellipse(Vector2(0, 26 * map_scale), marker_radius, color)
+	_draw_ellipse(Vector2(0, 26 * map_scale + lane_offset_y * 0.70), marker_radius, color)
 	if bool(data.get("has_quests", false)):
 		var quest_pos := Vector2(17 * map_scale, -50 * map_scale)
 		draw_arc(quest_pos, 6.0 + pulse * 3.5, 0.0, TAU, 24, Color(0.98, 0.78, 0.28, 0.30 + pulse * 0.22), 1.2)
@@ -449,6 +462,7 @@ func _update_sprite_motion() -> void:
 	var wave := sin(phase)
 	var soft_step := sin(phase * 0.55)
 	var stage_motion := 1.30 if _is_stage_actor() else 1.0
+	var lane_offset := _stage_lane_visual_offset()
 	var height_pulse := 1.0 + wave * ((0.015 if is_enemy() else 0.021) if _is_stage_actor() else (0.010 if is_enemy() else 0.014))
 	var width_pulse := 1.0 - wave * (0.007 if _is_stage_actor() else 0.004)
 	var float_y := wave * (0.36 if is_master() else 0.48) * stage_motion
@@ -456,19 +470,19 @@ func _update_sprite_motion() -> void:
 	var stance_roll := sin(phase * 0.37) * (0.014 if _is_stage_actor() else 0.003)
 	sprite_node.scale = sprite_base_scale * Vector2(width_pulse, height_pulse)
 	sprite_outline_node.scale = sprite_outline_base_scale * Vector2(width_pulse, height_pulse)
-	sprite_node.position = sprite_base_position + Vector2(sway_x, float_y)
-	sprite_outline_node.position = sprite_outline_base_position + Vector2(sway_x, float_y + 0.25)
+	sprite_node.position = sprite_base_position + Vector2(sway_x, float_y + lane_offset * 0.55)
+	sprite_outline_node.position = sprite_outline_base_position + Vector2(sway_x, float_y + lane_offset * 0.55 + 0.25)
 	sprite_node.rotation = stance_roll
 	sprite_outline_node.rotation = stance_roll
 	if sprite_rim_node != null:
 		var rim_color := _stage_role_color(_color(GameData.get_npc_appearance(data).get("accent", [0.78, 0.62, 0.32]), Color(0.78, 0.62, 0.32)))
 		var rim_alpha := STAGE_RIM_ALPHA * (0.68 + absf(wave) * 0.32)
 		sprite_rim_node.scale = sprite_rim_base_scale * Vector2(width_pulse + 0.006, height_pulse + 0.004)
-		sprite_rim_node.position = sprite_rim_base_position + Vector2(sway_x + 0.35 * stage_motion, float_y - 0.25)
+		sprite_rim_node.position = sprite_rim_base_position + Vector2(sway_x + 0.35 * stage_motion, float_y + lane_offset * 0.55 - 0.25)
 		sprite_rim_node.rotation = stance_roll
 		sprite_rim_node.modulate = Color(rim_color.r, rim_color.g, rim_color.b, rim_alpha)
 		sprite_rim_node.visible = _is_stage_actor()
-	_update_stage_pose_line(phase, wave, stage_motion)
+	_update_stage_pose_line(phase, wave, stage_motion, lane_offset * 0.55)
 
 func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
@@ -488,14 +502,25 @@ func _draw_actor_shadow(center: Vector2, radius: Vector2, strength: float) -> vo
 	_draw_ellipse(center + Vector2(1.5, 0.5), radius, Color(0.0, 0.0, 0.0, 0.18 * strength))
 	_draw_ellipse(center, radius * Vector2(0.58, 0.48), Color(0.0, 0.0, 0.0, 0.13 * strength))
 
-func _draw_stage_ground_lock(accent: Color, map_scale: float) -> void:
+func _draw_stage_ground_lock(accent: Color, map_scale: float, lane_offset_y: float = 0.0) -> void:
 	if not _is_stage_actor():
 		return
 	var npc_id := int(data.get("id", 0))
 	var pulse := 0.5 + sin(visual_phase * 1.18 + float(npc_id % 23) * 0.27) * 0.5
 	var role_color := _stage_role_color(accent)
 	var alpha := STAGE_GROUND_LOCK_ALPHA * (0.60 + pulse * 0.28)
-	var center := Vector2(2.0 * map_scale, 30.0 * map_scale)
+	var center := Vector2(2.0 * map_scale, 30.0 * map_scale + lane_offset_y)
+	if float(data.get("stage_lane_strength", 0.0)) > 0.02:
+		var lane_alpha := STAGE_LANE_LOCK_ALPHA * clampf(float(data.get("stage_lane_strength", 0.0)), 0.0, 1.0) * (0.72 + pulse * 0.18)
+		var raw_center := Vector2(2.0 * map_scale, 30.0 * map_scale)
+		draw_line(
+			Vector2(-36.0 * map_scale, center.y - 1.5),
+			Vector2(39.0 * map_scale, center.y - 2.8),
+			Color(role_color.r, role_color.g, role_color.b, lane_alpha),
+			1.0 + map_scale * 0.18
+		)
+		if absf(lane_offset_y) > 2.0:
+			draw_line(raw_center, center, Color(1.0, 0.84, 0.45, lane_alpha * 0.34), 1.0)
 	_draw_ellipse(center, Vector2(31.0 * map_scale, 4.2 * map_scale), Color(0.0, 0.0, 0.0, alpha))
 	_draw_ellipse(center + Vector2(0.0, 1.4 * map_scale), Vector2(17.0 * map_scale, 2.1 * map_scale), Color(role_color.r, role_color.g, role_color.b, alpha * 0.36))
 	draw_line(
@@ -505,13 +530,13 @@ func _draw_stage_ground_lock(accent: Color, map_scale: float) -> void:
 		1.0 + map_scale * 0.18
 	)
 
-func _draw_stage_foot_anchors(accent: Color, map_scale: float) -> void:
+func _draw_stage_foot_anchors(accent: Color, map_scale: float, lane_offset_y: float = 0.0) -> void:
 	if not _is_stage_actor():
 		return
 	var npc_id := int(data.get("id", 0))
 	var phase := visual_phase * 0.88 + float(npc_id % 19) * 0.29
 	var step := sin(phase)
-	var y := 28.5 * map_scale
+	var y := 28.5 * map_scale + lane_offset_y
 	var spread := (10.8 if is_enemy() else 9.2) * map_scale
 	var radius := Vector2(7.5 * map_scale, 1.9 * map_scale)
 	var left := Vector2(-spread + step * 1.6 * map_scale, y)
@@ -522,7 +547,7 @@ func _draw_stage_foot_anchors(accent: Color, map_scale: float) -> void:
 	draw_line(left + Vector2(-radius.x * 0.36, 0.0), right + Vector2(radius.x * 0.36, -0.8 * map_scale), Color(role_color.r, role_color.g, role_color.b, STAGE_FOOT_ANCHOR_ALPHA * 0.72), 1.0 + map_scale * 0.16)
 	draw_arc(Vector2(0.0, y - 6.0 * map_scale), 18.0 * map_scale, PI * 0.16, PI * 0.88, 24, Color(role_color.r, role_color.g, role_color.b, STAGE_STEP_SWEEP_ALPHA * (0.60 + absf(step) * 0.30)), 1.0 + map_scale * 0.12)
 
-func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> void:
+func _update_stage_pose_line(phase: float, wave: float, stage_motion: float, lane_offset_y: float = 0.0) -> void:
 	if stage_pose_line_node == null:
 		return
 	if not using_sprite_asset or not _is_stage_actor():
@@ -534,12 +559,13 @@ func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> 
 	var accent := _color(appearance.get("accent", [0.78, 0.62, 0.32]), Color(0.78, 0.62, 0.32))
 	var role_color := _stage_role_color(accent)
 	var side := -1.0 if int(data.get("id", 0)) % 2 == 0 else 1.0
-	var shoulder := sprite_base_position + Vector2(side * (13.5 + wave * 1.2) * map_scale, -31.0 * map_scale)
-	var hand := sprite_base_position + Vector2(side * (20.0 + sin(phase * 0.72) * 1.6) * map_scale, -5.5 * map_scale)
+	var pose_base := sprite_base_position + Vector2(0.0, lane_offset_y)
+	var shoulder := pose_base + Vector2(side * (13.5 + wave * 1.2) * map_scale, -31.0 * map_scale)
+	var hand := pose_base + Vector2(side * (20.0 + sin(phase * 0.72) * 1.6) * map_scale, -5.5 * map_scale)
 	var tip := hand + Vector2(side * (16.0 if is_enemy() else 11.0) * map_scale, (-15.0 if is_enemy() else -8.5) * map_scale)
 	if is_master():
-		shoulder = sprite_base_position + Vector2(side * 12.0 * map_scale, -28.0 * map_scale)
-		hand = sprite_base_position + Vector2(side * (23.0 + wave * 1.2) * map_scale, -9.0 * map_scale)
+		shoulder = pose_base + Vector2(side * 12.0 * map_scale, -28.0 * map_scale)
+		hand = pose_base + Vector2(side * (23.0 + wave * 1.2) * map_scale, -9.0 * map_scale)
 		tip = hand + Vector2(side * 10.0 * map_scale, 5.0 * map_scale)
 	elif bool(data.get("has_quests", false)):
 		tip = hand + Vector2(side * 7.0 * map_scale, 9.0 * map_scale)
@@ -552,7 +578,7 @@ func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> 
 		stage_weapon_glow_node.width = clampf(4.2 * map_scale * stage_motion, 3.0, 7.2)
 		stage_weapon_glow_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_WEAPON_GLOW_ALPHA * (0.58 + absf(wave) * 0.34))
 		stage_weapon_glow_node.visible = true
-	_update_stage_pose_aux_lines(phase, wave, stage_motion, role_color, side, map_scale)
+	_update_stage_pose_aux_lines(phase, wave, stage_motion, role_color, side, map_scale, lane_offset_y)
 
 func _hide_stage_pose_aux_lines() -> void:
 	if stage_weapon_glow_node != null:
@@ -568,18 +594,19 @@ func _hide_stage_pose_aux_lines() -> void:
 	if stage_guard_line_node != null:
 		stage_guard_line_node.visible = false
 
-func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float) -> void:
+func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float, lane_offset_y: float = 0.0) -> void:
+	var pose_base := sprite_base_position + Vector2(0.0, lane_offset_y)
 	if stage_torso_line_node != null:
-		var shoulder_back := sprite_base_position + Vector2(side * -7.5 * map_scale, -31.0 * map_scale)
-		var shoulder_front := sprite_base_position + Vector2(side * (12.5 + wave * 1.0) * map_scale, -28.0 * map_scale)
-		var hip := sprite_base_position + Vector2(side * (5.5 + sin(phase * 0.62) * 1.1) * map_scale, -2.0 * map_scale)
+		var shoulder_back := pose_base + Vector2(side * -7.5 * map_scale, -31.0 * map_scale)
+		var shoulder_front := pose_base + Vector2(side * (12.5 + wave * 1.0) * map_scale, -28.0 * map_scale)
+		var hip := pose_base + Vector2(side * (5.5 + sin(phase * 0.62) * 1.1) * map_scale, -2.0 * map_scale)
 		stage_torso_line_node.points = PackedVector2Array([shoulder_back, shoulder_front, hip])
 		stage_torso_line_node.width = clampf(1.7 * map_scale * stage_motion, 1.3, 3.0)
 		stage_torso_line_node.default_color = Color(1.0, 0.90, 0.58, STAGE_TORSO_LINE_ALPHA * (0.58 + absf(wave) * 0.28))
 		stage_torso_line_node.visible = true
 	if stage_sash_line_node != null:
 		var flutter := sin(phase * 0.82)
-		var waist := sprite_base_position + Vector2(0.0, 2.5 * map_scale)
+		var waist := pose_base + Vector2(0.0, 2.5 * map_scale)
 		var left := waist + Vector2(-13.5 * map_scale, flutter * 1.1 * map_scale)
 		var right := waist + Vector2(14.0 * map_scale, (-flutter * 1.2 - 0.5) * map_scale)
 		var tail := waist + Vector2((-20.0 - absf(flutter) * 2.6) * side * map_scale, (7.5 + flutter * 1.2) * map_scale)
@@ -587,14 +614,14 @@ func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float
 		stage_sash_line_node.width = clampf(2.1 * map_scale * stage_motion, 1.6, 3.6)
 		stage_sash_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_SASH_LINE_ALPHA * (0.68 + absf(flutter) * 0.26))
 		stage_sash_line_node.visible = true
-	_update_stage_limb_pose_lines(phase, wave, stage_motion, role_color, side, map_scale)
+	_update_stage_limb_pose_lines(phase, wave, stage_motion, role_color, side, map_scale, lane_offset_y)
 
-func _update_stage_limb_pose_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float) -> void:
+func _update_stage_limb_pose_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float, lane_offset_y: float = 0.0) -> void:
 	var step := sin(phase * (1.02 if is_enemy() else 0.72))
 	if is_master():
 		step = sin(phase * 0.48) * 0.45
 	var sway := sin(phase * 0.58) * STAGE_ROLE_STANCE_SWAY_PIXELS * map_scale
-	var base := sprite_base_position
+	var base := sprite_base_position + Vector2(0.0, lane_offset_y)
 	var hip := base + Vector2(side * (4.0 + wave * 0.8) * map_scale, -1.0 * map_scale)
 	var front_shoulder := base + Vector2(side * (13.5 + wave * 1.1) * map_scale, -28.5 * map_scale)
 	var front_elbow := base + Vector2(side * (21.0 + step * 2.0) * map_scale, (-14.0 + step * 1.2) * map_scale)
@@ -863,7 +890,7 @@ func _stage_role_color(accent: Color) -> Color:
 		return Color(1.0, 0.76, 0.24)
 	return accent.lightened(0.12)
 
-func _draw_contact_light(accent: Color, map_scale: float) -> void:
+func _draw_contact_light(accent: Color, map_scale: float, lane_offset_y: float = 0.0) -> void:
 	var npc_id := int(data.get("id", 0))
 	var pulse := 0.5 + sin(visual_phase * 1.4 + float(npc_id % 23) * 0.27) * 0.5
 	var alpha := CONTACT_GLOW_ALPHA * (0.60 + pulse * 0.24)
@@ -871,8 +898,8 @@ func _draw_contact_light(accent: Color, map_scale: float) -> void:
 		accent = Color(0.82, 0.13, 0.08)
 	elif is_master():
 		alpha *= 1.18
-	_draw_ellipse(Vector2(1.5 * map_scale, 27.0 * map_scale), Vector2(26.0 * map_scale, 6.5 * map_scale), Color(accent.r, accent.g, accent.b, alpha))
-	_draw_ellipse(Vector2(0.0, 28.5 * map_scale), Vector2(14.0 * map_scale, 3.2 * map_scale), Color(1.0, 0.82, 0.44, alpha * 0.42))
+	_draw_ellipse(Vector2(1.5 * map_scale, 27.0 * map_scale + lane_offset_y * 0.82), Vector2(26.0 * map_scale, 6.5 * map_scale), Color(accent.r, accent.g, accent.b, alpha))
+	_draw_ellipse(Vector2(0.0, 28.5 * map_scale + lane_offset_y * 0.82), Vector2(14.0 * map_scale, 3.2 * map_scale), Color(1.0, 0.82, 0.44, alpha * 0.42))
 
 func _draw_legs(outfit: String, secondary: Color, ink: Color) -> void:
 	if outfit == "flowing_hanfu" or outfit == "daoist_robe" or outfit == "fur_robe":

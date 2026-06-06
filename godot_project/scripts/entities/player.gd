@@ -29,6 +29,8 @@ const PLAYER_STAGE_ARM_SWING_ALPHA := 0.28
 const PLAYER_STAGE_STEP_ARC_ALPHA := 0.22
 const PLAYER_STAGE_IDLE_GUARD_ALPHA := 0.18
 const PLAYER_STAGE_CENTERLINE_ALPHA := 0.24
+const PLAYER_STAGE_LANE_LOCK_ALPHA := 0.20
+const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -39,6 +41,8 @@ var walk_phase := 0.0
 var sprite_texture: Texture2D
 var sprite_key := ""
 var stage_depth_scale := 1.0
+var stage_lane_offset_y := 0.0
+var stage_lane_lock_strength := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -51,6 +55,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_refresh_stage_depth_scale()
+	_refresh_stage_lane_anchor()
 	var moving := movement_enabled and velocity.length() > 1.0
 	walk_phase += delta * (10.5 if moving else 1.45)
 	queue_redraw()
@@ -59,6 +64,7 @@ func _physics_process(_delta: float) -> void:
 	if not movement_enabled:
 		velocity = Vector2.ZERO
 		_refresh_stage_depth_scale()
+		_refresh_stage_lane_anchor()
 		z_index = int(position.y)
 		return
 
@@ -85,11 +91,13 @@ func _physics_process(_delta: float) -> void:
 		position = previous_position
 		velocity = Vector2.ZERO
 	_refresh_stage_depth_scale()
+	_refresh_stage_lane_anchor()
 	z_index = int(position.y)
 
 func _draw() -> void:
 	_refresh_sprite_texture()
 	_refresh_stage_depth_scale()
+	_refresh_stage_lane_anchor()
 	var faction := str(GameState.player.get("faction", "none"))
 	var robe := _robe_color(faction)
 	var trim := GameData.get_faction_color(faction).lightened(0.18)
@@ -98,15 +106,16 @@ func _draw() -> void:
 	var moving := velocity.length() > 1.0
 	var stage_actor := _is_side_view_stage()
 	var depth_scale := get_map_actor_visual_scale()
+	var lane_visual_offset := get_stage_lane_visual_offset()
 	var bob := (sin(walk_phase) * 3.2 if moving else sin(walk_phase) * 0.75) * depth_scale
 	var lean := (clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45) * depth_scale
 
 	_draw_step_dust(moving, depth_scale)
-	_draw_player_contact_glow(trim, depth_scale, moving)
+	_draw_player_contact_glow(trim, depth_scale, moving, lane_visual_offset)
 	_draw_player_idle_motes(trim, depth_scale)
-	_draw_actor_shadow(Vector2(4 * depth_scale, 32 * depth_scale), Vector2(42, 13) * depth_scale, 1.0)
+	_draw_actor_shadow(Vector2(4 * depth_scale, 32 * depth_scale + lane_visual_offset * 0.82), Vector2(42, 13) * depth_scale, 1.0)
 	if stage_actor:
-		_draw_stage_player_ground_lock(trim, depth_scale, moving)
+		_draw_stage_player_ground_lock(trim, depth_scale, moving, lane_visual_offset)
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
 		var target_height := SPRITE_TARGET_HEIGHT * depth_scale
@@ -115,7 +124,7 @@ func _draw() -> void:
 		var breath := 1.0 + sin(walk_phase * 0.72) * (0.010 if moving else 0.018)
 		var step_sway := absf(sin(walk_phase)) if moving else 0.0
 		var draw_size := texture_size * factor * Vector2(1.0 + step_sway * 0.018, breath - step_sway * 0.006)
-		var foot_y := 35.0 * depth_scale + bob
+		var foot_y := 35.0 * depth_scale + bob + lane_visual_offset * 0.55
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
 		var facing_side := _facing_side()
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
@@ -143,7 +152,7 @@ func _draw() -> void:
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
 		return
-	draw_set_transform(Vector2(0, bob), 0.0, Vector2.ONE * DRAW_SCALE * depth_scale)
+	draw_set_transform(Vector2(0, bob + lane_visual_offset * 0.50), 0.0, Vector2.ONE * DRAW_SCALE * depth_scale)
 
 	# Back sword and loose cloak give the player a more readable wuxia silhouette.
 	draw_line(Vector2(16, -9), Vector2(29, -37), Color(0.78, 0.80, 0.76), 2.5)
@@ -232,11 +241,29 @@ func set_stage_depth_scale(value: float) -> void:
 func get_map_actor_visual_scale() -> float:
 	return stage_depth_scale * (LOCAL_STAGE_PRESENCE_SCALE if _is_side_view_stage() else 1.0)
 
+func get_stage_lane_visual_offset() -> float:
+	if not _is_side_view_stage():
+		return 0.0
+	return clampf(
+		stage_lane_offset_y * stage_lane_lock_strength * 0.38,
+		-PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET,
+		PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET
+	)
+
 func _refresh_stage_depth_scale() -> void:
 	if world_map != null and world_map.has_method("get_actor_depth_scale"):
 		set_stage_depth_scale(float(world_map.get_actor_depth_scale(position)))
 	else:
 		set_stage_depth_scale(1.0)
+
+func _refresh_stage_lane_anchor() -> void:
+	if world_map != null and world_map.has_method("get_stage_lane_anchor"):
+		var anchor: Dictionary = world_map.call("get_stage_lane_anchor", position)
+		stage_lane_offset_y = float(anchor.get("offset_y", 0.0))
+		stage_lane_lock_strength = clampf(float(anchor.get("strength", 0.0)), 0.0, 1.0)
+		return
+	stage_lane_offset_y = 0.0
+	stage_lane_lock_strength = 0.0
 
 func _is_side_view_stage() -> bool:
 	if world_map == null:
@@ -516,10 +543,21 @@ func _draw_stage_player_faction_sigil(top_left: Vector2, draw_size: Vector2, acc
 		_:
 			draw_arc(center, radius * 0.74, PI * 0.10, PI * 0.90, 28, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.3)
 
-func _draw_stage_player_ground_lock(accent: Color, depth_scale: float, moving: bool) -> void:
+func _draw_stage_player_ground_lock(accent: Color, depth_scale: float, moving: bool, lane_offset_y: float = 0.0) -> void:
 	var step := absf(sin(walk_phase)) if moving else 0.28 + sin(walk_phase * 0.55) * 0.08
-	var center := Vector2(3.0, 36.0) * depth_scale
+	var center := Vector2(3.0, 36.0 * depth_scale + lane_offset_y)
 	var alpha := PLAYER_STAGE_GROUND_LOCK_ALPHA * (0.52 + step * 0.26)
+	if stage_lane_lock_strength > 0.02:
+		var lane_alpha := PLAYER_STAGE_LANE_LOCK_ALPHA * stage_lane_lock_strength * (0.70 + step * 0.18)
+		var raw_center := Vector2(3.0, 36.0 * depth_scale)
+		draw_line(
+			Vector2(-46.0, center.y - 1.8) * Vector2(depth_scale, 1.0),
+			Vector2(50.0, center.y - 3.4) * Vector2(depth_scale, 1.0),
+			Color(accent.r, accent.g, accent.b, lane_alpha),
+			1.2 + depth_scale * 0.22
+		)
+		if absf(lane_offset_y) > 2.0:
+			draw_line(raw_center, center, Color(1.0, 0.86, 0.48, lane_alpha * 0.36), 1.0)
 	_draw_shadow(center, Vector2(34.0, 4.6) * depth_scale, Color(0.0, 0.0, 0.0, alpha))
 	_draw_shadow(center + Vector2(0.0, 1.6 * depth_scale), Vector2(19.0, 2.2) * depth_scale, Color(accent.r, accent.g, accent.b, alpha * 0.32))
 	draw_line(
@@ -578,9 +616,9 @@ func _draw_stage_actor_sash(top_left: Vector2, draw_size: Vector2, accent: Color
 	draw_line(waist, tail_a, Color(accent.r, accent.g, accent.b, 0.24), sash_width)
 	draw_line(waist + Vector2(draw_size.x * 0.04, draw_size.y * 0.035), tail_b, Color(shadow_accent.r, shadow_accent.g, shadow_accent.b, 0.18), sash_width * 0.75)
 
-func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool) -> void:
+func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool, lane_offset_y: float = 0.0) -> void:
 	var pulse := 0.5 + sin(walk_phase * (1.7 if moving else 0.9)) * 0.5
-	var center := Vector2(3.0, 32.0) * depth_scale
+	var center := Vector2(3.0 * depth_scale, 32.0 * depth_scale + lane_offset_y * 0.82)
 	_draw_shadow(center, Vector2(38.0, 9.5) * depth_scale, Color(accent.r, accent.g, accent.b, PLAYER_CONTACT_GLOW_ALPHA * (0.55 + pulse * 0.25)))
 	_draw_shadow(center + Vector2(0.0, 2.0 * depth_scale), Vector2(23.0, 4.8) * depth_scale, Color(1.0, 0.86, 0.50, PLAYER_CONTACT_GLOW_ALPHA * 0.55))
 

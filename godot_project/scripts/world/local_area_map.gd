@@ -128,6 +128,8 @@ const SIDE_VIEW_PLAY_LANE_EDGE_ALPHA := 0.30
 const SIDE_VIEW_LANE_DECAL_COUNT := 24
 const SIDE_VIEW_SIDE_EXIT_COUNT := 4
 const SIDE_VIEW_SIDE_EXIT_ALPHA := 0.28
+const SIDE_VIEW_LANE_ANCHOR_FULL_DISTANCE := 18.0
+const SIDE_VIEW_LANE_ANCHOR_MAX_DISTANCE := 92.0
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -275,6 +277,32 @@ func get_stage_play_lane_y_positions() -> Array[float]:
 	if not is_side_view_stage_active():
 		return []
 	return _stage_play_lane_centers(get_world_rect().size)
+
+func get_stage_lane_anchor(world_position: Vector2) -> Dictionary:
+	if not is_side_view_stage_active():
+		return {}
+	var centers := _stage_play_lane_centers(get_world_rect().size)
+	if centers.is_empty():
+		return {}
+	var best_index := 0
+	var best_y := float(centers[0])
+	var best_distance := absf(world_position.y - best_y)
+	for index in range(1, centers.size()):
+		var lane_y := float(centers[index])
+		var distance := absf(world_position.y - lane_y)
+		if distance < best_distance:
+			best_distance = distance
+			best_y = lane_y
+			best_index = index
+	var falloff := maxf(1.0, SIDE_VIEW_LANE_ANCHOR_MAX_DISTANCE - SIDE_VIEW_LANE_ANCHOR_FULL_DISTANCE)
+	var strength := 1.0 - maxf(0.0, best_distance - SIDE_VIEW_LANE_ANCHOR_FULL_DISTANCE) / falloff
+	return {
+		"lane_y": best_y,
+		"offset_y": best_y - world_position.y,
+		"distance": best_distance,
+		"strength": clampf(strength, 0.0, 1.0),
+		"index": best_index
+	}
 
 func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
 	return current_region
@@ -1067,8 +1095,15 @@ func _shop_index(shop_id: String) -> int:
 func _spawn_npc(npc_data: Dictionary) -> void:
 	if current_mode == "region" and side_view_stage_enabled:
 		var tile := Vector2i(int(npc_data.get("pos_x", map_width / 2)), int(npc_data.get("pos_y", map_height / 2)))
-		npc_data["map_actor_scale"] = get_actor_depth_scale(tile_to_world(tile))
+		var world_position := tile_to_world(tile)
+		npc_data["map_actor_scale"] = get_actor_depth_scale(world_position)
 		npc_data["stage_actor"] = true
+		var anchor := get_stage_lane_anchor(world_position)
+		if not anchor.is_empty():
+			npc_data["stage_lane_y"] = float(anchor.get("lane_y", world_position.y))
+			npc_data["stage_lane_offset_y"] = float(anchor.get("offset_y", 0.0))
+			npc_data["stage_lane_strength"] = float(anchor.get("strength", 0.0))
+			npc_data["stage_lane_index"] = int(anchor.get("index", -1))
 	var actor = NPC_SCRIPT.new()
 	add_child(actor)
 	actor.setup(npc_data, tile_size)

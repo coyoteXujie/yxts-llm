@@ -70,6 +70,7 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_STEP_ARC_ALPHA >= 0.18, "玩家局部横版舞台应保留步幅轨迹弧")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_IDLE_GUARD_ALPHA >= 0.16, "玩家局部横版舞台待机时应保留守势气口")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_CENTERLINE_ALPHA >= 0.20, "玩家局部横版舞台应保留重心/躯干中心线")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_LANE_LOCK_ALPHA >= 0.16, "玩家局部横版舞台应保留平台带脚底锁定线")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	player.facing = Vector2.LEFT
 	_check(player._facing_side() < 0.0, "玩家横版舞台侧向层应响应向左朝向")
@@ -94,6 +95,7 @@ func _run() -> void:
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_CUE_ALPHA >= 0.22, "NPC 局部横版舞台应保留职业/行为提示层")
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_SWAY_PIXELS >= 4.0, "NPC 局部横版舞台职业/行为提示应有轻微动态")
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_GLOW_ALPHA >= 0.14, "NPC 局部横版舞台职业/行为提示应保留光效")
+	_check(NPC_SCRIPT.STAGE_LANE_LOCK_ALPHA >= 0.16, "NPC 局部横版舞台应保留平台带脚底锁定线")
 	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
@@ -111,10 +113,18 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_LANE_DECAL_COUNT >= 20, "局部横版舞台地面应保留走位带细节标识")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_SIDE_EXIT_COUNT >= 4, "局部横版舞台应保留左右副本式出入口框")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_SIDE_EXIT_ALPHA >= 0.24, "局部横版舞台出入口框应有足够可见度")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_LANE_ANCHOR_MAX_DISTANCE >= 80.0, "局部横版舞台应提供足够宽容的平台锚点捕捉范围")
+	var stage_rect_for_lanes: Rect2 = local_area.get_world_rect()
 	var lane_positions: Array = local_area.get_stage_play_lane_y_positions()
 	_check(lane_positions.size() == LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_COUNT, "局部横版舞台应向系统暴露可行走平台带位置")
 	if lane_positions.size() >= 2:
 		_check(float(lane_positions[0]) < float(lane_positions[lane_positions.size() - 1]), "局部横版舞台平台带应从远景到前景排序")
+	if not lane_positions.is_empty():
+		var near_lane_y := float(lane_positions[min(1, lane_positions.size() - 1)])
+		var lane_anchor: Dictionary = local_area.get_stage_lane_anchor(Vector2(stage_rect_for_lanes.size.x * 0.5, near_lane_y - 12.0))
+		_check(not lane_anchor.is_empty(), "局部横版舞台应能返回最近平台带锚点")
+		_check(absf(float(lane_anchor.get("offset_y", 0.0)) - 12.0) <= 0.1, "局部横版舞台平台锚点应返回正确的脚底偏移")
+		_check(float(lane_anchor.get("strength", 0.0)) > 0.85, "局部横版舞台平台锚点应在近距离保持强吸附")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_AMBIENT_PARTICLES >= 24, "局部横版舞台应保留动态氛围粒子")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA >= 0.40, "局部横版舞台应保留地域化中景结构")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLATFORM_EDGE_ALPHA >= 0.38, "局部横版舞台应保留地面平台前沿")
@@ -175,6 +185,7 @@ func _run() -> void:
 	_check(_actors_have_stage_pose_overlay(local_area.npc_nodes), "局部地图 NPC 应显示贴图前方姿态线")
 	_check(_actors_have_stage_body_overlays(local_area.npc_nodes), "局部地图 NPC 应显示躯干、腰带和武器辉光前层")
 	_check(_actors_have_stage_activity(local_area.npc_nodes), "局部地图 NPC 应具备职业/行为视觉提示")
+	_check(_actors_have_stage_lane_anchor(local_area.npc_nodes), "局部地图 NPC 应绑定最近横版平台带锚点")
 	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
 	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -198,10 +209,16 @@ func _run() -> void:
 	_check(GameState.world_events.size() > previous_event_count, "快速旅行应写入旅行事件")
 	_check(GameState.resolve_fast_travel_risk(travel_plan).is_empty(), "低风险驿路不应触发旅途后果")
 	player.world_map = local_area
-	player.position = Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO)
+	var front_lane_y := stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO
+	if not lane_positions.is_empty():
+		front_lane_y = float(lane_positions[lane_positions.size() - 1])
+	player.position = Vector2(stage_rect.size.x * 0.5, front_lane_y - 12.0)
 	player._refresh_stage_depth_scale()
+	player._refresh_stage_lane_anchor()
 	_check(player.stage_depth_scale > 1.08, "玩家在局部地图前景站位应明显放大")
 	_check(player.get_map_actor_visual_scale() > player.stage_depth_scale, "玩家局部横版地图应在景深外叠加舞台角色缩放")
+	_check(player.stage_lane_lock_strength > 0.80, "玩家局部横版地图应读取最近平台带锚点")
+	_check(player.get_stage_lane_visual_offset() > 3.0, "玩家局部横版地图应产生平台带视觉吸附偏移")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_FOOT_ANCHOR_ALPHA >= 0.20, "玩家局部横版地图应显示脚步锚点")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_WEAPON_POSE_ALPHA >= 0.30, "玩家局部横版地图应显示前持武器姿态")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_SHOULDER_GLOW_ALPHA >= 0.16, "玩家局部横版地图应显示肩部高光姿态层")
@@ -377,6 +394,20 @@ func _actors_have_stage_activity(nodes: Array) -> bool:
 		if not activity.is_empty():
 			seen[activity] = true
 	return seen.size() >= 3
+
+func _actors_have_stage_lane_anchor(nodes: Array) -> bool:
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		if not actor.data.has("stage_lane_y") or not actor.data.has("stage_lane_offset_y"):
+			continue
+		if float(actor.data.get("stage_lane_strength", 0.0)) <= 0.0:
+			continue
+		if absf(float(actor._stage_lane_visual_offset())) <= NPC_SCRIPT.STAGE_LANE_MAX_VISUAL_OFFSET:
+			return true
+	return false
 
 func _stage_role_scale_bonus() -> bool:
 	var normal = NPC_SCRIPT.new()
