@@ -61,6 +61,10 @@ func _run() -> void:
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_AMBIENT_PARTICLES >= 24, "局部横版舞台应保留动态氛围粒子")
+	var previous_stage_phase: float = local_area.stage_visual_phase
+	local_area._process(1.0)
+	_check(local_area.stage_visual_phase > previous_stage_phase, "局部横版舞台动效时钟应持续推进")
 	var stage_rect: Rect2 = local_area.get_world_rect()
 	var back_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_TOP_RATIO))
 	var front_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO))

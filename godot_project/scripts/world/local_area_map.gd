@@ -89,6 +89,8 @@ const SIDE_VIEW_BACKDROP_ALPHA := 0.38
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
+const SIDE_VIEW_AMBIENT_SPEED := 0.82
+const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.82
@@ -112,10 +114,18 @@ var tile_textures: Dictionary = {}
 var scene_background_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
 var side_view_stage_enabled := true
+var stage_visual_phase := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_load_tile_textures()
+	set_process(true)
+
+func _process(delta: float) -> void:
+	if not visible or current_mode != "region" or not side_view_stage_enabled:
+		return
+	stage_visual_phase = fposmod(stage_visual_phase + delta * SIDE_VIEW_AMBIENT_SPEED, 10000.0)
+	queue_redraw()
 
 func _load_tile_textures() -> void:
 	tile_textures.clear()
@@ -1365,6 +1375,7 @@ func _draw_side_view_stage() -> void:
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
 	_draw_side_view_silhouettes(size, palette)
 	_draw_side_view_ground(size, palette)
+	_draw_side_view_ambient(size, palette)
 	_draw_side_view_foreground(size, palette)
 
 func _draw_cover_texture(texture: Texture2D, rect: Rect2, modulate: Color) -> void:
@@ -1449,6 +1460,83 @@ func _draw_stage_depth_guides(size: Vector2, palette: Dictionary) -> void:
 		var guide_y := lerpf(y0, y1, 0.62)
 		var guide_inset := lerpf(inset0, inset1, 0.62)
 		draw_line(Vector2(guide_inset, guide_y), Vector2(size.x - guide_inset, guide_y - tile_size * 0.10), shadow, 1.0 + t1 * 2.0)
+
+func _draw_side_view_ambient(size: Vector2, palette: Dictionary) -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	var accent: Color = palette["accent"]
+	_draw_stage_drifting_mist(size, Color(accent.r, accent.g, accent.b, 0.095), 0.66)
+	if region_type == "city" or region_type == "town":
+		_draw_stage_lantern_glows(size, accent)
+	if _terrain_has_water(terrain):
+		_draw_stage_water_glints(size, accent)
+	if terrain.contains("snow"):
+		_draw_stage_snow_drift(size)
+	elif terrain.contains("desert"):
+		_draw_stage_sand_drift(size)
+	elif _terrain_has_forest(terrain) or terrain.contains("flower") or terrain.contains("garden"):
+		_draw_stage_leaf_drift(size, accent)
+	if region_type == "sect":
+		_draw_stage_sect_motes(size, accent)
+
+func _draw_stage_drifting_mist(size: Vector2, color: Color, y_ratio: float) -> void:
+	for i in range(8):
+		var speed := tile_size * (0.16 + float(i % 3) * 0.035)
+		var x := fposmod(float(i * 379) + stage_visual_phase * speed, size.x + tile_size * 8.0) - tile_size * 4.0
+		var y := size.y * y_ratio + sin(stage_visual_phase * 0.42 + float(i) * 1.31) * tile_size * 0.44 + float(i % 4) * tile_size * 0.28
+		var width := size.x * (0.22 + float(i % 4) * 0.055)
+		var alpha := color.a * (0.55 + float(i % 3) * 0.16)
+		draw_rect(Rect2(Vector2(x, y), Vector2(width, tile_size * 0.24)), Color(color.r, color.g, color.b, alpha), true)
+		draw_line(Vector2(x + tile_size * 0.30, y + tile_size * 0.20), Vector2(x + width - tile_size * 0.42, y + tile_size * 0.12), Color(color.r, color.g, color.b, alpha * 1.38), 1.0)
+
+func _draw_stage_lantern_glows(size: Vector2, accent: Color) -> void:
+	for i in range(10):
+		var x := fposmod(float(i * 337) + sin(stage_visual_phase * 0.56 + float(i)) * tile_size * 0.32, size.x + tile_size * 2.0) - tile_size
+		var y := size.y * (0.31 + float((i * 7) % 19) / 100.0)
+		var pulse := 0.5 + sin(stage_visual_phase * 2.7 + float(i) * 0.71) * 0.5
+		draw_circle(Vector2(x, y), tile_size * (0.34 + pulse * 0.12), Color(1.0, 0.55, 0.18, 0.035))
+		draw_circle(Vector2(x, y), tile_size * 0.075, Color(1.0, 0.77, 0.34, 0.15 + pulse * 0.08))
+		draw_line(Vector2(x, y - tile_size * 0.24), Vector2(x, y - tile_size * 0.46), Color(accent.r, accent.g, accent.b, 0.16), 1.0)
+
+func _draw_stage_water_glints(size: Vector2, accent: Color) -> void:
+	for i in range(18):
+		var x := fposmod(float(i * 241) + stage_visual_phase * tile_size * 0.48, size.x + tile_size * 2.0) - tile_size
+		var y := size.y * (0.53 + float((i * 11) % 32) / 100.0)
+		var blink := 0.5 + sin(stage_visual_phase * 2.1 + float(i) * 0.87) * 0.5
+		var width := tile_size * (0.34 + float(i % 4) * 0.10)
+		draw_line(Vector2(x, y), Vector2(x + width, y - tile_size * 0.055), Color(0.72, 0.96, 1.0, 0.055 + blink * 0.055), 1.3)
+		if i % 5 == 0:
+			draw_circle(Vector2(x + width * 0.45, y - tile_size * 0.02), 2.0, Color(accent.r, accent.g, accent.b, 0.14 + blink * 0.08))
+
+func _draw_stage_snow_drift(size: Vector2) -> void:
+	for i in range(SIDE_VIEW_AMBIENT_PARTICLES):
+		var x := fposmod(float(i * 157) + sin(stage_visual_phase * 0.56 + float(i)) * tile_size * 0.34, size.x + tile_size * 1.5) - tile_size * 0.75
+		var y := fposmod(float(i * 89) + stage_visual_phase * tile_size * (0.42 + float(i % 3) * 0.05), size.y * 0.62) + tile_size * 0.70
+		var radius := 1.0 + float(i % 3) * 0.35
+		draw_circle(Vector2(x, y), radius, Color(0.90, 0.97, 1.0, 0.18 + float(i % 4) * 0.025))
+
+func _draw_stage_sand_drift(size: Vector2) -> void:
+	for i in range(SIDE_VIEW_AMBIENT_PARTICLES):
+		var x := fposmod(float(i * 181) + stage_visual_phase * tile_size * (0.62 + float(i % 5) * 0.04), size.x + tile_size * 1.8) - tile_size * 0.9
+		var y := size.y * (0.54 + float((i * 13) % 38) / 100.0)
+		var alpha := 0.055 + sin(stage_visual_phase * 1.4 + float(i)) * 0.018
+		draw_line(Vector2(x, y), Vector2(x + tile_size * (0.26 + float(i % 4) * 0.08), y - tile_size * 0.07), Color(0.92, 0.72, 0.38, alpha), 1.0)
+
+func _draw_stage_leaf_drift(size: Vector2, accent: Color) -> void:
+	for i in range(SIDE_VIEW_AMBIENT_PARTICLES):
+		var x := fposmod(float(i * 199) + stage_visual_phase * tile_size * (0.20 + float(i % 3) * 0.03), size.x + tile_size * 2.0) - tile_size
+		var y := fposmod(float(i * 71) + sin(stage_visual_phase * 0.7 + float(i)) * tile_size * 0.42, size.y * 0.50) + size.y * 0.18
+		var leaf_color := Color(accent.r, accent.g, accent.b, 0.11 + float(i % 5) * 0.014)
+		draw_line(Vector2(x, y), Vector2(x + tile_size * 0.12, y + tile_size * 0.055), leaf_color, 1.4)
+
+func _draw_stage_sect_motes(size: Vector2, accent: Color) -> void:
+	var center := Vector2(size.x * 0.5, size.y * 0.47)
+	draw_arc(center, tile_size * (2.8 + sin(stage_visual_phase * 0.9) * 0.12), PI * 0.08, PI * 0.92, 48, Color(accent.r, accent.g, accent.b, 0.12), 2.0)
+	for i in range(20):
+		var angle := stage_visual_phase * 0.28 + float(i) * TAU / 20.0
+		var radius := tile_size * (1.7 + float(i % 5) * 0.38)
+		var pos := center + Vector2(cos(angle) * radius, sin(angle) * radius * 0.24)
+		draw_circle(pos, 1.6 + float(i % 3) * 0.35, Color(accent.r, accent.g, accent.b, 0.15))
 
 func _draw_side_view_foreground(size: Vector2, palette: Dictionary) -> void:
 	var accent: Color = palette["accent"]
