@@ -98,7 +98,7 @@
     "万一": "res://assets/characters/reference_map_sprites/xueshan_girl_ref.png",
     "阿秀": "res://assets/characters/reference_map_sprites/xueshan_lady_ref.png",
     "雪千柔": "res://assets/characters/reference_map_sprites/xueshan_swordswoman_ref.png",
-    "流氓": "res://assets/characters/reference_map_sprites/thug_ref.png",
+    "流氓": "res://assets/characters/npc/map_sprites_v2/thug_stage_v2.png",
     "流氓头": "res://assets/characters/reference_map_sprites/bandit_ref.png",
     "独角大盗": "res://assets/characters/reference_map_sprites/bandit_axe_ref.png",
     "采花大盗": "res://assets/characters/reference_map_sprites/assassin_ref.png",
@@ -488,7 +488,8 @@
     "xiaoyao_sect": "res://assets/world/scenes/scene_xiaoyao_sect.png"
   },
   "stage_layers": {
-    "qinghe_shopfront": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png"
+    "qinghe_shopfront": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png",
+    "qinghe_foreground": "res://assets/world/stage_layers/qinghe_foreground_layer_v1.png"
   },
   "ui": {
     "panel_ink": "res://assets/ui/panel_ink.png",
@@ -519,7 +520,7 @@
     "item_icons": 22,
     "skill_icons": 41,
     "scene_backgrounds": 73,
-    "stage_layers": 1,
+    "stage_layers": 2,
     "ui": 8
   }
 }

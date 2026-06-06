@@ -78,6 +78,8 @@ func _run() -> void:
 	_check(str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", "")).ends_with("player_male_none_stage_v2.png"), "默认男主应保留高质量 sprite 覆盖")
 	_check(stage.player_texture != null and stage.player_texture.get_size().y >= 900.0, "2.5D 战斗舞台应复用默认男主高质量 sprite")
 	_check(stage.enemy_texture != null, "2.5D 战斗舞台应加载敌人 sprite")
+	_check(GameData.get_npc_sprite_path("流氓").ends_with("thug_stage_v2.png"), "开局流氓应使用高质量敌人 sprite")
+	_check(stage.enemy_texture != null and stage.enemy_texture.get_size().y >= 1200.0, "2.5D 战斗舞台流氓敌人不应继续使用低清小图")
 	_check(stage.background_texture != null, "2.5D 战斗舞台应加载当前区域背景")
 	_check(COMBAT_STAGE_SCRIPT.PLAYER_STAGE_HEIGHT >= 140.0, "2.5D 战斗舞台玩家不应继续偏小")
 	_check(COMBAT_STAGE_SCRIPT.ENEMY_STAGE_HEIGHT >= 148.0, "2.5D 战斗舞台敌人不应继续偏小")
