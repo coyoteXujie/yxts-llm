@@ -14,6 +14,9 @@ var stage_pose_line_node: Line2D
 var stage_weapon_glow_node: Line2D
 var stage_torso_line_node: Line2D
 var stage_sash_line_node: Line2D
+var stage_front_limb_line_node: Line2D
+var stage_back_limb_line_node: Line2D
+var stage_guard_line_node: Line2D
 var using_sprite_asset := false
 var ambient_timer := 0.0
 var visual_phase := 0.0
@@ -44,6 +47,10 @@ const STAGE_GROUND_LOCK_ALPHA := 0.24
 const STAGE_TORSO_LINE_ALPHA := 0.24
 const STAGE_SASH_LINE_ALPHA := 0.22
 const STAGE_WEAPON_GLOW_ALPHA := 0.24
+const STAGE_LIMB_POSE_ALPHA := 0.27
+const STAGE_STEP_SWEEP_ALPHA := 0.20
+const STAGE_IDLE_GUARD_ALPHA := 0.18
+const STAGE_ROLE_STANCE_SWAY_PIXELS := 2.8
 const STAGE_ACTIVITY_CUE_ALPHA := 0.26
 const STAGE_ACTIVITY_SWAY_PIXELS := 4.8
 const STAGE_ACTIVITY_PROP_SCALE := 1.0
@@ -260,6 +267,27 @@ func _refresh_sprite_asset() -> void:
 		stage_sash_line_node.antialiased = true
 		stage_sash_line_node.visible = false
 		add_child(stage_sash_line_node)
+	if stage_back_limb_line_node == null:
+		stage_back_limb_line_node = Line2D.new()
+		stage_back_limb_line_node.z_index = 4
+		stage_back_limb_line_node.width = 2.0
+		stage_back_limb_line_node.antialiased = true
+		stage_back_limb_line_node.visible = false
+		add_child(stage_back_limb_line_node)
+	if stage_front_limb_line_node == null:
+		stage_front_limb_line_node = Line2D.new()
+		stage_front_limb_line_node.z_index = 6
+		stage_front_limb_line_node.width = 2.0
+		stage_front_limb_line_node.antialiased = true
+		stage_front_limb_line_node.visible = false
+		add_child(stage_front_limb_line_node)
+	if stage_guard_line_node == null:
+		stage_guard_line_node = Line2D.new()
+		stage_guard_line_node.z_index = 7
+		stage_guard_line_node.width = 1.5
+		stage_guard_line_node.antialiased = true
+		stage_guard_line_node.visible = false
+		add_child(stage_guard_line_node)
 	if stage_weapon_glow_node == null:
 		stage_weapon_glow_node = Line2D.new()
 		stage_weapon_glow_node.z_index = 5
@@ -334,6 +362,12 @@ func _clear_sprite_asset() -> void:
 		stage_torso_line_node.visible = false
 	if stage_sash_line_node != null:
 		stage_sash_line_node.visible = false
+	if stage_front_limb_line_node != null:
+		stage_front_limb_line_node.visible = false
+	if stage_back_limb_line_node != null:
+		stage_back_limb_line_node.visible = false
+	if stage_guard_line_node != null:
+		stage_guard_line_node.visible = false
 
 func _draw() -> void:
 	var appearance := GameData.get_npc_appearance(data)
@@ -486,6 +520,7 @@ func _draw_stage_foot_anchors(accent: Color, map_scale: float) -> void:
 	_draw_ellipse(left, radius, Color(0.0, 0.0, 0.0, STAGE_FOOT_ANCHOR_ALPHA * 0.74))
 	_draw_ellipse(right, radius * Vector2(0.94, 0.90), Color(0.0, 0.0, 0.0, STAGE_FOOT_ANCHOR_ALPHA * 0.62))
 	draw_line(left + Vector2(-radius.x * 0.36, 0.0), right + Vector2(radius.x * 0.36, -0.8 * map_scale), Color(role_color.r, role_color.g, role_color.b, STAGE_FOOT_ANCHOR_ALPHA * 0.72), 1.0 + map_scale * 0.16)
+	draw_arc(Vector2(0.0, y - 6.0 * map_scale), 18.0 * map_scale, PI * 0.16, PI * 0.88, 24, Color(role_color.r, role_color.g, role_color.b, STAGE_STEP_SWEEP_ALPHA * (0.60 + absf(step) * 0.30)), 1.0 + map_scale * 0.12)
 
 func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> void:
 	if stage_pose_line_node == null:
@@ -526,6 +561,12 @@ func _hide_stage_pose_aux_lines() -> void:
 		stage_torso_line_node.visible = false
 	if stage_sash_line_node != null:
 		stage_sash_line_node.visible = false
+	if stage_front_limb_line_node != null:
+		stage_front_limb_line_node.visible = false
+	if stage_back_limb_line_node != null:
+		stage_back_limb_line_node.visible = false
+	if stage_guard_line_node != null:
+		stage_guard_line_node.visible = false
 
 func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float) -> void:
 	if stage_torso_line_node != null:
@@ -546,6 +587,67 @@ func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float
 		stage_sash_line_node.width = clampf(2.1 * map_scale * stage_motion, 1.6, 3.6)
 		stage_sash_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_SASH_LINE_ALPHA * (0.68 + absf(flutter) * 0.26))
 		stage_sash_line_node.visible = true
+	_update_stage_limb_pose_lines(phase, wave, stage_motion, role_color, side, map_scale)
+
+func _update_stage_limb_pose_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float) -> void:
+	var step := sin(phase * (1.02 if is_enemy() else 0.72))
+	if is_master():
+		step = sin(phase * 0.48) * 0.45
+	var sway := sin(phase * 0.58) * STAGE_ROLE_STANCE_SWAY_PIXELS * map_scale
+	var base := sprite_base_position
+	var hip := base + Vector2(side * (4.0 + wave * 0.8) * map_scale, -1.0 * map_scale)
+	var front_shoulder := base + Vector2(side * (13.5 + wave * 1.1) * map_scale, -28.5 * map_scale)
+	var front_elbow := base + Vector2(side * (21.0 + step * 2.0) * map_scale, (-14.0 + step * 1.2) * map_scale)
+	var front_hand := base + Vector2(side * (25.0 + step * 2.8) * map_scale, (-3.0 + absf(step) * 1.3) * map_scale)
+	var front_knee := base + Vector2(side * (12.0 + step * 3.0) * map_scale, (13.0 - absf(step) * 1.2) * map_scale)
+	var front_foot := base + Vector2(side * (17.0 + step * 4.0) * map_scale, (29.0 - maxf(step, 0.0) * 1.4) * map_scale)
+	var back_shoulder := base + Vector2(-side * (8.5 + wave * 0.6) * map_scale, -29.5 * map_scale)
+	var back_elbow := base + Vector2(-side * (14.5 - step * 1.6) * map_scale, (-15.5 - step * 0.8) * map_scale)
+	var back_hand := base + Vector2(-side * (17.0 - step * 2.0) * map_scale, (-4.5 + absf(step) * 0.8) * map_scale)
+	var back_knee := base + Vector2(-side * (9.5 - step * 2.2) * map_scale, (14.0 + absf(step) * 0.8) * map_scale)
+	var back_foot := base + Vector2(-side * (13.5 - step * 3.2) * map_scale, 29.5 * map_scale)
+	if is_enemy():
+		front_hand += Vector2(side * 4.0, -3.0) * map_scale
+		front_foot += Vector2(side * 2.0, -1.0) * map_scale
+	elif is_master():
+		front_shoulder.y += 2.0 * map_scale
+		back_shoulder.y += 2.0 * map_scale
+		front_hand.y += 3.0 * map_scale
+	if stage_back_limb_line_node != null:
+		stage_back_limb_line_node.points = PackedVector2Array([back_hand, back_elbow, back_shoulder, hip, back_knee, back_foot])
+		stage_back_limb_line_node.width = clampf(1.45 * map_scale * stage_motion, 1.1, 2.7)
+		stage_back_limb_line_node.default_color = Color(0.025, 0.018, 0.012, STAGE_LIMB_POSE_ALPHA * 0.58)
+		stage_back_limb_line_node.visible = true
+	if stage_front_limb_line_node != null:
+		stage_front_limb_line_node.points = PackedVector2Array([front_hand, front_elbow, front_shoulder, hip, front_knee, front_foot])
+		stage_front_limb_line_node.width = clampf(1.75 * map_scale * stage_motion, 1.3, 3.2)
+		stage_front_limb_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_LIMB_POSE_ALPHA * (0.76 + absf(step) * 0.24))
+		stage_front_limb_line_node.visible = true
+	if stage_guard_line_node != null:
+		stage_guard_line_node.points = _stage_guard_points(base + Vector2(sway * 0.08, -8.0 * map_scale), side, map_scale, step)
+		stage_guard_line_node.width = clampf(1.45 * map_scale * stage_motion, 1.1, 2.7)
+		stage_guard_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_IDLE_GUARD_ALPHA * (0.70 + absf(wave) * 0.30))
+		stage_guard_line_node.visible = true
+
+func _stage_guard_points(center: Vector2, side: float, map_scale: float, step: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	if is_enemy():
+		points.append(center + Vector2(-side * 26.0, 17.0) * map_scale)
+		points.append(center + Vector2(side * 31.0, -3.0 + step * 1.4) * map_scale)
+		points.append(center + Vector2(side * 21.0, 9.0) * map_scale)
+		return points
+	var start := PI * 0.10
+	var end := PI * 0.90
+	if is_master():
+		start = -PI * 0.08
+		end = PI * 1.08
+	for i in range(18):
+		var t := float(i) / 17.0
+		var angle := lerpf(start, end, t)
+		var rx := (30.0 if is_master() else 24.0) * map_scale
+		var ry := (9.5 if is_master() else 7.2) * map_scale
+		points.append(center + Vector2(cos(angle) * rx, sin(angle) * ry))
+	return points
 
 func _build_scale(build: String) -> Vector2:
 	match build:
