@@ -128,6 +128,11 @@ const SIDE_VIEW_PLAY_LANE_EDGE_ALPHA := 0.30
 const SIDE_VIEW_LANE_DECAL_COUNT := 24
 const SIDE_VIEW_SIDE_EXIT_COUNT := 4
 const SIDE_VIEW_SIDE_EXIT_ALPHA := 0.28
+const SIDE_VIEW_TERRACE_BAND_COUNT := 5
+const SIDE_VIEW_TERRACE_ALPHA := 0.34
+const SIDE_VIEW_TERRACE_RAIL_ALPHA := 0.32
+const SIDE_VIEW_TERRAIN_OCCLUDER_COUNT := 10
+const SIDE_VIEW_TERRAIN_OCCLUDER_ALPHA := 0.30
 const SIDE_VIEW_LANE_ANCHOR_FULL_DISTANCE := 18.0
 const SIDE_VIEW_LANE_ANCHOR_MAX_DISTANCE := 92.0
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
@@ -2454,6 +2459,7 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		_with_alpha(floor_color.darkened(0.32), SIDE_VIEW_STAGE_LANE_ALPHA + 0.08),
 		_with_alpha(floor_color.darkened(0.26), SIDE_VIEW_STAGE_LANE_ALPHA + 0.06)
 	]))
+	_draw_stage_terrain_terraces(size, palette, top_y, bottom_y)
 	_draw_stage_play_lanes(size, palette, top_y, bottom_y)
 	_draw_stage_depth_guides(size, palette)
 	_draw_stage_perspective_edges(size, palette, top_y, bottom_y)
@@ -2470,6 +2476,135 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
 	_draw_stage_platform_lip(size, palette, top_y, bottom_y)
 	_draw_stage_side_exit_frames(size, palette, top_y, bottom_y)
+	_draw_stage_near_terrain_occluders(size, palette, top_y, bottom_y)
+
+func _draw_stage_terrain_terraces(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	for i in range(SIDE_VIEW_TERRACE_BAND_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_TERRACE_BAND_COUNT - 1))
+		var y := lerpf(top_y + tile_size * 0.18, bottom_y - tile_size * 1.72, 0.06 + t * 0.70)
+		var face_y := y + tile_size * (0.26 + t * 0.18)
+		var inset := lerpf(size.x * 0.18, size.x * -0.035, t)
+		var right := size.x - inset
+		var skew := tile_size * (0.18 + t * 0.16)
+		var alpha := SIDE_VIEW_TERRACE_ALPHA * (0.52 + t * 0.40)
+		var top_color := floor_color.lightened(0.12 - t * 0.05)
+		var face_color := floor_color.darkened(0.24 + t * 0.10)
+		draw_polygon(PackedVector2Array([
+			Vector2(inset, y),
+			Vector2(right, y - tile_size * 0.10),
+			Vector2(right + skew, face_y - tile_size * 0.02),
+			Vector2(inset - skew, face_y + tile_size * 0.06)
+		]), PackedColorArray([
+			Color(top_color.r, top_color.g, top_color.b, alpha * 0.54),
+			Color(top_color.r, top_color.g, top_color.b, alpha * 0.46),
+			Color(face_color.r, face_color.g, face_color.b, alpha * 0.72),
+			Color(face_color.r, face_color.g, face_color.b, alpha * 0.80)
+		]))
+		draw_line(Vector2(inset + tile_size * 0.16, y + tile_size * 0.03), Vector2(right - tile_size * 0.12, y - tile_size * 0.08), Color(accent.r, accent.g, accent.b, alpha * 0.46), 1.2 + t * 1.2)
+		draw_line(Vector2(inset - skew, face_y + tile_size * 0.06), Vector2(right + skew, face_y - tile_size * 0.02), Color(0.0, 0.0, 0.0, alpha * 0.70), 1.8 + t * 1.4)
+		_draw_stage_terrain_band_detail(size, accent, floor_color, inset, right, y, face_y, t, i, region_type, terrain)
+
+func _draw_stage_terrain_band_detail(_size: Vector2, accent: Color, floor_color: Color, left: float, right: float, y: float, face_y: float, t: float, index: int, region_type: String, terrain: String) -> void:
+	var alpha := SIDE_VIEW_TERRACE_RAIL_ALPHA * (0.48 + t * 0.42)
+	var span := maxf(tile_size, right - left)
+	if region_type == "city" or region_type == "town":
+		for post in range(5):
+			var p := float(post) / 4.0
+			var x := lerpf(left + span * 0.08, right - span * 0.08, p)
+			var post_top := y - tile_size * (0.22 + float((post + index) % 2) * 0.08)
+			draw_line(Vector2(x, post_top), Vector2(x - tile_size * 0.05, face_y + tile_size * 0.08), Color(0.020, 0.012, 0.008, alpha * 0.82), 1.5 + t)
+			if post < 4:
+				var nx := lerpf(left + span * 0.08, right - span * 0.08, float(post + 1) / 4.0)
+				draw_line(Vector2(x, post_top + tile_size * 0.10), Vector2(nx, post_top + tile_size * 0.04), Color(accent.r, accent.g, accent.b, alpha * 0.32), 1.0)
+	elif region_type == "sect":
+		for step in range(4):
+			var p := (float(step) + 0.5) / 4.0
+			var x := lerpf(left + span * 0.18, right - span * 0.18, p)
+			draw_line(Vector2(x - tile_size * 0.36, y + tile_size * (0.10 + p * 0.12)), Vector2(x + tile_size * 0.36, y + tile_size * (0.04 + p * 0.09)), Color(accent.r, accent.g, accent.b, alpha * 0.34), 1.1)
+			draw_rect(Rect2(Vector2(x - tile_size * 0.16, face_y - tile_size * 0.02), Vector2(tile_size * 0.32, tile_size * 0.06)), Color(0.0, 0.0, 0.0, alpha * 0.34), true)
+	elif _terrain_has_water(terrain):
+		for plank in range(7):
+			var p := float(plank) / 6.0
+			var x := lerpf(left + tile_size * 0.30, right - tile_size * 0.30, p)
+			draw_line(Vector2(x, y + tile_size * 0.04), Vector2(x + tile_size * 0.18, face_y + tile_size * 0.04), Color(0.0, 0.0, 0.0, alpha * 0.42), 1.0)
+		draw_line(Vector2(left + tile_size * 0.20, y - tile_size * 0.12), Vector2(right - tile_size * 0.20, y - tile_size * 0.20), Color(accent.r, accent.g, accent.b, alpha * 0.34), 1.4)
+	elif _terrain_has_forest(terrain):
+		for root in range(5):
+			var p := (float(root) + 0.5) / 5.0
+			var x := lerpf(left + span * 0.05, right - span * 0.05, p)
+			draw_line(Vector2(x, face_y + tile_size * 0.06), Vector2(x + sin(float(root + index)) * tile_size * 0.34, y - tile_size * 0.10), Color(0.018, 0.065, 0.022, alpha * 0.66), 1.2 + t * 0.8)
+			_draw_ellipse_poly(Vector2(x + tile_size * 0.10, y - tile_size * 0.05), Vector2(tile_size * 0.12, tile_size * 0.030), Color(accent.r, accent.g, accent.b, alpha * 0.24))
+	else:
+		for chip in range(6):
+			var p := float((chip * 3 + index) % 7) / 6.0
+			var x := lerpf(left + tile_size * 0.46, right - tile_size * 0.46, p)
+			var rock_alpha := alpha * (0.42 + float(chip % 3) * 0.10)
+			_draw_ellipse_poly(Vector2(x, face_y - tile_size * (0.04 + float(chip % 2) * 0.03)), Vector2(tile_size * (0.055 + float(chip % 3) * 0.015), tile_size * 0.018), Color(0.0, 0.0, 0.0, rock_alpha))
+			if terrain.contains("snow"):
+				draw_line(Vector2(x - tile_size * 0.08, y - tile_size * 0.04), Vector2(x + tile_size * 0.12, y - tile_size * 0.08), Color(0.88, 0.96, 1.0, rock_alpha * 0.74), 0.9)
+			elif terrain.contains("desert"):
+				draw_line(Vector2(x - tile_size * 0.12, y + tile_size * 0.04), Vector2(x + tile_size * 0.16, y), Color(0.92, 0.70, 0.36, rock_alpha * 0.54), 0.9)
+			else:
+				draw_line(Vector2(x - tile_size * 0.10, y), Vector2(x + tile_size * 0.18, y - tile_size * 0.04), Color(floor_color.r, floor_color.g, floor_color.b, rock_alpha * 0.64), 0.9)
+
+func _draw_stage_near_terrain_occluders(size: Vector2, palette: Dictionary, _top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	for i in range(SIDE_VIEW_TERRAIN_OCCLUDER_COUNT):
+		var seed := _tile_seed(i + 101, int(size.y) + i * 17)
+		var t := float(i) / float(maxi(1, SIDE_VIEW_TERRAIN_OCCLUDER_COUNT - 1))
+		var x := fposmod(float(seed * 37), size.x + tile_size * 1.8) - tile_size * 0.9
+		var y := lerpf(bottom_y - tile_size * 1.10, bottom_y - tile_size * 0.22, float(seed % 100) / 99.0)
+		var scale := 0.78 + t * 0.34
+		var alpha := SIDE_VIEW_TERRAIN_OCCLUDER_ALPHA * (0.54 + t * 0.36)
+		if region_type == "city" or region_type == "town":
+			var w := tile_size * (0.36 + float(seed % 4) * 0.06) * scale
+			var h := tile_size * (0.18 + float(int(seed / 5) % 3) * 0.05) * scale
+			draw_rect(Rect2(Vector2(x, y - h), Vector2(w, h)), Color(0.030, 0.018, 0.010, alpha), true)
+			draw_line(Vector2(x, y - h), Vector2(x + w, y - h - tile_size * 0.04 * scale), Color(accent.r, accent.g, accent.b, alpha * 0.48), 1.1)
+		elif region_type == "sect":
+			_draw_ellipse_poly(Vector2(x + tile_size * 0.22 * scale, y), Vector2(tile_size * 0.26 * scale, tile_size * 0.050 * scale), Color(0.0, 0.0, 0.0, alpha * 0.52))
+			draw_polygon(PackedVector2Array([
+				Vector2(x, y),
+				Vector2(x + tile_size * 0.16 * scale, y - tile_size * 0.16 * scale),
+				Vector2(x + tile_size * 0.54 * scale, y - tile_size * 0.10 * scale),
+				Vector2(x + tile_size * 0.62 * scale, y + tile_size * 0.08 * scale)
+			]), PackedColorArray([
+				Color(0.020, 0.018, 0.014, alpha),
+				Color(accent.r, accent.g, accent.b, alpha * 0.38),
+				Color(0.042, 0.036, 0.028, alpha * 0.84),
+				Color(0.012, 0.010, 0.008, alpha)
+			]))
+		elif _terrain_has_water(terrain):
+			var h := tile_size * (0.34 + float(seed % 3) * 0.05) * scale
+			draw_line(Vector2(x, y - h), Vector2(x - tile_size * 0.04 * scale, y + tile_size * 0.08 * scale), Color(0.020, 0.014, 0.008, alpha), 2.2 * scale)
+			draw_line(Vector2(x - tile_size * 0.32 * scale, y - h * 0.55), Vector2(x + tile_size * 0.38 * scale, y - h * 0.64), Color(accent.r, accent.g, accent.b, alpha * 0.28), 1.3)
+		elif _terrain_has_forest(terrain):
+			var h := tile_size * (0.46 + float(seed % 4) * 0.08) * scale
+			draw_line(Vector2(x, y + tile_size * 0.08 * scale), Vector2(x + tile_size * 0.08 * scale, y - h), Color(0.006, 0.040, 0.014, alpha + 0.04), 2.6 * scale)
+			_draw_ellipse_poly(Vector2(x + tile_size * 0.22 * scale, y - h * 0.72), Vector2(tile_size * 0.26 * scale, tile_size * 0.085 * scale), Color(accent.r * 0.34, accent.g * 0.48, accent.b * 0.30, alpha * 0.48))
+		else:
+			var w := tile_size * (0.30 + float(seed % 5) * 0.045) * scale
+			var h := tile_size * (0.20 + float(int(seed / 7) % 4) * 0.045) * scale
+			_draw_ellipse_poly(Vector2(x + w * 0.36, y), Vector2(w * 0.64, tile_size * 0.050 * scale), Color(0.0, 0.0, 0.0, alpha * 0.36))
+			draw_polygon(PackedVector2Array([
+				Vector2(x, y),
+				Vector2(x + w * 0.24, y - h),
+				Vector2(x + w, y - h * 0.62),
+				Vector2(x + w * 1.10, y + tile_size * 0.06 * scale),
+				Vector2(x + w * 0.20, y + tile_size * 0.08 * scale)
+			]), PackedColorArray([
+				Color(0.018, 0.016, 0.013, alpha),
+				Color(accent.r, accent.g, accent.b, alpha * 0.30),
+				Color(0.048, 0.042, 0.034, alpha * 0.72),
+				Color(0.012, 0.010, 0.008, alpha),
+				Color(0.014, 0.012, 0.010, alpha)
+			]))
 
 func _stage_play_lane_centers(size: Vector2) -> Array[float]:
 	var centers: Array[float] = []
