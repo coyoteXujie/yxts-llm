@@ -4,6 +4,8 @@ class_name LocalStageForeground
 const TOP_EAVE_COUNT := 9
 const FOREGROUND_MIST_BANDS := 4
 const SIDE_OCCLUDER_COUNT := 7
+const SIDE_WING_PANEL_COUNT := 6
+const SIDE_WING_ALPHA := 0.34
 const BOTTOM_OCCLUDER_COUNT := 10
 const BOTTOM_OCCLUDER_ALPHA := 0.24
 const HANGING_FOREGROUND_COUNT := 8
@@ -35,6 +37,7 @@ func _draw() -> void:
 	_draw_top_depth(accent, region_type, terrain)
 	_draw_hanging_foreground(accent, region_type, terrain)
 	_draw_side_occluders(accent, region_type, terrain)
+	_draw_side_wing_panels(accent, region_type, terrain)
 	_draw_front_setpieces(accent, region_type, terrain)
 	_draw_bottom_occluders(accent, region_type, terrain)
 	_draw_foreground_mist(accent, terrain)
@@ -224,6 +227,82 @@ func _draw_side_occluders(accent: Color, region_type: String, terrain: String) -
 		elif _terrain_has_forest(terrain):
 			draw_line(Vector2(left_x, map_size.y), Vector2(left_x + tile_size * 0.18, y - height), Color(0.004, 0.030, 0.012, left_alpha + 0.08), 3.2 + t * 2.0)
 			draw_line(Vector2(right_x, map_size.y), Vector2(right_x - tile_size * 0.18, y - height * 0.92), Color(0.004, 0.030, 0.012, right_alpha + 0.06), 3.0 + t * 1.7)
+
+func _draw_side_wing_panels(accent: Color, region_type: String, terrain: String) -> void:
+	for side_value in [-1.0, 1.0]:
+		var side := float(side_value)
+		for i in range(SIDE_WING_PANEL_COUNT):
+			var t := float(i) / float(maxi(1, SIDE_WING_PANEL_COUNT - 1))
+			var y := lerpf(map_size.y * 0.40, map_size.y * 0.91, t)
+			var height := tile_size * (1.38 + t * 2.35)
+			var depth := tile_size * (0.44 + t * 0.34)
+			var edge_x := 0.0 if side < 0.0 else map_size.x
+			var inner_x := tile_size * (0.58 + t * 0.96 + float(i % 2) * 0.16)
+			if side > 0.0:
+				inner_x = map_size.x - inner_x
+			var alpha := SIDE_WING_ALPHA * (0.52 + t * 0.48)
+			_draw_side_wing_panel(edge_x, inner_x, y, height, depth, side, accent, alpha)
+			if region_type == "city" or region_type == "town" or region_type == "sect":
+				_draw_side_wing_eave(edge_x, inner_x, y, height, side, accent, alpha, i)
+			elif _terrain_has_forest(terrain):
+				_draw_side_wing_tree(edge_x, inner_x, y, height, side, accent, alpha, i)
+			elif _terrain_has_water(terrain):
+				_draw_side_wing_dock(edge_x, inner_x, y, height, side, accent, alpha, i)
+			else:
+				_draw_side_wing_rock(edge_x, inner_x, y, height, side, accent, alpha, i)
+
+func _draw_side_wing_panel(edge_x: float, inner_x: float, y: float, height: float, depth: float, side: float, accent: Color, alpha: float) -> void:
+	var top_y := y - height
+	var outer_top := Vector2(edge_x + side * tile_size * 0.30, top_y + depth * 0.16)
+	var inner_top := Vector2(inner_x, top_y - depth * 0.10)
+	var inner_bottom := Vector2(inner_x - side * depth * 0.28, y)
+	var outer_bottom := Vector2(edge_x + side * tile_size * 0.42, y + depth * 0.42)
+	draw_polygon(PackedVector2Array([outer_top, inner_top, inner_bottom, outer_bottom]), PackedColorArray([
+		Color(0.010, 0.007, 0.005, alpha * 1.08),
+		Color(accent.r, accent.g, accent.b, alpha * 0.20),
+		Color(0.018, 0.012, 0.008, alpha),
+		Color(0.006, 0.004, 0.003, alpha * 1.12)
+	]))
+	draw_line(inner_top, inner_bottom, Color(accent.r, accent.g, accent.b, alpha * 0.30), 1.3)
+	draw_line(outer_bottom, inner_bottom, Color(0.0, 0.0, 0.0, alpha * 0.62), 2.1)
+	_draw_ellipse(inner_bottom.x - side * tile_size * 0.08, inner_bottom.y + tile_size * 0.06, Vector2(tile_size * (0.36 + alpha * 0.42), tile_size * 0.060), Color(0.0, 0.0, 0.0, alpha * 0.36))
+
+func _draw_side_wing_eave(edge_x: float, inner_x: float, y: float, height: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var top_y := y - height
+	var beam_y := top_y + height * 0.28
+	var beam_start := Vector2(edge_x + side * tile_size * 0.06, beam_y + tile_size * 0.08)
+	var beam_end := Vector2(inner_x - side * tile_size * (0.38 + float(index % 2) * 0.12), beam_y - tile_size * 0.12)
+	draw_line(beam_start, beam_end, Color(0.024, 0.014, 0.008, alpha * 0.95), 3.0)
+	draw_line(beam_start + Vector2(0.0, tile_size * 0.11), beam_end + Vector2(0.0, tile_size * 0.08), Color(accent.r, accent.g, accent.b, alpha * 0.22), 1.0)
+	if index % 2 == 0:
+		var lamp := beam_end + Vector2(-side * tile_size * 0.12, tile_size * 0.34)
+		var pulse := 0.5 + sin(visual_phase * 2.3 + float(index)) * 0.5
+		draw_line(lamp + Vector2(0.0, -tile_size * 0.30), lamp, Color(0.72, 0.42, 0.18, alpha * 0.48), 1.0)
+		draw_circle(lamp, tile_size * 0.070, Color(1.0, 0.62, 0.22, alpha * (0.42 + pulse * 0.16)))
+
+func _draw_side_wing_tree(edge_x: float, inner_x: float, y: float, height: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var top := Vector2(edge_x + side * tile_size * (0.28 + float(index % 2) * 0.12), y - height)
+	var root := Vector2(inner_x - side * tile_size * 0.20, y + tile_size * 0.16)
+	draw_line(root, top, Color(0.004, 0.024, 0.010, alpha + 0.08), 5.0 + float(index % 3))
+	var branch := top + Vector2(-side * tile_size * (0.76 + float(index % 3) * 0.18), tile_size * (0.58 + float(index % 2) * 0.10))
+	draw_line(top + Vector2(-side * tile_size * 0.08, tile_size * 0.36), branch, Color(0.004, 0.030, 0.012, alpha * 0.82), 2.2)
+	_draw_ellipse(branch.x, branch.y, Vector2(tile_size * 0.42, tile_size * 0.15), Color(accent.r * 0.24, accent.g * 0.42, accent.b * 0.24, alpha * 0.42))
+
+func _draw_side_wing_dock(edge_x: float, inner_x: float, y: float, height: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var post_top := Vector2(inner_x - side * tile_size * 0.14, y - height * 0.82)
+	var post_bottom := Vector2(inner_x - side * tile_size * 0.28, y + tile_size * 0.18)
+	draw_line(post_top, post_bottom, Color(0.020, 0.014, 0.008, alpha + 0.06), 3.4)
+	var rope_y := y - height * (0.42 + float(index % 2) * 0.08)
+	draw_line(Vector2(edge_x + side * tile_size * 0.10, rope_y), Vector2(inner_x - side * tile_size * 0.34, rope_y - tile_size * 0.14), Color(0.54, 0.40, 0.23, alpha * 0.70), 1.5)
+	draw_line(Vector2(edge_x + side * tile_size * 0.10, rope_y + tile_size * 0.18), Vector2(inner_x - side * tile_size * 0.26, rope_y + tile_size * 0.02), Color(accent.r, accent.g, accent.b, alpha * 0.18), 1.0)
+
+func _draw_side_wing_rock(edge_x: float, inner_x: float, y: float, height: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var crack_a := Vector2(inner_x - side * tile_size * 0.16, y - height * 0.80)
+	var crack_b := crack_a + Vector2(-side * tile_size * (0.20 + float(index % 2) * 0.12), tile_size * 0.46)
+	var crack_c := crack_b + Vector2(side * tile_size * 0.16, tile_size * 0.42)
+	draw_line(crack_a, crack_b, Color(0.0, 0.0, 0.0, alpha * 0.50), 1.1)
+	draw_line(crack_b, crack_c, Color(accent.r, accent.g, accent.b, alpha * 0.22), 1.0)
+	_draw_ellipse(edge_x + side * tile_size * 0.30, y - height * 0.18, Vector2(tile_size * 0.22, tile_size * 0.055), Color(accent.r, accent.g, accent.b, alpha * 0.18))
 
 func _draw_front_setpieces(accent: Color, region_type: String, terrain: String) -> void:
 	for i in range(FRONT_SETPIECE_COUNT):
