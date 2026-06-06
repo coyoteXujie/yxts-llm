@@ -20,6 +20,12 @@ const ACTOR_ATTACK_STRETCH := 0.08
 const ACTOR_HURT_SQUASH := 0.12
 const HURT_FLASH_ALPHA := 0.42
 const LOW_HP_STANCE_THRESHOLD := 0.30
+const COMBAT_POSE_LINE_ALPHA := 0.28
+const COMBAT_WEAPON_GLOW_ALPHA := 0.34
+const ATTACK_TELEGRAPH_ALPHA := 0.24
+const ATTACK_TRAIL_LAYER_COUNT := 5
+const HEAVY_DAMAGE_THRESHOLD := 30
+const COMBO_BURST_RING_COUNT := 4
 
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
@@ -273,6 +279,8 @@ func _draw_combatants(rect: Rect2) -> void:
 	_draw_actor_afterimage(enemy_texture, enemy_draw_foot + Vector2(float(enemy_pose.get("afterimage_x", 0.0)), 0.0), ENEMY_STAGE_HEIGHT, Color(0.95, 0.32, 0.18), float(enemy_pose.get("afterimage", 0.0)))
 	_draw_player_actor(player_pose)
 	_draw_enemy_actor(enemy_pose)
+	_draw_actor_combat_pose_lines(player_draw_foot, "player", player_pose, accent_color.lightened(0.12))
+	_draw_actor_combat_pose_lines(enemy_draw_foot, "enemy", enemy_pose, Color(0.95, 0.28, 0.18))
 	_draw_status_bars(player_foot, enemy_foot)
 	_draw_action_effects(rect, player_foot, enemy_foot)
 
@@ -429,6 +437,26 @@ func _draw_actor_contact_light(foot: Vector2, color: Color, intensity: float, sc
 	_draw_ellipse(foot + Vector2(0.0, 1.0), Vector2(56.0 * scale, 13.0 * scale), Color(color.r, color.g, color.b, CONTACT_GLOW_ALPHA * intensity))
 	_draw_ellipse(foot + Vector2(0.0, 2.0), Vector2(30.0 * scale, 5.8 * scale), Color(1.0, 0.84, 0.46, CONTACT_GLOW_ALPHA * intensity * 0.40))
 
+func _draw_actor_combat_pose_lines(foot: Vector2, side: String, pose: Dictionary, color: Color) -> void:
+	if bool(pose.get("collapsed", false)):
+		return
+	var direction := 1.0 if side == "player" else -1.0
+	var action := float(pose.get("action", 0.0))
+	var hurt := float(pose.get("hurt", 0.0))
+	var low_hp := float(pose.get("low_hp", 0.0))
+	var pulse_alpha := 0.56 + sin(pulse * 2.0 + (0.0 if side == "player" else 0.8)) * 0.12
+	var stance_alpha := COMBAT_POSE_LINE_ALPHA * clampf(0.55 + action * 0.62 + hurt * 0.34 + low_hp * 0.22, 0.0, 1.18) * pulse_alpha
+	var shoulder := foot + Vector2(direction * 16.0, -108.0)
+	var hand := foot + Vector2(direction * (35.0 + action * 24.0 - hurt * 7.0), -69.0 + action * 5.0)
+	var tip := hand + Vector2(direction * (36.0 + action * 32.0), -20.0 + action * 4.0)
+	var hip := foot + Vector2(direction * 10.0, -54.0)
+	draw_line(shoulder, hand, Color(color.r, color.g, color.b, stance_alpha), 2.0 + action * 1.3)
+	draw_line(shoulder, hip, Color(1.0, 0.90, 0.62, stance_alpha * 0.54), 1.3)
+	draw_line(hand, tip, Color(1.0, 0.92, 0.64, COMBAT_WEAPON_GLOW_ALPHA * clampf(0.42 + action * 0.70, 0.0, 1.0)), 1.6 + action * 1.1)
+	if action > 0.05:
+		var normal := Vector2(-direction * 0.16, -0.98)
+		draw_line(hand - normal * 7.0, tip + normal * 8.0, Color(color.r, color.g, color.b, COMBAT_WEAPON_GLOW_ALPHA * action * 0.42), 4.0)
+
 func _draw_status_bars(player_foot: Vector2, enemy_foot: Vector2) -> void:
 	_draw_bar(player_foot + Vector2(-54.0, -150.0), 108.0, int(GameState.player.get("hp", 0)), int(GameState.player.get("max_hp", 1)), Color(0.72, 0.18, 0.12), "你")
 	var current_enemy: Dictionary = snapshot.get("enemy", enemy)
@@ -460,6 +488,7 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		_draw_focus_ring(start, color, alpha, effect_style)
 		_draw_damage_number(start, event_amount, event_kind, color, alpha)
 		return
+	_draw_attack_telegraph(start, finish, color, alpha)
 	_draw_attack_ground_streak(start, finish, color, alpha)
 	_draw_impact_speed_lines(rect, start, finish, color, alpha)
 	match effect_style:
@@ -479,6 +508,8 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 			_draw_shadow_strike(start, finish, alpha)
 		_:
 			_draw_impact_arc(start, finish, color, alpha)
+	if _is_heavy_hit():
+		_draw_combo_burst(finish, color, alpha)
 	_draw_hit_sparks(finish, color, alpha)
 	_draw_ground_cracks(finish + Vector2(0.0, 86.0), color, alpha)
 	_draw_damage_number(finish, event_amount, event_kind, color, alpha)
@@ -493,6 +524,42 @@ func _draw_attack_ground_streak(start: Vector2, finish: Vector2, color: Color, a
 	var mid := ground_start.lerp(ground_finish, 0.55)
 	_draw_ellipse(mid, Vector2(86.0, 13.0), Color(color.r, color.g, color.b, 0.08 * alpha))
 	draw_line(ground_start, ground_finish, Color(1.0, 0.86, 0.45, 0.18 * alpha), 4.0)
+
+func _draw_attack_telegraph(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var elapsed := 1.0 - _event_life_ratio()
+	var windup := _pose_window(elapsed, 0.18, 0.22)
+	var hit_hold := _hit_freeze_alpha()
+	var trail_alpha := clampf(alpha * 0.38 + windup * 0.54 + hit_hold * 0.18, 0.0, 1.0)
+	if trail_alpha <= 0.02:
+		return
+	var dir := (finish - start).normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	var intensity := _event_intensity()
+	_draw_focus_ring(start, color, ATTACK_TELEGRAPH_ALPHA * trail_alpha * 0.72, effect_style)
+	for i in range(ATTACK_TRAIL_LAYER_COUNT):
+		var t := float(i) / float(maxi(1, ATTACK_TRAIL_LAYER_COUNT - 1))
+		var from := start.lerp(finish, 0.08 + t * 0.22)
+		var to := start.lerp(finish, 0.48 + t * 0.36)
+		var offset := normal * sin(pulse * 1.8 + float(i) * 0.82) * (5.0 + t * 9.0)
+		var line_alpha := ATTACK_TELEGRAPH_ALPHA * trail_alpha * (0.70 - t * 0.08) * intensity
+		draw_line(from + offset, to - offset * 0.30, Color(color.r, color.g, color.b, line_alpha), 2.8 + t * 1.1)
+		draw_line(from + offset * 0.45, to - offset * 0.15, Color(1.0, 0.92, 0.62, line_alpha * 0.42), 1.0)
+
+func _draw_combo_burst(center: Vector2, color: Color, alpha: float) -> void:
+	var hit_hold := _hit_freeze_alpha()
+	var burst_alpha := clampf(maxf(alpha * 0.54, hit_hold), 0.0, 1.0)
+	if burst_alpha <= 0.02:
+		return
+	var intensity := _event_intensity()
+	for i in range(COMBO_BURST_RING_COUNT):
+		var radius := 24.0 + float(i) * 15.0 + intensity * 6.0
+		draw_arc(center, radius, -0.42 + float(i) * 0.12, TAU - 0.42, 56, Color(color.r, color.g, color.b, 0.24 * burst_alpha / float(i + 1)), 2.2)
+	for i in range(COMBO_BURST_RING_COUNT + 2):
+		var angle := float(i) * TAU / float(COMBO_BURST_RING_COUNT + 2) + pulse * 0.24
+		var dir := Vector2(cos(angle), sin(angle) * 0.62)
+		var inner := center + dir * (12.0 + intensity * 4.0)
+		var outer := center + dir * (44.0 + float(i % 3) * 9.0 + intensity * 8.0)
+		draw_line(inner, outer, Color(1.0, 0.90, 0.58, 0.34 * burst_alpha), 1.8)
 
 func _draw_damage_number(center: Vector2, amount: int, kind: String, color: Color, alpha: float) -> void:
 	if alpha <= 0.01:
@@ -748,7 +815,7 @@ func _event_shake_strength(kind: String, style: String, amount: int) -> float:
 	if kind != "damage" and kind != "phase" and kind != "stun":
 		return 0.0
 	var strength := HIT_SHAKE_PIXELS
-	if amount >= 30 or kind == "phase" or kind == "stun":
+	if amount >= HEAVY_DAMAGE_THRESHOLD or kind == "phase" or kind == "stun":
 		strength = HEAVY_HIT_SHAKE_PIXELS
 	match style:
 		"fire", "blade", "palm", "shadow":
@@ -758,6 +825,17 @@ func _event_shake_strength(kind: String, style: String, amount: int) -> float:
 		_:
 			strength *= 1.0
 	return strength
+
+func _event_intensity() -> float:
+	if event_kind == "phase" or event_kind == "stun":
+		return 1.22
+	if event_kind != "damage":
+		return 0.0
+	var amount_ratio := float(maxi(0, event_amount)) / float(maxi(1, HEAVY_DAMAGE_THRESHOLD))
+	return clampf(0.62 + amount_ratio * 0.50, 0.62, 1.34)
+
+func _is_heavy_hit() -> bool:
+	return event_kind == "phase" or event_kind == "stun" or (event_kind == "damage" and event_amount >= HEAVY_DAMAGE_THRESHOLD)
 
 func _event_color(kind: String, target: String) -> Color:
 	match kind:

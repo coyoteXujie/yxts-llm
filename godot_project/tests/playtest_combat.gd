@@ -86,6 +86,12 @@ func _run() -> void:
 	_check(COMBAT_STAGE_SCRIPT.ACTOR_LUNGE_PIXELS >= 30.0, "2.5D 战斗舞台角色出招应有明显前冲")
 	_check(COMBAT_STAGE_SCRIPT.ACTOR_HURT_RECOIL_PIXELS >= 16.0, "2.5D 战斗舞台角色受击应有明显后退")
 	_check(COMBAT_STAGE_SCRIPT.HURT_FLASH_ALPHA >= 0.35, "2.5D 战斗舞台受击应保留闪红/闪白反馈")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_POSE_LINE_ALPHA >= 0.24, "2.5D 战斗舞台角色应保留前持武器/姿态线")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_WEAPON_GLOW_ALPHA >= 0.30, "2.5D 战斗舞台武器姿态应保留高光")
+	_check(COMBAT_STAGE_SCRIPT.ATTACK_TELEGRAPH_ALPHA >= 0.20, "2.5D 战斗舞台出招应保留起手预警轨迹")
+	_check(COMBAT_STAGE_SCRIPT.ATTACK_TRAIL_LAYER_COUNT >= 5, "2.5D 战斗舞台出招应保留多层气势轨迹")
+	_check(COMBAT_STAGE_SCRIPT.HEAVY_DAMAGE_THRESHOLD <= 30, "2.5D 战斗舞台重击阈值不应过高")
+	_check(COMBAT_STAGE_SCRIPT.COMBO_BURST_RING_COUNT >= 3, "2.5D 战斗舞台重击应保留爆裂环层次")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]
@@ -93,6 +99,8 @@ func _run() -> void:
 	_check(stage.event_timer > 0.0, "2.5D 战斗舞台应响应战斗事件")
 	_check(stage.effect_style == "impact", "普通攻击应使用基础命中特效")
 	_check(stage.event_shake_strength >= COMBAT_STAGE_SCRIPT.HIT_SHAKE_PIXELS, "伤害事件应触发命中震动")
+	_check(not stage._is_heavy_hit(), "普通轻击不应触发重击爆裂判定")
+	_check(stage._event_intensity() < 1.0, "普通轻击的战斗强度应低于重击")
 	stage.event_timer = COMBAT_STAGE_SCRIPT.COMBAT_EVENT_DURATION * 0.5
 	_check(stage._hit_freeze_alpha() > 0.80, "伤害事件命中点应产生短暂停顿强调")
 	_check(stage._stage_shake_offset().length() > 0.0, "伤害事件命中点应产生舞台偏移")
@@ -137,6 +145,8 @@ func _run() -> void:
 		"events": [{"id": 4, "kind": "damage", "target": "enemy", "source": "天山六阳掌", "amount": 36}]
 	})
 	_check(stage.effect_style == "fire", "天山六阳掌应触发火焰掌风特效")
+	_check(stage._is_heavy_hit(), "高伤害招式应触发重击爆裂判定")
+	_check(stage._event_intensity() > 1.0, "高伤害招式应提高战斗表现强度")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 5, "kind": "damage", "target": "enemy", "source": "忍术", "amount": 18}]
