@@ -6,6 +6,7 @@ const STAGE_FOREGROUND_SCRIPT := preload("res://scripts/world/local_stage_foregr
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
+const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 
 const WORLD_TILE_WATER := 2
 const WORLD_TILE_BUILDING := 3
@@ -250,6 +251,10 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_SHOULDER_GLOW_ALPHA >= 0.16, "玩家局部横版地图应显示肩部高光姿态层")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_RINGS >= 3, "玩家局部横版待机应保留多层呼吸气场")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_ALPHA >= 0.16, "玩家局部横版待机呼吸气场应有足够可见度")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_AIR_CUT_COUNT >= 6, "战斗舞台攻击事件应保留多段空气斩痕")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_AIR_CUT_ALPHA >= 0.22, "战斗舞台空气斩痕应有足够可见度")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_FOREGROUND_RIPPLE_COUNT >= 5, "战斗舞台攻击事件应保留近景气浪层")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_FOREGROUND_RIPPLE_ALPHA >= 0.20, "战斗舞台近景气浪层应有足够可见度")
 	player.world_map = world_map
 	player.position = GameState.player_position
 	player._refresh_stage_depth_scale()

@@ -32,6 +32,10 @@ const COMBAT_STAGE_FOREGROUND_OCCLUDER_COUNT := 6
 const COMBAT_STAGE_FOOTWORK_TRAIL_COUNT := 5
 const COMBAT_STAGE_BACK_RAIL_ALPHA := 0.26
 const COMBAT_STAGE_FOREGROUND_PRESSURE_ALPHA := 0.24
+const COMBAT_EVENT_AIR_CUT_COUNT := 6
+const COMBAT_EVENT_AIR_CUT_ALPHA := 0.24
+const COMBAT_EVENT_FOREGROUND_RIPPLE_COUNT := 5
+const COMBAT_EVENT_FOREGROUND_RIPPLE_ALPHA := 0.22
 
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
@@ -596,6 +600,8 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		return
 	_draw_attack_telegraph(start, finish, color, alpha)
 	_draw_attack_ground_streak(start, finish, color, alpha)
+	_draw_event_air_cuts(start, finish, color, alpha)
+	_draw_event_foreground_ripples(rect, start, finish, color, alpha)
 	_draw_impact_speed_lines(rect, start, finish, color, alpha)
 	match effect_style:
 		"blade":
@@ -650,6 +656,68 @@ func _draw_attack_telegraph(start: Vector2, finish: Vector2, color: Color, alpha
 		var line_alpha := ATTACK_TELEGRAPH_ALPHA * trail_alpha * (0.70 - t * 0.08) * intensity
 		draw_line(from + offset, to - offset * 0.30, Color(color.r, color.g, color.b, line_alpha), 2.8 + t * 1.1)
 		draw_line(from + offset * 0.45, to - offset * 0.15, Color(1.0, 0.92, 0.62, line_alpha * 0.42), 1.0)
+
+func _draw_event_air_cuts(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var delta := finish - start
+	if delta.length_squared() <= 0.001:
+		return
+	var hit_hold := _hit_freeze_alpha()
+	var elapsed := 1.0 - _event_life_ratio()
+	var pressure := clampf(alpha * 0.46 + hit_hold * 0.46 + _pose_window(elapsed, 0.34, 0.28) * 0.22, 0.0, 1.0)
+	if pressure <= 0.02:
+		return
+	var dir := delta.normalized()
+	var normal := Vector2(-dir.y, dir.x)
+	var intensity := _event_intensity()
+	var heavy_bonus := 1.22 if _is_heavy_hit() else 1.0
+	for i in range(COMBAT_EVENT_AIR_CUT_COUNT):
+		var t := float(i) / float(maxi(1, COMBAT_EVENT_AIR_CUT_COUNT - 1))
+		var cut_center := start.lerp(finish, 0.18 + t * 0.68)
+		var stagger := normal * (float(i) - float(COMBAT_EVENT_AIR_CUT_COUNT - 1) * 0.5) * (6.2 + intensity * 1.8)
+		var lift := Vector2(0.0, -18.0 - sin(pulse * 2.0 + float(i) * 0.7) * 6.0 - t * 5.0)
+		var length := (26.0 + float((i * 13) % 21) + intensity * 12.0) * heavy_bonus
+		var sweep := dir * length
+		var skew := normal * sin(pulse * 1.3 + float(i)) * 5.0
+		var p0 := cut_center - sweep * 0.5 + stagger + lift + skew
+		var p1 := cut_center + sweep * 0.5 + stagger + lift - skew * 0.4
+		var line_alpha := COMBAT_EVENT_AIR_CUT_ALPHA * pressure * (0.92 - t * 0.10) * heavy_bonus
+		draw_line(p0, p1, Color(color.r, color.g, color.b, line_alpha), 1.6 + intensity * 0.55 + float(i % 2) * 0.45)
+		if i % 2 == 0:
+			draw_line(p0 + normal * 3.0, p1 + normal * 1.0, Color(1.0, 0.95, 0.72, line_alpha * 0.38), 0.9)
+
+func _draw_event_foreground_ripples(rect: Rect2, start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var hit_hold := _hit_freeze_alpha()
+	var elapsed := 1.0 - _event_life_ratio()
+	var ripple_alpha := clampf(alpha * 0.34 + hit_hold * 0.58 + _pose_window(elapsed, 0.50, 0.24) * 0.20, 0.0, 1.0)
+	if ripple_alpha <= 0.02:
+		return
+	var direction := 1.0 if finish.x >= start.x else -1.0
+	var intensity := _event_intensity()
+	var life := 1.0 - _event_life_ratio()
+	var y_base := rect.position.y + rect.size.y * 0.765
+	var travel := direction * life * rect.size.x * 0.10
+	for i in range(COMBAT_EVENT_FOREGROUND_RIPPLE_COUNT):
+		var t := float(i) / float(maxi(1, COMBAT_EVENT_FOREGROUND_RIPPLE_COUNT - 1))
+		var center_x := start.lerp(finish, 0.52 + (t - 0.5) * 0.18).x + travel + direction * (float(i) - 2.0) * 13.0
+		center_x = clampf(center_x, rect.position.x + 52.0, rect.position.x + rect.size.x - 52.0)
+		var band_y := y_base + t * 14.0 + sin(pulse * 1.4 + float(i)) * 2.0
+		var width := rect.size.x * (0.20 + intensity * 0.035) + float(i) * 24.0
+		var height := 5.0 + float(i % 3) * 2.0 + hit_hold * 2.0
+		var shear := direction * (34.0 + intensity * 12.0 + float(i) * 4.0)
+		var band_alpha := COMBAT_EVENT_FOREGROUND_RIPPLE_ALPHA * ripple_alpha * (0.95 - t * 0.10)
+		var points := PackedVector2Array([
+			Vector2(center_x - width * 0.5, band_y),
+			Vector2(center_x + width * 0.5, band_y - 6.0),
+			Vector2(center_x + width * 0.5 + shear, band_y + height),
+			Vector2(center_x - width * 0.5 + shear * 0.35, band_y + height + 5.0)
+		])
+		draw_polygon(points, PackedColorArray([
+			Color(color.r, color.g, color.b, band_alpha * 0.18),
+			Color(1.0, 0.90, 0.58, band_alpha * 0.32),
+			Color(color.r, color.g, color.b, band_alpha * 0.25),
+			Color(0.08, 0.045, 0.025, band_alpha * 0.20)
+		]))
+		draw_line(points[0], points[1], Color(1.0, 0.86, 0.46, band_alpha * 0.46), 1.0 + t * 0.5)
 
 func _draw_combo_burst(center: Vector2, color: Color, alpha: float) -> void:
 	var hit_hold := _hit_freeze_alpha()
