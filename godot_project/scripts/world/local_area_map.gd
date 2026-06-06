@@ -122,6 +122,12 @@ const SIDE_VIEW_DEPTH_FOG_BAND_COUNT := 6
 const SIDE_VIEW_PLATFORM_RIM_COUNT := 4
 const SIDE_VIEW_STAGE_FOCUS_RAY_COUNT := 7
 const SIDE_VIEW_STAGE_FOCUS_ALPHA := 0.16
+const SIDE_VIEW_PLAY_LANE_COUNT := 5
+const SIDE_VIEW_PLAY_LANE_ALPHA := 0.22
+const SIDE_VIEW_PLAY_LANE_EDGE_ALPHA := 0.30
+const SIDE_VIEW_LANE_DECAL_COUNT := 24
+const SIDE_VIEW_SIDE_EXIT_COUNT := 4
+const SIDE_VIEW_SIDE_EXIT_ALPHA := 0.28
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -264,6 +270,11 @@ func get_actor_depth_scale(world_position: Vector2) -> float:
 
 func is_side_view_stage_active() -> bool:
 	return current_mode == "region" and side_view_stage_enabled
+
+func get_stage_play_lane_y_positions() -> Array[float]:
+	if not is_side_view_stage_active():
+		return []
+	return _stage_play_lane_centers(get_world_rect().size)
 
 func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
 	return current_region
@@ -2402,6 +2413,7 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		_with_alpha(floor_color.darkened(0.32), SIDE_VIEW_STAGE_LANE_ALPHA + 0.08),
 		_with_alpha(floor_color.darkened(0.26), SIDE_VIEW_STAGE_LANE_ALPHA + 0.06)
 	]))
+	_draw_stage_play_lanes(size, palette, top_y, bottom_y)
 	_draw_stage_depth_guides(size, palette)
 	_draw_stage_perspective_edges(size, palette, top_y, bottom_y)
 	_draw_stage_floor_material(size, palette, top_y, bottom_y)
@@ -2416,6 +2428,86 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		draw_line(Vector2(x, top_y + tile_size * 0.10), Vector2(x - size.x * 0.08, bottom_y), Color(0.0, 0.0, 0.0, 0.05), 1.2)
 	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
 	_draw_stage_platform_lip(size, palette, top_y, bottom_y)
+	_draw_stage_side_exit_frames(size, palette, top_y, bottom_y)
+
+func _stage_play_lane_centers(size: Vector2) -> Array[float]:
+	var centers: Array[float] = []
+	var top_y := size.y * STAGE_DEPTH_TOP_RATIO
+	var bottom_y := size.y * STAGE_DEPTH_BOTTOM_RATIO
+	for i in range(SIDE_VIEW_PLAY_LANE_COUNT):
+		var t := (float(i) + 0.5) / float(maxi(1, SIDE_VIEW_PLAY_LANE_COUNT))
+		centers.append(lerpf(top_y, bottom_y, t))
+	return centers
+
+func _draw_stage_play_lanes(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	for i in range(SIDE_VIEW_PLAY_LANE_COUNT):
+		var t0 := float(i) / float(SIDE_VIEW_PLAY_LANE_COUNT)
+		var t1 := float(i + 1) / float(SIDE_VIEW_PLAY_LANE_COUNT)
+		var y0 := lerpf(top_y, bottom_y, t0)
+		var y1 := lerpf(top_y, bottom_y, t1)
+		var inset0 := lerpf(size.x * 0.105, size.x * -0.035, t0)
+		var inset1 := lerpf(size.x * 0.105, size.x * -0.035, t1)
+		var lane_alpha := SIDE_VIEW_PLAY_LANE_ALPHA * (0.56 + t1 * 0.36)
+		var lane_color := floor_color.lightened(0.08 if i % 2 == 0 else 0.02)
+		draw_polygon(PackedVector2Array([
+			Vector2(inset0, y0),
+			Vector2(size.x - inset0, y0 - tile_size * 0.10),
+			Vector2(size.x - inset1, y1 - tile_size * 0.12),
+			Vector2(inset1, y1)
+		]), PackedColorArray([
+			Color(lane_color.r, lane_color.g, lane_color.b, lane_alpha * 0.52),
+			Color(lane_color.r, lane_color.g, lane_color.b, lane_alpha * 0.44),
+			Color(0.0, 0.0, 0.0, lane_alpha * 0.34),
+			Color(0.0, 0.0, 0.0, lane_alpha * 0.46)
+		]))
+		var edge_alpha := SIDE_VIEW_PLAY_LANE_EDGE_ALPHA * (0.42 + t1 * 0.34)
+		draw_line(Vector2(inset0 + tile_size * 0.18, y0 + tile_size * 0.02), Vector2(size.x - inset0 - tile_size * 0.18, y0 - tile_size * 0.08), Color(accent.r, accent.g, accent.b, edge_alpha * 0.48), 1.2 + t1 * 1.1)
+		draw_line(Vector2(inset1, y1), Vector2(size.x - inset1, y1 - tile_size * 0.12), Color(0.0, 0.0, 0.0, edge_alpha), 1.8 + t1 * 1.4)
+	_draw_stage_lane_decals(size, palette, top_y, bottom_y)
+
+func _draw_stage_lane_decals(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	for i in range(SIDE_VIEW_LANE_DECAL_COUNT):
+		var seed := _tile_seed(i + 83, int(size.x) + i * 19)
+		var t := float(seed % 1000) / 999.0
+		var lane_index := i % SIDE_VIEW_PLAY_LANE_COUNT
+		var lane_t := (float(lane_index) + 0.5) / float(SIDE_VIEW_PLAY_LANE_COUNT)
+		var y := lerpf(top_y, bottom_y, lane_t) + sin(float(seed) * 0.017) * tile_size * 0.10
+		var inset := lerpf(size.x * 0.10, size.x * -0.03, lane_t)
+		var x := lerpf(inset + tile_size * 0.54, size.x - inset - tile_size * 0.54, t)
+		var width := tile_size * (0.18 + float(seed % 5) * 0.05)
+		var alpha := SIDE_VIEW_PLAY_LANE_EDGE_ALPHA * (0.18 + lane_t * 0.18)
+		if i % 4 == 0:
+			_draw_ellipse_poly(Vector2(x, y + tile_size * 0.03), Vector2(width * 0.55, tile_size * 0.018), Color(0.0, 0.0, 0.0, alpha * 0.72))
+			draw_circle(Vector2(x + width * 0.18, y), tile_size * 0.020, Color(accent.r, accent.g, accent.b, alpha * 0.82))
+		else:
+			draw_line(Vector2(x - width * 0.50, y), Vector2(x + width * 0.50, y - tile_size * 0.04), Color(0.0, 0.0, 0.0, alpha), 1.0 + lane_t * 0.8)
+
+func _draw_stage_side_exit_frames(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var centers := _stage_play_lane_centers(size)
+	for i in range(mini(SIDE_VIEW_SIDE_EXIT_COUNT, centers.size())):
+		var lane_y := centers[i]
+		var t := clampf((lane_y - top_y) / maxf(1.0, bottom_y - top_y), 0.0, 1.0)
+		var height := tile_size * (0.46 + t * 0.20)
+		var width := tile_size * (0.58 + t * 0.14)
+		var left_x := lerpf(size.x * 0.085, size.x * -0.025, t)
+		var right_x := size.x - left_x
+		var alpha := SIDE_VIEW_SIDE_EXIT_ALPHA * (0.52 + t * 0.28)
+		_draw_stage_side_exit_frame(Vector2(left_x, lane_y), width, height, -1.0, accent, alpha)
+		_draw_stage_side_exit_frame(Vector2(right_x, lane_y - tile_size * 0.10), width, height, 1.0, accent, alpha * 0.92)
+
+func _draw_stage_side_exit_frame(pos: Vector2, width: float, height: float, dir: float, accent: Color, alpha: float) -> void:
+	var post_color := Color(0.020, 0.014, 0.010, alpha)
+	var glow := Color(accent.r, accent.g, accent.b, alpha * 0.42)
+	var inner_x := pos.x + width * dir
+	draw_line(pos + Vector2(0.0, -height * 0.78), pos + Vector2(0.0, height * 0.28), post_color, 3.0)
+	draw_line(Vector2(inner_x, pos.y - height * 0.62), Vector2(inner_x, pos.y + height * 0.18), post_color, 2.0)
+	draw_line(pos + Vector2(0.0, -height * 0.76), Vector2(inner_x, pos.y - height * 0.62), glow, 1.5)
+	draw_line(pos + Vector2(0.0, height * 0.24), Vector2(inner_x, pos.y + height * 0.18), Color(0.0, 0.0, 0.0, alpha * 0.72), 1.5)
+	_draw_ellipse_poly(pos + Vector2(width * 0.48 * dir, height * 0.34), Vector2(width * 0.62, height * 0.16), Color(0.0, 0.0, 0.0, alpha * 0.34))
 
 func _draw_stage_perspective_edges(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
 	var accent: Color = palette["accent"]
