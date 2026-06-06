@@ -19,9 +19,12 @@ var sprite_outline_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 100.0
-const MASTER_SPRITE_HEIGHT := 116.0
-const ENEMY_SPRITE_HEIGHT := 112.0
+const BASE_SPRITE_HEIGHT := 104.0
+const MASTER_SPRITE_HEIGHT := 122.0
+const ENEMY_SPRITE_HEIGHT := 118.0
+const STAGE_PRESENCE_SCALE := 1.26
+const STAGE_SPRITE_MIN_SCALE := 1.12
+const STAGE_SPRITE_MAX_SCALE := 1.52
 const CONTACT_GLOW_ALPHA := 0.115
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
@@ -177,7 +180,13 @@ func _visual_offset() -> Vector2:
 	return Vector2(ox, oy)
 
 func _map_actor_scale() -> float:
-	return clamp(float(data.get("map_actor_scale", 1.0)), 0.55, 1.25)
+	var value := float(data.get("map_actor_scale", 1.0))
+	if _is_stage_actor():
+		return clampf(value * STAGE_PRESENCE_SCALE, STAGE_SPRITE_MIN_SCALE, STAGE_SPRITE_MAX_SCALE)
+	return clampf(value, 0.55, 1.25)
+
+func _is_stage_actor() -> bool:
+	return bool(data.get("stage_actor", false))
 
 func _refresh_sprite_asset() -> void:
 	if not bool(data.get("use_map_sprite", USE_FULL_SPRITES_ON_MAP)):
@@ -320,14 +329,18 @@ func _update_sprite_motion() -> void:
 	var phase := visual_phase + float(npc_id % 29) * 0.31
 	var wave := sin(phase)
 	var soft_step := sin(phase * 0.55)
-	var height_pulse := 1.0 + wave * (0.010 if is_enemy() else 0.014)
-	var width_pulse := 1.0 - wave * 0.004
-	var float_y := wave * (0.36 if is_master() else 0.48)
-	var sway_x := soft_step * (0.38 if is_master() else 0.55)
+	var stage_motion := 1.22 if _is_stage_actor() else 1.0
+	var height_pulse := 1.0 + wave * ((0.012 if is_enemy() else 0.016) if _is_stage_actor() else (0.010 if is_enemy() else 0.014))
+	var width_pulse := 1.0 - wave * (0.005 if _is_stage_actor() else 0.004)
+	var float_y := wave * (0.36 if is_master() else 0.48) * stage_motion
+	var sway_x := soft_step * (0.38 if is_master() else 0.55) * stage_motion
+	var stance_roll := sin(phase * 0.37) * (0.008 if _is_stage_actor() else 0.003)
 	sprite_node.scale = sprite_base_scale * Vector2(width_pulse, height_pulse)
 	sprite_outline_node.scale = sprite_outline_base_scale * Vector2(width_pulse, height_pulse)
 	sprite_node.position = sprite_base_position + Vector2(sway_x, float_y)
 	sprite_outline_node.position = sprite_outline_base_position + Vector2(sway_x, float_y + 0.25)
+	sprite_node.rotation = stance_roll
+	sprite_outline_node.rotation = stance_roll
 
 func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()

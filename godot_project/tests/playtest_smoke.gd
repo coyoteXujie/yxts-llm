@@ -50,10 +50,13 @@ func _run() -> void:
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
 	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 110.0, "玩家地图角色显示不应继续偏小")
+	_check(PLAYER_SCRIPT.LOCAL_STAGE_PRESENCE_SCALE >= 1.15, "玩家局部横版舞台应叠加额外角色存在感缩放")
 	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 100.0, "NPC 地图贴图基础高度不应继续偏小")
+	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.15, "NPC 局部横版舞台应叠加额外角色存在感缩放")
+	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.10, "NPC 局部横版舞台应保留最低视觉体量")
 	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
@@ -68,6 +71,7 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_AMBIENT_PARTICLES >= 24, "局部横版舞台应保留动态氛围粒子")
 	_check(local_area.stage_foreground_overlay != null and local_area.stage_foreground_overlay.visible, "局部横版舞台应创建真实前景遮挡层")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_FOREGROUND_OVERLAY_Z >= 3000, "局部横版舞台前景遮挡层应绘制在角色前方")
+	_check(local_area.is_side_view_stage_active(), "局部地图应能向角色暴露横版舞台状态")
 	var previous_stage_phase: float = local_area.stage_visual_phase
 	var previous_overlay_phase: float = float(local_area.stage_foreground_overlay.get("visual_phase"))
 	local_area._process(1.0)
@@ -79,8 +83,9 @@ func _run() -> void:
 	_check(front_scale - back_scale >= 0.25, "局部舞台应按前后排缩放角色")
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
-	_check(_max_textured_actor_height(local_area.npc_nodes) >= 90.0, "局部地图 NPC 贴图显示不应继续偏小")
+	_check(_max_textured_actor_height(local_area.npc_nodes) >= 115.0, "局部地图 NPC 贴图显示不应继续偏小")
 	_check(_actor_depth_scale_range(local_area.npc_nodes) >= 0.10, "局部 NPC 应按舞台前后排产生大小差异")
+	_check(_actors_marked_stage(local_area.npc_nodes), "局部地图 NPC 应标记为横版舞台角色")
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
@@ -106,6 +111,7 @@ func _run() -> void:
 	player.position = Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO)
 	player._refresh_stage_depth_scale()
 	_check(player.stage_depth_scale > 1.08, "玩家在局部地图前景站位应明显放大")
+	_check(player.get_map_actor_visual_scale() > player.stage_depth_scale, "玩家局部横版地图应在景深外叠加舞台角色缩放")
 	player.world_map = world_map
 	player.position = GameState.player_position
 	player._refresh_stage_depth_scale()
@@ -232,6 +238,16 @@ func _actors_have_idle_motion(nodes: Array) -> bool:
 		if is_instance_valid(actor) and actor.visual_phase > 0.0:
 			return true
 	return false
+
+func _actors_marked_stage(nodes: Array) -> bool:
+	if nodes.is_empty():
+		return false
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			return false
+	return true
 
 func _actors_use_y_sort(nodes: Array) -> bool:
 	for actor in nodes:

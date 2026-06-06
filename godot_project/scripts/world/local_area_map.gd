@@ -227,6 +227,9 @@ func get_actor_depth_scale(world_position: Vector2) -> float:
 	var depth := clampf((world_position.y - top_y) / maxf(1.0, bottom_y - top_y), 0.0, 1.0)
 	return lerpf(STAGE_DEPTH_MIN_SCALE, STAGE_DEPTH_MAX_SCALE, depth)
 
+func is_side_view_stage_active() -> bool:
+	return current_mode == "region" and side_view_stage_enabled
+
 func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
 	return current_region
 
@@ -1019,6 +1022,7 @@ func _spawn_npc(npc_data: Dictionary) -> void:
 	if current_mode == "region" and side_view_stage_enabled:
 		var tile := Vector2i(int(npc_data.get("pos_x", map_width / 2)), int(npc_data.get("pos_y", map_height / 2)))
 		npc_data["map_actor_scale"] = get_actor_depth_scale(tile_to_world(tile))
+		npc_data["stage_actor"] = true
 	var actor = NPC_SCRIPT.new()
 	add_child(actor)
 	actor.setup(npc_data, tile_size)

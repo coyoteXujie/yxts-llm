@@ -5,6 +5,7 @@ const SPEED := 190.0
 const DRAW_SCALE := 1.0
 const SPRITE_TARGET_HEIGHT := 112.0
 const SPRITE_TARGET_WIDTH := 90.0
+const LOCAL_STAGE_PRESENCE_SCALE := 1.18
 const STEP_DUST_RADIUS := Vector2(10.0, 3.2)
 const PLAYER_CONTACT_GLOW_ALPHA := 0.13
 const PLAYER_FACTION_MOTES := 10
@@ -75,7 +76,8 @@ func _draw() -> void:
 	var skin := Color(0.88, 0.73, 0.58)
 	var ink := Color(0.08, 0.07, 0.06)
 	var moving := velocity.length() > 1.0
-	var depth_scale := stage_depth_scale
+	var stage_actor := _is_side_view_stage()
+	var depth_scale := get_map_actor_visual_scale()
 	var bob := (sin(walk_phase) * 3.2 if moving else sin(walk_phase) * 0.75) * depth_scale
 	var lean := (clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45) * depth_scale
 
@@ -95,9 +97,11 @@ func _draw() -> void:
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
+		if stage_actor:
+			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		_draw_sprite_rim_light(top_left, draw_size, trim)
-		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving)
+		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
 		return
@@ -187,11 +191,21 @@ func set_stage_depth_scale(value: float) -> void:
 	stage_depth_scale = next_scale
 	queue_redraw()
 
+func get_map_actor_visual_scale() -> float:
+	return stage_depth_scale * (LOCAL_STAGE_PRESENCE_SCALE if _is_side_view_stage() else 1.0)
+
 func _refresh_stage_depth_scale() -> void:
 	if world_map != null and world_map.has_method("get_actor_depth_scale"):
 		set_stage_depth_scale(float(world_map.get_actor_depth_scale(position)))
 	else:
 		set_stage_depth_scale(1.0)
+
+func _is_side_view_stage() -> bool:
+	if world_map == null:
+		return false
+	if world_map.has_method("is_side_view_stage_active"):
+		return bool(world_map.call("is_side_view_stage_active"))
+	return false
 
 func _refresh_sprite_texture(force: bool = false) -> void:
 	var gender := str(GameState.player.get("gender", "male"))
@@ -238,16 +252,29 @@ func _draw_step_dust(moving: bool, depth_scale: float) -> void:
 	_draw_shadow(base + side * 7.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.8 + step * 0.45), Color(0.74, 0.64, 0.42, alpha))
 	_draw_shadow(base - side * 6.0 * depth_scale + dir * 5.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.58 + (1.0 - step) * 0.35), Color(0.68, 0.58, 0.38, alpha * 0.72))
 
-func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2, trim: Color, moving: bool) -> void:
+func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2, trim: Color, moving: bool, stage_actor: bool = false) -> void:
 	var waist_y := foot_y - draw_size.y * 0.46
 	var flutter := sin(walk_phase * (1.3 if moving else 0.75))
-	var accent_alpha := 0.28 if moving else 0.18
+	var accent_alpha := (0.34 if moving else 0.22) if stage_actor else (0.28 if moving else 0.18)
 	var left := Vector2(-draw_size.x * 0.26 + lean, waist_y)
 	var right := Vector2(draw_size.x * 0.26 + lean, waist_y + flutter * 1.8)
-	draw_line(left, right, Color(trim.r, trim.g, trim.b, accent_alpha), 2.0)
+	draw_line(left, right, Color(trim.r, trim.g, trim.b, accent_alpha), 2.6 if stage_actor else 2.0)
 	if moving:
 		var trail := -facing.normalized() * 10.0
 		draw_line(Vector2(lean, foot_y - draw_size.y * 0.20), Vector2(lean, foot_y - draw_size.y * 0.20) + trail, Color(1.0, 0.92, 0.62, 0.18), 1.8)
+	elif stage_actor:
+		var guard_y := foot_y - draw_size.y * 0.18
+		draw_line(Vector2(-draw_size.x * 0.18 + lean, guard_y), Vector2(draw_size.x * 0.18 + lean, guard_y + flutter * 1.2), Color(1.0, 0.90, 0.58, 0.13), 1.6)
+
+func _draw_stage_actor_sash(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool) -> void:
+	var flutter := sin(walk_phase * (1.15 if moving else 0.72))
+	var waist := top_left + Vector2(draw_size.x * 0.43, draw_size.y * 0.52)
+	var tail_a := waist + Vector2(-draw_size.x * (0.30 + flutter * 0.025), draw_size.y * (0.10 + flutter * 0.012))
+	var tail_b := waist + Vector2(-draw_size.x * (0.22 - flutter * 0.018), draw_size.y * (0.18 - flutter * 0.010))
+	var sash_width := clampf(draw_size.x * 0.030, 2.4, 4.2)
+	var shadow_accent := accent.darkened(0.16)
+	draw_line(waist, tail_a, Color(accent.r, accent.g, accent.b, 0.24), sash_width)
+	draw_line(waist + Vector2(draw_size.x * 0.04, draw_size.y * 0.035), tail_b, Color(shadow_accent.r, shadow_accent.g, shadow_accent.b, 0.18), sash_width * 0.75)
 
 func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool) -> void:
 	var pulse := 0.5 + sin(walk_phase * (1.7 if moving else 0.9)) * 0.5
