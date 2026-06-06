@@ -88,6 +88,10 @@ const LOCAL_NPC_SPACING_STEPS := [6, 5, 4, 3, 2, 1]
 const LOCAL_NPC_ENTRY_CLEAR_RADIUS := 7
 const TILE_VARIANT_COUNT := 4
 const SIDE_VIEW_BACKDROP_ALPHA := 0.38
+const SIDE_VIEW_PAINTED_BACKDROP_ALPHA := 0.46
+const SIDE_VIEW_PAINTED_BACKDROP_SKY_BLEND := 0.18
+const SIDE_VIEW_PAINTED_BACKDROP_FOOT_BLEND := 0.30
+const SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA := 0.22
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
@@ -1517,6 +1521,8 @@ func _draw_scene_background_wash() -> void:
 		alpha = 0.18
 	elif region_type == "sect":
 		alpha = 0.20
+	if side_view_stage_enabled:
+		alpha *= 0.35
 	draw_texture_rect(scene_background_texture, Rect2(Vector2.ZERO, get_world_rect().size), false, Color(1.0, 1.0, 1.0, alpha))
 
 func _draw_side_view_stage() -> void:
@@ -1529,7 +1535,8 @@ func _draw_side_view_stage() -> void:
 	var palette := _side_view_palette()
 	var sky_rect := Rect2(Vector2.ZERO, Vector2(size.x, size.y * 0.58))
 	if scene_background_texture != null:
-		_draw_cover_texture(scene_background_texture, sky_rect, Color(1.0, 1.0, 1.0, SIDE_VIEW_BACKDROP_ALPHA))
+		_draw_side_view_painted_backdrop(size, palette)
+		_draw_cover_texture(scene_background_texture, sky_rect, Color(1.0, 1.0, 1.0, SIDE_VIEW_BACKDROP_ALPHA * 0.42))
 	else:
 		draw_rect(sky_rect, (palette["sky"] as Color), true)
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
@@ -1552,6 +1559,53 @@ func _draw_cover_texture(texture: Texture2D, rect: Rect2, modulate: Color) -> vo
 	var source_size := rect.size / scale
 	var source_pos := (texture_size - source_size) * 0.5
 	draw_texture_rect_region(texture, rect, Rect2(source_pos, source_size), modulate)
+
+func _draw_side_view_painted_backdrop(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var sky: Color = palette["sky"]
+	var floor_color: Color = palette["floor"]
+	_draw_cover_texture(scene_background_texture, Rect2(Vector2.ZERO, size), Color(1.0, 1.0, 1.0, SIDE_VIEW_PAINTED_BACKDROP_ALPHA))
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2.ZERO, Vector2(size.x, size.y * 0.30)),
+		Color(sky.r, sky.g, sky.b, SIDE_VIEW_PAINTED_BACKDROP_SKY_BLEND),
+		Color(sky.r, sky.g, sky.b, 0.0)
+	)
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, size.y * 0.48), Vector2(size.x, size.y * 0.30)),
+		Color(accent.r, accent.g, accent.b, 0.0),
+		Color(accent.r, accent.g, accent.b, SIDE_VIEW_PAINTED_BACKDROP_FOOT_BLEND * 0.26)
+	)
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, size.y * 0.70), Vector2(size.x, size.y * 0.30)),
+		Color(floor_color.r, floor_color.g, floor_color.b, SIDE_VIEW_PAINTED_BACKDROP_FOOT_BLEND * 0.12),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_FOOT_BLEND)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2.ZERO, Vector2(size.x * 0.16, size.y)),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA),
+		Color(0.0, 0.0, 0.0, 0.0)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2(size.x * 0.84, 0.0), Vector2(size.x * 0.16, size.y)),
+		Color(0.0, 0.0, 0.0, 0.0),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA)
+	)
+
+func _draw_stage_vertical_gradient(rect: Rect2, top_color: Color, bottom_color: Color) -> void:
+	draw_polygon(PackedVector2Array([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y)
+	]), PackedColorArray([top_color, top_color, bottom_color, bottom_color]))
+
+func _draw_stage_horizontal_gradient(rect: Rect2, left_color: Color, right_color: Color) -> void:
+	draw_polygon(PackedVector2Array([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y)
+	]), PackedColorArray([left_color, right_color, right_color, left_color]))
 
 func _draw_side_view_silhouettes(size: Vector2, palette: Dictionary) -> void:
 	var horizon := size.y * 0.44

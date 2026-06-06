@@ -117,7 +117,9 @@ func _run() -> void:
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
+	_check(GameData.get_scene_background_path("qinghe").ends_with("scene_qinghe_v2.png"), "清河镇应接入高质量横版场景背景")
 	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PAINTED_BACKDROP_ALPHA >= 0.42, "局部横版舞台应把生成背景作为整屏舞台底图合成")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_COUNT >= 5, "局部横版舞台应保留多条可行走平台带")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_ALPHA >= 0.20, "局部横版舞台可行走平台带应有足够可见度")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_EDGE_ALPHA >= 0.26, "局部横版舞台平台边线应有足够层次")
