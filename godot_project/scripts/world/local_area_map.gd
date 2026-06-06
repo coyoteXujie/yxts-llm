@@ -85,6 +85,9 @@ const TILE_TEXTURE_PATHS := {
 const LOCAL_NPC_SPACING_STEPS := [6, 5, 4, 3, 2, 1]
 const LOCAL_NPC_ENTRY_CLEAR_RADIUS := 7
 const TILE_VARIANT_COUNT := 4
+const SIDE_VIEW_BACKDROP_ALPHA := 0.38
+const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
+const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -103,6 +106,7 @@ var shop_return_tile := Vector2i.ZERO
 var tile_textures: Dictionary = {}
 var scene_background_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
+var side_view_stage_enabled := true
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -136,6 +140,7 @@ func setup_region(region: Dictionary) -> void:
 		_load_tile_textures()
 	current_region = region.duplicate(true)
 	current_mode = "region"
+	side_view_stage_enabled = true
 	active_shop_id = ""
 	_load_region_scene_background()
 	highlighted_portal_id = ""
@@ -159,6 +164,7 @@ func enter_shop(portal: Dictionary) -> void:
 		return
 	active_shop_id = shop_id
 	current_mode = "shop"
+	side_view_stage_enabled = false
 	scene_background_texture = null
 	var tile_data: Array = portal.get("tile", [map_width / 2, map_height / 2])
 	shop_return_tile = Vector2i(int(tile_data[0]), int(tile_data[1]))
@@ -1300,6 +1306,7 @@ func _draw() -> void:
 			_draw_tile_transition(rect, tile_id, x, y)
 			_draw_tile_detail(rect, tile_id, x, y)
 	_draw_scene_background_wash()
+	_draw_side_view_stage()
 	_draw_scene_overlay()
 	_draw_portal_signs()
 	_draw_portals()
@@ -1314,13 +1321,233 @@ func _tile_texture(tile_id: int, x: int, y: int) -> Texture2D:
 func _draw_scene_background_wash() -> void:
 	if current_mode != "region" or scene_background_texture == null:
 		return
-	var alpha := 0.12
+	var alpha := 0.16
 	var region_type := str(current_region.get("type", "wild"))
 	if region_type == "city":
-		alpha = 0.10
+		alpha = 0.18
 	elif region_type == "sect":
-		alpha = 0.15
+		alpha = 0.20
 	draw_texture_rect(scene_background_texture, Rect2(Vector2.ZERO, get_world_rect().size), false, Color(1.0, 1.0, 1.0, alpha))
+
+func _draw_side_view_stage() -> void:
+	if not side_view_stage_enabled or current_mode != "region":
+		return
+	var rect := get_world_rect()
+	var size := rect.size
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	var palette := _side_view_palette()
+	var sky_rect := Rect2(Vector2.ZERO, Vector2(size.x, size.y * 0.58))
+	if scene_background_texture != null:
+		_draw_cover_texture(scene_background_texture, sky_rect, Color(1.0, 1.0, 1.0, SIDE_VIEW_BACKDROP_ALPHA))
+	else:
+		draw_rect(sky_rect, (palette["sky"] as Color), true)
+	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
+	_draw_side_view_silhouettes(size, palette)
+	_draw_side_view_ground(size, palette)
+	_draw_side_view_foreground(size, palette)
+
+func _draw_cover_texture(texture: Texture2D, rect: Rect2, modulate: Color) -> void:
+	var texture_size := texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return
+	var scale: float = maxf(rect.size.x / texture_size.x, rect.size.y / texture_size.y)
+	var source_size := rect.size / scale
+	var source_pos := (texture_size - source_size) * 0.5
+	draw_texture_rect_region(texture, rect, Rect2(source_pos, source_size), modulate)
+
+func _draw_side_view_silhouettes(size: Vector2, palette: Dictionary) -> void:
+	var horizon := size.y * 0.44
+	_draw_stage_mountain_band(size, horizon - tile_size * 1.35, 0.32, (palette["far"] as Color))
+	_draw_stage_mountain_band(size, horizon - tile_size * 0.55, 0.18, (palette["mid"] as Color))
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
+	if region_type == "city" or region_type == "town":
+		_draw_stage_roofline(size, horizon - tile_size * 1.06, palette["accent"] as Color)
+	elif region_type == "sect":
+		_draw_stage_gate(size, horizon - tile_size * 1.10, palette["accent"] as Color)
+	elif _terrain_has_forest(terrain):
+		_draw_stage_bamboo_edge(size, horizon - tile_size * 1.18, true, palette["accent"] as Color)
+		_draw_stage_bamboo_edge(size, horizon - tile_size * 1.02, false, palette["accent"] as Color)
+	elif _terrain_has_water(terrain):
+		for i in range(4):
+			var y := horizon + float(i) * tile_size * 0.36
+			draw_line(Vector2(size.x * 0.08, y), Vector2(size.x * 0.92, y - tile_size * 0.12), Color(0.78, 0.92, 0.94, 0.18), 2.2)
+
+func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
+	var top_y := size.y * 0.48
+	var bottom_y := size.y
+	var floor_color: Color = palette["floor"]
+	var lane := PackedVector2Array([
+		Vector2(size.x * 0.07, top_y),
+		Vector2(size.x * 0.93, top_y),
+		Vector2(size.x * 1.04, bottom_y + tile_size * 0.5),
+		Vector2(size.x * -0.04, bottom_y + tile_size * 0.5)
+	])
+	draw_polygon(lane, PackedColorArray([
+		_with_alpha(floor_color.lightened(0.10), SIDE_VIEW_STAGE_LANE_ALPHA),
+		_with_alpha(floor_color.lightened(0.04), SIDE_VIEW_STAGE_LANE_ALPHA),
+		_with_alpha(floor_color.darkened(0.32), SIDE_VIEW_STAGE_LANE_ALPHA + 0.08),
+		_with_alpha(floor_color.darkened(0.26), SIDE_VIEW_STAGE_LANE_ALPHA + 0.06)
+	]))
+	for i in range(11):
+		var t := float(i) / 10.0
+		var y := lerpf(top_y + tile_size * 0.22, bottom_y - tile_size * 0.36, t)
+		var inset := lerpf(size.x * 0.11, size.x * -0.02, t)
+		var right := size.x - inset
+		draw_line(Vector2(inset, y), Vector2(right, y - tile_size * 0.10), Color(0.02, 0.018, 0.012, 0.12 + t * 0.11), 1.2 + t * 2.0)
+	for i in range(8):
+		var x := size.x * (0.14 + float(i) * 0.105)
+		draw_line(Vector2(x, top_y + tile_size * 0.10), Vector2(x - size.x * 0.08, bottom_y), Color(0.0, 0.0, 0.0, 0.05), 1.2)
+	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
+
+func _draw_side_view_foreground(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, tile_size * 0.72)), Color(0.025, 0.018, 0.012, SIDE_VIEW_FOREGROUND_ALPHA), true)
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	if region_type == "city" or region_type == "town":
+		for i in range(8):
+			var x := float(i) * size.x / 7.0 - tile_size * 0.4
+			draw_line(Vector2(x, tile_size * 0.06), Vector2(x + tile_size * 1.45, tile_size * 0.72), Color(0.02, 0.014, 0.010, 0.35), 4.0)
+			draw_circle(Vector2(x + tile_size * 0.88, tile_size * 0.86), 4.0, Color(accent.r, accent.g, accent.b, 0.28))
+	elif _terrain_has_forest(terrain):
+		_draw_stage_bamboo_edge(size, size.y * 0.42, true, Color(0.02, 0.10, 0.05, 0.54))
+		_draw_stage_bamboo_edge(size, size.y * 0.45, false, Color(0.02, 0.10, 0.05, 0.48))
+	elif terrain.contains("snow"):
+		for i in range(28):
+			var x := fmod(float(i) * tile_size * 1.23 + float(_tile_seed(i, i + 5) % 97), size.x)
+			var y := tile_size * 0.8 + float(_tile_seed(i + 3, i + 7) % int(max(1.0, size.y * 0.54)))
+			draw_circle(Vector2(x, y), 1.4 + float(i % 3) * 0.4, Color(0.90, 0.96, 1.0, 0.22))
+	else:
+		_draw_stage_mist_band(size, size.y * 0.72, Color(0.90, 0.84, 0.70, 0.12))
+	_draw_stage_mist_band(size, size.y * 0.82, Color(accent.r, accent.g, accent.b, 0.09))
+
+func _side_view_palette() -> Dictionary:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	var sky := Color(0.29, 0.34, 0.31, 0.30)
+	var far := Color(0.10, 0.12, 0.10, 0.34)
+	var mid := Color(0.16, 0.18, 0.13, 0.30)
+	var floor := Color(0.42, 0.36, 0.24, 1.0)
+	var accent := Color(0.82, 0.62, 0.32, 1.0)
+	if terrain.contains("snow"):
+		sky = Color(0.48, 0.58, 0.66, 0.34)
+		far = Color(0.34, 0.42, 0.50, 0.34)
+		mid = Color(0.52, 0.58, 0.62, 0.28)
+		floor = Color(0.58, 0.64, 0.66, 1.0)
+		accent = Color(0.70, 0.90, 1.0, 1.0)
+	elif terrain.contains("desert"):
+		sky = Color(0.58, 0.46, 0.28, 0.32)
+		far = Color(0.46, 0.32, 0.18, 0.34)
+		mid = Color(0.63, 0.46, 0.24, 0.28)
+		floor = Color(0.56, 0.42, 0.24, 1.0)
+		accent = Color(0.95, 0.72, 0.36, 1.0)
+	elif _terrain_has_water(terrain):
+		sky = Color(0.27, 0.42, 0.47, 0.30)
+		far = Color(0.12, 0.22, 0.26, 0.34)
+		mid = Color(0.18, 0.32, 0.36, 0.28)
+		floor = Color(0.30, 0.39, 0.36, 1.0)
+		accent = Color(0.58, 0.82, 0.86, 1.0)
+	elif _terrain_has_forest(terrain):
+		sky = Color(0.22, 0.34, 0.24, 0.30)
+		far = Color(0.06, 0.16, 0.08, 0.36)
+		mid = Color(0.12, 0.25, 0.12, 0.30)
+		floor = Color(0.26, 0.34, 0.20, 1.0)
+		accent = Color(0.50, 0.76, 0.38, 1.0)
+	elif region_type == "sect":
+		floor = Color(0.38, 0.34, 0.27, 1.0)
+		accent = GameData.get_faction_color(str(current_region.get("faction", "none"))).lightened(0.20)
+	elif region_type == "city" or region_type == "town":
+		floor = Color(0.44, 0.34, 0.22, 1.0)
+		accent = Color(0.92, 0.60, 0.28, 1.0)
+	return {
+		"sky": sky,
+		"far": far,
+		"mid": mid,
+		"floor": floor,
+		"accent": accent
+	}
+
+func _draw_stage_mountain_band(size: Vector2, base_y: float, roughness: float, color: Color) -> void:
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	points.append(Vector2(0, size.y * 0.62))
+	colors.append(color)
+	var steps := 12
+	for i in range(steps + 1):
+		var x := size.x * float(i) / float(steps)
+		var y := base_y - sin(float(i) * 1.37 + float(_tile_seed(i, 3) % 13) * 0.11) * size.y * roughness * 0.16
+		points.append(Vector2(x, y))
+		colors.append(color)
+	points.append(Vector2(size.x, size.y * 0.62))
+	colors.append(color)
+	draw_polygon(points, colors)
+
+func _draw_stage_roofline(size: Vector2, y: float, accent: Color) -> void:
+	var roof_color := Color(0.08, 0.045, 0.028, 0.48)
+	for i in range(7):
+		var x := float(i) * size.x * 0.17 - tile_size
+		var w := tile_size * (2.0 + float(i % 3) * 0.35)
+		var roof := PackedVector2Array([
+			Vector2(x, y + tile_size * 0.64),
+			Vector2(x + w * 0.50, y),
+			Vector2(x + w, y + tile_size * 0.64),
+			Vector2(x + w * 0.92, y + tile_size * 0.82),
+			Vector2(x + w * 0.08, y + tile_size * 0.82)
+		])
+		draw_polygon(roof, PackedColorArray([roof_color, Color(accent.r, accent.g, accent.b, 0.34), roof_color, roof_color, roof_color]))
+		draw_line(Vector2(x + tile_size * 0.12, y + tile_size * 0.78), Vector2(x + w - tile_size * 0.12, y + tile_size * 0.78), Color(0.0, 0.0, 0.0, 0.36), 3.2)
+
+func _draw_stage_gate(size: Vector2, y: float, accent: Color) -> void:
+	var center_x := size.x * 0.50
+	var w := tile_size * 4.8
+	draw_rect(Rect2(Vector2(center_x - w * 0.48, y + tile_size * 0.70), Vector2(tile_size * 0.34, tile_size * 2.0)), Color(0.08, 0.06, 0.045, 0.42), true)
+	draw_rect(Rect2(Vector2(center_x + w * 0.16, y + tile_size * 0.70), Vector2(tile_size * 0.34, tile_size * 2.0)), Color(0.08, 0.06, 0.045, 0.42), true)
+	draw_polygon(PackedVector2Array([
+		Vector2(center_x - w * 0.55, y + tile_size * 0.72),
+		Vector2(center_x, y),
+		Vector2(center_x + w * 0.55, y + tile_size * 0.72),
+		Vector2(center_x + w * 0.45, y + tile_size * 0.95),
+		Vector2(center_x - w * 0.45, y + tile_size * 0.95)
+	]), PackedColorArray([
+		Color(0.06, 0.045, 0.035, 0.50),
+		Color(accent.r, accent.g, accent.b, 0.34),
+		Color(0.06, 0.045, 0.035, 0.50),
+		Color(0.08, 0.06, 0.045, 0.50),
+		Color(0.08, 0.06, 0.045, 0.50)
+	]))
+
+func _draw_stage_bamboo_edge(size: Vector2, top_y: float, left_side: bool, color: Color) -> void:
+	var base_x := tile_size * 0.8 if left_side else size.x - tile_size * 0.8
+	var dir := 1.0 if left_side else -1.0
+	for i in range(9):
+		var x := base_x + dir * float(i) * tile_size * 0.22
+		var sway := sin(float(i) * 0.9) * tile_size * 0.18 * dir
+		draw_line(Vector2(x, size.y), Vector2(x + sway, top_y - float(i % 3) * tile_size * 0.26), color, 2.4)
+		draw_line(Vector2(x + sway * 0.45, top_y + tile_size * 0.55), Vector2(x + dir * tile_size * 0.62, top_y + tile_size * 0.30), _with_alpha(color.lightened(0.18), color.a * 0.75), 1.5)
+
+func _draw_stage_mist_band(size: Vector2, y: float, color: Color) -> void:
+	var band := Rect2(Vector2(0.0, y), Vector2(size.x, tile_size * 0.82))
+	var clear := Color(color.r, color.g, color.b, 0.0)
+	draw_polygon(PackedVector2Array([
+		band.position,
+		band.position + Vector2(band.size.x, 0.0),
+		band.position + band.size,
+		band.position + Vector2(0.0, band.size.y)
+	]), PackedColorArray([clear, clear, color, color]))
+
+func _draw_ellipse_poly(center: Vector2, radius: Vector2, color: Color) -> void:
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	for i in range(32):
+		var angle := TAU * float(i) / 32.0
+		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
+		colors.append(color)
+	draw_polygon(points, colors)
+
+func _with_alpha(color: Color, alpha: float) -> Color:
+	return Color(color.r, color.g, color.b, alpha)
 
 func _update_title_label() -> void:
 	if title_label == null:

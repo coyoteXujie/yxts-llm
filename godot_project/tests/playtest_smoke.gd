@@ -59,6 +59,7 @@ func _run() -> void:
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
+	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_max_textured_actor_height(local_area.npc_nodes) >= 90.0, "局部地图 NPC 贴图显示不应继续偏小")
