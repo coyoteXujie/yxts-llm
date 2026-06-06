@@ -70,6 +70,10 @@ func _run() -> void:
 	_check(stage.player_texture != null, "2.5D 战斗舞台应加载玩家 sprite")
 	_check(stage.enemy_texture != null, "2.5D 战斗舞台应加载敌人 sprite")
 	_check(stage.background_texture != null, "2.5D 战斗舞台应加载当前区域背景")
+	_check(COMBAT_STAGE_SCRIPT.PLAYER_STAGE_HEIGHT >= 140.0, "2.5D 战斗舞台玩家不应继续偏小")
+	_check(COMBAT_STAGE_SCRIPT.ENEMY_STAGE_HEIGHT >= 148.0, "2.5D 战斗舞台敌人不应继续偏小")
+	_check(COMBAT_STAGE_SCRIPT.ACTOR_AFTERIMAGE_ALPHA > 0.16, "2.5D 战斗舞台应保留出招残影")
+	_check(COMBAT_STAGE_SCRIPT.CONTACT_GLOW_ALPHA > 0.12, "2.5D 战斗舞台应保留脚下接触光")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]

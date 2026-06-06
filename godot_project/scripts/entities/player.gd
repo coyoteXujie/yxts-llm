@@ -3,9 +3,11 @@ class_name PlayerActor
 
 const SPEED := 190.0
 const DRAW_SCALE := 1.0
-const SPRITE_TARGET_HEIGHT := 104.0
-const SPRITE_TARGET_WIDTH := 84.0
+const SPRITE_TARGET_HEIGHT := 112.0
+const SPRITE_TARGET_WIDTH := 90.0
 const STEP_DUST_RADIUS := Vector2(10.0, 3.2)
+const PLAYER_CONTACT_GLOW_ALPHA := 0.13
+const PLAYER_FACTION_MOTES := 10
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -78,6 +80,8 @@ func _draw() -> void:
 	var lean := (clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45) * depth_scale
 
 	_draw_step_dust(moving, depth_scale)
+	_draw_player_contact_glow(trim, depth_scale, moving)
+	_draw_player_idle_motes(trim, depth_scale)
 	_draw_actor_shadow(Vector2(4 * depth_scale, 32 * depth_scale), Vector2(42, 13) * depth_scale, 1.0)
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
@@ -92,6 +96,7 @@ func _draw() -> void:
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
+		_draw_sprite_rim_light(top_left, draw_size, trim)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
@@ -243,3 +248,26 @@ func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2,
 	if moving:
 		var trail := -facing.normalized() * 10.0
 		draw_line(Vector2(lean, foot_y - draw_size.y * 0.20), Vector2(lean, foot_y - draw_size.y * 0.20) + trail, Color(1.0, 0.92, 0.62, 0.18), 1.8)
+
+func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool) -> void:
+	var pulse := 0.5 + sin(walk_phase * (1.7 if moving else 0.9)) * 0.5
+	var center := Vector2(3.0, 32.0) * depth_scale
+	_draw_shadow(center, Vector2(38.0, 9.5) * depth_scale, Color(accent.r, accent.g, accent.b, PLAYER_CONTACT_GLOW_ALPHA * (0.55 + pulse * 0.25)))
+	_draw_shadow(center + Vector2(0.0, 2.0 * depth_scale), Vector2(23.0, 4.8) * depth_scale, Color(1.0, 0.86, 0.50, PLAYER_CONTACT_GLOW_ALPHA * 0.55))
+
+func _draw_player_idle_motes(accent: Color, depth_scale: float) -> void:
+	var faction := str(GameState.player.get("faction", "none"))
+	if faction == "none":
+		return
+	for i in range(PLAYER_FACTION_MOTES):
+		var angle := walk_phase * 0.18 + float(i) * TAU / float(PLAYER_FACTION_MOTES)
+		var radius := (22.0 + float(i % 4) * 5.0) * depth_scale
+		var pos := Vector2(cos(angle) * radius, -18.0 * depth_scale + sin(angle) * radius * 0.36)
+		var alpha := 0.045 + float(i % 3) * 0.012
+		draw_circle(pos, (1.2 + float(i % 2) * 0.35) * depth_scale, Color(accent.r, accent.g, accent.b, alpha))
+
+func _draw_sprite_rim_light(top_left: Vector2, draw_size: Vector2, accent: Color) -> void:
+	var left := top_left + Vector2(draw_size.x * 0.20, draw_size.y * 0.18)
+	var right := top_left + Vector2(draw_size.x * 0.80, draw_size.y * 0.72)
+	draw_line(left, right, Color(accent.r, accent.g, accent.b, 0.16), 1.8)
+	draw_line(top_left + Vector2(draw_size.x * 0.22, draw_size.y * 0.05), top_left + Vector2(draw_size.x * 0.72, draw_size.y * 0.14), Color(1.0, 0.96, 0.78, 0.10), 1.2)

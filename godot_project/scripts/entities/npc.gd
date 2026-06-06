@@ -19,9 +19,10 @@ var sprite_outline_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 94.0
-const MASTER_SPRITE_HEIGHT := 106.0
-const ENEMY_SPRITE_HEIGHT := 102.0
+const BASE_SPRITE_HEIGHT := 100.0
+const MASTER_SPRITE_HEIGHT := 116.0
+const ENEMY_SPRITE_HEIGHT := 112.0
+const CONTACT_GLOW_ALPHA := 0.115
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -255,6 +256,7 @@ func _draw() -> void:
 		var map_scale := _map_actor_scale()
 		_draw_ground_marker(accent)
 		_draw_actor_shadow(Vector2(3, 25 * map_scale), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
+		_draw_contact_light(accent, map_scale)
 		_draw_aura(appearance, accent)
 		if highlighted:
 			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
@@ -266,6 +268,7 @@ func _draw() -> void:
 
 	_draw_ground_marker(accent)
 	_draw_actor_shadow(Vector2(3, 20 * MAP_ACTOR_SCALE), Vector2(17.0 * max(scale.x, 1.0), 5.0 * max(scale.y, 0.9)), 0.82)
+	_draw_contact_light(accent, _map_actor_scale())
 
 	draw_set_transform(Vector2.ZERO, 0.0, scale)
 	_draw_aura(appearance, accent)
@@ -379,6 +382,17 @@ func _draw_aura(appearance: Dictionary, accent: Color) -> void:
 		draw_circle(Vector2(0, 1), 25.0, Color(0.70, 0.08, 0.06, 0.10))
 	if str(appearance.get("motif", "none")) == "snow":
 		draw_circle(Vector2(0, -4), 24.0, Color(0.80, 0.92, 1.0, 0.12))
+
+func _draw_contact_light(accent: Color, map_scale: float) -> void:
+	var npc_id := int(data.get("id", 0))
+	var pulse := 0.5 + sin(visual_phase * 1.4 + float(npc_id % 23) * 0.27) * 0.5
+	var alpha := CONTACT_GLOW_ALPHA * (0.60 + pulse * 0.24)
+	if is_enemy():
+		accent = Color(0.82, 0.13, 0.08)
+	elif is_master():
+		alpha *= 1.18
+	_draw_ellipse(Vector2(1.5 * map_scale, 27.0 * map_scale), Vector2(26.0 * map_scale, 6.5 * map_scale), Color(accent.r, accent.g, accent.b, alpha))
+	_draw_ellipse(Vector2(0.0, 28.5 * map_scale), Vector2(14.0 * map_scale, 3.2 * map_scale), Color(1.0, 0.82, 0.44, alpha * 0.42))
 
 func _draw_legs(outfit: String, secondary: Color, ink: Color) -> void:
 	if outfit == "flowing_hanfu" or outfit == "daoist_robe" or outfit == "fur_robe":

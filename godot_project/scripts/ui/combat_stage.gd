@@ -1,6 +1,12 @@
 extends Control
 class_name CombatStage
 
+const PLAYER_STAGE_HEIGHT := 146.0
+const ENEMY_STAGE_HEIGHT := 154.0
+const ACTOR_AFTERIMAGE_ALPHA := 0.22
+const CONTACT_GLOW_ALPHA := 0.18
+const DAMAGE_NUMBER_RISE := 28.0
+
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
 var player_texture: Texture2D
@@ -240,38 +246,62 @@ func _draw_combatants(rect: Rect2) -> void:
 	elif event_timer > 0.0 and event_target == "player":
 		enemy_lunge = sin(impact * PI) * 18.0
 		player_hurt = sin(impact * PI * 2.0) * -5.0
-	_draw_actor_shadow(player_foot + Vector2(player_lunge, 0.0), 1.05)
-	_draw_actor_shadow(enemy_foot + Vector2(-enemy_lunge, 0.0), 1.12)
-	_draw_player_actor(player_foot + Vector2(player_lunge + player_hurt, 0.0))
-	_draw_enemy_actor(enemy_foot + Vector2(-enemy_lunge + enemy_hurt, 0.0))
+	var action_alpha := sin(impact * PI) if event_timer > 0.0 else 0.0
+	var player_action := action_alpha if event_target == "enemy" else 0.0
+	var enemy_action := action_alpha if event_target == "player" else 0.0
+	var player_draw_foot := player_foot + Vector2(player_lunge + player_hurt, 0.0)
+	var enemy_draw_foot := enemy_foot + Vector2(-enemy_lunge + enemy_hurt, 0.0)
+	_draw_actor_shadow(player_draw_foot, 1.08 + player_action * 0.08)
+	_draw_actor_shadow(enemy_draw_foot, 1.15 + enemy_action * 0.08)
+	_draw_actor_contact_light(player_draw_foot, accent_color, 0.90 + player_action * 0.45, 1.0)
+	_draw_actor_contact_light(enemy_draw_foot, Color(0.78, 0.18, 0.12), 0.82 + enemy_action * 0.45, 1.08)
+	_draw_actor_afterimage(player_texture, player_draw_foot - Vector2(18.0 + player_lunge * 0.55, 0.0), PLAYER_STAGE_HEIGHT, accent_color.lightened(0.22), player_action)
+	_draw_actor_afterimage(enemy_texture, enemy_draw_foot + Vector2(18.0 + enemy_lunge * 0.55, 0.0), ENEMY_STAGE_HEIGHT, Color(0.95, 0.32, 0.18), enemy_action)
+	_draw_player_actor(player_draw_foot, player_action)
+	_draw_enemy_actor(enemy_draw_foot, enemy_action)
 	_draw_status_bars(player_foot, enemy_foot)
 	_draw_action_effects(rect, player_foot, enemy_foot)
 
-func _draw_player_actor(foot: Vector2) -> void:
+func _draw_player_actor(foot: Vector2, action_intensity: float = 0.0) -> void:
 	if player_texture != null:
-		_draw_actor_texture(player_texture, foot, 128.0, Color(1.0, 1.0, 1.0, 1.0))
+		_draw_actor_texture(player_texture, foot, PLAYER_STAGE_HEIGHT + action_intensity * 8.0, Color(1.0, 1.0, 1.0, 1.0), action_intensity)
 	else:
 		_draw_actor_fallback(foot, accent_color, "你")
 
-func _draw_enemy_actor(foot: Vector2) -> void:
+func _draw_enemy_actor(foot: Vector2, action_intensity: float = 0.0) -> void:
 	if enemy_texture != null:
 		var tint := Color(1.0, 0.96, 0.91, 1.0)
 		if event_timer > 0.0 and event_target == "enemy" and event_kind == "damage":
 			tint = Color(1.0, 0.70, 0.58, 1.0)
-		_draw_actor_texture(enemy_texture, foot, 136.0, tint)
+		_draw_actor_texture(enemy_texture, foot, ENEMY_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity)
 	else:
 		_draw_actor_fallback(foot, Color(0.62, 0.18, 0.14), str(enemy.get("name", "敌")))
 
-func _draw_actor_texture(texture: Texture2D, foot: Vector2, target_height: float, tint: Color) -> void:
+func _draw_actor_texture(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, action_intensity: float = 0.0) -> void:
+	var texture_size := texture.get_size()
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return
+	var factor := target_height / texture_size.y
+	var draw_size := texture_size * factor
+	var top_left := foot - Vector2(draw_size.x * 0.5, draw_size.y + action_intensity * 5.0)
+	var outline := Rect2(top_left - Vector2(3.0, 1.5), draw_size + Vector2(6.0, 5.0))
+	draw_texture_rect(texture, outline, false, Color(0.0, 0.0, 0.0, 0.46 + action_intensity * 0.08))
+	if action_intensity > 0.01:
+		draw_texture_rect(texture, Rect2(top_left - Vector2(1.5, 1.5), draw_size), false, Color(tint.r, tint.g, tint.b, 0.12 * action_intensity))
+	draw_texture_rect(texture, Rect2(top_left, draw_size), false, tint)
+	var rim_alpha := 0.13 + action_intensity * 0.10
+	draw_line(top_left + Vector2(draw_size.x * 0.20, draw_size.y * 0.12), top_left + Vector2(draw_size.x * 0.78, draw_size.y * 0.70), Color(1.0, 0.92, 0.62, rim_alpha), 1.8)
+
+func _draw_actor_afterimage(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, alpha: float) -> void:
+	if texture == null or alpha <= 0.01:
+		return
 	var texture_size := texture.get_size()
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
 		return
 	var factor := target_height / texture_size.y
 	var draw_size := texture_size * factor
 	var top_left := foot - Vector2(draw_size.x * 0.5, draw_size.y)
-	var outline := Rect2(top_left - Vector2(3.0, 1.5), draw_size + Vector2(6.0, 5.0))
-	draw_texture_rect(texture, outline, false, Color(0.0, 0.0, 0.0, 0.46))
-	draw_texture_rect(texture, Rect2(top_left, draw_size), false, tint)
+	draw_texture_rect(texture, Rect2(top_left, draw_size), false, Color(tint.r, tint.g, tint.b, ACTOR_AFTERIMAGE_ALPHA * alpha))
 
 func _draw_actor_fallback(foot: Vector2, color: Color, label: String) -> void:
 	_draw_ellipse(foot - Vector2(0, 31), Vector2(22, 34), color.darkened(0.18))
@@ -283,6 +313,10 @@ func _draw_actor_fallback(foot: Vector2, color: Color, label: String) -> void:
 func _draw_actor_shadow(foot: Vector2, scale: float) -> void:
 	_draw_ellipse(foot + Vector2(4.0, 2.0), Vector2(46.0 * scale, 12.0 * scale), Color(0.0, 0.0, 0.0, 0.25))
 	_draw_ellipse(foot + Vector2(1.0, 0.0), Vector2(30.0 * scale, 7.0 * scale), Color(0.0, 0.0, 0.0, 0.22))
+
+func _draw_actor_contact_light(foot: Vector2, color: Color, intensity: float, scale: float) -> void:
+	_draw_ellipse(foot + Vector2(0.0, 1.0), Vector2(56.0 * scale, 13.0 * scale), Color(color.r, color.g, color.b, CONTACT_GLOW_ALPHA * intensity))
+	_draw_ellipse(foot + Vector2(0.0, 2.0), Vector2(30.0 * scale, 5.8 * scale), Color(1.0, 0.84, 0.46, CONTACT_GLOW_ALPHA * intensity * 0.40))
 
 func _draw_status_bars(player_foot: Vector2, enemy_foot: Vector2) -> void:
 	_draw_bar(player_foot + Vector2(-54.0, -150.0), 108.0, int(GameState.player.get("hp", 0)), int(GameState.player.get("max_hp", 1)), Color(0.72, 0.18, 0.12), "你")
@@ -313,7 +347,9 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		return
 	if event_kind == "heal" or event_kind == "mp" or event_kind == "guard":
 		_draw_focus_ring(start, color, alpha, effect_style)
+		_draw_damage_number(start, event_amount, event_kind, color, alpha)
 		return
+	_draw_attack_ground_streak(start, finish, color, alpha)
 	match effect_style:
 		"blade":
 			_draw_blade_slash(start, finish, color, alpha)
@@ -332,10 +368,35 @@ func _draw_action_effects(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2
 		_:
 			_draw_impact_arc(start, finish, color, alpha)
 	_draw_hit_sparks(finish, color, alpha)
+	_draw_damage_number(finish, event_amount, event_kind, color, alpha)
 	if event_kind == "phase" or event_kind == "stun":
 		_draw_focus_ring(finish, color, alpha, effect_style)
 	var fog_rect := Rect2(rect.position + Vector2(rect.size.x * 0.18, rect.size.y * 0.72), Vector2(rect.size.x * 0.64, 22.0))
 	_draw_soft_band(fog_rect, Color(color.r, color.g, color.b, 0.10 * alpha))
+
+func _draw_attack_ground_streak(start: Vector2, finish: Vector2, color: Color, alpha: float) -> void:
+	var ground_start := start + Vector2(0.0, 88.0)
+	var ground_finish := finish + Vector2(0.0, 90.0)
+	var mid := ground_start.lerp(ground_finish, 0.55)
+	_draw_ellipse(mid, Vector2(86.0, 13.0), Color(color.r, color.g, color.b, 0.08 * alpha))
+	draw_line(ground_start, ground_finish, Color(1.0, 0.86, 0.45, 0.18 * alpha), 4.0)
+
+func _draw_damage_number(center: Vector2, amount: int, kind: String, color: Color, alpha: float) -> void:
+	if alpha <= 0.01:
+		return
+	var text := "-%d" % maxi(0, amount)
+	if kind == "heal" or kind == "mp":
+		text = "+%d" % maxi(0, amount)
+	elif kind == "guard":
+		text = "GUARD"
+	elif kind == "stun":
+		text = "STUN"
+	var life := 1.0 - clampf(event_timer / 0.48, 0.0, 1.0)
+	var rise := life * DAMAGE_NUMBER_RISE
+	var width := maxf(52.0, float(text.length()) * 12.0)
+	var pos := center + Vector2(-width * 0.5, -46.0 - rise)
+	draw_string(ThemeDB.fallback_font, pos + Vector2(1.5, 1.5), text, HORIZONTAL_ALIGNMENT_CENTER, width, 22, Color(0.02, 0.015, 0.01, 0.74 * alpha))
+	draw_string(ThemeDB.fallback_font, pos, text, HORIZONTAL_ALIGNMENT_CENTER, width, 22, Color(color.r, color.g, color.b, 0.95 * alpha))
 
 func _draw_miss_wisp(center: Vector2, alpha: float) -> void:
 	for i in range(4):

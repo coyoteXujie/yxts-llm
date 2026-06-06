@@ -3,6 +3,7 @@ extends Node
 const WORLD_MAP_SCRIPT := preload("res://scripts/world/world_map.gd")
 const LOCAL_AREA_SCRIPT := preload("res://scripts/world/local_area_map.gd")
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
+const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 
 const WORLD_TILE_WATER := 2
@@ -48,9 +49,12 @@ func _run() -> void:
 	test_root.add_child(player)
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
-	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 100.0, "玩家地图角色显示不应继续偏小")
+	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 110.0, "玩家地图角色显示不应继续偏小")
+	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
+	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 100.0, "NPC 地图贴图基础高度不应继续偏小")
+	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
 	test_root.add_child(local_area)
