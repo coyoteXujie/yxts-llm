@@ -3,6 +3,7 @@ extends Node
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
+const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
 const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
 
@@ -74,6 +75,8 @@ func _run() -> void:
 	add_child(stage)
 	stage.setup(GameData.get_npc_by_name("流氓"))
 	_check(stage.player_texture != null, "2.5D 战斗舞台应加载玩家 sprite")
+	_check(str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", "")).ends_with("player_male_none_stage_v2.png"), "默认男主应保留高质量 sprite 覆盖")
+	_check(stage.player_texture != null and stage.player_texture.get_size().y >= 900.0, "2.5D 战斗舞台应复用默认男主高质量 sprite")
 	_check(stage.enemy_texture != null, "2.5D 战斗舞台应加载敌人 sprite")
 	_check(stage.background_texture != null, "2.5D 战斗舞台应加载当前区域背景")
 	_check(COMBAT_STAGE_SCRIPT.PLAYER_STAGE_HEIGHT >= 140.0, "2.5D 战斗舞台玩家不应继续偏小")

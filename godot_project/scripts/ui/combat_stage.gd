@@ -1,6 +1,8 @@
 extends Control
 class_name CombatStage
 
+const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
+
 const PLAYER_STAGE_HEIGHT := 146.0
 const ENEMY_STAGE_HEIGHT := 154.0
 const ACTOR_AFTERIMAGE_ALPHA := 0.22
@@ -111,8 +113,11 @@ func _load_player_texture() -> Texture2D:
 	if gender != "female":
 		gender = "male"
 	var faction := str(GameState.player.get("faction", "none"))
-	var path := "res://assets/characters/player/player_%s_%s.png" % [gender, faction]
+	var key := "%s_%s" % [gender, faction]
+	var path := str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get(key, "res://assets/characters/player/player_%s_%s.png" % [gender, faction]))
 	var texture := GameData.load_texture(path, true)
+	if texture == null and key != "male_none":
+		texture = GameData.load_texture(str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", "res://assets/characters/player/player_male_none.png")), true)
 	if texture == null:
 		texture = GameData.load_texture("res://assets/characters/player/player_male_none.png", true)
 	return texture
