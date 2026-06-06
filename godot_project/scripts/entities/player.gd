@@ -28,6 +28,7 @@ const PLAYER_STAGE_POSE_RIG_ALPHA := 0.30
 const PLAYER_STAGE_ARM_SWING_ALPHA := 0.28
 const PLAYER_STAGE_STEP_ARC_ALPHA := 0.22
 const PLAYER_STAGE_IDLE_GUARD_ALPHA := 0.18
+const PLAYER_STAGE_READY_STANCE_ALPHA := 0.24
 const PLAYER_STAGE_CENTERLINE_ALPHA := 0.24
 const PLAYER_STAGE_LANE_LOCK_ALPHA := 0.20
 const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
@@ -143,6 +144,7 @@ func _draw() -> void:
 			_draw_stage_player_step_arcs(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_front_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_idle_cloth_sway(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_ready_stance(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_weapon_pose(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_shoulder_glow(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_stance_lines(top_left, draw_size, trim, moving, facing_side)
@@ -459,6 +461,28 @@ func _draw_stage_player_idle_guard_arc(center: Vector2, draw_size: Vector2, acce
 	var alpha := PLAYER_STAGE_IDLE_GUARD_ALPHA * (0.66 + absf(phase) * 0.28)
 	draw_arc(center, radius, PI * 0.12, PI * 0.88, 28, Color(accent.r, accent.g, accent.b, alpha), 1.3)
 	draw_arc(center + Vector2(0.0, draw_size.y * 0.045), radius * 0.72, PI * 1.10, PI * 1.78, 20, Color(1.0, 0.92, 0.62, alpha * 0.52), 1.0)
+
+func _draw_stage_player_ready_stance(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	if moving:
+		return
+	var phase := sin(walk_phase * 0.72)
+	var alpha := PLAYER_STAGE_READY_STANCE_ALPHA * (0.66 + absf(phase) * 0.24)
+	var shoulder_back := top_left + Vector2(draw_size.x * (0.44 - side * 0.090), draw_size.y * 0.375)
+	var shoulder_front := top_left + Vector2(draw_size.x * (0.54 + side * 0.075), draw_size.y * (0.385 + phase * 0.006))
+	var back_hand := top_left + Vector2(draw_size.x * (0.43 - side * 0.160), draw_size.y * (0.520 - phase * 0.010))
+	var front_hand := top_left + Vector2(draw_size.x * (0.58 + side * 0.225), draw_size.y * (0.448 + phase * 0.016))
+	var hip := top_left + Vector2(draw_size.x * (0.50 + side * 0.028), draw_size.y * 0.660)
+	var front_foot := top_left + Vector2(draw_size.x * (0.56 + side * 0.205), draw_size.y * 0.965)
+	var back_foot := top_left + Vector2(draw_size.x * (0.44 - side * 0.165), draw_size.y * 0.970)
+	draw_line(shoulder_back, back_hand, Color(0.024, 0.018, 0.014, alpha * 0.68), clampf(draw_size.x * 0.014, 1.0, 2.0))
+	draw_line(shoulder_front, front_hand, Color(accent.r, accent.g, accent.b, alpha), clampf(draw_size.x * 0.018, 1.4, 2.6))
+	draw_line(back_hand, front_hand, Color(1.0, 0.92, 0.62, alpha * 0.46), 1.0)
+	draw_circle(back_hand, clampf(draw_size.x * 0.019, 1.5, 2.8), Color(1.0, 0.88, 0.58, alpha * 0.58))
+	draw_circle(front_hand, clampf(draw_size.x * 0.024, 1.8, 3.4), Color(1.0, 0.90, 0.56, alpha * 0.92))
+	draw_arc(front_hand - Vector2(side * draw_size.x * 0.030, draw_size.y * 0.010), draw_size.x * (0.070 + absf(phase) * 0.006), PI * 0.05, PI * 1.10, 18, Color(accent.r, accent.g, accent.b, alpha * 0.70), 1.0)
+	draw_line(hip, front_foot, Color(accent.r, accent.g, accent.b, alpha * 0.38), clampf(draw_size.x * 0.010, 0.9, 1.5))
+	draw_line(hip, back_foot, Color(0.020, 0.016, 0.012, alpha * 0.46), clampf(draw_size.x * 0.010, 0.9, 1.4))
+	draw_line(back_foot, front_foot, Color(1.0, 0.82, 0.42, alpha * 0.34), 1.0)
 
 func _draw_stage_player_weapon_pose(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var phase := sin(walk_phase * (1.25 if moving else 0.68))
