@@ -50,6 +50,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	visual_phase += delta * _idle_motion_speed()
 	_update_sprite_motion()
+	queue_redraw()
 	if ambient_panel != null and ambient_panel.visible:
 		ambient_timer -= delta
 		if ambient_timer <= 0.0:
@@ -286,16 +287,21 @@ func _draw() -> void:
 
 func _draw_ground_marker(accent: Color) -> void:
 	var map_scale := _map_actor_scale()
-	var color := Color(accent.r, accent.g, accent.b, 0.20)
+	var npc_id := int(data.get("id", 0))
+	var pulse := 0.5 + 0.5 * sin(visual_phase + float(npc_id % 17) * 0.37)
+	var marker_radius := Vector2(15 * map_scale, 4.5 * map_scale) * (1.0 + pulse * 0.05)
+	var color := Color(accent.r, accent.g, accent.b, 0.18 + pulse * 0.05)
 	if bool(data.get("has_quests", false)):
-		color = Color(0.95, 0.72, 0.22, 0.34)
+		color = Color(0.95, 0.72, 0.22, 0.30 + pulse * 0.10)
 	elif is_master():
-		color = Color(accent.r, accent.g, accent.b, 0.30)
+		color = Color(accent.r, accent.g, accent.b, 0.27 + pulse * 0.08)
 	elif is_enemy():
-		color = Color(0.76, 0.12, 0.09, 0.30)
-	_draw_ellipse(Vector2(0, 26 * map_scale), Vector2(15 * map_scale, 4.5 * map_scale), color)
+		color = Color(0.76, 0.12, 0.09, 0.27 + pulse * 0.08)
+	_draw_ellipse(Vector2(0, 26 * map_scale), marker_radius, color)
 	if bool(data.get("has_quests", false)):
-		draw_circle(Vector2(17 * map_scale, -50 * map_scale), 3.8, Color(0.98, 0.78, 0.28, 0.95))
+		var quest_pos := Vector2(17 * map_scale, -50 * map_scale)
+		draw_arc(quest_pos, 6.0 + pulse * 3.5, 0.0, TAU, 24, Color(0.98, 0.78, 0.28, 0.30 + pulse * 0.22), 1.2)
+		draw_circle(quest_pos, 3.6 + pulse * 0.8, Color(0.98, 0.78, 0.28, 0.92))
 
 func _idle_motion_speed() -> float:
 	if is_enemy():

@@ -5,6 +5,7 @@ const SPEED := 190.0
 const DRAW_SCALE := 1.0
 const SPRITE_TARGET_HEIGHT := 104.0
 const SPRITE_TARGET_WIDTH := 84.0
+const STEP_DUST_RADIUS := Vector2(10.0, 3.2)
 
 var movement_enabled := true
 var world_map: Node = null
@@ -66,6 +67,7 @@ func _draw() -> void:
 	var bob := sin(walk_phase) * 3.2 if moving else sin(walk_phase) * 0.75
 	var lean := clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45
 
+	_draw_step_dust(moving)
 	_draw_actor_shadow(Vector2(4, 32), Vector2(42, 13), 1.0)
 	if sprite_texture != null:
 		var texture_size := sprite_texture.get_size()
@@ -80,6 +82,7 @@ func _draw() -> void:
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
+		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 + bob), dir * 18.0 + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
 		return
@@ -193,3 +196,27 @@ func _draw_actor_shadow(center: Vector2, radius: Vector2, strength: float) -> vo
 	_draw_shadow(center + offset, Vector2(radius.x * stretch, radius.y * 1.10), Color(0.0, 0.0, 0.0, 0.08 * strength))
 	_draw_shadow(center + Vector2(2, 1), radius, Color(0.0, 0.0, 0.0, 0.20 * strength))
 	_draw_shadow(center, radius * Vector2(0.58, 0.50), Color(0.0, 0.0, 0.0, 0.16 * strength))
+
+func _draw_step_dust(moving: bool) -> void:
+	if not moving:
+		return
+	var dir := facing.normalized()
+	if dir == Vector2.ZERO:
+		dir = Vector2.DOWN
+	var step := absf(sin(walk_phase))
+	var side := Vector2(-dir.y, dir.x)
+	var base := Vector2(2, 36) - dir * 15.0
+	var alpha := 0.10 + step * 0.10
+	_draw_shadow(base + side * 7.0, STEP_DUST_RADIUS * (0.8 + step * 0.45), Color(0.74, 0.64, 0.42, alpha))
+	_draw_shadow(base - side * 6.0 + dir * 5.0, STEP_DUST_RADIUS * (0.58 + (1.0 - step) * 0.35), Color(0.68, 0.58, 0.38, alpha * 0.72))
+
+func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2, trim: Color, moving: bool) -> void:
+	var waist_y := foot_y - draw_size.y * 0.46
+	var flutter := sin(walk_phase * (1.3 if moving else 0.75))
+	var accent_alpha := 0.28 if moving else 0.18
+	var left := Vector2(-draw_size.x * 0.26 + lean, waist_y)
+	var right := Vector2(draw_size.x * 0.26 + lean, waist_y + flutter * 1.8)
+	draw_line(left, right, Color(trim.r, trim.g, trim.b, accent_alpha), 2.0)
+	if moving:
+		var trail := -facing.normalized() * 10.0
+		draw_line(Vector2(lean, foot_y - draw_size.y * 0.20), Vector2(lean, foot_y - draw_size.y * 0.20) + trail, Color(1.0, 0.92, 0.62, 0.18), 1.8)
