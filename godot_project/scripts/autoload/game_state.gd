@@ -57,6 +57,42 @@ const CORE_RUMOR_NPCS := [
 	"冰魄",
 	"逍遥子"
 ]
+const STORY_CHOICE_DEFINITIONS := [
+	{
+		"id": "choice_conclave_public",
+		"group": "conclave_path",
+		"flag": "story_conclave_public",
+		"npcs": ["苏梦瑶", "太极真人"],
+		"title": "公开断令",
+		"description": "把断令证据交给七派公开夜议，换取正道信任，但也会惊动暗影司。",
+		"requires_completed": ["q_main_broken_token"],
+		"blocks_completed": ["q_main_wulin_conclave"],
+		"region_id": "luoyang",
+		"event_title": "断令公议",
+		"event_description": "你主张公开断令证据，七派可信之人开始以明面名义聚拢。",
+		"memory": "你主张公开断令证据，愿把七派信任放在明处。",
+		"daode": 4,
+		"money": 0,
+		"items": {}
+	},
+	{
+		"id": "choice_conclave_secret",
+		"group": "conclave_path",
+		"flag": "story_conclave_secret",
+		"npcs": ["苏梦瑶", "陈天行"],
+		"title": "暗查旧账",
+		"description": "暂不公开断令，先沿苏家旧账暗查暗影司线人，可少惊动敌人但会让七派疑心更重。",
+		"requires_completed": ["q_main_broken_token"],
+		"blocks_completed": ["q_main_wulin_conclave"],
+		"region_id": "changan",
+		"event_title": "旧账暗查",
+		"event_description": "你决定暂压断令，借陈天行旧账暗查暗影司线人。",
+		"memory": "你选择暂压断令，沿苏家旧账暗中追查。",
+		"daode": 1,
+		"money": 80,
+		"items": {"item_shengji": 1}
+	}
+]
 
 func _ready() -> void:
 	new_game()
@@ -341,6 +377,106 @@ func record_npc_interaction(npc_data: Dictionary, kind: String) -> Dictionary:
 	_append_npc_memory(state, _npc_memory_label(kind, favor_delta))
 	npc_memory[npc_name] = state
 	return state.duplicate(true)
+
+func get_available_story_choices(npc_name: String = "") -> Array:
+	var choices: Array = []
+	for entry in STORY_CHOICE_DEFINITIONS:
+		var choice: Dictionary = entry
+		if not _story_choice_matches_npc(choice, npc_name):
+			continue
+		if not _story_choice_available(choice):
+			continue
+		choices.append(choice.duplicate(true))
+	return choices
+
+func choose_story_branch(choice_id: String) -> bool:
+	var choice := _story_choice_by_id(choice_id)
+	if choice.is_empty() or not _story_choice_available(choice):
+		return false
+	var group := str(choice.get("group", ""))
+	var group_flag := _story_choice_group_flag(group)
+	if not group.is_empty():
+		game_flags[group_flag] = str(choice.get("id", ""))
+	var flag := str(choice.get("flag", ""))
+	if not flag.is_empty():
+		game_flags[flag] = true
+	var daode_delta := int(choice.get("daode", 0))
+	if daode_delta != 0:
+		player["daode"] = int(player.get("daode", 0)) + daode_delta
+	var money_delta := int(choice.get("money", 0))
+	if money_delta != 0:
+		add_money(money_delta)
+	var items: Dictionary = choice.get("items", {})
+	for item_id in items.keys():
+		add_item(str(item_id), int(items[item_id]))
+	_apply_story_choice_memory(choice)
+	append_world_event(
+		"story_choice",
+		str(choice.get("event_title", choice.get("title", "剧情抉择"))),
+		str(choice.get("event_description", choice.get("description", ""))),
+		str(choice.get("region_id", current_region_id)),
+		4
+	)
+	EventBus.player_changed.emit(player)
+	EventBus.quests_changed.emit()
+	EventBus.emit_toast("剧情抉择：%s" % str(choice.get("title", choice_id)))
+	return true
+
+func get_story_choice_status_lines() -> Array[String]:
+	var lines: Array[String] = []
+	for entry in STORY_CHOICE_DEFINITIONS:
+		var choice: Dictionary = entry
+		var flag := str(choice.get("flag", ""))
+		if not flag.is_empty() and bool(game_flags.get(flag, false)):
+			lines.append("%s：%s" % [str(choice.get("title", flag)), str(choice.get("description", ""))])
+	return lines
+
+func _story_choice_by_id(choice_id: String) -> Dictionary:
+	for entry in STORY_CHOICE_DEFINITIONS:
+		var choice: Dictionary = entry
+		if str(choice.get("id", "")) == choice_id:
+			return choice.duplicate(true)
+	return {}
+
+func _story_choice_matches_npc(choice: Dictionary, npc_name: String) -> bool:
+	if npc_name.is_empty():
+		return true
+	var npcs: Array = choice.get("npcs", [])
+	return npcs.has(npc_name)
+
+func _story_choice_available(choice: Dictionary) -> bool:
+	var group := str(choice.get("group", ""))
+	if not group.is_empty() and not str(game_flags.get(_story_choice_group_flag(group), "")).is_empty():
+		return false
+	var flag := str(choice.get("flag", ""))
+	if not flag.is_empty() and bool(game_flags.get(flag, false)):
+		return false
+	var required_completed: Array = choice.get("requires_completed", [])
+	for quest_id in required_completed:
+		if not completed_quests.has(str(quest_id)):
+			return false
+	var blocked_completed: Array = choice.get("blocks_completed", [])
+	for quest_id in blocked_completed:
+		if completed_quests.has(str(quest_id)):
+			return false
+	return true
+
+func _story_choice_group_flag(group: String) -> String:
+	return "story_choice_%s" % group
+
+func _apply_story_choice_memory(choice: Dictionary) -> void:
+	var memory_line := str(choice.get("memory", ""))
+	if memory_line.is_empty():
+		return
+	var npcs: Array = choice.get("npcs", [])
+	for npc_name_value in npcs:
+		var npc_name := str(npc_name_value)
+		if npc_name.is_empty():
+			continue
+		var state := _ensure_npc_memory(npc_name)
+		_append_npc_memory(state, memory_line)
+		state["favor"] = clampi(int(state.get("favor", 0)) + 4, -100, 100)
+		npc_memory[npc_name] = state
 
 func _default_npc_memory() -> Dictionary:
 	return {
@@ -1314,7 +1450,12 @@ func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
 		"q_main_broken_token":
 			append_world_event("story", "断令归卷", "断令花纹与武林盟旧卷对上，七派夜议已有了真正的证据。", "luoyang", 4)
 		"q_main_wulin_conclave":
-			append_world_event("story", "武林夜议成局", "七派可信之人开始合拢证据，暗影司幕后主使不再只是传闻。", "wudang", 5)
+			var conclave_detail := "七派可信之人开始合拢证据，暗影司幕后主使不再只是传闻。"
+			if bool(game_flags.get("story_conclave_public", false)):
+				conclave_detail = "你先公开断令取信七派，夜议成局后，暗影司也不得不从暗处露出破绽。"
+			elif bool(game_flags.get("story_conclave_secret", false)):
+				conclave_detail = "你先暗查旧账稳住线人，夜议成局时，暗影司几条暗线已被悄悄拔掉。"
+			append_world_event("story", "武林夜议成局", conclave_detail, "wudang", 5)
 		"q_main_hidden_master":
 			append_world_event("story", "血月残印现世", "血月使者败退，暗影司旧账里第一次露出无面主事的名字。", "changan", 5)
 		"q_main_blood_moon":
@@ -1352,6 +1493,12 @@ func get_quest_status_lines() -> Array[String]:
 		for quest_id in completed_quests:
 			var quest := GameData.get_quest(str(quest_id))
 			lines.append("  - %s" % str(quest.get("title", quest_id)))
+	var choice_lines := get_story_choice_status_lines()
+	if not choice_lines.is_empty():
+		lines.append("")
+		lines.append("剧情抉择：")
+		for line in choice_lines:
+			lines.append("  - %s" % line)
 	var events := get_recent_world_events(5)
 	if not events.is_empty():
 		lines.append("")

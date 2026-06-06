@@ -10,6 +10,7 @@ var favor_bar: ProgressBar
 var memory_label: Label
 var rumor_label: Label
 var portrait_texture: TextureRect
+var story_choice_box: HBoxContainer
 var talk_index := 0
 
 func _ready() -> void:
@@ -27,6 +28,7 @@ func show_npc(data: Dictionary) -> void:
 	GameState.record_npc_interaction(npc_data, "talk")
 	_update_meta()
 	_set_portrait()
+	_clear_story_choice_buttons()
 	_set_next_line()
 	show()
 
@@ -81,6 +83,11 @@ func _build() -> void:
 	body_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
 	box.add_child(body_label)
 
+	story_choice_box = HBoxContainer.new()
+	story_choice_box.add_theme_constant_override("separation", 8)
+	story_choice_box.hide()
+	box.add_child(story_choice_box)
+
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	actions.add_theme_constant_override("separation", 8)
@@ -100,6 +107,11 @@ func _build() -> void:
 	quest_button.text = "任务"
 	quest_button.pressed.connect(_quest)
 	actions.add_child(quest_button)
+
+	var story_button := Button.new()
+	story_button.text = "抉择"
+	story_button.pressed.connect(_story_choice)
+	actions.add_child(story_button)
 
 	var shop_button := Button.new()
 	shop_button.text = "交易"
@@ -173,11 +185,13 @@ func _build() -> void:
 	side_box.add_child(rumor_label)
 
 func _talk() -> void:
+	_clear_story_choice_buttons()
 	GameState.record_npc_interaction(npc_data, "talk")
 	_update_meta()
 	_set_next_line()
 
 func _set_next_line() -> void:
+	_clear_story_choice_buttons()
 	var lines := GameData.get_dialogue_lines(str(npc_data.get("name", "")))
 	var director_line := LLMDirector.generate_npc_line(npc_data, talk_index)
 	LLMDirector.request_live_npc_line(npc_data)
@@ -286,6 +300,7 @@ func _set_portrait() -> void:
 	portrait_texture.texture = GameData.load_texture(path)
 
 func _teach() -> void:
+	_clear_story_choice_buttons()
 	var skills: Array = npc_data.get("teach_skills", [])
 	if skills.is_empty():
 		body_label.text = "%s 摇了摇头：我没有可教你的武学。" % str(npc_data.get("name", "对方"))
@@ -302,6 +317,7 @@ func _teach() -> void:
 	EventBus.emit_toast("学会/提升：%s" % GameData.get_skill_name(skill_id))
 
 func _quest() -> void:
+	_clear_story_choice_buttons()
 	var quests := GameData.get_quests_for_npc(str(npc_data.get("name", "")))
 	if quests.is_empty():
 		body_label.text = "%s 暂时没有事情托付给你。" % str(npc_data.get("name", "对方"))
@@ -331,7 +347,41 @@ func _quest() -> void:
 		return
 	body_label.text = "%s 点点头：你已经帮了不少忙。" % str(npc_data.get("name", "对方"))
 
+func _story_choice() -> void:
+	var choices := GameState.get_available_story_choices(str(npc_data.get("name", "")))
+	if choices.is_empty():
+		_clear_story_choice_buttons()
+		body_label.text = "%s 低声道：眼下还没有必须落子的抉择。" % str(npc_data.get("name", "对方"))
+		return
+	_clear_story_choice_buttons()
+	var lines: Array[String] = ["这一步会改变后续江湖风声。"]
+	for choice in choices:
+		var choice_data: Dictionary = choice
+		var choice_id := str(choice_data.get("id", ""))
+		var button := Button.new()
+		button.text = str(choice_data.get("title", "抉择"))
+		button.tooltip_text = str(choice_data.get("description", ""))
+		button.pressed.connect(func() -> void:
+			_choose_story_choice(choice_id)
+		)
+		story_choice_box.add_child(button)
+		lines.append("【%s】%s" % [str(choice_data.get("title", "")), str(choice_data.get("description", ""))])
+	story_choice_box.show()
+	body_label.text = "\n".join(lines)
+
+func _choose_story_choice(choice_id: String) -> void:
+	if choice_id.is_empty():
+		return
+	var accepted := GameState.choose_story_branch(choice_id)
+	_clear_story_choice_buttons()
+	_update_meta()
+	if accepted:
+		body_label.text = "你做出了抉择。\n%s" % GameState.get_world_event_summary(1)
+	else:
+		body_label.text = "这一步已经无从更改。"
+
 func _shop() -> void:
+	_clear_story_choice_buttons()
 	var sell_items: Array = npc_data.get("sell_items", [])
 	if sell_items.is_empty():
 		body_label.text = "%s 不做买卖。" % str(npc_data.get("name", "对方"))
@@ -341,6 +391,7 @@ func _shop() -> void:
 	EventBus.emit_shop_requested(npc_data)
 
 func _join_faction() -> void:
+	_clear_story_choice_buttons()
 	var faction_id := str(npc_data.get("faction", "none"))
 	if faction_id == "none" or not bool(npc_data.get("is_master", false)):
 		body_label.text = "%s 不是可拜师的门派掌门。" % str(npc_data.get("name", "对方"))
@@ -353,6 +404,7 @@ func _join_faction() -> void:
 		body_label.text = "拜师未成。"
 
 func _rest() -> void:
+	_clear_story_choice_buttons()
 	if str(npc_data.get("name", "")) != "平阿四" and not bool(npc_data.get("can_rest", false)):
 		body_label.text = "这里不能住店休息。"
 		return
@@ -362,6 +414,13 @@ func _rest() -> void:
 		body_label.text = "你在客栈歇下，醒来时精神恢复。"
 	else:
 		body_label.text = "银两不足，住不了店。"
+
+func _clear_story_choice_buttons() -> void:
+	if story_choice_box == null:
+		return
+	for child in story_choice_box.get_children():
+		child.queue_free()
+	story_choice_box.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
