@@ -50,27 +50,35 @@ func _run() -> void:
 	test_root.add_child(player)
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
-	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 110.0, "玩家地图角色显示不应继续偏小")
-	_check(PLAYER_SCRIPT.LOCAL_STAGE_PRESENCE_SCALE >= 1.15, "玩家局部横版舞台应叠加额外角色存在感缩放")
+	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 116.0, "玩家地图角色显示不应继续偏小")
+	_check(PLAYER_SCRIPT.LOCAL_STAGE_PRESENCE_SCALE >= 1.20, "玩家局部横版舞台应叠加额外角色存在感缩放")
 	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_RIM_ALPHA >= 0.18, "玩家局部横版舞台应有更明确的贴图轮廓高光")
 	_check(PLAYER_SCRIPT.PLAYER_WEAPON_SILHOUETTE_ALPHA >= 0.30, "玩家局部横版舞台应保留武侠武器剪影层")
 	_check(PLAYER_SCRIPT.PLAYER_CLOTH_LAYER_ALPHA >= 0.24, "玩家局部横版舞台应保留衣摆前后层")
 	_check(PLAYER_SCRIPT.PLAYER_MOTION_AFTERIMAGE_ALPHA >= 0.10, "玩家移动应保留横版舞台残影反馈")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_GROUND_LOCK_ALPHA >= 0.24, "玩家局部横版舞台应保留脚底接地锁定层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_STANCE_LINE_ALPHA >= 0.22, "玩家局部横版舞台应保留躯干/腿部姿态线")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_RUN_RIBBON_ALPHA >= 0.16, "玩家跑动应保留衣带拖线反馈")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_RUN_RIBBON_COUNT >= 3, "玩家跑动衣带拖线应具备多层残留")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	player.facing = Vector2.LEFT
 	_check(player._facing_side() < 0.0, "玩家横版舞台侧向层应响应向左朝向")
 	player.facing = Vector2.RIGHT
 	_check(player._facing_side() > 0.0, "玩家横版舞台侧向层应响应向右朝向")
 	player.facing = Vector2.DOWN
-	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 108.0, "NPC 地图贴图基础高度不应继续偏小")
-	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.28, "NPC 局部横版舞台应叠加额外角色存在感缩放")
+	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 112.0, "NPC 地图贴图基础高度不应继续偏小")
+	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.32, "NPC 局部横版舞台应叠加额外角色存在感缩放")
 	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE > 1.0 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE > 1.0, "掌门/敌人应在局部横版舞台获得额外体量")
 	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.16, "NPC 局部横版舞台应保留最低视觉体量")
 	_check(NPC_SCRIPT.STAGE_RIM_ALPHA >= 0.12, "NPC 局部横版舞台应有贴图轮廓高光")
 	_check(NPC_SCRIPT.STAGE_ROLE_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应有身份提示动效")
 	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
+	_check(NPC_SCRIPT.STAGE_GROUND_LOCK_ALPHA >= 0.20, "NPC 局部横版舞台应保留脚底接地锁定层")
+	_check(NPC_SCRIPT.STAGE_TORSO_LINE_ALPHA >= 0.20, "NPC 局部横版舞台应保留躯干姿态线")
+	_check(NPC_SCRIPT.STAGE_SASH_LINE_ALPHA >= 0.18, "NPC 局部横版舞台应保留腰带/衣摆动态线")
+	_check(NPC_SCRIPT.STAGE_WEAPON_GLOW_ALPHA >= 0.20, "NPC 局部横版舞台应保留武器辉光层")
 	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
@@ -124,6 +132,7 @@ func _run() -> void:
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
 	_check(_actors_have_stage_rim(local_area.npc_nodes), "局部地图 NPC 应显示舞台贴图轮廓高光")
 	_check(_actors_have_stage_pose_overlay(local_area.npc_nodes), "局部地图 NPC 应显示贴图前方姿态线")
+	_check(_actors_have_stage_body_overlays(local_area.npc_nodes), "局部地图 NPC 应显示躯干、腰带和武器辉光前层")
 	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
 	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -299,6 +308,19 @@ func _actors_have_stage_pose_overlay(nodes: Array) -> bool:
 		if not bool(actor.data.get("stage_actor", false)):
 			continue
 		if actor.stage_pose_line_node != null and actor.stage_pose_line_node.visible and actor.stage_pose_line_node.points.size() >= 3:
+			return true
+	return false
+
+func _actors_have_stage_body_overlays(nodes: Array) -> bool:
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		var has_torso: bool = actor.stage_torso_line_node != null and actor.stage_torso_line_node.visible and actor.stage_torso_line_node.points.size() >= 3
+		var has_sash: bool = actor.stage_sash_line_node != null and actor.stage_sash_line_node.visible and actor.stage_sash_line_node.points.size() >= 4
+		var has_weapon_glow: bool = actor.stage_weapon_glow_node != null and actor.stage_weapon_glow_node.visible and actor.stage_weapon_glow_node.points.size() >= 2
+		if has_torso and has_sash and has_weapon_glow:
 			return true
 	return false
 

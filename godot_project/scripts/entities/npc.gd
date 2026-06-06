@@ -11,6 +11,9 @@ var sprite_node: Sprite2D
 var sprite_outline_node: Sprite2D
 var sprite_rim_node: Sprite2D
 var stage_pose_line_node: Line2D
+var stage_weapon_glow_node: Line2D
+var stage_torso_line_node: Line2D
+var stage_sash_line_node: Line2D
 var using_sprite_asset := false
 var ambient_timer := 0.0
 var visual_phase := 0.0
@@ -23,20 +26,24 @@ var sprite_rim_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 108.0
-const MASTER_SPRITE_HEIGHT := 132.0
-const ENEMY_SPRITE_HEIGHT := 128.0
-const STAGE_PRESENCE_SCALE := 1.30
-const STAGE_MASTER_EXTRA_SCALE := 1.07
-const STAGE_ENEMY_EXTRA_SCALE := 1.08
+const BASE_SPRITE_HEIGHT := 114.0
+const MASTER_SPRITE_HEIGHT := 140.0
+const ENEMY_SPRITE_HEIGHT := 136.0
+const STAGE_PRESENCE_SCALE := 1.34
+const STAGE_MASTER_EXTRA_SCALE := 1.08
+const STAGE_ENEMY_EXTRA_SCALE := 1.10
 const STAGE_SPRITE_MIN_SCALE := 1.18
-const STAGE_SPRITE_MAX_SCALE := 1.62
+const STAGE_SPRITE_MAX_SCALE := 1.70
 const CONTACT_GLOW_ALPHA := 0.115
 const STAGE_RIM_ALPHA := 0.15
 const STAGE_ROLE_CUE_ALPHA := 0.18
 const STAGE_IDENTITY_MOTES := 6
-const STAGE_POSE_LINE_ALPHA := 0.26
-const STAGE_FOOT_ANCHOR_ALPHA := 0.18
+const STAGE_POSE_LINE_ALPHA := 0.30
+const STAGE_FOOT_ANCHOR_ALPHA := 0.22
+const STAGE_GROUND_LOCK_ALPHA := 0.24
+const STAGE_TORSO_LINE_ALPHA := 0.24
+const STAGE_SASH_LINE_ALPHA := 0.22
+const STAGE_WEAPON_GLOW_ALPHA := 0.24
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -235,9 +242,30 @@ func _refresh_sprite_asset() -> void:
 		sprite_rim_node.z_index = 3
 		sprite_rim_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		add_child(sprite_rim_node)
+	if stage_torso_line_node == null:
+		stage_torso_line_node = Line2D.new()
+		stage_torso_line_node.z_index = 4
+		stage_torso_line_node.width = 2.0
+		stage_torso_line_node.antialiased = true
+		stage_torso_line_node.visible = false
+		add_child(stage_torso_line_node)
+	if stage_sash_line_node == null:
+		stage_sash_line_node = Line2D.new()
+		stage_sash_line_node.z_index = 5
+		stage_sash_line_node.width = 2.0
+		stage_sash_line_node.antialiased = true
+		stage_sash_line_node.visible = false
+		add_child(stage_sash_line_node)
+	if stage_weapon_glow_node == null:
+		stage_weapon_glow_node = Line2D.new()
+		stage_weapon_glow_node.z_index = 5
+		stage_weapon_glow_node.width = 4.0
+		stage_weapon_glow_node.antialiased = true
+		stage_weapon_glow_node.visible = false
+		add_child(stage_weapon_glow_node)
 	if stage_pose_line_node == null:
 		stage_pose_line_node = Line2D.new()
-		stage_pose_line_node.z_index = 4
+		stage_pose_line_node.z_index = 6
 		stage_pose_line_node.width = 2.0
 		stage_pose_line_node.antialiased = true
 		stage_pose_line_node.visible = false
@@ -282,7 +310,7 @@ func _refresh_sprite_asset() -> void:
 	sprite_rim_node.visible = _is_stage_actor()
 	using_sprite_asset = true
 	if name_label != null:
-		name_label.z_index = 4
+		name_label.z_index = 8
 		name_label.position = Vector2(-58, -92 * map_scale)
 	_update_sprite_motion()
 
@@ -296,6 +324,12 @@ func _clear_sprite_asset() -> void:
 		sprite_rim_node.visible = false
 	if stage_pose_line_node != null:
 		stage_pose_line_node.visible = false
+	if stage_weapon_glow_node != null:
+		stage_weapon_glow_node.visible = false
+	if stage_torso_line_node != null:
+		stage_torso_line_node.visible = false
+	if stage_sash_line_node != null:
+		stage_sash_line_node.visible = false
 
 func _draw() -> void:
 	var appearance := GameData.get_npc_appearance(data)
@@ -308,6 +342,7 @@ func _draw() -> void:
 		var map_scale := _map_actor_scale()
 		_draw_ground_marker(accent)
 		_draw_actor_shadow(Vector2(3, 25 * map_scale), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
+		_draw_stage_ground_lock(accent, map_scale)
 		_draw_contact_light(accent, map_scale)
 		_draw_stage_foot_anchors(accent, map_scale)
 		_draw_aura(appearance, accent)
@@ -374,12 +409,12 @@ func _update_sprite_motion() -> void:
 	var phase := visual_phase + float(npc_id % 29) * 0.31
 	var wave := sin(phase)
 	var soft_step := sin(phase * 0.55)
-	var stage_motion := 1.22 if _is_stage_actor() else 1.0
-	var height_pulse := 1.0 + wave * ((0.012 if is_enemy() else 0.016) if _is_stage_actor() else (0.010 if is_enemy() else 0.014))
-	var width_pulse := 1.0 - wave * (0.005 if _is_stage_actor() else 0.004)
+	var stage_motion := 1.30 if _is_stage_actor() else 1.0
+	var height_pulse := 1.0 + wave * ((0.015 if is_enemy() else 0.021) if _is_stage_actor() else (0.010 if is_enemy() else 0.014))
+	var width_pulse := 1.0 - wave * (0.007 if _is_stage_actor() else 0.004)
 	var float_y := wave * (0.36 if is_master() else 0.48) * stage_motion
 	var sway_x := soft_step * (0.38 if is_master() else 0.55) * stage_motion
-	var stance_roll := sin(phase * 0.37) * (0.008 if _is_stage_actor() else 0.003)
+	var stance_roll := sin(phase * 0.37) * (0.014 if _is_stage_actor() else 0.003)
 	sprite_node.scale = sprite_base_scale * Vector2(width_pulse, height_pulse)
 	sprite_outline_node.scale = sprite_outline_base_scale * Vector2(width_pulse, height_pulse)
 	sprite_node.position = sprite_base_position + Vector2(sway_x, float_y)
@@ -414,6 +449,23 @@ func _draw_actor_shadow(center: Vector2, radius: Vector2, strength: float) -> vo
 	_draw_ellipse(center + Vector2(1.5, 0.5), radius, Color(0.0, 0.0, 0.0, 0.18 * strength))
 	_draw_ellipse(center, radius * Vector2(0.58, 0.48), Color(0.0, 0.0, 0.0, 0.13 * strength))
 
+func _draw_stage_ground_lock(accent: Color, map_scale: float) -> void:
+	if not _is_stage_actor():
+		return
+	var npc_id := int(data.get("id", 0))
+	var pulse := 0.5 + sin(visual_phase * 1.18 + float(npc_id % 23) * 0.27) * 0.5
+	var role_color := _stage_role_color(accent)
+	var alpha := STAGE_GROUND_LOCK_ALPHA * (0.60 + pulse * 0.28)
+	var center := Vector2(2.0 * map_scale, 30.0 * map_scale)
+	_draw_ellipse(center, Vector2(31.0 * map_scale, 4.2 * map_scale), Color(0.0, 0.0, 0.0, alpha))
+	_draw_ellipse(center + Vector2(0.0, 1.4 * map_scale), Vector2(17.0 * map_scale, 2.1 * map_scale), Color(role_color.r, role_color.g, role_color.b, alpha * 0.36))
+	draw_line(
+		center + Vector2(-19.0, -1.2) * map_scale,
+		center + Vector2(21.0, -2.0 + pulse * 0.8) * map_scale,
+		Color(1.0, 0.84, 0.45, alpha * 0.32),
+		1.0 + map_scale * 0.18
+	)
+
 func _draw_stage_foot_anchors(accent: Color, map_scale: float) -> void:
 	if not _is_stage_actor():
 		return
@@ -435,6 +487,7 @@ func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> 
 		return
 	if not using_sprite_asset or not _is_stage_actor():
 		stage_pose_line_node.visible = false
+		_hide_stage_pose_aux_lines()
 		return
 	var map_scale := _map_actor_scale()
 	var appearance := GameData.get_npc_appearance(data)
@@ -454,6 +507,40 @@ func _update_stage_pose_line(phase: float, wave: float, stage_motion: float) -> 
 	stage_pose_line_node.width = clampf(2.0 * map_scale * stage_motion, 1.7, 3.8)
 	stage_pose_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_POSE_LINE_ALPHA * (0.72 + absf(wave) * 0.28))
 	stage_pose_line_node.visible = true
+	if stage_weapon_glow_node != null:
+		stage_weapon_glow_node.points = PackedVector2Array([hand, tip])
+		stage_weapon_glow_node.width = clampf(4.2 * map_scale * stage_motion, 3.0, 7.2)
+		stage_weapon_glow_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_WEAPON_GLOW_ALPHA * (0.58 + absf(wave) * 0.34))
+		stage_weapon_glow_node.visible = true
+	_update_stage_pose_aux_lines(phase, wave, stage_motion, role_color, side, map_scale)
+
+func _hide_stage_pose_aux_lines() -> void:
+	if stage_weapon_glow_node != null:
+		stage_weapon_glow_node.visible = false
+	if stage_torso_line_node != null:
+		stage_torso_line_node.visible = false
+	if stage_sash_line_node != null:
+		stage_sash_line_node.visible = false
+
+func _update_stage_pose_aux_lines(phase: float, wave: float, stage_motion: float, role_color: Color, side: float, map_scale: float) -> void:
+	if stage_torso_line_node != null:
+		var shoulder_back := sprite_base_position + Vector2(side * -7.5 * map_scale, -31.0 * map_scale)
+		var shoulder_front := sprite_base_position + Vector2(side * (12.5 + wave * 1.0) * map_scale, -28.0 * map_scale)
+		var hip := sprite_base_position + Vector2(side * (5.5 + sin(phase * 0.62) * 1.1) * map_scale, -2.0 * map_scale)
+		stage_torso_line_node.points = PackedVector2Array([shoulder_back, shoulder_front, hip])
+		stage_torso_line_node.width = clampf(1.7 * map_scale * stage_motion, 1.3, 3.0)
+		stage_torso_line_node.default_color = Color(1.0, 0.90, 0.58, STAGE_TORSO_LINE_ALPHA * (0.58 + absf(wave) * 0.28))
+		stage_torso_line_node.visible = true
+	if stage_sash_line_node != null:
+		var flutter := sin(phase * 0.82)
+		var waist := sprite_base_position + Vector2(0.0, 2.5 * map_scale)
+		var left := waist + Vector2(-13.5 * map_scale, flutter * 1.1 * map_scale)
+		var right := waist + Vector2(14.0 * map_scale, (-flutter * 1.2 - 0.5) * map_scale)
+		var tail := waist + Vector2((-20.0 - absf(flutter) * 2.6) * side * map_scale, (7.5 + flutter * 1.2) * map_scale)
+		stage_sash_line_node.points = PackedVector2Array([left, waist, right, tail])
+		stage_sash_line_node.width = clampf(2.1 * map_scale * stage_motion, 1.6, 3.6)
+		stage_sash_line_node.default_color = Color(role_color.r, role_color.g, role_color.b, STAGE_SASH_LINE_ALPHA * (0.68 + absf(flutter) * 0.26))
+		stage_sash_line_node.visible = true
 
 func _build_scale(build: String) -> Vector2:
 	match build:
