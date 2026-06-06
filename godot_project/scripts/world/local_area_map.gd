@@ -93,6 +93,9 @@ const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
 const SIDE_VIEW_POSTFX_Z := 3220
 const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
+const SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA := 0.46
+const SIDE_VIEW_PLATFORM_EDGE_ALPHA := 0.42
+const SIDE_VIEW_NEAR_PROP_COUNT := 14
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1446,6 +1449,7 @@ func _draw_side_view_stage() -> void:
 		draw_rect(sky_rect, (palette["sky"] as Color), true)
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
 	_draw_side_view_silhouettes(size, palette)
+	_draw_side_view_midground(size, palette)
 	_draw_side_view_ground(size, palette)
 	_draw_side_view_ambient(size, palette)
 	_draw_side_view_foreground(size, palette)
@@ -1477,6 +1481,168 @@ func _draw_side_view_silhouettes(size: Vector2, palette: Dictionary) -> void:
 			var y := horizon + float(i) * tile_size * 0.36
 			draw_line(Vector2(size.x * 0.08, y), Vector2(size.x * 0.92, y - tile_size * 0.12), Color(0.78, 0.92, 0.94, 0.18), 2.2)
 
+func _draw_side_view_midground(size: Vector2, palette: Dictionary) -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	var accent: Color = palette["accent"]
+	var y := size.y * 0.455
+	if region_type == "city" or region_type == "town":
+		_draw_stage_city_facades(size, y, accent)
+	elif region_type == "sect":
+		_draw_stage_sect_steps(size, y, accent)
+	elif _terrain_has_water(terrain):
+		_draw_stage_pier(size, y, accent)
+	elif _terrain_has_forest(terrain):
+		_draw_stage_forest_trunks(size, y, accent)
+	elif terrain.contains("snow"):
+		_draw_stage_ice_ridge(size, y, accent)
+	elif terrain.contains("desert"):
+		_draw_stage_desert_markers(size, y, accent)
+	elif _terrain_has_mountain(terrain):
+		_draw_stage_rock_terrace(size, y, accent)
+	else:
+		_draw_stage_low_horizon_props(size, y, accent)
+
+func _draw_stage_city_facades(size: Vector2, y: float, accent: Color) -> void:
+	var wall_color := Color(0.055, 0.032, 0.020, SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA)
+	draw_rect(Rect2(Vector2(0.0, y - tile_size * 0.86), Vector2(size.x, tile_size * 1.05)), Color(0.026, 0.016, 0.010, 0.24), true)
+	for i in range(8):
+		var w := tile_size * (1.40 + float(i % 3) * 0.28)
+		var x := float(i) * size.x / 7.0 - tile_size * 0.46
+		var h := tile_size * (0.80 + float((i + 1) % 3) * 0.16)
+		var rect := Rect2(Vector2(x, y - h), Vector2(w, h))
+		draw_rect(rect, wall_color, true)
+		draw_rect(Rect2(rect.position + Vector2(tile_size * 0.10, tile_size * 0.16), Vector2(w - tile_size * 0.20, tile_size * 0.22)), Color(accent.r, accent.g, accent.b, 0.13), true)
+		draw_line(Vector2(x, y), Vector2(x + w, y - tile_size * 0.04), Color(0.0, 0.0, 0.0, 0.25), 2.4)
+		if i % 2 == 0:
+			var sign := Rect2(Vector2(x + w * 0.34, y - h - tile_size * 0.22), Vector2(tile_size * 0.44, tile_size * 0.20))
+			draw_rect(sign, Color(0.14, 0.055, 0.025, 0.62), true)
+			draw_rect(sign.grow(-2.0), Color(accent.r, accent.g, accent.b, 0.22), true)
+	for i in range(6):
+		var pole_x := size.x * (0.10 + float(i) * 0.16)
+		draw_line(Vector2(pole_x, y - tile_size * 0.82), Vector2(pole_x, y + tile_size * 0.20), Color(0.03, 0.020, 0.012, 0.38), 2.0)
+		draw_circle(Vector2(pole_x + tile_size * 0.10, y - tile_size * 0.42), tile_size * 0.05, Color(1.0, 0.62, 0.22, 0.20))
+
+func _draw_stage_sect_steps(size: Vector2, y: float, accent: Color) -> void:
+	var center_x := size.x * 0.50
+	for i in range(5):
+		var t := float(i) / 4.0
+		var width := lerpf(size.x * 0.34, size.x * 0.86, t)
+		var step_y := y - tile_size * 0.18 + float(i) * tile_size * 0.18
+		draw_polygon(PackedVector2Array([
+			Vector2(center_x - width * 0.5, step_y),
+			Vector2(center_x + width * 0.5, step_y - tile_size * 0.04),
+			Vector2(center_x + width * 0.5 + tile_size * 0.16, step_y + tile_size * 0.14),
+			Vector2(center_x - width * 0.5 - tile_size * 0.16, step_y + tile_size * 0.14)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, 0.09 + t * 0.04),
+			Color(accent.r, accent.g, accent.b, 0.08 + t * 0.035),
+			Color(0.0, 0.0, 0.0, 0.18 + t * 0.06),
+			Color(0.0, 0.0, 0.0, 0.20 + t * 0.06)
+		]))
+	for side_value in [-1.0, 1.0]:
+		var side := float(side_value)
+		var pole_x := center_x + side * size.x * 0.28
+		draw_line(Vector2(pole_x, y - tile_size * 1.34), Vector2(pole_x, y + tile_size * 0.45), Color(0.050, 0.038, 0.028, 0.50), 4.0)
+		var banner := PackedVector2Array([
+			Vector2(pole_x, y - tile_size * 1.22),
+			Vector2(pole_x + side * tile_size * 0.74, y - tile_size * 1.02),
+			Vector2(pole_x + side * tile_size * 0.62, y - tile_size * 0.48),
+			Vector2(pole_x, y - tile_size * 0.60)
+		])
+		draw_polygon(banner, PackedColorArray([
+			Color(accent.r, accent.g, accent.b, 0.30),
+			Color(accent.r, accent.g, accent.b, 0.22),
+			Color(0.02, 0.016, 0.012, 0.26),
+			Color(0.02, 0.016, 0.012, 0.30)
+		]))
+	draw_arc(Vector2(center_x, y - tile_size * 0.12), tile_size * 2.7, PI * 0.08, PI * 0.92, 48, Color(accent.r, accent.g, accent.b, 0.14), 2.0)
+
+func _draw_stage_pier(size: Vector2, y: float, accent: Color) -> void:
+	for i in range(7):
+		var t := float(i) / 6.0
+		var left := lerpf(size.x * 0.18, size.x * 0.04, t)
+		var right := lerpf(size.x * 0.82, size.x * 0.96, t)
+		var py := y + tile_size * (0.10 + t * 0.46)
+		draw_line(Vector2(left, py), Vector2(right, py - tile_size * 0.09), Color(0.06, 0.042, 0.026, 0.24 + t * 0.10), 2.0 + t * 1.8)
+	for i in range(9):
+		var x := size.x * (0.10 + float(i) * 0.10)
+		var top := y - tile_size * (0.30 + float(i % 2) * 0.10)
+		draw_line(Vector2(x, top), Vector2(x - tile_size * 0.10, y + tile_size * 0.82), Color(0.035, 0.026, 0.018, 0.36), 2.4)
+		draw_circle(Vector2(x, top), tile_size * 0.045, Color(accent.r, accent.g, accent.b, 0.16))
+
+func _draw_stage_forest_trunks(size: Vector2, y: float, accent: Color) -> void:
+	for i in range(10):
+		var x := fposmod(float(i * 269), size.x + tile_size * 2.0) - tile_size
+		var height := tile_size * (1.55 + float(i % 4) * 0.34)
+		var lean := sin(float(i) * 1.2) * tile_size * 0.20
+		draw_line(Vector2(x, y + tile_size * 0.68), Vector2(x + lean, y - height), Color(0.006, 0.040, 0.015, 0.30 + float(i % 3) * 0.035), 4.0 + float(i % 3))
+		draw_line(Vector2(x + lean, y - height * 0.54), Vector2(x + lean + tile_size * 0.72, y - height * 0.72), Color(accent.r, accent.g, accent.b, 0.12), 1.8)
+	for i in range(7):
+		var x := size.x * (0.08 + float(i) * 0.14)
+		_draw_ellipse_poly(Vector2(x, y + tile_size * 0.52), Vector2(tile_size * 0.36, tile_size * 0.08), Color(accent.r, accent.g, accent.b, 0.08))
+
+func _draw_stage_ice_ridge(size: Vector2, y: float, accent: Color) -> void:
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	points.append(Vector2(0.0, y + tile_size * 0.48))
+	colors.append(Color(0.60, 0.75, 0.84, 0.22))
+	for i in range(12):
+		var x := size.x * float(i) / 11.0
+		var peak := y - tile_size * (0.20 + float((i * 7) % 5) * 0.08)
+		points.append(Vector2(x, peak))
+		colors.append(Color(accent.r, accent.g, accent.b, 0.18 + float(i % 3) * 0.025))
+	points.append(Vector2(size.x, y + tile_size * 0.48))
+	colors.append(Color(0.35, 0.48, 0.58, 0.18))
+	draw_polygon(points, colors)
+	for i in range(8):
+		var x := size.x * (0.06 + float(i) * 0.13)
+		draw_line(Vector2(x, y - tile_size * 0.08), Vector2(x + tile_size * 0.42, y + tile_size * 0.24), Color(0.90, 0.98, 1.0, 0.18), 1.2)
+
+func _draw_stage_desert_markers(size: Vector2, y: float, accent: Color) -> void:
+	for i in range(6):
+		var x := size.x * (0.10 + float(i) * 0.17)
+		var h := tile_size * (0.70 + float(i % 3) * 0.22)
+		draw_rect(Rect2(Vector2(x, y - h), Vector2(tile_size * 0.16, h + tile_size * 0.34)), Color(0.18, 0.11, 0.055, 0.30), true)
+		draw_polygon(PackedVector2Array([
+			Vector2(x - tile_size * 0.12, y - h),
+			Vector2(x + tile_size * 0.08, y - h - tile_size * 0.18),
+			Vector2(x + tile_size * 0.30, y - h),
+			Vector2(x + tile_size * 0.26, y - h + tile_size * 0.08),
+			Vector2(x - tile_size * 0.08, y - h + tile_size * 0.08)
+		]), PackedColorArray([
+			Color(0.22, 0.14, 0.07, 0.30),
+			Color(accent.r, accent.g, accent.b, 0.20),
+			Color(0.16, 0.10, 0.05, 0.30),
+			Color(0.12, 0.08, 0.04, 0.32),
+			Color(0.14, 0.09, 0.04, 0.32)
+		]))
+	_draw_stage_low_horizon_props(size, y + tile_size * 0.16, accent)
+
+func _draw_stage_rock_terrace(size: Vector2, y: float, accent: Color) -> void:
+	for i in range(9):
+		var x := size.x * float(i) / 8.0 - tile_size * 0.35
+		var w := tile_size * (0.70 + float(i % 3) * 0.20)
+		var h := tile_size * (0.22 + float((i + 1) % 3) * 0.10)
+		draw_polygon(PackedVector2Array([
+			Vector2(x, y + tile_size * 0.32),
+			Vector2(x + w * 0.22, y - h),
+			Vector2(x + w, y - h * 0.48),
+			Vector2(x + w * 1.15, y + tile_size * 0.30)
+		]), PackedColorArray([
+			Color(0.04, 0.038, 0.030, 0.30),
+			Color(accent.r, accent.g, accent.b, 0.12),
+			Color(0.07, 0.060, 0.045, 0.28),
+			Color(0.02, 0.018, 0.014, 0.32)
+		]))
+
+func _draw_stage_low_horizon_props(size: Vector2, y: float, accent: Color) -> void:
+	for i in range(8):
+		var x := size.x * (0.06 + float(i) * 0.13)
+		var height := tile_size * (0.28 + float(i % 3) * 0.08)
+		_draw_ellipse_poly(Vector2(x, y + tile_size * 0.20), Vector2(tile_size * (0.30 + float(i % 2) * 0.08), tile_size * 0.08), Color(0.0, 0.0, 0.0, 0.12))
+		draw_line(Vector2(x, y + tile_size * 0.18), Vector2(x + tile_size * 0.10, y - height), Color(accent.r, accent.g, accent.b, 0.12), 1.6)
+
 func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 	var top_y := size.y * 0.48
 	var bottom_y := size.y
@@ -1504,6 +1670,36 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		var x := size.x * (0.14 + float(i) * 0.105)
 		draw_line(Vector2(x, top_y + tile_size * 0.10), Vector2(x - size.x * 0.08, bottom_y), Color(0.0, 0.0, 0.0, 0.05), 1.2)
 	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
+	_draw_stage_platform_lip(size, palette, top_y, bottom_y)
+
+func _draw_stage_platform_lip(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	var lip_top := bottom_y - tile_size * 1.28
+	draw_polygon(PackedVector2Array([
+		Vector2(size.x * -0.02, lip_top),
+		Vector2(size.x * 1.02, lip_top - tile_size * 0.10),
+		Vector2(size.x * 1.06, bottom_y + tile_size * 0.10),
+		Vector2(size.x * -0.06, bottom_y + tile_size * 0.10)
+	]), PackedColorArray([
+		Color(floor_color.r, floor_color.g, floor_color.b, SIDE_VIEW_PLATFORM_EDGE_ALPHA * 0.45),
+		Color(floor_color.r, floor_color.g, floor_color.b, SIDE_VIEW_PLATFORM_EDGE_ALPHA * 0.38),
+		Color(0.015, 0.011, 0.008, SIDE_VIEW_PLATFORM_EDGE_ALPHA + 0.10),
+		Color(0.020, 0.014, 0.010, SIDE_VIEW_PLATFORM_EDGE_ALPHA + 0.12)
+	]))
+	draw_line(Vector2(size.x * 0.02, lip_top), Vector2(size.x * 0.98, lip_top - tile_size * 0.10), Color(accent.r, accent.g, accent.b, 0.16), 2.2)
+	for i in range(9):
+		var t := float(i) / 8.0
+		var x := lerpf(size.x * 0.06, size.x * 0.94, t)
+		draw_line(Vector2(x, top_y + tile_size * 0.30), Vector2(x - size.x * 0.035, bottom_y), Color(0.0, 0.0, 0.0, 0.055), 1.0)
+	for i in range(SIDE_VIEW_NEAR_PROP_COUNT):
+		var seed := _tile_seed(i + 17, int(size.x) + i * 3)
+		var x := fposmod(float(seed * 31), size.x + tile_size * 1.2) - tile_size * 0.6
+		var y := lerpf(lip_top + tile_size * 0.06, bottom_y - tile_size * 0.16, float(i % 5) / 4.0)
+		var radius := Vector2(tile_size * (0.10 + float(i % 3) * 0.035), tile_size * (0.028 + float(i % 2) * 0.012))
+		_draw_ellipse_poly(Vector2(x, y), radius, Color(0.0, 0.0, 0.0, 0.10 + float(i % 3) * 0.018))
+		if i % 4 == 0:
+			draw_circle(Vector2(x + tile_size * 0.06, y - tile_size * 0.035), tile_size * 0.025, Color(accent.r, accent.g, accent.b, 0.15))
 
 func _draw_stage_depth_guides(size: Vector2, palette: Dictionary) -> void:
 	var top_y := size.y * STAGE_DEPTH_TOP_RATIO
