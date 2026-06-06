@@ -4,6 +4,7 @@ class_name LocalAreaMap
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const MAP_PROP_SCRIPT := preload("res://scripts/world/map_prop.gd")
 const STAGE_FOREGROUND_SCRIPT := preload("res://scripts/world/local_stage_foreground.gd")
+const STAGE_POSTFX_SCRIPT := preload("res://scripts/world/local_stage_postfx.gd")
 
 enum Tile {
 	GRASS,
@@ -90,6 +91,7 @@ const SIDE_VIEW_BACKDROP_ALPHA := 0.38
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
+const SIDE_VIEW_POSTFX_Z := 3220
 const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
@@ -118,6 +120,7 @@ var occupied_npc_tiles: Array[Vector2i] = []
 var side_view_stage_enabled := true
 var stage_visual_phase := 0.0
 var stage_foreground_overlay: Node2D
+var stage_postfx_overlay: Node2D
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -129,6 +132,7 @@ func _process(delta: float) -> void:
 		return
 	stage_visual_phase = fposmod(stage_visual_phase + delta * SIDE_VIEW_AMBIENT_SPEED, 10000.0)
 	_update_stage_foreground_phase()
+	_update_stage_postfx_phase()
 	queue_redraw()
 
 func _load_tile_textures() -> void:
@@ -170,6 +174,7 @@ func setup_region(region: Dictionary) -> void:
 	_configure_region_size()
 	_generate_region_map()
 	_build_depth_props()
+	_update_stage_postfx_overlay(true)
 	_update_stage_foreground_overlay(true)
 	_spawn_region_npcs()
 	_build_portal_labels()
@@ -192,6 +197,7 @@ func enter_shop(portal: Dictionary) -> void:
 	occupied_npc_tiles.clear()
 	_clear_npcs()
 	_clear_depth_props()
+	_hide_stage_postfx_overlay()
 	_hide_stage_foreground_overlay()
 	_clear_portal_labels()
 	_configure_shop_size()
@@ -1129,6 +1135,34 @@ func _update_stage_foreground_phase() -> void:
 func _hide_stage_foreground_overlay() -> void:
 	if stage_foreground_overlay != null and is_instance_valid(stage_foreground_overlay):
 		stage_foreground_overlay.hide()
+
+func _ensure_stage_postfx_overlay() -> void:
+	if stage_postfx_overlay != null and is_instance_valid(stage_postfx_overlay):
+		return
+	stage_postfx_overlay = STAGE_POSTFX_SCRIPT.new()
+	stage_postfx_overlay.z_index = SIDE_VIEW_POSTFX_Z
+	stage_postfx_overlay.z_as_relative = false
+	add_child(stage_postfx_overlay)
+
+func _update_stage_postfx_overlay(force_visible: bool = false) -> void:
+	if current_mode != "region" or not side_view_stage_enabled:
+		_hide_stage_postfx_overlay()
+		return
+	_ensure_stage_postfx_overlay()
+	stage_postfx_overlay.visible = force_visible or visible
+	stage_postfx_overlay.call("setup_region", current_region, get_world_rect().size, tile_size)
+	_update_stage_postfx_phase()
+
+func _update_stage_postfx_phase() -> void:
+	if stage_postfx_overlay == null or not is_instance_valid(stage_postfx_overlay):
+		return
+	if not stage_postfx_overlay.visible:
+		return
+	stage_postfx_overlay.call("set_visual_phase", stage_visual_phase)
+
+func _hide_stage_postfx_overlay() -> void:
+	if stage_postfx_overlay != null and is_instance_valid(stage_postfx_overlay):
+		stage_postfx_overlay.hide()
 
 func _build_portal_labels() -> void:
 	_clear_portal_labels()

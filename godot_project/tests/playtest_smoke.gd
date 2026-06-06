@@ -69,14 +69,18 @@ func _run() -> void:
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_AMBIENT_PARTICLES >= 24, "局部横版舞台应保留动态氛围粒子")
+	_check(local_area.stage_postfx_overlay != null and local_area.stage_postfx_overlay.visible, "局部横版舞台应创建镜头光影后期层")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_POSTFX_Z > 3000 and LOCAL_AREA_SCRIPT.SIDE_VIEW_POSTFX_Z < LOCAL_AREA_SCRIPT.SIDE_VIEW_FOREGROUND_OVERLAY_Z, "局部横版舞台后期层应位于角色上方且低于真实前景遮挡")
 	_check(local_area.stage_foreground_overlay != null and local_area.stage_foreground_overlay.visible, "局部横版舞台应创建真实前景遮挡层")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_FOREGROUND_OVERLAY_Z >= 3000, "局部横版舞台前景遮挡层应绘制在角色前方")
 	_check(local_area.is_side_view_stage_active(), "局部地图应能向角色暴露横版舞台状态")
 	var previous_stage_phase: float = local_area.stage_visual_phase
 	var previous_overlay_phase: float = float(local_area.stage_foreground_overlay.get("visual_phase"))
+	var previous_postfx_phase: float = float(local_area.stage_postfx_overlay.get("visual_phase"))
 	local_area._process(1.0)
 	_check(local_area.stage_visual_phase > previous_stage_phase, "局部横版舞台动效时钟应持续推进")
 	_check(float(local_area.stage_foreground_overlay.get("visual_phase")) > previous_overlay_phase, "局部横版舞台前景遮挡层应同步动效时钟")
+	_check(float(local_area.stage_postfx_overlay.get("visual_phase")) > previous_postfx_phase, "局部横版舞台后期光影层应同步动效时钟")
 	var stage_rect: Rect2 = local_area.get_world_rect()
 	var back_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_TOP_RATIO))
 	var front_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO))
@@ -134,6 +138,7 @@ func _run() -> void:
 		await get_tree().process_frame
 		_check(local_area.npc_nodes.size() == 1, "商铺内应生成 1 名掌柜")
 		_check(local_area.scene_background_texture == null, "商铺内景不应继续叠加区域背景")
+		_check(local_area.stage_postfx_overlay == null or not local_area.stage_postfx_overlay.visible, "商铺内景不应显示局部横版后期光影层")
 		_check(local_area.stage_foreground_overlay == null or not local_area.stage_foreground_overlay.visible, "商铺内景不应显示局部横版前景遮挡层")
 		_check(not _first_portal(local_area, "exit_area").is_empty(), "商铺内应有出门入口")
 		if local_area.npc_nodes.size() > 0:
