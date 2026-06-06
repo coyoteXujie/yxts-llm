@@ -117,6 +117,11 @@ const SIDE_VIEW_LIVING_ACTOR_COUNT := 12
 const SIDE_VIEW_LIVING_ACTOR_ALPHA := 0.30
 const SIDE_VIEW_LIVING_ACTOR_SPEED := 0.18
 const SIDE_VIEW_LIVING_ACTION_ARC_COUNT := 7
+const SIDE_VIEW_DIRECTOR_BAND_ALPHA := 0.24
+const SIDE_VIEW_DEPTH_FOG_BAND_COUNT := 6
+const SIDE_VIEW_PLATFORM_RIM_COUNT := 4
+const SIDE_VIEW_STAGE_FOCUS_RAY_COUNT := 7
+const SIDE_VIEW_STAGE_FOCUS_ALPHA := 0.16
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1475,6 +1480,7 @@ func _draw_side_view_stage() -> void:
 	_draw_side_view_upper_platforms(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
+	_draw_side_view_director_pass(size, palette)
 	_draw_side_view_living_silhouettes(size, palette)
 	_draw_side_view_ambient(size, palette)
 	_draw_side_view_foreground(size, palette)
@@ -2497,6 +2503,101 @@ func _draw_stage_depth_guides(size: Vector2, palette: Dictionary) -> void:
 		var guide_y := lerpf(y0, y1, 0.62)
 		var guide_inset := lerpf(inset0, inset1, 0.62)
 		draw_line(Vector2(guide_inset, guide_y), Vector2(size.x - guide_inset, guide_y - tile_size * 0.10), shadow, 1.0 + t1 * 2.0)
+
+func _draw_side_view_director_pass(size: Vector2, palette: Dictionary) -> void:
+	_draw_stage_depth_fog_bands(size, palette)
+	_draw_stage_platform_rim_stack(size, palette)
+	_draw_stage_focus_rays(size, palette)
+	_draw_stage_cinematic_masks(size, palette)
+
+func _draw_stage_depth_fog_bands(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	for i in range(SIDE_VIEW_DEPTH_FOG_BAND_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_DEPTH_FOG_BAND_COUNT - 1))
+		var y := lerpf(size.y * 0.43, size.y * 0.88, t)
+		var drift := sin(stage_visual_phase * (0.32 + t * 0.08) + float(i) * 0.71) * tile_size * (0.70 + t * 0.40)
+		var height := tile_size * (0.22 + t * 0.13)
+		var inset := lerpf(size.x * 0.16, size.x * -0.02, t)
+		var left := inset - tile_size * 1.2 + drift
+		var right := size.x - inset + tile_size * 1.2 + drift * 0.36
+		var alpha := 0.070 + t * 0.035
+		if str(current_region.get("terrain", "")).contains("snow"):
+			alpha += 0.025
+		draw_polygon(PackedVector2Array([
+			Vector2(left, y - height * 0.50),
+			Vector2(right, y - height * 0.62),
+			Vector2(right - tile_size * 0.44, y + height * 0.52),
+			Vector2(left + tile_size * 0.28, y + height * 0.62)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.18),
+			Color(accent.r, accent.g, accent.b, alpha * 0.12),
+			Color(accent.r, accent.g, accent.b, alpha),
+			Color(accent.r, accent.g, accent.b, alpha * 0.88)
+		]))
+		draw_line(Vector2(left + tile_size * 0.62, y + height * 0.30), Vector2(right - tile_size * 0.80, y + height * 0.08), Color(1.0, 0.92, 0.72, alpha * 0.22), 1.0)
+
+func _draw_stage_platform_rim_stack(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	var top_y := size.y * STAGE_DEPTH_TOP_RATIO
+	var bottom_y := size.y * STAGE_DEPTH_BOTTOM_RATIO
+	for i in range(SIDE_VIEW_PLATFORM_RIM_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_PLATFORM_RIM_COUNT - 1))
+		var y := lerpf(top_y + tile_size * 0.10, bottom_y - tile_size * 0.22, t)
+		var inset := lerpf(size.x * 0.13, size.x * -0.015, t)
+		var line_alpha := SIDE_VIEW_PLATFORM_EDGE_ALPHA * (0.28 + t * 0.30)
+		draw_line(Vector2(inset, y), Vector2(size.x - inset, y - tile_size * 0.10), Color(0.0, 0.0, 0.0, line_alpha * 0.76), 2.4 + t * 2.0)
+		draw_line(Vector2(inset + tile_size * 0.18, y - tile_size * 0.05), Vector2(size.x - inset - tile_size * 0.18, y - tile_size * 0.14), Color(accent.r, accent.g, accent.b, line_alpha * 0.72), 1.1 + t * 0.8)
+		if i > 0:
+			var shelf_depth := tile_size * (0.16 + t * 0.08)
+			draw_polygon(PackedVector2Array([
+				Vector2(inset, y),
+				Vector2(size.x - inset, y - tile_size * 0.10),
+				Vector2(size.x - inset + tile_size * 0.28, y + shelf_depth),
+				Vector2(inset - tile_size * 0.20, y + shelf_depth + tile_size * 0.05)
+			]), PackedColorArray([
+				Color(floor_color.r, floor_color.g, floor_color.b, line_alpha * 0.18),
+				Color(floor_color.r, floor_color.g, floor_color.b, line_alpha * 0.12),
+				Color(0.0, 0.0, 0.0, line_alpha * 0.26),
+				Color(0.0, 0.0, 0.0, line_alpha * 0.32)
+			]))
+
+func _draw_stage_focus_rays(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var top_y := size.y * 0.28
+	var bottom_y := size.y * 0.96
+	for i in range(SIDE_VIEW_STAGE_FOCUS_RAY_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_STAGE_FOCUS_RAY_COUNT - 1))
+		var center_x := lerpf(size.x * 0.12, size.x * 0.88, t)
+		var target_x := lerpf(size.x * 0.26, size.x * 0.74, 1.0 - absf(t - 0.5) * 1.40)
+		var sway := sin(stage_visual_phase * 0.22 + float(i) * 0.63) * tile_size * 0.28
+		var top_width := tile_size * (0.12 + float(i % 3) * 0.035)
+		var bottom_width := tile_size * (1.10 + float(i % 2) * 0.22)
+		var alpha := SIDE_VIEW_STAGE_FOCUS_ALPHA * (0.35 + (1.0 - absf(t - 0.5) * 1.4) * 0.45)
+		draw_polygon(PackedVector2Array([
+			Vector2(center_x - top_width + sway, top_y),
+			Vector2(center_x + top_width + sway, top_y),
+			Vector2(target_x + bottom_width, bottom_y),
+			Vector2(target_x - bottom_width, bottom_y + tile_size * 0.12)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.44),
+			Color(1.0, 0.88, 0.56, alpha * 0.36),
+			Color(1.0, 0.88, 0.56, 0.0),
+			Color(accent.r, accent.g, accent.b, 0.0)
+		]))
+
+func _draw_stage_cinematic_masks(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var top_h := tile_size * 0.52
+	var bottom_h := tile_size * 0.84
+	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, top_h)), Color(0.008, 0.006, 0.004, SIDE_VIEW_DIRECTOR_BAND_ALPHA), true)
+	draw_line(Vector2(0.0, top_h), Vector2(size.x, top_h - tile_size * 0.08), Color(accent.r, accent.g, accent.b, SIDE_VIEW_DIRECTOR_BAND_ALPHA * 0.30), 1.6)
+	draw_rect(Rect2(Vector2(0.0, size.y - bottom_h), Vector2(size.x, bottom_h + tile_size * 0.20)), Color(0.006, 0.005, 0.004, SIDE_VIEW_DIRECTOR_BAND_ALPHA * 0.82), true)
+	draw_line(Vector2(0.0, size.y - bottom_h), Vector2(size.x, size.y - bottom_h - tile_size * 0.10), Color(0.0, 0.0, 0.0, SIDE_VIEW_DIRECTOR_BAND_ALPHA * 0.80), 2.0)
+	for i in range(5):
+		var t := float(i) / 4.0
+		var x := lerpf(size.x * 0.10, size.x * 0.90, t)
+		draw_line(Vector2(x, size.y - bottom_h + tile_size * 0.12), Vector2(x - tile_size * 0.30, size.y + tile_size * 0.14), Color(accent.r, accent.g, accent.b, SIDE_VIEW_DIRECTOR_BAND_ALPHA * 0.12), 1.0)
 
 func _draw_side_view_ambient(size: Vector2, palette: Dictionary) -> void:
 	var terrain := str(current_region.get("terrain", ""))
