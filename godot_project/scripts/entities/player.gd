@@ -21,6 +21,9 @@ const PLAYER_STAGE_GROUND_LOCK_ALPHA := 0.28
 const PLAYER_STAGE_STANCE_LINE_ALPHA := 0.26
 const PLAYER_STAGE_RUN_RIBBON_ALPHA := 0.18
 const PLAYER_STAGE_RUN_RIBBON_COUNT := 3
+const PLAYER_STAGE_IDLE_FOCUS_ALPHA := 0.22
+const PLAYER_STAGE_FACTION_SIGIL_ALPHA := 0.20
+const PLAYER_STAGE_IDLE_CLOTH_SWAY_ALPHA := 0.24
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -118,12 +121,15 @@ func _draw() -> void:
 			_draw_stage_player_footwork(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_back_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
+			_draw_stage_player_faction_sigil(top_left, draw_size, trim, moving, facing_side)
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		if stage_actor:
 			_draw_stage_player_front_layers(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_idle_cloth_sway(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_weapon_pose(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_shoulder_glow(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_stance_lines(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_head_focus(top_left, draw_size, trim, moving, facing_side)
 		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
@@ -366,6 +372,70 @@ func _draw_stage_player_shoulder_glow(top_left: Vector2, draw_size: Vector2, acc
 	var alpha := PLAYER_STAGE_SHOULDER_GLOW_ALPHA * (0.55 + pulse * 0.38)
 	draw_line(shoulder_a, shoulder_b, Color(1.0, 0.92, 0.62, alpha), clampf(draw_size.x * 0.014, 1.2, 2.0))
 	draw_line(shoulder_b, hip, Color(accent.r, accent.g, accent.b, alpha * 0.72), clampf(draw_size.x * 0.011, 1.0, 1.8))
+
+func _draw_stage_player_head_focus(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var phase := sin(walk_phase * (1.05 if moving else 0.64))
+	var head := top_left + Vector2(draw_size.x * (0.50 + side * (0.018 + phase * 0.006)), draw_size.y * 0.235)
+	var gaze := head + Vector2(side * draw_size.x * 0.15, draw_size.y * (0.012 + phase * 0.008))
+	var alpha := PLAYER_STAGE_IDLE_FOCUS_ALPHA * (0.58 + absf(phase) * 0.30)
+	draw_line(head + Vector2(-side * draw_size.x * 0.030, -draw_size.y * 0.010), gaze, Color(1.0, 0.95, 0.72, alpha), clampf(draw_size.x * 0.010, 0.9, 1.6))
+	draw_circle(gaze, clampf(draw_size.x * 0.018, 1.3, 2.4), Color(accent.r, accent.g, accent.b, alpha * 1.08))
+	draw_line(head + Vector2(-side * draw_size.x * 0.045, draw_size.y * 0.030), head + Vector2(side * draw_size.x * 0.054, draw_size.y * 0.045), Color(0.05, 0.04, 0.035, alpha * 0.74), clampf(draw_size.x * 0.009, 0.8, 1.4))
+
+func _draw_stage_player_idle_cloth_sway(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var phase := sin(walk_phase * (1.28 if moving else 0.68))
+	var alpha := PLAYER_STAGE_IDLE_CLOTH_SWAY_ALPHA * (0.54 + absf(phase) * 0.34)
+	var sleeve_root := top_left + Vector2(draw_size.x * (0.52 + 0.13 * side), draw_size.y * 0.41)
+	var sleeve_tip := sleeve_root + Vector2(side * draw_size.x * (0.18 + phase * 0.020), draw_size.y * (0.13 + phase * 0.016))
+	var hem_root := top_left + Vector2(draw_size.x * (0.48 - 0.08 * side), draw_size.y * 0.72)
+	var hem_tip := hem_root + Vector2(-side * draw_size.x * (0.18 + phase * 0.026), draw_size.y * 0.16)
+	draw_line(sleeve_root, sleeve_tip, Color(accent.r, accent.g, accent.b, alpha), clampf(draw_size.x * 0.016, 1.3, 2.5))
+	draw_line(sleeve_tip, sleeve_tip + Vector2(side * draw_size.x * 0.050, draw_size.y * 0.030), Color(1.0, 0.90, 0.58, alpha * 0.60), 1.0)
+	draw_line(hem_root, hem_tip, Color(accent.r, accent.g, accent.b, alpha * 0.74), clampf(draw_size.x * 0.014, 1.1, 2.2))
+	draw_line(hem_tip, hem_tip + Vector2(-side * draw_size.x * 0.060, draw_size.y * 0.028), Color(0.08, 0.055, 0.040, alpha * 0.56), 1.0)
+
+func _draw_stage_player_faction_sigil(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var faction := str(GameState.player.get("faction", "none"))
+	var phase := walk_phase * (1.02 if moving else 0.46)
+	var pulse := 0.5 + sin(phase) * 0.5
+	var alpha := PLAYER_STAGE_FACTION_SIGIL_ALPHA * (0.50 + pulse * 0.28)
+	var center := top_left + Vector2(draw_size.x * (0.50 - side * 0.11), draw_size.y * 0.47)
+	var radius := clampf(draw_size.x * 0.19, 14.0, 28.0)
+	var sigil_color := accent
+	if faction == "none":
+		sigil_color = Color(0.92, 0.78, 0.42)
+		draw_arc(center, radius, PI * 0.08, PI * 0.82, 32, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha * 0.72), 1.4)
+		draw_line(center + Vector2(-side * radius * 0.34, -radius * 0.10), center + Vector2(side * radius * 0.38, radius * 0.16), Color(1.0, 0.90, 0.58, alpha * 0.58), 1.1)
+		return
+	match faction:
+		"taiji":
+			draw_arc(center, radius, 0.0, TAU, 36, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.4)
+			draw_arc(center, radius * 0.52, -PI * 0.5, PI * 0.5, 20, Color(1.0, 0.95, 0.78, alpha * 0.62), 1.1)
+		"flower":
+			for i in range(5):
+				var angle := phase * 0.22 + float(i) * TAU / 5.0
+				draw_circle(center + Vector2(cos(angle), sin(angle) * 0.46) * radius * 0.42, 2.0, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha))
+		"xueshan":
+			for i in range(4):
+				var angle := float(i) * PI * 0.25
+				var arm := Vector2(cos(angle), sin(angle) * 0.55) * radius * 0.50
+				draw_line(center - arm, center + arm, Color(0.82, 0.94, 1.0, alpha), 1.0)
+		"honglian":
+			draw_arc(center, radius * 0.72, PI * 0.10, PI * 1.05, 28, Color(1.0, 0.44, 0.22, alpha), 1.6)
+			draw_line(center + Vector2(-side * radius * 0.18, radius * 0.14), center + Vector2(side * radius * 0.08, -radius * 0.44), Color(1.0, 0.82, 0.38, alpha * 0.70), 1.1)
+		"naja":
+			draw_arc(center, radius * 0.68, PI * 0.15, PI * 1.20, 28, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.4)
+			draw_circle(center + Vector2(side * radius * 0.28, -radius * 0.12), 2.0, Color(0.42, 0.92, 0.46, alpha))
+		"bagua":
+			draw_arc(center, radius * 0.80, 0.0, TAU, 32, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha * 0.90), 1.2)
+			for i in range(4):
+				var p := center + Vector2(cos(float(i) * PI * 0.5), sin(float(i) * PI * 0.5) * 0.50) * radius * 0.48
+				draw_line(p - Vector2(3.0, 0.0), p + Vector2(3.0, 0.0), Color(1.0, 0.90, 0.58, alpha * 0.62), 1.0)
+		"xiaoyao":
+			draw_arc(center, radius * 0.82, PI * 0.06, PI * 0.86, 28, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.5)
+			draw_arc(center + Vector2(side * radius * 0.14, radius * 0.10), radius * 0.50, PI * 1.08, PI * 1.70, 18, Color(1.0, 0.94, 0.70, alpha * 0.52), 1.0)
+		_:
+			draw_arc(center, radius * 0.74, PI * 0.10, PI * 0.90, 28, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.3)
 
 func _draw_stage_player_ground_lock(accent: Color, depth_scale: float, moving: bool) -> void:
 	var step := absf(sin(walk_phase)) if moving else 0.28 + sin(walk_phase * 0.55) * 0.08
