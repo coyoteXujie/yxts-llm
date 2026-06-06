@@ -43,6 +43,8 @@ const FAST_TRAVEL_REGION_TYPES := {
 	"town": true,
 	"sect": true
 }
+const TRAVEL_ROUTE_NEIGHBOR_LIMIT := 8
+const FAST_TRAVEL_MIN_FARE := 3
 const CORE_RUMOR_NPCS := [
 	"苏梦瑶",
 	"陈天行",
@@ -429,7 +431,10 @@ func get_fast_travel_block_reason(region_id: String) -> String:
 		return "区域不存在"
 	if not is_region_discovered(region_id):
 		return "尚未发现该区域"
-	if region_id == current_region_id:
+	var source_region := _current_travel_source_region()
+	if source_region.is_empty():
+		return "当前位置不在可识别区域"
+	if region_id == str(source_region.get("id", "")):
 		return "已经身在此处"
 	var region_type := str(region.get("type", "wild"))
 	if not FAST_TRAVEL_REGION_TYPES.has(region_type):
@@ -437,33 +442,113 @@ func get_fast_travel_block_reason(region_id: String) -> String:
 	var exploration := get_region_exploration(region_id)
 	if exploration < FAST_TRAVEL_MIN_EXPLORATION:
 		return "探索度达到%d%%后解锁驿路" % FAST_TRAVEL_MIN_EXPLORATION
+	var fare := estimate_fast_travel_fare(region_id)
+	if int(player.get("money", 0)) < fare:
+		return "驿路费用 %d 两，银两不足" % fare
 	return ""
 
 func can_fast_travel_to_region(region_id: String) -> bool:
 	return get_fast_travel_block_reason(region_id).is_empty()
 
+func build_region_travel_plan(region_id: String) -> Dictionary:
+	var target_region := GameData.get_region(region_id)
+	var source_region := _current_travel_source_region()
+	var source_id := str(source_region.get("id", ""))
+	var route := _find_region_route(source_id, region_id)
+	var route_names := _route_region_names(route)
+	var distance := _route_distance(route)
+	var hours := _estimate_route_hours(route, target_region)
+	var risk_level := _route_risk_level(route)
+	var fare := _estimate_route_fare(route, target_region)
+	var blocked_reason := get_fast_travel_block_reason(region_id)
+	return {
+		"source_region_id": source_id,
+		"target_region_id": region_id,
+		"route": route,
+		"route_names": route_names,
+		"route_summary": " -> ".join(route_names),
+		"distance": distance,
+		"hours": hours,
+		"fare": fare,
+		"risk_level": risk_level,
+		"risk_label": _route_risk_label(risk_level),
+		"risk_note": _route_risk_note(risk_level),
+		"blocked_reason": blocked_reason,
+		"can_fast_travel": blocked_reason.is_empty()
+	}
+
 func estimate_fast_travel_hours(region_id: String) -> float:
 	var target_region := GameData.get_region(region_id)
 	if target_region.is_empty():
 		return 0.0
-	var current := current_tile
-	var current_region := GameData.get_region(current_region_id)
-	if not current_region.is_empty():
-		current = _region_center_tile(current_region)
-	var target := _region_center_tile(target_region)
-	var distance := Vector2(float(current.x), float(current.y)).distance_to(Vector2(float(target.x), float(target.y)))
-	var danger := int(target_region.get("danger", 1))
-	var hours := clampf(distance / 8.0 + float(danger) * 0.4, 1.0, 12.0)
-	return roundf(hours * 2.0) / 2.0
+	var source_region := _current_travel_source_region()
+	var route := _find_region_route(str(source_region.get("id", "")), region_id)
+	return _estimate_route_hours(route, target_region)
+
+func estimate_fast_travel_fare(region_id: String) -> int:
+	var target_region := GameData.get_region(region_id)
+	if target_region.is_empty():
+		return 0
+	var source_region := _current_travel_source_region()
+	var route := _find_region_route(str(source_region.get("id", "")), region_id)
+	return _estimate_route_fare(route, target_region)
 
 func apply_fast_travel_time(region_id: String) -> float:
 	var reason := get_fast_travel_block_reason(region_id)
 	if not reason.is_empty():
 		EventBus.emit_toast(reason)
 		return -1.0
-	var travel_hours := estimate_fast_travel_hours(region_id)
+	var plan := build_region_travel_plan(region_id)
+	var travel_hours := float(plan.get("hours", estimate_fast_travel_hours(region_id)))
+	var fare := int(plan.get("fare", 0))
+	if fare > 0 and not spend_money(fare):
+		return -1.0
 	advance_hours(travel_hours)
+	_record_fast_travel_event(plan)
 	return travel_hours
+
+func resolve_fast_travel_risk(plan: Dictionary) -> Dictionary:
+	var risk_level := int(plan.get("risk_level", 1))
+	if risk_level < 3:
+		return {}
+	var target_id := str(plan.get("target_region_id", ""))
+	var target_region := GameData.get_region(target_id)
+	if target_region.is_empty():
+		return {}
+	var chance := clampf(0.10 + float(risk_level - 3) * 0.16, 0.10, 0.48)
+	if randf() > chance:
+		return {}
+	var target_name := str(target_region.get("name", target_id))
+	var selector: int = int(abs(hash("%d:%s:%s:%s" % [day, target_id, weather, str(plan.get("route_summary", ""))])) % 3)
+	if risk_level >= 4 and selector == 0:
+		var enemy: Dictionary = GameData.build_region_encounter_enemy(target_region)
+		if not enemy.is_empty():
+			var ambush_title := "%s驿路遇伏" % target_name
+			var ambush_description := "你刚抵达%s，暗处有人趁旅途疲惫截住去路。" % target_name
+			append_world_event("travel_risk", ambush_title, ambush_description, target_id, mini(risk_level, 4))
+			return {
+				"kind": "ambush",
+				"title": ambush_title,
+				"description": ambush_description,
+				"enemy": enemy,
+				"toast": "%s，准备迎战" % ambush_title
+			}
+	var delay_hours := 0.5 + float(risk_level - 2) * 0.25
+	advance_hours(delay_hours)
+	var damage := risk_level * 5 + randi_range(0, 6)
+	var hp := int(player.get("hp", 0))
+	var actual_damage: int = damage_player(mini(damage, maxi(0, hp - 1)))
+	var delay_title := "%s驿路受阻" % target_name
+	var delay_description := "你在%s附近遇到险路和盘查，耽搁%.1f时辰，气血损耗%d点。" % [target_name, delay_hours, actual_damage]
+	append_world_event("travel_risk", delay_title, delay_description, target_id, mini(risk_level, 4))
+	return {
+		"kind": "delay",
+		"title": delay_title,
+		"description": delay_description,
+		"delay_hours": delay_hours,
+		"damage": actual_damage,
+		"toast": "%s：耽搁%.1f时辰，气血-%d" % [delay_title, delay_hours, actual_damage]
+	}
 
 func advance_hours(hours_to_add: float) -> void:
 	hour += maxf(hours_to_add, 0.0)
@@ -482,6 +567,189 @@ func _region_center_tile(region: Dictionary) -> Vector2i:
 	if rect.size() >= 4:
 		return Vector2i(int(rect[0]) + int(rect[2]) / 2, int(rect[1]) + int(rect[3]) / 2)
 	return current_tile
+
+func _current_travel_source_region() -> Dictionary:
+	var region := GameData.get_region(current_region_id)
+	if not region.is_empty():
+		return region
+	var tile_region := GameData.get_region_at_tile(current_tile)
+	if not tile_region.is_empty():
+		return tile_region
+	return {}
+
+func _find_region_route(source_id: String, target_id: String) -> Array[String]:
+	var route: Array[String] = []
+	if source_id.is_empty() or target_id.is_empty():
+		if not source_id.is_empty():
+			route.append(source_id)
+		if not target_id.is_empty() and target_id != source_id:
+			route.append(target_id)
+		return route
+	if source_id == target_id:
+		return [source_id]
+	var open: Array[String] = [source_id]
+	var costs: Dictionary = {}
+	costs[source_id] = 0.0
+	var came_from: Dictionary = {}
+	var visited: Dictionary = {}
+	while not open.is_empty():
+		open.sort_custom(func(a: String, b: String) -> bool:
+			return float(costs.get(a, INF)) < float(costs.get(b, INF))
+		)
+		var current_id := str(open.pop_front())
+		if bool(visited.get(current_id, false)):
+			continue
+		visited[current_id] = true
+		if current_id == target_id:
+			break
+		var current_region := GameData.get_region(current_id)
+		for neighbor in GameData.get_neighbor_regions(current_id, TRAVEL_ROUTE_NEIGHBOR_LIMIT):
+			if typeof(neighbor) != TYPE_DICTIONARY:
+				continue
+			var next_region: Dictionary = neighbor
+			var next_id := str(next_region.get("id", ""))
+			if next_id.is_empty() or bool(visited.get(next_id, false)):
+				continue
+			var next_cost := float(costs.get(current_id, 0.0)) + _region_travel_edge_cost(current_region, next_region)
+			if not costs.has(next_id) or next_cost < float(costs.get(next_id, INF)):
+				costs[next_id] = next_cost
+				came_from[next_id] = current_id
+				if not open.has(next_id):
+					open.append(next_id)
+	if not costs.has(target_id):
+		return [source_id, target_id]
+	var reversed: Array[String] = []
+	var cursor := target_id
+	var guard := 0
+	while guard < 128:
+		reversed.append(cursor)
+		if cursor == source_id:
+			break
+		if not came_from.has(cursor):
+			break
+		cursor = str(came_from[cursor])
+		guard += 1
+	for index in range(reversed.size() - 1, -1, -1):
+		route.append(reversed[index])
+	return route
+
+func _region_travel_edge_cost(source: Dictionary, target: Dictionary) -> float:
+	var distance := _region_center_distance(source, target)
+	var target_type := str(target.get("type", "wild"))
+	var danger := float(target.get("danger", 1))
+	var type_cost := 0.0
+	match target_type:
+		"city":
+			type_cost = 0.0
+		"town":
+			type_cost = 0.7
+		"sect":
+			type_cost = 1.0
+		_:
+			type_cost = 1.8
+	return distance + danger * 1.35 + type_cost
+
+func _region_center_distance(source: Dictionary, target: Dictionary) -> float:
+	var source_tile := _region_center_tile(source)
+	var target_tile := _region_center_tile(target)
+	return Vector2(float(source_tile.x), float(source_tile.y)).distance_to(Vector2(float(target_tile.x), float(target_tile.y)))
+
+func _route_distance(route: Array[String]) -> float:
+	if route.size() <= 1:
+		return 0.0
+	var distance := 0.0
+	for index in range(route.size() - 1):
+		distance += _region_center_distance(GameData.get_region(route[index]), GameData.get_region(route[index + 1]))
+	return roundf(distance * 10.0) / 10.0
+
+func _estimate_route_hours(route: Array[String], target_region: Dictionary) -> float:
+	if target_region.is_empty():
+		return 0.0
+	var distance := _route_distance(route)
+	if distance <= 0.0:
+		var source_region := _current_travel_source_region()
+		distance = _region_center_distance(source_region, target_region)
+	var risk_level := _route_risk_level(route)
+	if route.is_empty():
+		risk_level = int(target_region.get("danger", 1))
+	var relay_cost: float = maxf(0.0, float(route.size() - 2)) * 0.35
+	var hours := clampf(distance / 7.5 + float(risk_level) * 0.45 + relay_cost, 1.0, 16.0)
+	return roundf(hours * 2.0) / 2.0
+
+func _estimate_route_fare(route: Array[String], target_region: Dictionary) -> int:
+	if target_region.is_empty():
+		return 0
+	var hours := _estimate_route_hours(route, target_region)
+	var risk_level := _route_risk_level(route)
+	if route.is_empty():
+		risk_level = int(target_region.get("danger", 1))
+	var relay_count: int = maxi(0, route.size() - 2)
+	var fare := int(round(hours * 1.6 + float(risk_level) * 2.0 + float(relay_count) * 1.5))
+	return maxi(FAST_TRAVEL_MIN_FARE, fare)
+
+func _route_risk_level(route: Array[String]) -> int:
+	var risk := 1
+	for region_id in route:
+		var region := GameData.get_region(region_id)
+		if region.is_empty():
+			continue
+		risk = maxi(risk, int(region.get("danger", 1)))
+		var terrain := str(region.get("terrain", ""))
+		if (weather == "飞雪" and (terrain.contains("mountain") or terrain.contains("cliff") or terrain.contains("plateau"))) or (weather == "细雨" and (terrain.contains("river") or terrain.contains("lake") or terrain.contains("marsh") or terrain.contains("gorge"))) or (weather == "薄雾" and int(region.get("danger", 1)) >= 3):
+			risk = maxi(risk, int(region.get("danger", 1)) + 1)
+	return clampi(risk, 1, 5)
+
+func _route_risk_label(risk_level: int) -> String:
+	if risk_level >= 5:
+		return "极险"
+	if risk_level >= 4:
+		return "险路"
+	if risk_level >= 3:
+		return "危险"
+	if risk_level >= 2:
+		return "谨慎"
+	return "平稳"
+
+func _route_risk_note(risk_level: int) -> String:
+	if risk_level >= 5:
+		return "天气和地势都不利，路上很可能遭遇伏击。"
+	if risk_level >= 4:
+		return "路段险峻，最好备足伤药。"
+	if risk_level >= 3:
+		return "沿途有盗匪和暗哨传闻。"
+	if risk_level >= 2:
+		return "官道可行，但仍需留心。"
+	return "多为熟路，适合赶路。"
+
+func _route_region_names(route: Array[String]) -> Array[String]:
+	var names: Array[String] = []
+	for region_id in route:
+		var region := GameData.get_region(region_id)
+		if region.is_empty():
+			continue
+		names.append(str(region.get("name", region_id)))
+	return names
+
+func _record_fast_travel_event(plan: Dictionary) -> void:
+	var target_id := str(plan.get("target_region_id", ""))
+	var target_region := GameData.get_region(target_id)
+	if target_region.is_empty():
+		return
+	var target_name := str(target_region.get("name", target_id))
+	var source_name := current_region_name
+	var source_region := GameData.get_region(str(plan.get("source_region_id", "")))
+	if not source_region.is_empty():
+		source_name = str(source_region.get("name", source_name))
+	var route_summary := str(plan.get("route_summary", ""))
+	var risk_note := str(plan.get("risk_note", ""))
+	var fare := int(plan.get("fare", 0))
+	var fare_text := "，花费%d两" % fare if fare > 0 else ""
+	var description := "你从%s沿驿路赶到%s，用去%.1f时辰%s。" % [source_name, target_name, float(plan.get("hours", 0.0)), fare_text]
+	if not route_summary.is_empty():
+		description = "你按%s路线赶到%s，用去%.1f时辰%s。" % [route_summary, target_name, float(plan.get("hours", 0.0)), fare_text]
+	if not risk_note.is_empty():
+		description = "%s%s" % [description, risk_note]
+	append_world_event("travel", "驿路抵达%s" % target_name, description, target_id, clampi(int(plan.get("risk_level", 1)), 1, 3))
 
 func advance_time(delta: float) -> void:
 	if not can_explore():

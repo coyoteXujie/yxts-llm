@@ -4,6 +4,7 @@ class_name RegionMapCanvas
 signal region_clicked(region_id: String)
 
 var selected_region_id := ""
+var route_plan: Dictionary = {}
 var marker_npc: Texture2D
 var marker_quest: Texture2D
 var marker_target: Texture2D
@@ -17,6 +18,10 @@ func _ready() -> void:
 
 func set_selected_region(region_id: String) -> void:
 	selected_region_id = region_id
+	queue_redraw()
+
+func set_route_plan(plan: Dictionary) -> void:
+	route_plan = plan.duplicate(true)
 	queue_redraw()
 
 func _gui_input(event: InputEvent) -> void:
@@ -36,6 +41,7 @@ func _draw() -> void:
 	for region in GameData.get_regions():
 		_draw_region(region, canvas)
 
+	_draw_route_overlay(canvas)
 	_draw_npc_markers(canvas)
 	_draw_quest_markers(canvas)
 	_draw_player_marker(canvas)
@@ -70,6 +76,39 @@ func _draw_player_marker(canvas: Rect2) -> void:
 	var pos := Vector2((float(GameState.current_tile.x) + 0.5) * scale.x, (float(GameState.current_tile.y) + 0.5) * scale.y)
 	draw_circle(pos, 6.0, Color(1.0, 0.22, 0.18, 0.95))
 	draw_arc(pos, 10.0, 0.0, TAU, 28, Color(1.0, 0.88, 0.54, 0.85), 2.0)
+
+func _draw_route_overlay(canvas: Rect2) -> void:
+	var route: Array = route_plan.get("route", [])
+	if route.size() < 2:
+		return
+	var points: Array[Vector2] = []
+	for region_id_value in route:
+		var region_id := str(region_id_value)
+		var region := GameData.get_region(region_id)
+		if region.is_empty():
+			continue
+		points.append(_scaled_region_center(region, canvas))
+	if points.size() < 2:
+		return
+	var risk_level := int(route_plan.get("risk_level", 1))
+	var route_color := _route_color(risk_level)
+	for index in range(points.size() - 1):
+		var a := points[index]
+		var b := points[index + 1]
+		draw_line(a + Vector2(0, 2), b + Vector2(0, 2), Color(0.02, 0.015, 0.01, 0.64), 7.0, true)
+		draw_line(a, b, Color(route_color.r, route_color.g, route_color.b, 0.35), 7.0, true)
+		draw_line(a, b, route_color, 3.0, true)
+	for index in range(points.size()):
+		var radius := 5.0 if index == 0 or index == points.size() - 1 else 3.6
+		draw_circle(points[index], radius + 2.0, Color(0.02, 0.015, 0.01, 0.70))
+		draw_circle(points[index], radius, route_color)
+	var mid_point := points[int(points.size() / 2)]
+	var label := "%s %.1f时辰 %d两" % [
+		str(route_plan.get("risk_label", "")),
+		float(route_plan.get("hours", 0.0)),
+		int(route_plan.get("fare", 0))
+	]
+	draw_string(get_theme_default_font(), mid_point + Vector2(8, -8), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1.0, 0.91, 0.64, 0.95))
 
 func _draw_npc_markers(canvas: Rect2) -> void:
 	for npc in GameData.get_npcs():
@@ -172,6 +211,20 @@ func _scaled_rect(region: Dictionary, canvas: Rect2) -> Rect2:
 		Vector2(float(rect_data[0]) * scale.x, float(rect_data[1]) * scale.y),
 		Vector2(max(2.0, float(rect_data[2]) * scale.x), max(2.0, float(rect_data[3]) * scale.y))
 	)
+
+func _scaled_region_center(region: Dictionary, canvas: Rect2) -> Vector2:
+	return _scaled_rect(region, canvas).get_center()
+
+func _route_color(risk_level: int) -> Color:
+	if risk_level >= 5:
+		return Color(0.95, 0.20, 0.16, 0.96)
+	if risk_level >= 4:
+		return Color(0.95, 0.44, 0.18, 0.96)
+	if risk_level >= 3:
+		return Color(0.92, 0.67, 0.24, 0.96)
+	if risk_level >= 2:
+		return Color(0.72, 0.80, 0.42, 0.94)
+	return Color(0.50, 0.78, 0.48, 0.92)
 
 func _region_color(region_type: String, danger: int) -> Color:
 	match region_type:

@@ -281,6 +281,7 @@ func _fast_travel_to_region(region_id: String) -> void:
 	if not world_map.is_position_walkable(destination):
 		EventBus.emit_toast("目的地入口暂不可通行")
 		return
+	var travel_plan := GameState.build_region_travel_plan(region_id)
 	var travel_hours := GameState.apply_fast_travel_time(region_id)
 	if travel_hours < 0.0:
 		return
@@ -294,7 +295,22 @@ func _fast_travel_to_region(region_id: String) -> void:
 	GameState.set_mode(GameState.Mode.EXPLORE)
 	if camera != null:
 		camera.reset_smoothing()
-	EventBus.emit_toast("抵达%s，用时 %.1f 时辰" % [str(region.get("name", region_id)), travel_hours])
+	var fare := int(travel_plan.get("fare", 0))
+	var fare_text := "，花费%d两" % fare if fare > 0 else ""
+	EventBus.emit_toast("抵达%s，用时 %.1f 时辰%s" % [str(region.get("name", region_id)), travel_hours, fare_text])
+	_handle_fast_travel_complication(GameState.resolve_fast_travel_risk(travel_plan))
+
+func _handle_fast_travel_complication(complication: Dictionary) -> void:
+	if complication.is_empty():
+		return
+	var toast := str(complication.get("toast", "旅途有变"))
+	if not toast.is_empty():
+		EventBus.emit_toast(toast)
+	if str(complication.get("kind", "")) == "ambush":
+		var enemy: Dictionary = complication.get("enemy", {})
+		if not enemy.is_empty():
+			active_enemy_actor = null
+			combat_system.start(enemy)
 
 func _start_combat_from_data(enemy: Dictionary) -> void:
 	if active_map != null and active_map.has_method("clear_ambient_lines"):

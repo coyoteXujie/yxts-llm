@@ -165,6 +165,7 @@ func _select_region_by_id(region_id: String) -> void:
 	if region_id.is_empty():
 		details.text = "尚未发现区域。"
 		_set_scene_background("", "区域景象")
+		_set_route_plan({})
 		_update_action_buttons("")
 		return
 	var region := GameData.get_region(region_id)
@@ -177,6 +178,7 @@ func _select_region_by_id(region_id: String) -> void:
 	if not discovered:
 		details.text = "未知区域\n继续探索世界后，区域名称、地貌和危险等级会逐步显现。"
 		_set_scene_background("", "尚未发现")
+		_set_route_plan({})
 		_update_action_buttons(region_id)
 		return
 	var danger := int(region.get("danger", 0))
@@ -191,6 +193,7 @@ func _select_region_by_id(region_id: String) -> void:
 		extra
 	]
 	_set_scene_background(region_id, str(region.get("name", region_id)))
+	_set_route_plan(GameState.build_region_travel_plan(region_id))
 	_update_action_buttons(region_id)
 
 func _select_region_list_item(region_id: String) -> void:
@@ -235,9 +238,20 @@ func _region_detail_lines(region_id: String) -> String:
 	return "\n" + "\n".join(lines)
 
 func _fast_travel_line(region_id: String) -> String:
-	var reason := GameState.get_fast_travel_block_reason(region_id)
+	var plan := GameState.build_region_travel_plan(region_id)
+	var reason := str(plan.get("blocked_reason", ""))
+	var route_summary := str(plan.get("route_summary", ""))
+	var risk_label := str(plan.get("risk_label", ""))
+	var fare := int(plan.get("fare", 0))
 	if reason.is_empty():
-		return "驿路：可快速前往，约 %.1f 时辰。" % GameState.estimate_fast_travel_hours(region_id)
+		return "驿路：可快速前往，约 %.1f 时辰，%d 两，%s。路线：%s。" % [
+			float(plan.get("hours", 0.0)),
+			fare,
+			risk_label,
+			route_summary
+		]
+	if not route_summary.is_empty() and GameState.is_region_discovered(region_id):
+		return "驿路：%s。路线：%s，约%d两，%s。" % [reason, route_summary, fare, risk_label]
 	return "驿路：%s。" % reason
 
 func _update_action_buttons(region_id: String) -> void:
@@ -247,9 +261,18 @@ func _update_action_buttons(region_id: String) -> void:
 	var discovered := not region.is_empty() and GameState.is_region_discovered(region_id)
 	focus_button.disabled = not discovered
 	focus_button.tooltip_text = "在大地图上标记该区域" if discovered else "尚未发现区域"
-	var reason := GameState.get_fast_travel_block_reason(region_id)
+	var plan := GameState.build_region_travel_plan(region_id)
+	var reason := str(plan.get("blocked_reason", ""))
 	travel_button.disabled = not reason.is_empty()
-	travel_button.tooltip_text = "快速移动到区域入口" if reason.is_empty() else reason
+	if reason.is_empty():
+		travel_button.tooltip_text = "约 %.1f 时辰；%d 两；%s；%s" % [
+			float(plan.get("hours", 0.0)),
+			int(plan.get("fare", 0)),
+			str(plan.get("risk_label", "")),
+			str(plan.get("route_summary", ""))
+		]
+	else:
+		travel_button.tooltip_text = reason
 
 func _request_focus_region() -> void:
 	if selected_region_id.is_empty() or not GameState.is_region_discovered(selected_region_id):
@@ -265,6 +288,10 @@ func _request_fast_travel() -> void:
 		EventBus.emit_toast(reason)
 		return
 	fast_travel_requested.emit(selected_region_id)
+
+func _set_route_plan(plan: Dictionary) -> void:
+	if map_canvas != null and map_canvas.has_method("set_route_plan"):
+		map_canvas.set_route_plan(plan)
 
 func _type_name(region_type: String) -> String:
 	match region_type:
