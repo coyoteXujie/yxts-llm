@@ -6,6 +6,8 @@ const FOREGROUND_MIST_BANDS := 4
 const SIDE_OCCLUDER_COUNT := 7
 const SIDE_WING_PANEL_COUNT := 6
 const SIDE_WING_ALPHA := 0.34
+const FRONT_DEPTH_FRAME_COUNT := 4
+const FRONT_DEPTH_FRAME_ALPHA := 0.33
 const BOTTOM_OCCLUDER_COUNT := 10
 const BOTTOM_OCCLUDER_ALPHA := 0.24
 const HANGING_FOREGROUND_COUNT := 8
@@ -38,6 +40,7 @@ func _draw() -> void:
 	_draw_hanging_foreground(accent, region_type, terrain)
 	_draw_side_occluders(accent, region_type, terrain)
 	_draw_side_wing_panels(accent, region_type, terrain)
+	_draw_front_depth_frames(accent, region_type, terrain)
 	_draw_front_setpieces(accent, region_type, terrain)
 	_draw_bottom_occluders(accent, region_type, terrain)
 	_draw_foreground_mist(accent, terrain)
@@ -303,6 +306,117 @@ func _draw_side_wing_rock(edge_x: float, inner_x: float, y: float, height: float
 	draw_line(crack_a, crack_b, Color(0.0, 0.0, 0.0, alpha * 0.50), 1.1)
 	draw_line(crack_b, crack_c, Color(accent.r, accent.g, accent.b, alpha * 0.22), 1.0)
 	_draw_ellipse(edge_x + side * tile_size * 0.30, y - height * 0.18, Vector2(tile_size * 0.22, tile_size * 0.055), Color(accent.r, accent.g, accent.b, alpha * 0.18))
+
+func _draw_front_depth_frames(accent: Color, region_type: String, terrain: String) -> void:
+	for i in range(FRONT_DEPTH_FRAME_COUNT):
+		var t := float(i) / float(maxi(1, FRONT_DEPTH_FRAME_COUNT - 1))
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var edge_x := 0.0 if side < 0.0 else map_size.x
+		var inner_x := tile_size * (0.88 + t * 1.22)
+		if side > 0.0:
+			inner_x = map_size.x - inner_x
+		var base_y := map_size.y * (0.82 + t * 0.075)
+		var top_y := map_size.y * (0.20 + float((i + 1) % 2) * 0.075)
+		var width := tile_size * (0.48 + t * 0.22)
+		var alpha := FRONT_DEPTH_FRAME_ALPHA * (0.68 + t * 0.32)
+		_draw_front_depth_frame_panel(edge_x, inner_x, top_y, base_y, width, side, accent, alpha)
+		if region_type == "city" or region_type == "town":
+			_draw_front_depth_city_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+		elif region_type == "sect":
+			_draw_front_depth_sect_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+		elif _terrain_has_water(terrain):
+			_draw_front_depth_dock_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+		elif _terrain_has_forest(terrain):
+			_draw_front_depth_tree_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+		elif terrain.contains("snow"):
+			_draw_front_depth_frost_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+		else:
+			_draw_front_depth_rock_trim(edge_x, inner_x, top_y, base_y, side, accent, alpha, i)
+
+func _draw_front_depth_frame_panel(edge_x: float, inner_x: float, top_y: float, base_y: float, width: float, side: float, accent: Color, alpha: float) -> void:
+	var outer_top := Vector2(edge_x + side * tile_size * 0.08, top_y)
+	var inner_top := Vector2(inner_x, top_y + tile_size * 0.24)
+	var inner_bottom := Vector2(inner_x - side * width, base_y)
+	var outer_bottom := Vector2(edge_x + side * tile_size * 0.18, base_y + tile_size * 0.36)
+	draw_polygon(PackedVector2Array([outer_top, inner_top, inner_bottom, outer_bottom]), PackedColorArray([
+		Color(0.006, 0.004, 0.003, alpha * 1.14),
+		Color(accent.r, accent.g, accent.b, alpha * 0.18),
+		Color(0.018, 0.012, 0.008, alpha),
+		Color(0.004, 0.003, 0.002, alpha * 1.18)
+	]))
+	draw_line(inner_top, inner_bottom, Color(accent.r, accent.g, accent.b, alpha * 0.30), 1.4)
+	draw_line(outer_bottom, inner_bottom, Color(0.0, 0.0, 0.0, alpha * 0.72), 2.4)
+	_draw_ellipse(inner_bottom.x - side * width * 0.18, inner_bottom.y + tile_size * 0.08, Vector2(width * 0.86, tile_size * 0.070), Color(0.0, 0.0, 0.0, alpha * 0.46))
+
+func _draw_front_depth_city_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var eave_y := lerpf(top_y, base_y, 0.18)
+	var beam_end := Vector2(inner_x - side * tile_size * (0.74 + float(index % 2) * 0.16), eave_y - tile_size * 0.14)
+	draw_line(Vector2(edge_x + side * tile_size * 0.10, eave_y + tile_size * 0.10), beam_end, Color(0.030, 0.016, 0.008, alpha * 0.98), 4.0)
+	draw_line(Vector2(edge_x + side * tile_size * 0.16, eave_y + tile_size * 0.24), beam_end + Vector2(0.0, tile_size * 0.14), Color(accent.r, accent.g, accent.b, alpha * 0.24), 1.2)
+	var lamp := beam_end + Vector2(-side * tile_size * 0.18, tile_size * 0.42)
+	var pulse := 0.5 + sin(visual_phase * 2.4 + float(index) * 0.8) * 0.5
+	draw_line(lamp + Vector2(0.0, -tile_size * 0.28), lamp, Color(0.72, 0.42, 0.18, alpha * 0.48), 1.0)
+	draw_circle(lamp, tile_size * 0.082, Color(1.0, 0.58, 0.20, alpha * (0.32 + pulse * 0.16)))
+
+func _draw_front_depth_sect_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var lintel_y := lerpf(top_y, base_y, 0.24)
+	draw_rect(Rect2(Vector2(minf(edge_x, inner_x) - tile_size * 0.04, lintel_y), Vector2(absf(inner_x - edge_x) + tile_size * 0.10, tile_size * 0.16)), Color(0.025, 0.020, 0.015, alpha * 0.88), true)
+	draw_line(Vector2(edge_x + side * tile_size * 0.18, lintel_y), Vector2(inner_x - side * tile_size * 0.30, lintel_y - tile_size * 0.12), Color(accent.r, accent.g, accent.b, alpha * 0.36), 1.4)
+	var banner_top := Vector2(inner_x - side * tile_size * 0.28, lintel_y + tile_size * 0.10)
+	var banner_h := tile_size * (0.54 + float(index % 2) * 0.14)
+	draw_polygon(PackedVector2Array([
+		banner_top,
+		banner_top + Vector2(-side * tile_size * 0.26, tile_size * 0.08),
+		banner_top + Vector2(-side * tile_size * 0.20, banner_h),
+		banner_top + Vector2(0.0, banner_h - tile_size * 0.10)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, alpha * 0.72),
+		Color(accent.r, accent.g, accent.b, alpha * 0.42),
+		Color(0.015, 0.012, 0.010, alpha * 0.76),
+		Color(0.020, 0.016, 0.012, alpha * 0.82)
+	]))
+
+func _draw_front_depth_dock_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var rope_a_y := lerpf(top_y, base_y, 0.34)
+	var rope_b_y := rope_a_y + tile_size * (0.30 + float(index % 2) * 0.08)
+	draw_line(Vector2(edge_x + side * tile_size * 0.10, rope_a_y), Vector2(inner_x - side * tile_size * 0.58, rope_a_y - tile_size * 0.18), Color(0.52, 0.38, 0.20, alpha * 0.80), 2.0)
+	draw_line(Vector2(edge_x + side * tile_size * 0.08, rope_b_y), Vector2(inner_x - side * tile_size * 0.42, rope_b_y - tile_size * 0.12), Color(accent.r, accent.g, accent.b, alpha * 0.24), 1.2)
+	for knot in range(3):
+		var k := float(knot) / 2.0
+		var pos := Vector2(lerpf(edge_x, inner_x - side * tile_size * 0.50, k), lerpf(rope_a_y, rope_a_y - tile_size * 0.18, k))
+		_draw_ellipse(pos.x, pos.y, Vector2(tile_size * 0.055, tile_size * 0.020), Color(0.0, 0.0, 0.0, alpha * 0.62))
+
+func _draw_front_depth_tree_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var branch_root := Vector2(inner_x - side * tile_size * 0.18, lerpf(top_y, base_y, 0.34))
+	var branch_end := Vector2(edge_x + side * tile_size * 0.16, branch_root.y - tile_size * (0.54 + float(index % 2) * 0.16))
+	draw_line(branch_root, branch_end, Color(0.003, 0.030, 0.012, alpha * 1.08), 4.0)
+	for leaf in range(3):
+		var pos := branch_end + Vector2(-side * tile_size * (0.12 + float(leaf) * 0.18), tile_size * (-0.08 + float(leaf % 2) * 0.12))
+		_draw_ellipse(pos.x, pos.y, Vector2(tile_size * 0.22, tile_size * 0.070), Color(accent.r * 0.24, accent.g * 0.44, accent.b * 0.22, alpha * 0.44))
+
+func _draw_front_depth_frost_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var ridge_y := lerpf(top_y, base_y, 0.24)
+	draw_line(Vector2(edge_x + side * tile_size * 0.12, ridge_y), Vector2(inner_x - side * tile_size * 0.46, ridge_y - tile_size * 0.22), Color(0.78, 0.94, 1.0, alpha * 0.52), 2.2)
+	for ice in range(3):
+		var x := lerpf(edge_x + side * tile_size * 0.28, inner_x - side * tile_size * 0.50, float(ice) / 2.0)
+		var h := tile_size * (0.24 + float((ice + index) % 2) * 0.08)
+		draw_polygon(PackedVector2Array([
+			Vector2(x, ridge_y),
+			Vector2(x - side * tile_size * 0.08, ridge_y + tile_size * 0.03),
+			Vector2(x - side * tile_size * 0.02, ridge_y + h)
+		]), PackedColorArray([
+			Color(0.86, 0.96, 1.0, alpha * 0.54),
+			Color(accent.r, accent.g, accent.b, alpha * 0.34),
+			Color(0.58, 0.76, 0.86, alpha * 0.32)
+		]))
+
+func _draw_front_depth_rock_trim(edge_x: float, inner_x: float, top_y: float, base_y: float, side: float, accent: Color, alpha: float, index: int) -> void:
+	var crack_start := Vector2(inner_x - side * tile_size * 0.22, lerpf(top_y, base_y, 0.24))
+	var crack_mid := crack_start + Vector2(-side * tile_size * (0.20 + float(index % 2) * 0.12), tile_size * 0.42)
+	var crack_end := crack_mid + Vector2(side * tile_size * 0.16, tile_size * 0.44)
+	draw_line(crack_start, crack_mid, Color(0.0, 0.0, 0.0, alpha * 0.58), 1.3)
+	draw_line(crack_mid, crack_end, Color(accent.r, accent.g, accent.b, alpha * 0.24), 1.0)
+	_draw_ellipse(edge_x + side * tile_size * 0.26, lerpf(top_y, base_y, 0.58), Vector2(tile_size * 0.26, tile_size * 0.070), Color(accent.r, accent.g, accent.b, alpha * 0.18))
 
 func _draw_front_setpieces(accent: Color, region_type: String, terrain: String) -> void:
 	for i in range(FRONT_SETPIECE_COUNT):

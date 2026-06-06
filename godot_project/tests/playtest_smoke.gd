@@ -173,6 +173,8 @@ func _run() -> void:
 	_check(STAGE_FOREGROUND_SCRIPT.FRONT_SETPIECE_ALPHA >= 0.24, "局部横版舞台近景遮挡应有足够可见度")
 	_check(STAGE_FOREGROUND_SCRIPT.SIDE_WING_PANEL_COUNT >= 5, "局部横版舞台应保留左右舞台翼墙/近景侧向压场")
 	_check(STAGE_FOREGROUND_SCRIPT.SIDE_WING_ALPHA >= 0.30, "局部横版舞台左右翼墙应有足够可见度")
+	_check(STAGE_FOREGROUND_SCRIPT.FRONT_DEPTH_FRAME_COUNT >= 4, "局部横版舞台应保留贴近镜头的门框/梁柱深度框架")
+	_check(STAGE_FOREGROUND_SCRIPT.FRONT_DEPTH_FRAME_ALPHA >= 0.30, "局部横版舞台近景深度框架应有足够压场层次")
 	_check(local_area.stage_postfx_overlay != null and local_area.stage_postfx_overlay.visible, "局部横版舞台应创建镜头光影后期层")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_POSTFX_Z > 3000 and LOCAL_AREA_SCRIPT.SIDE_VIEW_POSTFX_Z < LOCAL_AREA_SCRIPT.SIDE_VIEW_FOREGROUND_OVERLAY_Z, "局部横版舞台后期层应位于角色上方且低于真实前景遮挡")
 	_check(local_area.stage_foreground_overlay != null and local_area.stage_foreground_overlay.visible, "局部横版舞台应创建真实前景遮挡层")
