@@ -92,6 +92,12 @@ func _run() -> void:
 	_check(COMBAT_STAGE_SCRIPT.ATTACK_TRAIL_LAYER_COUNT >= 5, "2.5D 战斗舞台出招应保留多层气势轨迹")
 	_check(COMBAT_STAGE_SCRIPT.HEAVY_DAMAGE_THRESHOLD <= 30, "2.5D 战斗舞台重击阈值不应过高")
 	_check(COMBAT_STAGE_SCRIPT.COMBO_BURST_RING_COUNT >= 3, "2.5D 战斗舞台重击应保留爆裂环层次")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_SPECTATOR_COUNT >= 8, "2.5D 战斗舞台应保留背景观战/旗幡层")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_DEPTH_PROP_COUNT >= 6, "2.5D 战斗舞台应保留中景兵器架/灯笼/箱子层")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_FOREGROUND_OCCLUDER_COUNT >= 5, "2.5D 战斗舞台应保留前景压迫遮挡层")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_FOOTWORK_TRAIL_COUNT >= 4, "2.5D 战斗舞台应保留脚步轨迹层")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_BACK_RAIL_ALPHA >= 0.22, "2.5D 战斗舞台后排栏杆应有足够可见度")
+	_check(COMBAT_STAGE_SCRIPT.COMBAT_STAGE_FOREGROUND_PRESSURE_ALPHA >= 0.20, "2.5D 战斗舞台前景压迫层应有足够可见度")
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
 		"events": [{"id": 1, "kind": "damage", "target": "enemy", "source": "普通攻击", "amount": 10}]

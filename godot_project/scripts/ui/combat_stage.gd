@@ -26,6 +26,12 @@ const ATTACK_TELEGRAPH_ALPHA := 0.24
 const ATTACK_TRAIL_LAYER_COUNT := 5
 const HEAVY_DAMAGE_THRESHOLD := 30
 const COMBO_BURST_RING_COUNT := 4
+const COMBAT_STAGE_SPECTATOR_COUNT := 10
+const COMBAT_STAGE_DEPTH_PROP_COUNT := 8
+const COMBAT_STAGE_FOREGROUND_OCCLUDER_COUNT := 6
+const COMBAT_STAGE_FOOTWORK_TRAIL_COUNT := 5
+const COMBAT_STAGE_BACK_RAIL_ALPHA := 0.26
+const COMBAT_STAGE_FOREGROUND_PRESSURE_ALPHA := 0.24
 
 var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
@@ -148,7 +154,9 @@ func _draw() -> void:
 	_draw_backplate(rect)
 	_draw_background(rect)
 	_draw_parallax_silhouette(rect)
+	_draw_stage_back_life(rect)
 	_draw_lane(rect)
+	_draw_stage_mid_props(rect)
 	_draw_combatants(rect)
 	_draw_foreground(rect)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -241,6 +249,81 @@ func _draw_bamboo_cluster(rect: Rect2, y: float, x: float, color: Color) -> void
 		draw_line(Vector2(stalk_x + 2.0, top + 28.0), Vector2(stalk_x + 24.0, top + 18.0), color, 1.3)
 		draw_line(Vector2(stalk_x - 2.0, top + 42.0), Vector2(stalk_x - 22.0, top + 34.0), color, 1.3)
 
+func _draw_stage_back_life(rect: Rect2) -> void:
+	var ground_y := _ground_y(rect)
+	var rail_y := ground_y - 64.0
+	var rail_color := Color(0.02, 0.016, 0.012, COMBAT_STAGE_BACK_RAIL_ALPHA)
+	draw_line(Vector2(rect.position.x + 30.0, rail_y), Vector2(rect.position.x + rect.size.x - 30.0, rail_y - 6.0), rail_color, 3.0)
+	draw_line(Vector2(rect.position.x + 44.0, rail_y + 15.0), Vector2(rect.position.x + rect.size.x - 44.0, rail_y + 9.0), Color(accent_color.r, accent_color.g, accent_color.b, COMBAT_STAGE_BACK_RAIL_ALPHA * 0.54), 1.4)
+	for i in range(COMBAT_STAGE_SPECTATOR_COUNT):
+		var t := float(i) / float(maxi(1, COMBAT_STAGE_SPECTATOR_COUNT - 1))
+		var x := lerpf(rect.position.x + rect.size.x * 0.08, rect.position.x + rect.size.x * 0.92, t)
+		var bob := sin(pulse * 0.82 + float(i) * 0.73) * 1.4
+		var y := rail_y + 13.0 + float(i % 3) * 2.4 + bob
+		var alpha := 0.18 + float(i % 3) * 0.018
+		_draw_stage_spectator(Vector2(x, y), 0.62 + float(i % 2) * 0.08, alpha)
+	for i in range(4):
+		var x := rect.position.x + rect.size.x * (0.16 + float(i) * 0.22)
+		var top := rail_y - 42.0 - float(i % 2) * 7.0
+		var sway := sin(pulse * 0.65 + float(i)) * 4.0
+		draw_line(Vector2(x, rail_y + 11.0), Vector2(x, top), Color(0.05, 0.034, 0.020, 0.40), 2.0)
+		draw_polygon(PackedVector2Array([
+			Vector2(x, top + 2.0),
+			Vector2(x + 24.0 + sway, top + 11.0),
+			Vector2(x + 20.0 + sway, top + 42.0),
+			Vector2(x, top + 34.0)
+		]), PackedColorArray([
+			Color(accent_color.r, accent_color.g, accent_color.b, 0.20),
+			Color(accent_color.r, accent_color.g, accent_color.b, 0.13),
+			Color(0.06, 0.035, 0.026, 0.22),
+			Color(0.04, 0.026, 0.018, 0.24)
+		]))
+
+func _draw_stage_spectator(pos: Vector2, scale: float, alpha: float) -> void:
+	var body_color := Color(0.018, 0.014, 0.010, alpha)
+	var trim_color := Color(accent_color.r, accent_color.g, accent_color.b, alpha * 0.44)
+	draw_circle(pos + Vector2(0.0, -15.0) * scale, 4.8 * scale, body_color.lightened(0.10))
+	draw_line(pos + Vector2(0.0, -10.0) * scale, pos + Vector2(0.0, 10.0) * scale, body_color, 4.2 * scale)
+	draw_line(pos + Vector2(-5.0, -4.0) * scale, pos + Vector2(5.0, 4.0) * scale, trim_color, 1.2 * scale)
+	draw_line(pos + Vector2(-4.0, 10.0) * scale, pos + Vector2(-8.0, 18.0) * scale, body_color, 2.0 * scale)
+	draw_line(pos + Vector2(4.0, 10.0) * scale, pos + Vector2(8.0, 18.0) * scale, body_color, 2.0 * scale)
+
+func _draw_stage_mid_props(rect: Rect2) -> void:
+	var ground_y := _ground_y(rect)
+	for i in range(COMBAT_STAGE_DEPTH_PROP_COUNT):
+		var t := float(i) / float(maxi(1, COMBAT_STAGE_DEPTH_PROP_COUNT - 1))
+		var x := lerpf(rect.position.x + 34.0, rect.position.x + rect.size.x - 38.0, t)
+		var y := ground_y - 21.0 + float(i % 2) * 7.0
+		if i % 3 == 0:
+			_draw_stage_weapon_rack(Vector2(x, y), 0.76)
+		elif i % 3 == 1:
+			_draw_stage_floor_lantern(Vector2(x, y + 2.0), 0.68 + sin(pulse * 1.2 + float(i)) * 0.08)
+		else:
+			_draw_stage_battle_crate(Vector2(x, y + 11.0), 0.76)
+
+func _draw_stage_weapon_rack(pos: Vector2, scale: float) -> void:
+	var alpha := 0.23
+	draw_line(pos + Vector2(-11.0, 20.0) * scale, pos + Vector2(-4.0, -20.0) * scale, Color(0.028, 0.018, 0.012, alpha), 2.0 * scale)
+	draw_line(pos + Vector2(12.0, 20.0) * scale, pos + Vector2(4.0, -20.0) * scale, Color(0.028, 0.018, 0.012, alpha), 2.0 * scale)
+	draw_line(pos + Vector2(-17.0, -9.0) * scale, pos + Vector2(17.0, -11.0) * scale, Color(accent_color.r, accent_color.g, accent_color.b, alpha * 0.68), 1.4 * scale)
+	for i in range(3):
+		var x := (-8.0 + float(i) * 8.0) * scale
+		draw_line(pos + Vector2(x, 13.0 * scale), pos + Vector2(x + 7.0 * scale, -31.0 * scale), Color(0.78, 0.74, 0.58, alpha * 0.78), 1.1 * scale)
+
+func _draw_stage_floor_lantern(pos: Vector2, scale: float) -> void:
+	var alpha := 0.24
+	draw_line(pos + Vector2(0.0, 11.0) * scale, pos + Vector2(0.0, -13.0) * scale, Color(0.05, 0.032, 0.018, alpha), 1.4 * scale)
+	draw_circle(pos + Vector2(0.0, -3.0) * scale, 15.0 * scale, Color(1.0, 0.54, 0.16, 0.028))
+	draw_rect(Rect2(pos + Vector2(-5.0, -9.0) * scale, Vector2(10.0, 12.0) * scale), Color(0.82, 0.24, 0.13, alpha * 0.80), true)
+	draw_line(pos + Vector2(-5.0, -2.0) * scale, pos + Vector2(5.0, -2.0) * scale, Color(1.0, 0.82, 0.38, alpha), 1.0 * scale)
+
+func _draw_stage_battle_crate(pos: Vector2, scale: float) -> void:
+	var size := Vector2(26.0, 16.0) * scale
+	var rect := Rect2(pos - size * 0.5, size)
+	draw_rect(rect, Color(0.055, 0.036, 0.022, 0.24), true)
+	draw_rect(rect, Color(0.0, 0.0, 0.0, 0.22), false, 1.1 * scale)
+	draw_line(rect.position + Vector2(3.0, size.y * 0.5), rect.position + Vector2(size.x - 3.0, size.y * 0.45), Color(accent_color.r, accent_color.g, accent_color.b, 0.12), 1.0 * scale)
+
 func _draw_lane(rect: Rect2) -> void:
 	var ground_y := _ground_y(rect)
 	var lane_color := terrain_color.lightened(0.12)
@@ -271,6 +354,7 @@ func _draw_combatants(rect: Rect2) -> void:
 	var enemy_action := float(enemy_pose.get("action", 0.0))
 	var player_shadow_scale := 1.08 + player_action * 0.08 + float(player_pose.get("low_hp", 0.0)) * 0.04
 	var enemy_shadow_scale := 1.15 + enemy_action * 0.08 + float(enemy_pose.get("low_hp", 0.0)) * 0.04
+	_draw_combat_footwork_trails(rect, player_draw_foot, enemy_draw_foot, player_pose, enemy_pose)
 	_draw_actor_shadow(player_draw_foot, player_shadow_scale)
 	_draw_actor_shadow(enemy_draw_foot, enemy_shadow_scale)
 	_draw_actor_contact_light(player_draw_foot, accent_color, 0.90 + player_action * 0.45, 1.0)
@@ -421,6 +505,28 @@ func _draw_actor_afterimage(texture: Texture2D, foot: Vector2, target_height: fl
 	var draw_size := texture_size * factor
 	var top_left := foot - Vector2(draw_size.x * 0.5, draw_size.y)
 	draw_texture_rect(texture, Rect2(top_left, draw_size), false, Color(tint.r, tint.g, tint.b, ACTOR_AFTERIMAGE_ALPHA * alpha))
+
+func _draw_combat_footwork_trails(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2, player_pose: Dictionary, enemy_pose: Dictionary) -> void:
+	var player_intensity := clampf(float(player_pose.get("action", 0.0)) + float(player_pose.get("hurt", 0.0)) * 0.48 + float(player_pose.get("low_hp", 0.0)) * 0.24, 0.16, 1.0)
+	var enemy_intensity := clampf(float(enemy_pose.get("action", 0.0)) + float(enemy_pose.get("hurt", 0.0)) * 0.48 + float(enemy_pose.get("low_hp", 0.0)) * 0.24, 0.16, 1.0)
+	_draw_actor_footwork_trail(player_foot, 1.0, accent_color.lightened(0.12), player_intensity)
+	_draw_actor_footwork_trail(enemy_foot, -1.0, Color(0.95, 0.28, 0.18), enemy_intensity)
+	if event_timer > 0.0 and (event_kind == "damage" or event_kind == "phase" or event_kind == "stun"):
+		var color := _event_color(event_kind, event_target)
+		var alpha := sin(_event_life_ratio() * PI) * 0.26
+		var y := _ground_y(rect) + 75.0
+		draw_line(Vector2(player_foot.x, y), Vector2(enemy_foot.x, y - 7.0), Color(color.r, color.g, color.b, alpha), 5.0)
+		draw_line(Vector2(player_foot.x, y + 3.0), Vector2(enemy_foot.x, y - 2.0), Color(1.0, 0.86, 0.44, alpha * 0.44), 1.4)
+
+func _draw_actor_footwork_trail(foot: Vector2, direction: float, color: Color, intensity: float) -> void:
+	for i in range(COMBAT_STAGE_FOOTWORK_TRAIL_COUNT):
+		var t := float(i) / float(maxi(1, COMBAT_STAGE_FOOTWORK_TRAIL_COUNT - 1))
+		var x := foot.x - direction * (18.0 + t * 34.0)
+		var y := foot.y + 7.0 + t * 2.4
+		var radius := Vector2(24.0 - t * 3.0, 4.5 - t * 0.35)
+		var alpha := (0.11 - t * 0.012) * intensity
+		_draw_ellipse(Vector2(x, y), radius, Color(color.r, color.g, color.b, alpha))
+		draw_line(Vector2(x - direction * radius.x * 0.38, y - 1.0), Vector2(x + direction * radius.x * 0.42, y - 2.0), Color(1.0, 0.86, 0.45, alpha * 0.58), 1.0)
 
 func _draw_actor_fallback(foot: Vector2, color: Color, label: String) -> void:
 	_draw_ellipse(foot - Vector2(0, 31), Vector2(22, 34), color.darkened(0.18))
@@ -744,6 +850,7 @@ func _draw_impact_overlay(rect: Rect2) -> void:
 func _draw_foreground(rect: Rect2) -> void:
 	var bottom_fog := Color(0.90, 0.84, 0.70, 0.13 + sin(pulse * 0.7) * 0.025)
 	_draw_soft_band(Rect2(rect.position + Vector2(0.0, rect.size.y * 0.78), Vector2(rect.size.x, 40.0)), bottom_fog)
+	_draw_stage_foreground_pressure(rect)
 	if _is_city_terrain():
 		draw_rect(Rect2(rect.position, Vector2(rect.size.x, 16.0)), Color(0.05, 0.035, 0.025, 0.52), true)
 		for i in range(7):
@@ -759,6 +866,32 @@ func _draw_foreground(rect: Rect2) -> void:
 	elif _is_forest_terrain():
 		_draw_bamboo_cluster(rect, rect.position.y + rect.size.y * 0.40, rect.position.x + 28.0, Color(0.02, 0.09, 0.05, 0.46))
 		_draw_bamboo_cluster(rect, rect.position.y + rect.size.y * 0.42, rect.position.x + rect.size.x - 34.0, Color(0.02, 0.09, 0.05, 0.42))
+
+func _draw_stage_foreground_pressure(rect: Rect2) -> void:
+	var alpha := COMBAT_STAGE_FOREGROUND_PRESSURE_ALPHA
+	for i in range(COMBAT_STAGE_FOREGROUND_OCCLUDER_COUNT):
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var x := rect.position.x + (rect.size.x * (0.035 + float(i / 2) * 0.028) if side < 0.0 else rect.size.x * (0.965 - float(i / 2) * 0.028))
+		var y0 := rect.position.y + rect.size.y * (0.08 + float(i % 3) * 0.035)
+		var y1 := rect.position.y + rect.size.y * (0.93 - float(i % 2) * 0.05)
+		var width := 6.0 + float(i % 3) * 2.0
+		draw_line(Vector2(x, y0), Vector2(x + side * 16.0, y1), Color(0.014, 0.010, 0.007, alpha * (0.76 - float(i) * 0.045)), width)
+		draw_line(Vector2(x + side * 2.5, y0 + 24.0), Vector2(x + side * 20.0, y0 + 74.0), Color(accent_color.r, accent_color.g, accent_color.b, alpha * 0.30), 1.4)
+	for i in range(3):
+		var x := rect.position.x + rect.size.x * (0.22 + float(i) * 0.28)
+		var y := rect.position.y + 1.0
+		var sway := sin(pulse * 0.7 + float(i) * 0.8) * 7.0
+		draw_polygon(PackedVector2Array([
+			Vector2(x, y),
+			Vector2(x + 34.0 + sway, y + 4.0),
+			Vector2(x + 29.0 + sway, y + 28.0),
+			Vector2(x - 3.0, y + 23.0)
+		]), PackedColorArray([
+			Color(0.036, 0.022, 0.014, alpha * 0.88),
+			Color(accent_color.r, accent_color.g, accent_color.b, alpha * 0.38),
+			Color(0.018, 0.012, 0.008, alpha * 0.78),
+			Color(0.028, 0.018, 0.011, alpha * 0.82)
+		]))
 
 func _draw_frame(rect: Rect2) -> void:
 	draw_rect(rect, Color(0.92, 0.65, 0.32, 0.46), false, 2.0)
