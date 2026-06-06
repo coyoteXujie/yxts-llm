@@ -96,6 +96,7 @@ func _run() -> void:
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_SWAY_PIXELS >= 4.0, "NPC 局部横版舞台职业/行为提示应有轻微动态")
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_GLOW_ALPHA >= 0.14, "NPC 局部横版舞台职业/行为提示应保留光效")
 	_check(NPC_SCRIPT.STAGE_LANE_LOCK_ALPHA >= 0.16, "NPC 局部横版舞台应保留平台带脚底锁定线")
+	_check(NPC_SCRIPT.STAGE_FACING_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应保留朝向/视线提示层")
 	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
@@ -125,6 +126,8 @@ func _run() -> void:
 		_check(not lane_anchor.is_empty(), "局部横版舞台应能返回最近平台带锚点")
 		_check(absf(float(lane_anchor.get("offset_y", 0.0)) - 12.0) <= 0.1, "局部横版舞台平台锚点应返回正确的脚底偏移")
 		_check(float(lane_anchor.get("strength", 0.0)) > 0.85, "局部横版舞台平台锚点应在近距离保持强吸附")
+	_check(local_area.get_stage_actor_facing_side(Vector2(stage_rect_for_lanes.size.x * 0.25, stage_rect_for_lanes.size.y * 0.6)) > 0.0, "局部横版舞台左侧角色应面向舞台中心")
+	_check(local_area.get_stage_actor_facing_side(Vector2(stage_rect_for_lanes.size.x * 0.75, stage_rect_for_lanes.size.y * 0.6)) < 0.0, "局部横版舞台右侧角色应面向舞台中心")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_AMBIENT_PARTICLES >= 24, "局部横版舞台应保留动态氛围粒子")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA >= 0.40, "局部横版舞台应保留地域化中景结构")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLATFORM_EDGE_ALPHA >= 0.38, "局部横版舞台应保留地面平台前沿")
@@ -186,6 +189,7 @@ func _run() -> void:
 	_check(_actors_have_stage_body_overlays(local_area.npc_nodes), "局部地图 NPC 应显示躯干、腰带和武器辉光前层")
 	_check(_actors_have_stage_activity(local_area.npc_nodes), "局部地图 NPC 应具备职业/行为视觉提示")
 	_check(_actors_have_stage_lane_anchor(local_area.npc_nodes), "局部地图 NPC 应绑定最近横版平台带锚点")
+	_check(_actors_face_stage_center(local_area.npc_nodes, stage_rect.size.x * 0.5), "局部地图 NPC 应根据站位面向舞台中心")
 	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
 	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -408,6 +412,23 @@ func _actors_have_stage_lane_anchor(nodes: Array) -> bool:
 		if absf(float(actor._stage_lane_visual_offset())) <= NPC_SCRIPT.STAGE_LANE_MAX_VISUAL_OFFSET:
 			return true
 	return false
+
+func _actors_face_stage_center(nodes: Array, center_x: float) -> bool:
+	var checked := 0
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		if not actor.data.has("stage_facing_side"):
+			return false
+		var side := float(actor._stage_facing_side())
+		if actor.position.x < center_x - GameData.TILE_SIZE * 0.5 and side <= 0.0:
+			return false
+		if actor.position.x > center_x + GameData.TILE_SIZE * 0.5 and side >= 0.0:
+			return false
+		checked += 1
+	return checked > 0
 
 func _stage_role_scale_bonus() -> bool:
 	var normal = NPC_SCRIPT.new()

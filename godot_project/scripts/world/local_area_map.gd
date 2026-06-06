@@ -304,6 +304,11 @@ func get_stage_lane_anchor(world_position: Vector2) -> Dictionary:
 		"index": best_index
 	}
 
+func get_stage_actor_facing_side(world_position: Vector2) -> float:
+	if not is_side_view_stage_active():
+		return 1.0
+	return -1.0 if world_position.x > get_world_rect().size.x * 0.5 else 1.0
+
 func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
 	return current_region
 
@@ -1098,6 +1103,7 @@ func _spawn_npc(npc_data: Dictionary) -> void:
 		var world_position := tile_to_world(tile)
 		npc_data["map_actor_scale"] = get_actor_depth_scale(world_position)
 		npc_data["stage_actor"] = true
+		npc_data["stage_facing_side"] = get_stage_actor_facing_side(world_position)
 		var anchor := get_stage_lane_anchor(world_position)
 		if not anchor.is_empty():
 			npc_data["stage_lane_y"] = float(anchor.get("lane_y", world_position.y))

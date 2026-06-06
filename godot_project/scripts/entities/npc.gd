@@ -57,6 +57,7 @@ const STAGE_ACTIVITY_PROP_SCALE := 1.0
 const STAGE_ACTIVITY_GLOW_ALPHA := 0.18
 const STAGE_LANE_LOCK_ALPHA := 0.20
 const STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
+const STAGE_FACING_CUE_ALPHA := 0.18
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -233,6 +234,12 @@ func _stage_lane_visual_offset() -> float:
 		-STAGE_LANE_MAX_VISUAL_OFFSET,
 		STAGE_LANE_MAX_VISUAL_OFFSET
 	)
+
+func _stage_facing_side() -> float:
+	if data.has("stage_facing_side"):
+		var side := float(data.get("stage_facing_side", 1.0))
+		return -1.0 if side < 0.0 else 1.0
+	return -1.0 if int(data.get("id", 0)) % 2 == 0 else 1.0
 
 func _refresh_sprite_asset() -> void:
 	if not bool(data.get("use_map_sprite", USE_FULL_SPRITES_ON_MAP)):
@@ -558,7 +565,7 @@ func _update_stage_pose_line(phase: float, wave: float, stage_motion: float, lan
 	var appearance := GameData.get_npc_appearance(data)
 	var accent := _color(appearance.get("accent", [0.78, 0.62, 0.32]), Color(0.78, 0.62, 0.32))
 	var role_color := _stage_role_color(accent)
-	var side := -1.0 if int(data.get("id", 0)) % 2 == 0 else 1.0
+	var side := _stage_facing_side()
 	var pose_base := sprite_base_position + Vector2(0.0, lane_offset_y)
 	var shoulder := pose_base + Vector2(side * (13.5 + wave * 1.2) * map_scale, -31.0 * map_scale)
 	var hand := pose_base + Vector2(side * (20.0 + sin(phase * 0.72) * 1.6) * map_scale, -5.5 * map_scale)
@@ -720,6 +727,8 @@ func _draw_stage_identity_cues(_appearance: Dictionary, accent: Color, map_scale
 	var pulse := 0.5 + sin(phase) * 0.5
 	var role_color := _stage_role_color(accent)
 	var alpha := STAGE_ROLE_CUE_ALPHA * (0.70 + pulse * 0.30)
+	var side := _stage_facing_side()
+	_draw_stage_facing_cue(role_color, map_scale, side, pulse)
 	if is_master():
 		var center := Vector2(0.0, -2.0 * map_scale)
 		draw_arc(center, 33.0 * map_scale, -0.25, PI + 0.25, 46, Color(role_color.r, role_color.g, role_color.b, alpha), 2.0)
@@ -738,6 +747,17 @@ func _draw_stage_identity_cues(_appearance: Dictionary, accent: Color, map_scale
 	else:
 		draw_arc(Vector2(0.0, 18.0 * map_scale), 24.0 * map_scale, PI * 0.12, PI * 0.88, 28, Color(role_color.r, role_color.g, role_color.b, alpha * 0.50), 1.4)
 
+func _draw_stage_facing_cue(role_color: Color, map_scale: float, side: float, pulse: float) -> void:
+	var alpha := STAGE_FACING_CUE_ALPHA * (0.62 + pulse * 0.24)
+	var head := Vector2(side * 4.0, -42.0) * map_scale
+	if is_master():
+		head.y += 2.0 * map_scale
+	elif is_enemy():
+		head.y += 3.0 * map_scale
+	var gaze := head + Vector2(side * (16.0 + pulse * 4.0), 3.0 + pulse * 1.2) * map_scale
+	draw_line(head, gaze, Color(1.0, 0.92, 0.62, alpha), 1.0 + map_scale * 0.08)
+	draw_circle(gaze, 1.6 * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 1.18))
+
 func _draw_stage_activity_cue(accent: Color, map_scale: float) -> void:
 	if not _is_stage_actor():
 		return
@@ -748,7 +768,7 @@ func _draw_stage_activity_cue(accent: Color, map_scale: float) -> void:
 	var phase := visual_phase * 1.18 + float(npc_id % 37) * 0.23
 	var pulse := 0.5 + sin(phase) * 0.5
 	var sway := sin(phase * 0.83) * STAGE_ACTIVITY_SWAY_PIXELS
-	var side := -1.0 if npc_id % 2 == 0 else 1.0
+	var side := _stage_facing_side()
 	var role_color := _stage_role_color(accent)
 	var alpha := STAGE_ACTIVITY_CUE_ALPHA * (0.72 + pulse * 0.28)
 	var hand := Vector2(side * (27.0 + sway) * map_scale, -7.0 * map_scale)
