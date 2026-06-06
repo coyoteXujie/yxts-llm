@@ -275,7 +275,7 @@
     "暗影司影主": "res://assets/characters/npc/portraits_v2/yingzhu.png"
   },
   "player_map_sprites": {
-    "male_none": "res://assets/characters/player/player_male_none.png",
+    "male_none": "res://assets/characters/player/player_male_none_stage_v2.png",
     "male_bagua": "res://assets/characters/player/player_male_bagua.png",
     "male_flower": "res://assets/characters/player/player_male_flower.png",
     "male_honglian": "res://assets/characters/player/player_male_honglian.png",

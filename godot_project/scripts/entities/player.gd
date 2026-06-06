@@ -38,6 +38,9 @@ const PLAYER_STAGE_HEAD_TURN_ALPHA := 0.20
 const PLAYER_STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
+const PLAYER_SPRITE_OVERRIDES := {
+	"male_none": "res://assets/characters/player/player_male_none_stage_v2.png"
+}
 
 var movement_enabled := true
 var world_map: Node = null
@@ -297,7 +300,7 @@ func _refresh_sprite_texture(force: bool = false) -> void:
 	if not force and key == sprite_key:
 		return
 	sprite_key = key
-	var path := "res://assets/characters/player/player_%s_%s.png" % [gender, faction]
+	var path := str(PLAYER_SPRITE_OVERRIDES.get(key, "res://assets/characters/player/player_%s_%s.png" % [gender, faction]))
 	sprite_texture = GameData.load_texture(path, true)
 	if sprite_texture == null:
 		sprite_texture = GameData.load_texture("res://assets/characters/player/player_male_none.png", true)

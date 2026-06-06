@@ -55,6 +55,10 @@ func _run() -> void:
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
 	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 116.0, "玩家地图角色显示不应继续偏小")
+	var default_player_sprite_path := str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", ""))
+	_check(default_player_sprite_path.ends_with("player_male_none_stage_v2.png"), "默认男主应优先使用高质量生成 sprite")
+	var default_player_sprite := GameData.load_texture(default_player_sprite_path, true)
+	_check(default_player_sprite != null and default_player_sprite.get_size().y >= 900.0, "默认男主 sprite 应具备足够原始分辨率")
 	_check(PLAYER_SCRIPT.LOCAL_STAGE_PRESENCE_SCALE >= 1.20, "玩家局部横版舞台应叠加额外角色存在感缩放")
 	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
