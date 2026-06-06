@@ -73,6 +73,8 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_READY_STANCE_ALPHA >= 0.22, "玩家局部横版舞台待机时应保留前后手守势姿态")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_CENTERLINE_ALPHA >= 0.20, "玩家局部横版舞台应保留重心/躯干中心线")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_LANE_LOCK_ALPHA >= 0.16, "玩家局部横版舞台应保留平台带脚底锁定线")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_HEAD_TURN_ALPHA >= 0.18, "玩家局部横版舞台应保留头肩/视线转向细节")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_WEIGHT_SHIFT_ALPHA >= 0.20, "玩家局部横版舞台应保留脚底重心转移提示")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	player.facing = Vector2.LEFT
 	_check(player._facing_side() < 0.0, "玩家横版舞台侧向层应响应向左朝向")
@@ -100,6 +102,8 @@ func _run() -> void:
 	_check(NPC_SCRIPT.STAGE_ACTIVITY_GLOW_ALPHA >= 0.14, "NPC 局部横版舞台职业/行为提示应保留光效")
 	_check(NPC_SCRIPT.STAGE_LANE_LOCK_ALPHA >= 0.16, "NPC 局部横版舞台应保留平台带脚底锁定线")
 	_check(NPC_SCRIPT.STAGE_FACING_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应保留朝向/视线提示层")
+	_check(NPC_SCRIPT.STAGE_HEAD_TURN_ALPHA >= 0.18, "NPC 局部横版舞台应保留头肩/视线转向细节")
+	_check(NPC_SCRIPT.STAGE_WEIGHT_SHIFT_ALPHA >= 0.20, "NPC 局部横版舞台应保留脚底重心转移提示")
 	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()

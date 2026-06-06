@@ -34,6 +34,8 @@ const PLAYER_STAGE_BREATH_AURA_ALPHA := 0.18
 const PLAYER_STAGE_CENTERLINE_ALPHA := 0.24
 const PLAYER_STAGE_LANE_LOCK_ALPHA := 0.20
 const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
+const PLAYER_STAGE_HEAD_TURN_ALPHA := 0.20
+const PLAYER_STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 
@@ -136,6 +138,7 @@ func _draw() -> void:
 			_draw_stage_player_run_ribbons(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving)
 			_draw_stage_player_footwork(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_weight_shift(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_back_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, false)
 			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
@@ -152,6 +155,7 @@ func _draw() -> void:
 			_draw_stage_player_shoulder_glow(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_stance_lines(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_head_focus(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_head_turn(top_left, draw_size, trim, moving, facing_side)
 		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
@@ -394,6 +398,22 @@ func _draw_stage_player_footwork(top_left: Vector2, draw_size: Vector2, accent: 
 		var dust_side := Vector2(side * draw_size.x * 0.11, draw_size.y * 0.010)
 		_draw_shadow(left - dust_side, radius * Vector2(1.28, 0.72), Color(0.72, 0.62, 0.42, PLAYER_STAGE_FOOT_ANCHOR_ALPHA * 0.30))
 
+func _draw_stage_player_weight_shift(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var phase := sin(walk_phase * (1.18 if moving else 0.56))
+	var support_side := side
+	if moving and phase < 0.0:
+		support_side = -side
+	var foot_y := top_left.y + draw_size.y * 0.972
+	var support := Vector2(top_left.x + draw_size.x * (0.50 + support_side * (0.160 + absf(phase) * 0.024)), foot_y - maxf(phase, 0.0) * draw_size.y * 0.010)
+	var counter := Vector2(top_left.x + draw_size.x * (0.50 - support_side * (0.132 + absf(phase) * 0.018)), foot_y + draw_size.y * 0.006)
+	var hip := top_left + Vector2(draw_size.x * (0.50 + support_side * (0.028 + phase * 0.010)), draw_size.y * 0.655)
+	var alpha := PLAYER_STAGE_WEIGHT_SHIFT_ALPHA * (0.66 + absf(phase) * 0.28)
+	_draw_shadow(support + Vector2(0.0, draw_size.y * 0.006), Vector2(draw_size.x * 0.082, draw_size.y * 0.012), Color(accent.r, accent.g, accent.b, alpha * 0.42))
+	_draw_shadow(counter + Vector2(0.0, draw_size.y * 0.010), Vector2(draw_size.x * 0.060, draw_size.y * 0.009), Color(0.0, 0.0, 0.0, alpha * 0.34))
+	draw_line(hip, support, Color(1.0, 0.90, 0.58, alpha * 0.64), clampf(draw_size.x * 0.009, 0.9, 1.5))
+	draw_line(counter, support, Color(accent.r, accent.g, accent.b, alpha * 0.52), 1.0)
+	draw_arc(support - Vector2(support_side * draw_size.x * 0.010, draw_size.y * 0.012), draw_size.x * 0.080, PI * 0.08, PI * 0.90, 18, Color(accent.r, accent.g, accent.b, alpha * 0.58), 1.0)
+
 func _draw_stage_player_pose_rig(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float, front_layer: bool) -> void:
 	var phase := sin(walk_phase * (1.15 if moving else 0.54))
 	var counter := cos(walk_phase * (1.15 if moving else 0.54))
@@ -516,6 +536,20 @@ func _draw_stage_player_head_focus(top_left: Vector2, draw_size: Vector2, accent
 	draw_line(head + Vector2(-side * draw_size.x * 0.030, -draw_size.y * 0.010), gaze, Color(1.0, 0.95, 0.72, alpha), clampf(draw_size.x * 0.010, 0.9, 1.6))
 	draw_circle(gaze, clampf(draw_size.x * 0.018, 1.3, 2.4), Color(accent.r, accent.g, accent.b, alpha * 1.08))
 	draw_line(head + Vector2(-side * draw_size.x * 0.045, draw_size.y * 0.030), head + Vector2(side * draw_size.x * 0.054, draw_size.y * 0.045), Color(0.05, 0.04, 0.035, alpha * 0.74), clampf(draw_size.x * 0.009, 0.8, 1.4))
+
+func _draw_stage_player_head_turn(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	var phase := sin(walk_phase * (1.02 if moving else 0.52))
+	var head := top_left + Vector2(draw_size.x * (0.50 + side * (0.028 + phase * 0.008)), draw_size.y * (0.224 + phase * 0.004))
+	var alpha := PLAYER_STAGE_HEAD_TURN_ALPHA * (0.64 + absf(phase) * 0.30)
+	var radius := draw_size.x * 0.055
+	draw_arc(head + Vector2(side * draw_size.x * 0.010, draw_size.y * 0.010), radius, -PI * 0.42, PI * 0.48, 18, Color(accent.r, accent.g, accent.b, alpha * 0.72), 1.0)
+	var brow_start := head + Vector2(-side * draw_size.x * 0.018, -draw_size.y * 0.008)
+	var brow_end := head + Vector2(side * draw_size.x * 0.070, -draw_size.y * (0.018 + phase * 0.004))
+	draw_line(brow_start, brow_end, Color(0.05, 0.038, 0.030, alpha * 0.95), clampf(draw_size.x * 0.008, 0.8, 1.2))
+	var eye := head + Vector2(side * draw_size.x * 0.060, draw_size.y * 0.006)
+	draw_circle(eye, clampf(draw_size.x * 0.010, 0.9, 1.5), Color(1.0, 0.92, 0.62, alpha * 0.92))
+	var chin := head + Vector2(side * draw_size.x * 0.040, draw_size.y * 0.050)
+	draw_line(chin, chin + Vector2(side * draw_size.x * 0.050, draw_size.y * 0.020), Color(0.05, 0.04, 0.034, alpha * 0.58), 0.9)
 
 func _draw_stage_player_idle_cloth_sway(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var phase := sin(walk_phase * (1.28 if moving else 0.68))

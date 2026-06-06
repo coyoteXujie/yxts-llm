@@ -60,6 +60,8 @@ const STAGE_IDLE_GESTURE_ALPHA := 0.20
 const STAGE_LANE_LOCK_ALPHA := 0.20
 const STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const STAGE_FACING_CUE_ALPHA := 0.18
+const STAGE_HEAD_TURN_ALPHA := 0.20
+const STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -405,6 +407,7 @@ func _draw() -> void:
 		_draw_stage_ground_lock(accent, map_scale, lane_offset)
 		_draw_contact_light(accent, map_scale, lane_offset)
 		_draw_stage_foot_anchors(accent, map_scale, lane_offset)
+		_draw_stage_weight_shift(accent, map_scale, lane_offset)
 		_draw_aura(appearance, accent)
 		_draw_stage_identity_cues(appearance, accent, map_scale)
 		_draw_stage_activity_cue(accent, map_scale)
@@ -556,6 +559,26 @@ func _draw_stage_foot_anchors(accent: Color, map_scale: float, lane_offset_y: fl
 	_draw_ellipse(right, radius * Vector2(0.94, 0.90), Color(0.0, 0.0, 0.0, STAGE_FOOT_ANCHOR_ALPHA * 0.62))
 	draw_line(left + Vector2(-radius.x * 0.36, 0.0), right + Vector2(radius.x * 0.36, -0.8 * map_scale), Color(role_color.r, role_color.g, role_color.b, STAGE_FOOT_ANCHOR_ALPHA * 0.72), 1.0 + map_scale * 0.16)
 	draw_arc(Vector2(0.0, y - 6.0 * map_scale), 18.0 * map_scale, PI * 0.16, PI * 0.88, 24, Color(role_color.r, role_color.g, role_color.b, STAGE_STEP_SWEEP_ALPHA * (0.60 + absf(step) * 0.30)), 1.0 + map_scale * 0.12)
+
+func _draw_stage_weight_shift(accent: Color, map_scale: float, lane_offset_y: float = 0.0) -> void:
+	if not _is_stage_actor():
+		return
+	var npc_id := int(data.get("id", 0))
+	var phase := visual_phase * 0.74 + float(npc_id % 29) * 0.17
+	var wave := sin(phase)
+	var side := _stage_facing_side()
+	var support_side := side if wave >= 0.0 else -side
+	var role_color := _stage_role_color(accent)
+	var y := 30.5 * map_scale + lane_offset_y
+	var support := Vector2(support_side * (12.0 + absf(wave) * 2.4) * map_scale, y - maxf(wave, 0.0) * 0.9 * map_scale)
+	var counter := Vector2(-support_side * (9.0 + absf(wave) * 1.8) * map_scale, y + 1.1 * map_scale)
+	var hip := Vector2(side * (3.5 + wave * 1.0) * map_scale, 1.5 * map_scale + lane_offset_y * 0.50)
+	var alpha := STAGE_WEIGHT_SHIFT_ALPHA * (0.62 + absf(wave) * 0.30)
+	_draw_ellipse(support + Vector2(0.0, 0.8 * map_scale), Vector2(9.6, 2.6) * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 0.42))
+	_draw_ellipse(counter + Vector2(0.0, 1.2 * map_scale), Vector2(7.2, 2.0) * map_scale, Color(0.0, 0.0, 0.0, alpha * 0.34))
+	draw_line(hip, support, Color(1.0, 0.88, 0.55, alpha * 0.62), 1.0 + map_scale * 0.10)
+	draw_line(counter, support, Color(role_color.r, role_color.g, role_color.b, alpha * 0.48), 0.9 + map_scale * 0.08)
+	draw_arc(support - Vector2(support_side * 1.5 * map_scale, 2.5 * map_scale), 8.5 * map_scale, PI * 0.08, PI * 0.92, 18, Color(role_color.r, role_color.g, role_color.b, alpha * 0.58), 1.0)
 
 func _update_stage_pose_line(phase: float, wave: float, stage_motion: float, lane_offset_y: float = 0.0) -> void:
 	if stage_pose_line_node == null:
@@ -732,6 +755,7 @@ func _draw_stage_identity_cues(_appearance: Dictionary, accent: Color, map_scale
 	var alpha := STAGE_ROLE_CUE_ALPHA * (0.70 + pulse * 0.30)
 	var side := _stage_facing_side()
 	_draw_stage_facing_cue(role_color, map_scale, side, pulse)
+	_draw_stage_head_turn_cue(role_color, map_scale, side, phase)
 	if is_master():
 		var center := Vector2(0.0, -2.0 * map_scale)
 		draw_arc(center, 33.0 * map_scale, -0.25, PI + 0.25, 46, Color(role_color.r, role_color.g, role_color.b, alpha), 2.0)
@@ -760,6 +784,21 @@ func _draw_stage_facing_cue(role_color: Color, map_scale: float, side: float, pu
 	var gaze := head + Vector2(side * (16.0 + pulse * 4.0), 3.0 + pulse * 1.2) * map_scale
 	draw_line(head, gaze, Color(1.0, 0.92, 0.62, alpha), 1.0 + map_scale * 0.08)
 	draw_circle(gaze, 1.6 * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 1.18))
+
+func _draw_stage_head_turn_cue(role_color: Color, map_scale: float, side: float, phase: float) -> void:
+	var wave := sin(phase * 0.78)
+	var alpha := STAGE_HEAD_TURN_ALPHA * (0.62 + absf(wave) * 0.30)
+	var head := Vector2(side * (4.8 + wave * 1.2), -43.5 + wave * 0.8) * map_scale
+	if is_master():
+		head.y += 2.0 * map_scale
+	elif is_enemy():
+		head.y += 3.0 * map_scale
+	draw_arc(head + Vector2(side * 1.8, 1.0) * map_scale, 5.6 * map_scale, -PI * 0.42, PI * 0.50, 16, Color(role_color.r, role_color.g, role_color.b, alpha * 0.74), 0.9 + map_scale * 0.06)
+	var brow_start := head + Vector2(-side * 2.4, -1.2) * map_scale
+	var brow_end := head + Vector2(side * 6.6, -2.0 - wave * 0.6) * map_scale
+	draw_line(brow_start, brow_end, Color(0.04, 0.032, 0.026, alpha * 0.88), 0.9 + map_scale * 0.04)
+	var eye := head + Vector2(side * 5.4, 0.5) * map_scale
+	draw_circle(eye, 1.0 * map_scale, Color(1.0, 0.90, 0.58, alpha * 0.92))
 
 func _draw_stage_activity_cue(accent: Color, map_scale: float) -> void:
 	if not _is_stage_actor():
