@@ -126,6 +126,8 @@ const SIDE_VIEW_PLAY_LANE_COUNT := 5
 const SIDE_VIEW_PLAY_LANE_ALPHA := 0.22
 const SIDE_VIEW_PLAY_LANE_EDGE_ALPHA := 0.30
 const SIDE_VIEW_LANE_DECAL_COUNT := 24
+const SIDE_VIEW_LANE_SHADOW_COUNT := 5
+const SIDE_VIEW_LANE_SHADOW_ALPHA := 0.24
 const SIDE_VIEW_SIDE_EXIT_COUNT := 4
 const SIDE_VIEW_SIDE_EXIT_ALPHA := 0.28
 const SIDE_VIEW_TERRACE_BAND_COUNT := 5
@@ -2461,6 +2463,7 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 	]))
 	_draw_stage_terrain_terraces(size, palette, top_y, bottom_y)
 	_draw_stage_play_lanes(size, palette, top_y, bottom_y)
+	_draw_stage_lane_shadow_stack(size, palette, top_y, bottom_y)
 	_draw_stage_depth_guides(size, palette)
 	_draw_stage_perspective_edges(size, palette, top_y, bottom_y)
 	_draw_stage_floor_material(size, palette, top_y, bottom_y)
@@ -2660,6 +2663,29 @@ func _draw_stage_lane_decals(size: Vector2, palette: Dictionary, top_y: float, b
 			draw_circle(Vector2(x + width * 0.18, y), tile_size * 0.020, Color(accent.r, accent.g, accent.b, alpha * 0.82))
 		else:
 			draw_line(Vector2(x - width * 0.50, y), Vector2(x + width * 0.50, y - tile_size * 0.04), Color(0.0, 0.0, 0.0, alpha), 1.0 + lane_t * 0.8)
+
+func _draw_stage_lane_shadow_stack(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
+	var accent: Color = palette["accent"]
+	for i in range(SIDE_VIEW_LANE_SHADOW_COUNT):
+		var lane_t := (float(i) + 0.5) / float(maxi(1, SIDE_VIEW_LANE_SHADOW_COUNT))
+		var y := lerpf(top_y, bottom_y, lane_t)
+		var inset := lerpf(size.x * 0.12, size.x * -0.035, lane_t)
+		var right := size.x - inset
+		var depth := tile_size * (0.13 + lane_t * 0.18)
+		var alpha := SIDE_VIEW_LANE_SHADOW_ALPHA * (0.42 + lane_t * 0.46)
+		draw_polygon(PackedVector2Array([
+			Vector2(inset + tile_size * 0.20, y + tile_size * 0.05),
+			Vector2(right - tile_size * 0.24, y - tile_size * 0.06),
+			Vector2(right + tile_size * 0.20, y + depth),
+			Vector2(inset - tile_size * 0.24, y + depth + tile_size * 0.08)
+		]), PackedColorArray([
+			Color(0.0, 0.0, 0.0, alpha * 0.30),
+			Color(0.0, 0.0, 0.0, alpha * 0.26),
+			Color(0.0, 0.0, 0.0, alpha * 0.68),
+			Color(0.0, 0.0, 0.0, alpha * 0.72)
+		]))
+		draw_line(Vector2(inset + tile_size * 0.48, y + tile_size * 0.02), Vector2(right - tile_size * 0.52, y - tile_size * 0.08), Color(accent.r, accent.g, accent.b, alpha * 0.58), 1.0 + lane_t * 1.1)
+		draw_line(Vector2(inset - tile_size * 0.10, y + depth + tile_size * 0.06), Vector2(right + tile_size * 0.10, y + depth - tile_size * 0.04), Color(0.0, 0.0, 0.0, alpha * 0.80), 1.4 + lane_t * 1.4)
 
 func _draw_stage_side_exit_frames(size: Vector2, palette: Dictionary, top_y: float, bottom_y: float) -> void:
 	var accent: Color = palette["accent"]

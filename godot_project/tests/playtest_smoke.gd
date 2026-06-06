@@ -114,6 +114,8 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_ALPHA >= 0.20, "局部横版舞台可行走平台带应有足够可见度")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PLAY_LANE_EDGE_ALPHA >= 0.26, "局部横版舞台平台边线应有足够层次")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_LANE_DECAL_COUNT >= 20, "局部横版舞台地面应保留走位带细节标识")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_LANE_SHADOW_COUNT >= 5, "局部横版舞台应保留可走平台带阴影栈")
+	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_LANE_SHADOW_ALPHA >= 0.22, "局部横版舞台可走平台带阴影栈应有足够可见度")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_SIDE_EXIT_COUNT >= 4, "局部横版舞台应保留左右副本式出入口框")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_SIDE_EXIT_ALPHA >= 0.24, "局部横版舞台出入口框应有足够可见度")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_TERRACE_BAND_COUNT >= 4, "局部横版舞台应保留多层地形台阶/平台剪影")
