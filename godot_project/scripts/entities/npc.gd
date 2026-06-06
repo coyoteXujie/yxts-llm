@@ -29,14 +29,14 @@ var sprite_rim_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 114.0
-const MASTER_SPRITE_HEIGHT := 140.0
-const ENEMY_SPRITE_HEIGHT := 136.0
-const STAGE_PRESENCE_SCALE := 1.34
-const STAGE_MASTER_EXTRA_SCALE := 1.08
-const STAGE_ENEMY_EXTRA_SCALE := 1.10
-const STAGE_SPRITE_MIN_SCALE := 1.18
-const STAGE_SPRITE_MAX_SCALE := 1.70
+const BASE_SPRITE_HEIGHT := 118.0
+const MASTER_SPRITE_HEIGHT := 146.0
+const ENEMY_SPRITE_HEIGHT := 142.0
+const STAGE_PRESENCE_SCALE := 1.38
+const STAGE_MASTER_EXTRA_SCALE := 1.09
+const STAGE_ENEMY_EXTRA_SCALE := 1.11
+const STAGE_SPRITE_MIN_SCALE := 1.22
+const STAGE_SPRITE_MAX_SCALE := 1.74
 const CONTACT_GLOW_ALPHA := 0.115
 const STAGE_RIM_ALPHA := 0.15
 const STAGE_ROLE_CUE_ALPHA := 0.18
@@ -188,9 +188,9 @@ func _ambient_bubble_style() -> StyleBoxFlat:
 
 func _ambient_bubble_position() -> Vector2:
 	var map_scale := _map_actor_scale()
-	var y := -132.0 * map_scale
+	var y := -142.0 * map_scale
 	if is_master():
-		y -= 10.0
+		y -= 14.0
 	return Vector2(-AMBIENT_BUBBLE_WIDTH * 0.5, y)
 
 func _trim_ambient_line(line: String) -> String:
@@ -362,7 +362,7 @@ func _refresh_sprite_asset() -> void:
 	using_sprite_asset = true
 	if name_label != null:
 		name_label.z_index = 8
-		name_label.position = Vector2(-58, -92 * map_scale)
+		name_label.position = Vector2(-58, -100 * map_scale)
 	_update_sprite_motion()
 
 func _clear_sprite_asset() -> void:

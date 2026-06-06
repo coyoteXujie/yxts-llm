@@ -77,10 +77,11 @@ func _run() -> void:
 	player.facing = Vector2.RIGHT
 	_check(player._facing_side() > 0.0, "玩家横版舞台侧向层应响应向右朝向")
 	player.facing = Vector2.DOWN
-	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 112.0, "NPC 地图贴图基础高度不应继续偏小")
-	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.32, "NPC 局部横版舞台应叠加额外角色存在感缩放")
-	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE > 1.0 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE > 1.0, "掌门/敌人应在局部横版舞台获得额外体量")
-	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.16, "NPC 局部横版舞台应保留最低视觉体量")
+	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 116.0, "NPC 地图贴图基础高度不应继续偏小")
+	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.36, "NPC 局部横版舞台应叠加额外角色存在感缩放")
+	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE >= 1.08 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE >= 1.10, "掌门/敌人应在局部横版舞台获得额外体量")
+	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.20, "NPC 局部横版舞台应保留最低视觉体量")
+	_check(NPC_SCRIPT.STAGE_SPRITE_MAX_SCALE >= 1.72, "NPC 局部横版舞台应允许前景角色获得更强体量")
 	_check(NPC_SCRIPT.STAGE_RIM_ALPHA >= 0.12, "NPC 局部横版舞台应有贴图轮廓高光")
 	_check(NPC_SCRIPT.STAGE_ROLE_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应有身份提示动效")
 	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
@@ -186,6 +187,7 @@ func _run() -> void:
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_max_textured_actor_height(local_area.npc_nodes) >= 115.0, "局部地图 NPC 贴图显示不应继续偏小")
+	_check(_max_textured_actor_height(local_area.npc_nodes) >= 125.0, "局部横版舞台 NPC 贴图应具备更强存在感")
 	_check(_actor_depth_scale_range(local_area.npc_nodes) >= 0.10, "局部 NPC 应按舞台前后排产生大小差异")
 	_check(_actors_marked_stage(local_area.npc_nodes), "局部地图 NPC 应标记为横版舞台角色")
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
@@ -195,6 +197,7 @@ func _run() -> void:
 	_check(_actors_have_stage_activity(local_area.npc_nodes), "局部地图 NPC 应具备职业/行为视觉提示")
 	_check(_actors_have_stage_lane_anchor(local_area.npc_nodes), "局部地图 NPC 应绑定最近横版平台带锚点")
 	_check(_actors_face_stage_center(local_area.npc_nodes, stage_rect.size.x * 0.5), "局部地图 NPC 应根据站位面向舞台中心")
+	_check(_stage_labels_and_bubbles_clear_actor_heads(local_area.npc_nodes), "局部横版舞台 NPC 放大后姓名牌/气泡应避开头部")
 	_check(NPC_SCRIPT.STAGE_POSE_LINE_ALPHA >= 0.22, "NPC 局部舞台姿态线应有足够可见度")
 	_check(NPC_SCRIPT.STAGE_FOOT_ANCHOR_ALPHA >= 0.16, "NPC 局部舞台脚步锚点应有足够可见度")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
@@ -436,6 +439,23 @@ func _actors_face_stage_center(nodes: Array, center_x: float) -> bool:
 		if actor.position.x < center_x - GameData.TILE_SIZE * 0.5 and side <= 0.0:
 			return false
 		if actor.position.x > center_x + GameData.TILE_SIZE * 0.5 and side >= 0.0:
+			return false
+		checked += 1
+	return checked > 0
+
+func _stage_labels_and_bubbles_clear_actor_heads(nodes: Array) -> bool:
+	var checked := 0
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		if actor.name_label == null:
+			return false
+		var map_scale := float(actor._map_actor_scale())
+		if actor.name_label.position.y > -96.0 * map_scale:
+			return false
+		if float(actor._ambient_bubble_position().y) > -136.0 * map_scale:
 			return false
 		checked += 1
 	return checked > 0
