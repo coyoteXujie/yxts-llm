@@ -92,6 +92,9 @@ const SIDE_VIEW_PAINTED_BACKDROP_ALPHA := 0.46
 const SIDE_VIEW_PAINTED_BACKDROP_SKY_BLEND := 0.18
 const SIDE_VIEW_PAINTED_BACKDROP_FOOT_BLEND := 0.30
 const SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA := 0.22
+const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_ALPHA := 0.62
+const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOG_ALPHA := 0.14
+const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOOT_ALPHA := 0.18
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
@@ -147,6 +150,9 @@ const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.82
 const STAGE_DEPTH_MAX_SCALE := 1.16
+const STAGE_MIDGROUND_LAYER_TEXTURES := {
+	"qinghe": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png"
+}
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -164,6 +170,7 @@ var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
 var tile_textures: Dictionary = {}
 var scene_background_texture: Texture2D
+var scene_midground_layer_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
 var side_view_stage_enabled := true
 var stage_visual_phase := 0.0
@@ -201,10 +208,14 @@ func _load_tile_textures() -> void:
 
 func _load_region_scene_background() -> void:
 	scene_background_texture = null
+	scene_midground_layer_texture = null
 	var region_id := str(current_region.get("id", ""))
 	var path := GameData.get_scene_background_path(region_id)
 	if not path.is_empty():
 		scene_background_texture = GameData.load_texture(path, true)
+	var layer_path := str(STAGE_MIDGROUND_LAYER_TEXTURES.get(region_id, ""))
+	if not layer_path.is_empty():
+		scene_midground_layer_texture = GameData.load_texture(layer_path, true)
 
 func setup_region(region: Dictionary) -> void:
 	if tile_textures.is_empty():
@@ -1542,6 +1553,7 @@ func _draw_side_view_stage() -> void:
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
 	_draw_side_view_silhouettes(size, palette)
 	_draw_side_view_midground(size, palette)
+	_draw_side_view_painted_midground_layer(size, palette)
 	_draw_side_view_street_facades(size, palette)
 	_draw_side_view_upper_platforms(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
@@ -1589,6 +1601,37 @@ func _draw_side_view_painted_backdrop(size: Vector2, palette: Dictionary) -> voi
 		Rect2(Vector2(size.x * 0.84, 0.0), Vector2(size.x * 0.16, size.y)),
 		Color(0.0, 0.0, 0.0, 0.0),
 		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA)
+	)
+
+func _draw_side_view_painted_midground_layer(size: Vector2, palette: Dictionary) -> void:
+	if scene_midground_layer_texture == null:
+		return
+	var accent: Color = palette["accent"]
+	var sky: Color = palette["sky"]
+	var layer_rect := Rect2(
+		Vector2(-size.x * 0.035, size.y * 0.215),
+		Vector2(size.x * 1.07, size.y * 0.43)
+	)
+	draw_texture_rect(scene_midground_layer_texture, layer_rect, false, Color(1.0, 1.0, 1.0, SIDE_VIEW_PAINTED_MIDGROUND_LAYER_ALPHA))
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, layer_rect.position.y - tile_size * 0.25), Vector2(size.x, tile_size * 1.30)),
+		Color(sky.r, sky.g, sky.b, SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOG_ALPHA),
+		Color(sky.r, sky.g, sky.b, 0.0)
+	)
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, layer_rect.position.y + layer_rect.size.y * 0.70), Vector2(size.x, layer_rect.size.y * 0.34)),
+		Color(accent.r, accent.g, accent.b, 0.0),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOOT_ALPHA)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2.ZERO, Vector2(size.x * 0.10, size.y)),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA * 0.62),
+		Color(0.0, 0.0, 0.0, 0.0)
+	)
+	_draw_stage_horizontal_gradient(
+		Rect2(Vector2(size.x * 0.90, 0.0), Vector2(size.x * 0.10, size.y)),
+		Color(0.0, 0.0, 0.0, 0.0),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA * 0.62)
 	)
 
 func _draw_stage_vertical_gradient(rect: Rect2, top_color: Color, bottom_color: Color) -> void:

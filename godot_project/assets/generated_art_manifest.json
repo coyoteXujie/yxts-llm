@@ -487,6 +487,9 @@
     "xueshan_sect": "res://assets/world/scenes/scene_xueshan_sect.png",
     "xiaoyao_sect": "res://assets/world/scenes/scene_xiaoyao_sect.png"
   },
+  "stage_layers": {
+    "qinghe_shopfront": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png"
+  },
   "ui": {
     "panel_ink": "res://assets/ui/panel_ink.png",
     "button_gold": "res://assets/ui/button_gold.png",
@@ -516,6 +519,7 @@
     "item_icons": 22,
     "skill_icons": 41,
     "scene_backgrounds": 73,
+    "stage_layers": 1,
     "ui": 8
   }
 }
