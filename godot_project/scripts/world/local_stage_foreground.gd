@@ -6,6 +6,8 @@ const FOREGROUND_MIST_BANDS := 4
 const SIDE_OCCLUDER_COUNT := 7
 const BOTTOM_OCCLUDER_COUNT := 10
 const BOTTOM_OCCLUDER_ALPHA := 0.24
+const HANGING_FOREGROUND_COUNT := 8
+const HANGING_FOREGROUND_ALPHA := 0.28
 
 var current_region: Dictionary = {}
 var map_size := Vector2.ZERO
@@ -29,6 +31,7 @@ func _draw() -> void:
 	var region_type := str(current_region.get("type", "wild"))
 	var accent := _accent_color(region_type, terrain)
 	_draw_top_depth(accent, region_type, terrain)
+	_draw_hanging_foreground(accent, region_type, terrain)
 	_draw_side_occluders(accent, region_type, terrain)
 	_draw_bottom_occluders(accent, region_type, terrain)
 	_draw_foreground_mist(accent, terrain)
@@ -131,6 +134,75 @@ func _draw_rock_overhang(accent: Color) -> void:
 		Color(0.032, 0.028, 0.021, 0.48),
 		Color(0.024, 0.022, 0.018, 0.46)
 	]))
+
+func _draw_hanging_foreground(accent: Color, region_type: String, terrain: String) -> void:
+	for i in range(HANGING_FOREGROUND_COUNT):
+		var t := float(i) / float(maxi(1, HANGING_FOREGROUND_COUNT - 1))
+		var x := lerpf(tile_size * 0.30, map_size.x - tile_size * 0.30, t)
+		var sway := sin(visual_phase * 0.92 + float(i) * 0.77) * tile_size * 0.10
+		var top_y := tile_size * (0.10 + float(i % 3) * 0.045)
+		var alpha := HANGING_FOREGROUND_ALPHA * (0.70 + float(i % 3) * 0.12)
+		if region_type == "city" or region_type == "town":
+			_draw_hanging_sign(x + sway, top_y, accent, alpha, i)
+		elif region_type == "sect":
+			_draw_hanging_banner(x + sway, top_y, accent, alpha, i)
+		elif _terrain_has_forest(terrain):
+			_draw_near_branch(x + sway, top_y, accent, alpha, i)
+		elif terrain.contains("snow"):
+			_draw_near_icicle(x + sway, top_y, accent, alpha, i)
+		else:
+			_draw_near_tassel(x + sway, top_y, accent, alpha, i)
+
+func _draw_hanging_sign(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var line_height := tile_size * (0.32 + float(index % 2) * 0.08)
+	draw_line(Vector2(x, y), Vector2(x, y + line_height), Color(0.55, 0.36, 0.20, alpha * 0.92), 1.1)
+	var rect := Rect2(Vector2(x - tile_size * 0.18, y + line_height), Vector2(tile_size * 0.36, tile_size * 0.20))
+	draw_rect(rect, Color(0.10, 0.045, 0.024, alpha), true)
+	draw_rect(rect.grow(-2.0), Color(accent.r, accent.g, accent.b, alpha * 0.34), true)
+	if index % 2 == 0:
+		draw_circle(Vector2(x + tile_size * 0.24, y + line_height + tile_size * 0.12), tile_size * 0.055, Color(1.0, 0.64, 0.22, alpha * 0.52))
+
+func _draw_hanging_banner(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var h := tile_size * (0.62 + float(index % 3) * 0.12)
+	var w := tile_size * 0.24
+	draw_line(Vector2(x, y), Vector2(x, y + h + tile_size * 0.14), Color(0.03, 0.024, 0.018, alpha), 1.5)
+	draw_polygon(PackedVector2Array([
+		Vector2(x, y + tile_size * 0.12),
+		Vector2(x + w, y + tile_size * 0.20),
+		Vector2(x + w * 0.82, y + h),
+		Vector2(x + w * 0.46, y + h - tile_size * 0.12),
+		Vector2(x, y + h)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, alpha),
+		Color(accent.r, accent.g, accent.b, alpha * 0.74),
+		Color(0.020, 0.016, 0.012, alpha * 0.82),
+		Color(0.045, 0.034, 0.024, alpha * 0.84),
+		Color(0.020, 0.016, 0.012, alpha * 0.88)
+	]))
+
+func _draw_near_branch(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var end := Vector2(x + tile_size * (0.50 + float(index % 3) * 0.16), y + tile_size * (0.18 + float(index % 2) * 0.08))
+	draw_line(Vector2(x, y), end, Color(0.006, 0.036, 0.014, alpha + 0.08), 2.8)
+	for j in range(3):
+		var leaf := end + Vector2(tile_size * (0.12 + float(j) * 0.13), tile_size * (-0.12 + float(j % 2) * 0.11))
+		_draw_ellipse(leaf.x, leaf.y, Vector2(tile_size * 0.12, tile_size * 0.040), Color(accent.r, accent.g, accent.b, alpha * 0.68))
+
+func _draw_near_icicle(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var h := tile_size * (0.34 + float(index % 4) * 0.08)
+	draw_polygon(PackedVector2Array([
+		Vector2(x - tile_size * 0.06, y),
+		Vector2(x + tile_size * 0.07, y + tile_size * 0.02),
+		Vector2(x + tile_size * 0.01, y + h)
+	]), PackedColorArray([
+		Color(0.86, 0.96, 1.0, alpha),
+		Color(accent.r, accent.g, accent.b, alpha * 0.74),
+		Color(0.72, 0.90, 1.0, alpha * 0.46)
+	]))
+
+func _draw_near_tassel(x: float, y: float, accent: Color, alpha: float, index: int) -> void:
+	var h := tile_size * (0.34 + float(index % 3) * 0.08)
+	draw_line(Vector2(x, y), Vector2(x + tile_size * 0.08, y + h), Color(accent.r, accent.g, accent.b, alpha), 1.2)
+	draw_line(Vector2(x + tile_size * 0.04, y + h * 0.54), Vector2(x + tile_size * 0.22, y + h * 0.72), Color(0.02, 0.016, 0.012, alpha * 0.82), 1.0)
 
 func _draw_side_occluders(accent: Color, region_type: String, terrain: String) -> void:
 	for i in range(SIDE_OCCLUDER_COUNT):

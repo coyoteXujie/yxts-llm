@@ -99,6 +99,9 @@ const SIDE_VIEW_NEAR_PROP_COUNT := 14
 const SIDE_VIEW_FLOOR_DETAIL_ALPHA := 0.16
 const SIDE_VIEW_FLOOR_DETAIL_COUNT := 36
 const SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA := 0.18
+const SIDE_VIEW_PARALLAX_LAYER_COUNT := 4
+const SIDE_VIEW_BACKDROP_DETAIL_COUNT := 18
+const SIDE_VIEW_PARALLAX_DRIFT := 0.28
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1470,6 +1473,7 @@ func _draw_side_view_silhouettes(size: Vector2, palette: Dictionary) -> void:
 	var horizon := size.y * 0.44
 	_draw_stage_mountain_band(size, horizon - tile_size * 1.35, 0.32, (palette["far"] as Color))
 	_draw_stage_mountain_band(size, horizon - tile_size * 0.55, 0.18, (palette["mid"] as Color))
+	_draw_stage_parallax_backdrop(size, horizon, palette)
 	var region_type := str(current_region.get("type", "wild"))
 	var terrain := str(current_region.get("terrain", ""))
 	if region_type == "city" or region_type == "town":
@@ -1505,6 +1509,94 @@ func _draw_side_view_midground(size: Vector2, palette: Dictionary) -> void:
 		_draw_stage_rock_terrace(size, y, accent)
 	else:
 		_draw_stage_low_horizon_props(size, y, accent)
+
+func _draw_stage_parallax_backdrop(size: Vector2, horizon: float, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var far: Color = palette["far"]
+	for layer in range(SIDE_VIEW_PARALLAX_LAYER_COUNT):
+		var t := float(layer) / float(maxi(1, SIDE_VIEW_PARALLAX_LAYER_COUNT - 1))
+		var y := horizon - tile_size * (2.05 - t * 0.42)
+		var drift := fposmod(stage_visual_phase * tile_size * SIDE_VIEW_PARALLAX_DRIFT * (0.10 + t * 0.06), size.x + tile_size * 5.0) - tile_size * 2.5
+		var color := Color(accent.r, accent.g, accent.b, 0.035 + t * 0.020)
+		_draw_stage_cloud_ribbon(size, y, drift, color)
+	_draw_stage_distant_landmarks(size, horizon, Color(far.r, far.g, far.b, 0.28), accent)
+
+func _draw_stage_cloud_ribbon(size: Vector2, y: float, drift: float, color: Color) -> void:
+	var width := size.x * 0.30
+	for i in range(4):
+		var x := fposmod(drift + float(i) * size.x * 0.31, size.x + tile_size * 2.0) - tile_size
+		var h := tile_size * (0.16 + float(i % 2) * 0.035)
+		draw_rect(Rect2(Vector2(x, y + float(i % 3) * tile_size * 0.08), Vector2(width, h)), color, true)
+		draw_line(Vector2(x + tile_size * 0.28, y + h), Vector2(x + width - tile_size * 0.32, y + h - tile_size * 0.06), Color(color.r, color.g, color.b, color.a * 1.4), 1.0)
+
+func _draw_stage_distant_landmarks(size: Vector2, horizon: float, far_color: Color, accent: Color) -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	for i in range(SIDE_VIEW_BACKDROP_DETAIL_COUNT):
+		var layer := i % SIDE_VIEW_PARALLAX_LAYER_COUNT
+		var t := float(layer) / float(maxi(1, SIDE_VIEW_PARALLAX_LAYER_COUNT - 1))
+		var speed := SIDE_VIEW_PARALLAX_DRIFT * (0.08 + t * 0.055)
+		var x := fposmod(float(i * 211) - stage_visual_phase * tile_size * speed, size.x + tile_size * 2.0) - tile_size
+		var y := horizon - tile_size * (0.95 - t * 0.30) + float((i * 7) % 5) * tile_size * 0.08
+		var alpha := far_color.a * (0.42 + t * 0.48)
+		var base := Color(far_color.r, far_color.g, far_color.b, alpha)
+		if region_type == "city" or region_type == "town":
+			_draw_stage_distant_roof(x, y, tile_size * (0.70 + float(i % 3) * 0.10), base, accent)
+		elif region_type == "sect":
+			_draw_stage_distant_pillar(x, y, base, accent)
+		elif _terrain_has_water(terrain):
+			_draw_stage_distant_sail(x, y + tile_size * 0.24, base, accent)
+		elif _terrain_has_forest(terrain):
+			draw_line(Vector2(x, y + tile_size * 0.54), Vector2(x + tile_size * 0.10, y - tile_size * (0.16 + t * 0.22)), base, 1.4 + t)
+			draw_line(Vector2(x + tile_size * 0.08, y + tile_size * 0.12), Vector2(x + tile_size * 0.40, y - tile_size * 0.04), Color(accent.r, accent.g, accent.b, alpha * 0.44), 1.0)
+		else:
+			_draw_stage_distant_stone(x, y + tile_size * 0.26, base, accent)
+
+func _draw_stage_distant_roof(x: float, y: float, width: float, color: Color, accent: Color) -> void:
+	draw_rect(Rect2(Vector2(x + width * 0.18, y + tile_size * 0.24), Vector2(width * 0.64, tile_size * 0.42)), Color(color.r, color.g, color.b, color.a * 0.72), true)
+	draw_polygon(PackedVector2Array([
+		Vector2(x, y + tile_size * 0.28),
+		Vector2(x + width * 0.50, y),
+		Vector2(x + width, y + tile_size * 0.28),
+		Vector2(x + width * 0.88, y + tile_size * 0.38),
+		Vector2(x + width * 0.12, y + tile_size * 0.38)
+	]), PackedColorArray([
+		color,
+		Color(accent.r, accent.g, accent.b, color.a * 0.48),
+		color,
+		Color(color.r, color.g, color.b, color.a * 0.88),
+		Color(color.r, color.g, color.b, color.a * 0.88)
+	]))
+
+func _draw_stage_distant_pillar(x: float, y: float, color: Color, accent: Color) -> void:
+	draw_rect(Rect2(Vector2(x, y), Vector2(tile_size * 0.10, tile_size * 0.72)), color, true)
+	draw_line(Vector2(x - tile_size * 0.18, y + tile_size * 0.12), Vector2(x + tile_size * 0.36, y + tile_size * 0.08), Color(accent.r, accent.g, accent.b, color.a * 0.46), 1.2)
+
+func _draw_stage_distant_sail(x: float, y: float, color: Color, accent: Color) -> void:
+	draw_line(Vector2(x, y - tile_size * 0.42), Vector2(x, y + tile_size * 0.18), color, 1.1)
+	draw_polygon(PackedVector2Array([
+		Vector2(x + tile_size * 0.04, y - tile_size * 0.40),
+		Vector2(x + tile_size * 0.44, y - tile_size * 0.10),
+		Vector2(x + tile_size * 0.04, y + tile_size * 0.10)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, color.a * 0.44),
+		Color(color.r, color.g, color.b, color.a * 0.72),
+		Color(color.r, color.g, color.b, color.a * 0.82)
+	]))
+	draw_line(Vector2(x - tile_size * 0.20, y + tile_size * 0.20), Vector2(x + tile_size * 0.48, y + tile_size * 0.16), Color(color.r, color.g, color.b, color.a * 0.74), 1.3)
+
+func _draw_stage_distant_stone(x: float, y: float, color: Color, accent: Color) -> void:
+	draw_polygon(PackedVector2Array([
+		Vector2(x, y + tile_size * 0.25),
+		Vector2(x + tile_size * 0.18, y - tile_size * 0.06),
+		Vector2(x + tile_size * 0.58, y + tile_size * 0.02),
+		Vector2(x + tile_size * 0.72, y + tile_size * 0.26)
+	]), PackedColorArray([
+		Color(color.r, color.g, color.b, color.a * 0.68),
+		Color(accent.r, accent.g, accent.b, color.a * 0.30),
+		color,
+		Color(color.r, color.g, color.b, color.a * 0.78)
+	]))
 
 func _draw_stage_city_facades(size: Vector2, y: float, accent: Color) -> void:
 	var wall_color := Color(0.055, 0.032, 0.020, SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA)
