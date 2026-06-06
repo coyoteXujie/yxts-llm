@@ -109,6 +109,10 @@ const SIDE_VIEW_STREET_FACADE_COUNT := 11
 const SIDE_VIEW_STREET_FACADE_ALPHA := 0.44
 const SIDE_VIEW_STREET_ROOF_DEPTH_ALPHA := 0.36
 const SIDE_VIEW_STREET_SIGN_COUNT := 8
+const SIDE_VIEW_UPPER_WALKWAY_COUNT := 4
+const SIDE_VIEW_UPPER_WALKWAY_ALPHA := 0.34
+const SIDE_VIEW_STAIR_LINK_COUNT := 3
+const SIDE_VIEW_BALCONY_LANTERN_COUNT := 7
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1464,6 +1468,7 @@ func _draw_side_view_stage() -> void:
 	_draw_side_view_silhouettes(size, palette)
 	_draw_side_view_midground(size, palette)
 	_draw_side_view_street_facades(size, palette)
+	_draw_side_view_upper_platforms(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
 	_draw_side_view_ambient(size, palette)
@@ -1757,6 +1762,165 @@ func _draw_stage_sect_hall_facade(size: Vector2, palette: Dictionary) -> void:
 		draw_rect(Rect2(Vector2(x - tile_size * 0.08, base_y - height * 0.66), Vector2(tile_size * 0.16, height * 0.66)), Color(0.018, 0.014, 0.010, SIDE_VIEW_STREET_FACADE_ALPHA * 0.78), true)
 		draw_line(Vector2(x + tile_size * 0.06, base_y - height * 0.62), Vector2(x + tile_size * 0.06, base_y - tile_size * 0.14), Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_FACADE_ALPHA * 0.16), 1.0)
 	draw_arc(Vector2(center_x, base_y - tile_size * 0.20), tile_size * 2.15, PI * 0.08, PI * 0.92, 48, Color(accent.r, accent.g, accent.b, SIDE_VIEW_STREET_FACADE_ALPHA * 0.22), 2.0)
+
+func _draw_side_view_upper_platforms(size: Vector2, palette: Dictionary) -> void:
+	var accent: Color = palette["accent"]
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
+	var upper_y := size.y * 0.438
+	var lower_y := size.y * 0.505
+	var base_alpha := SIDE_VIEW_UPPER_WALKWAY_ALPHA
+	if region_type == "city" or region_type == "town":
+		_draw_stage_upper_city_balconies(size, upper_y, lower_y, accent, base_alpha)
+	elif region_type == "sect":
+		_draw_stage_upper_sect_terraces(size, upper_y, lower_y, accent, base_alpha)
+	elif _terrain_has_water(terrain):
+		_draw_stage_upper_boardwalk(size, upper_y + tile_size * 0.10, lower_y, accent, base_alpha)
+	elif _terrain_has_forest(terrain):
+		_draw_stage_upper_forest_walkway(size, upper_y, lower_y, accent, base_alpha)
+	elif _terrain_has_mountain(terrain):
+		_draw_stage_upper_rock_ledges(size, upper_y, lower_y, accent, base_alpha)
+	else:
+		_draw_stage_upper_low_platforms(size, upper_y, lower_y, accent, base_alpha)
+	_draw_stage_stair_links(size, upper_y, lower_y, accent, base_alpha)
+	_draw_stage_balcony_lanterns(size, upper_y, accent, base_alpha)
+
+func _draw_stage_upper_city_balconies(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	var span := size.x / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT))
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var x := span * float(i) + tile_size * (0.20 + float(i % 2) * 0.22)
+		var width := span * (0.80 + float((i + 1) % 3) * 0.08)
+		var y := upper_y + sin(float(i) * 0.91) * tile_size * 0.035
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.34, accent, alpha * (0.82 + float(i % 2) * 0.10), i, "wood")
+		var awning_y := y - tile_size * 0.36
+		draw_polygon(PackedVector2Array([
+			Vector2(x - tile_size * 0.18, awning_y + tile_size * 0.18),
+			Vector2(x + width * 0.52, awning_y - tile_size * 0.18),
+			Vector2(x + width + tile_size * 0.26, awning_y + tile_size * 0.17),
+			Vector2(x + width + tile_size * 0.08, awning_y + tile_size * 0.33),
+			Vector2(x, awning_y + tile_size * 0.35)
+		]), PackedColorArray([
+			Color(0.07, 0.032, 0.018, alpha * 0.76),
+			Color(accent.r, accent.g, accent.b, alpha * 0.36),
+			Color(0.06, 0.030, 0.016, alpha * 0.76),
+			Color(0.018, 0.012, 0.008, alpha * 0.88),
+			Color(0.022, 0.014, 0.009, alpha * 0.88)
+		]))
+
+func _draw_stage_upper_sect_terraces(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	var center_x := size.x * 0.50
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT - 1))
+		var width := lerpf(size.x * 0.22, size.x * 0.46, 1.0 - absf(t - 0.5) * 1.4)
+		var x := lerpf(size.x * 0.10, size.x * 0.66, t)
+		var y := upper_y + tile_size * (0.08 + absf(t - 0.5) * 0.16)
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.30, accent, alpha * (0.76 + t * 0.12), i, "stone")
+		draw_arc(Vector2(center_x, y + tile_size * 0.18), width * 0.44, PI * 0.08, PI * 0.92, 36, Color(accent.r, accent.g, accent.b, alpha * 0.22), 1.4)
+
+func _draw_stage_upper_boardwalk(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT - 1))
+		var x := lerpf(size.x * 0.03, size.x * 0.78, t)
+		var width := size.x * (0.18 + float(i % 2) * 0.035)
+		var y := upper_y + sin(float(i) * 1.17) * tile_size * 0.055
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.24, accent, alpha * 0.82, i, "wood")
+		for post in range(3):
+			var px := x + width * float(post) / 2.0
+			draw_line(Vector2(px, y - tile_size * 0.16), Vector2(px - tile_size * 0.08, y + tile_size * 0.52), Color(0.025, 0.018, 0.012, alpha * 0.82), 1.8)
+
+func _draw_stage_upper_forest_walkway(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var x := lerpf(size.x * 0.04, size.x * 0.82, float(i) / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT - 1)))
+		var width := size.x * 0.16
+		var y := upper_y + tile_size * (0.03 + float(i % 2) * 0.10)
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.22, accent, alpha * 0.72, i, "bamboo")
+		draw_line(Vector2(x - tile_size * 0.16, y - tile_size * 0.28), Vector2(x + width + tile_size * 0.10, y - tile_size * 0.18), Color(0.05, 0.13, 0.045, alpha * 0.76), 1.7)
+
+func _draw_stage_upper_rock_ledges(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var x := lerpf(size.x * 0.02, size.x * 0.80, float(i) / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT - 1)))
+		var width := size.x * (0.15 + float((i + 1) % 3) * 0.03)
+		var y := upper_y + tile_size * (0.08 + float(i % 3) * 0.06)
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.28, accent, alpha * 0.76, i, "stone")
+
+func _draw_stage_upper_low_platforms(size: Vector2, upper_y: float, _lower_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_UPPER_WALKWAY_COUNT):
+		var x := lerpf(size.x * 0.05, size.x * 0.80, float(i) / float(maxi(1, SIDE_VIEW_UPPER_WALKWAY_COUNT - 1)))
+		var width := size.x * 0.16
+		var y := upper_y + tile_size * float(i % 2) * 0.08
+		_draw_stage_upper_platform_unit(x, y, width, tile_size * 0.22, accent, alpha * 0.66, i, "stone")
+
+func _draw_stage_upper_platform_unit(x: float, y: float, width: float, depth: float, accent: Color, alpha: float, index: int, material: String) -> void:
+	var lift := tile_size * 0.12
+	var front_color := Color(0.036, 0.024, 0.015, alpha)
+	var top_color := Color(0.058, 0.038, 0.022, alpha * 0.92)
+	if material == "stone":
+		front_color = Color(0.038, 0.036, 0.030, alpha)
+		top_color = Color(0.070, 0.064, 0.050, alpha * 0.88)
+	elif material == "bamboo":
+		front_color = Color(0.028, 0.070, 0.025, alpha)
+		top_color = Color(0.060, 0.120, 0.044, alpha * 0.88)
+	draw_polygon(PackedVector2Array([
+		Vector2(x, y - lift),
+		Vector2(x + width, y - lift - tile_size * 0.08),
+		Vector2(x + width + tile_size * 0.32, y + depth),
+		Vector2(x - tile_size * 0.24, y + depth + tile_size * 0.06)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, alpha * 0.24),
+		top_color,
+		front_color.darkened(0.20),
+		front_color
+	]))
+	draw_line(Vector2(x - tile_size * 0.10, y + depth * 0.44), Vector2(x + width + tile_size * 0.20, y + depth * 0.30), Color(0.0, 0.0, 0.0, alpha * 0.52), 2.0)
+	for post in range(4):
+		var t := float(post) / 3.0
+		var px := lerpf(x + tile_size * 0.08, x + width - tile_size * 0.08, t)
+		var py := y - lift - tile_size * 0.05 * t
+		draw_line(Vector2(px, py - tile_size * 0.38), Vector2(px, py + depth * 0.42), Color(0.018, 0.012, 0.008, alpha * 0.82), 1.6)
+		if post < 3:
+			var nx := lerpf(x + tile_size * 0.08, x + width - tile_size * 0.08, float(post + 1) / 3.0)
+			draw_line(Vector2(px, py - tile_size * 0.23), Vector2(nx, py - tile_size * 0.27), Color(accent.r, accent.g, accent.b, alpha * 0.24), 1.2)
+	for plank in range(3):
+		var t := (float(plank) + 0.5) / 3.0
+		var px := lerpf(x + width * 0.06, x + width * 0.92, t)
+		draw_line(Vector2(px, y - lift), Vector2(px + tile_size * 0.22, y + depth * 0.72), Color(0.0, 0.0, 0.0, alpha * (0.18 + float(index % 2) * 0.04)), 0.9)
+
+func _draw_stage_stair_links(size: Vector2, upper_y: float, lower_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_STAIR_LINK_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_STAIR_LINK_COUNT - 1))
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var top := Vector2(lerpf(size.x * 0.20, size.x * 0.78, t), upper_y + tile_size * 0.22)
+		var bottom := top + Vector2(side * tile_size * (1.15 + float(i % 2) * 0.32), lower_y - upper_y + tile_size * 0.36)
+		var width := tile_size * 0.36
+		draw_polygon(PackedVector2Array([
+			top + Vector2(-width, -tile_size * 0.04),
+			top + Vector2(width, -tile_size * 0.08),
+			bottom + Vector2(width * 0.86, tile_size * 0.06),
+			bottom + Vector2(-width * 0.86, tile_size * 0.12)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.20),
+			Color(0.058, 0.040, 0.026, alpha * 0.78),
+			Color(0.020, 0.014, 0.010, alpha * 0.88),
+			Color(0.030, 0.020, 0.014, alpha * 0.84)
+		]))
+		for step in range(6):
+			var st := float(step) / 5.0
+			var a := top.lerp(bottom, st)
+			draw_line(a + Vector2(-width * (1.0 - st * 0.20), 0.0), a + Vector2(width * (1.0 - st * 0.20), -tile_size * 0.04), Color(0.0, 0.0, 0.0, alpha * (0.30 + st * 0.22)), 1.0 + st)
+		draw_line(top + Vector2(-width * 1.15, -tile_size * 0.30), bottom + Vector2(-width * 0.92, -tile_size * 0.10), Color(accent.r, accent.g, accent.b, alpha * 0.28), 1.3)
+
+func _draw_stage_balcony_lanterns(size: Vector2, upper_y: float, accent: Color, alpha: float) -> void:
+	for i in range(SIDE_VIEW_BALCONY_LANTERN_COUNT):
+		var t := float(i) / float(maxi(1, SIDE_VIEW_BALCONY_LANTERN_COUNT - 1))
+		var x := lerpf(size.x * 0.08, size.x * 0.92, t) + sin(float(i) * 1.23) * tile_size * 0.18
+		var y := upper_y + tile_size * (0.04 + float(i % 3) * 0.08)
+		var sway := sin(stage_visual_phase * 0.78 + float(i) * 0.71) * tile_size * 0.035
+		var lamp := Vector2(x + sway, y + tile_size * 0.24)
+		var pulse := 0.5 + sin(stage_visual_phase * 2.2 + float(i) * 0.57) * 0.5
+		draw_line(Vector2(x, y - tile_size * 0.18), lamp, Color(0.42, 0.25, 0.13, alpha * 0.70), 1.0)
+		draw_circle(lamp, tile_size * (0.16 + pulse * 0.06), Color(1.0, 0.56, 0.18, alpha * 0.070))
+		draw_rect(Rect2(lamp - Vector2(tile_size * 0.055, tile_size * 0.060), Vector2(tile_size * 0.11, tile_size * 0.13)), Color(0.92, 0.30, 0.16, alpha * 0.58), true)
+		draw_circle(lamp, tile_size * 0.034, Color(accent.r, accent.g, accent.b, alpha * (0.50 + pulse * 0.18)))
 
 func _draw_stage_sect_steps(size: Vector2, y: float, accent: Color) -> void:
 	var center_x := size.x * 0.50
