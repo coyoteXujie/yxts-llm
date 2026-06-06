@@ -88,6 +88,11 @@ const TILE_VARIANT_COUNT := 4
 const SIDE_VIEW_BACKDROP_ALPHA := 0.38
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
+const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
+const STAGE_DEPTH_TOP_RATIO := 0.48
+const STAGE_DEPTH_BOTTOM_RATIO := 0.95
+const STAGE_DEPTH_MIN_SCALE := 0.82
+const STAGE_DEPTH_MAX_SCALE := 1.16
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -194,6 +199,17 @@ func world_to_tile(world_position: Vector2) -> Vector2i:
 
 func get_world_rect() -> Rect2:
 	return Rect2(Vector2.ZERO, Vector2(map_width * tile_size, map_height * tile_size))
+
+func get_actor_depth_scale(world_position: Vector2) -> float:
+	if current_mode != "region" or not side_view_stage_enabled:
+		return 1.0
+	var rect := get_world_rect()
+	if rect.size.y <= 0.0:
+		return 1.0
+	var top_y := rect.size.y * STAGE_DEPTH_TOP_RATIO
+	var bottom_y := rect.size.y * STAGE_DEPTH_BOTTOM_RATIO
+	var depth := clampf((world_position.y - top_y) / maxf(1.0, bottom_y - top_y), 0.0, 1.0)
+	return lerpf(STAGE_DEPTH_MIN_SCALE, STAGE_DEPTH_MAX_SCALE, depth)
 
 func get_region_at_world_position(_world_position: Vector2) -> Dictionary:
 	return current_region
@@ -984,6 +1000,9 @@ func _shop_index(shop_id: String) -> int:
 	return 0
 
 func _spawn_npc(npc_data: Dictionary) -> void:
+	if current_mode == "region" and side_view_stage_enabled:
+		var tile := Vector2i(int(npc_data.get("pos_x", map_width / 2)), int(npc_data.get("pos_y", map_height / 2)))
+		npc_data["map_actor_scale"] = get_actor_depth_scale(tile_to_world(tile))
 	var actor = NPC_SCRIPT.new()
 	add_child(actor)
 	actor.setup(npc_data, tile_size)
@@ -1053,7 +1072,8 @@ func _build_depth_props() -> void:
 func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
 	var prop = MAP_PROP_SCRIPT.new()
 	add_child(prop)
-	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor)
+	var depth_scale := get_actor_depth_scale(world_position) if current_mode == "region" and side_view_stage_enabled else 1.0
+	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor * depth_scale)
 	prop_nodes.append(prop)
 
 func _clear_depth_props() -> void:
@@ -1390,6 +1410,7 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		_with_alpha(floor_color.darkened(0.32), SIDE_VIEW_STAGE_LANE_ALPHA + 0.08),
 		_with_alpha(floor_color.darkened(0.26), SIDE_VIEW_STAGE_LANE_ALPHA + 0.06)
 	]))
+	_draw_stage_depth_guides(size, palette)
 	for i in range(11):
 		var t := float(i) / 10.0
 		var y := lerpf(top_y + tile_size * 0.22, bottom_y - tile_size * 0.36, t)
@@ -1400,6 +1421,34 @@ func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 		var x := size.x * (0.14 + float(i) * 0.105)
 		draw_line(Vector2(x, top_y + tile_size * 0.10), Vector2(x - size.x * 0.08, bottom_y), Color(0.0, 0.0, 0.0, 0.05), 1.2)
 	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 1.22), Vector2(size.x * 0.38, tile_size * 0.46), Color((palette["accent"] as Color).r, (palette["accent"] as Color).g, (palette["accent"] as Color).b, 0.11))
+
+func _draw_stage_depth_guides(size: Vector2, palette: Dictionary) -> void:
+	var top_y := size.y * STAGE_DEPTH_TOP_RATIO
+	var bottom_y := size.y * STAGE_DEPTH_BOTTOM_RATIO
+	var accent: Color = palette["accent"]
+	var shadow := Color(0.01, 0.008, 0.006, SIDE_VIEW_DEPTH_GUIDE_ALPHA)
+	for i in range(4):
+		var t0 := float(i) / 4.0
+		var t1 := float(i + 1) / 4.0
+		var y0 := lerpf(top_y, bottom_y, t0)
+		var y1 := lerpf(top_y, bottom_y, t1)
+		var inset0 := lerpf(size.x * 0.13, size.x * -0.03, t0)
+		var inset1 := lerpf(size.x * 0.13, size.x * -0.03, t1)
+		var band_alpha := SIDE_VIEW_DEPTH_GUIDE_ALPHA * (0.32 + t1 * 0.52)
+		draw_polygon(PackedVector2Array([
+			Vector2(inset0, y0),
+			Vector2(size.x - inset0, y0 - tile_size * 0.10),
+			Vector2(size.x - inset1, y1 - tile_size * 0.10),
+			Vector2(inset1, y1)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, band_alpha * 0.55),
+			Color(accent.r, accent.g, accent.b, band_alpha * 0.40),
+			Color(0.0, 0.0, 0.0, band_alpha * 0.44),
+			Color(0.0, 0.0, 0.0, band_alpha * 0.58)
+		]))
+		var guide_y := lerpf(y0, y1, 0.62)
+		var guide_inset := lerpf(inset0, inset1, 0.62)
+		draw_line(Vector2(guide_inset, guide_y), Vector2(size.x - guide_inset, guide_y - tile_size * 0.10), shadow, 1.0 + t1 * 2.0)
 
 func _draw_side_view_foreground(size: Vector2, palette: Dictionary) -> void:
 	var accent: Color = palette["accent"]

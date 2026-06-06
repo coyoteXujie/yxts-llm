@@ -50,6 +50,7 @@ func _run() -> void:
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
 	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 100.0, "玩家地图角色显示不应继续偏小")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
+	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
 	test_root.add_child(local_area)
@@ -60,9 +61,14 @@ func _run() -> void:
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")
+	var stage_rect: Rect2 = local_area.get_world_rect()
+	var back_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_TOP_RATIO))
+	var front_scale: float = local_area.get_actor_depth_scale(Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO))
+	_check(front_scale - back_scale >= 0.25, "局部舞台应按前后排缩放角色")
 	_check(local_area.prop_nodes.size() > 0, "平安镇局部地图应生成 2.5D 遮挡节点")
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_max_textured_actor_height(local_area.npc_nodes) >= 90.0, "局部地图 NPC 贴图显示不应继续偏小")
+	_check(_actor_depth_scale_range(local_area.npc_nodes) >= 0.10, "局部 NPC 应按舞台前后排产生大小差异")
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
@@ -84,6 +90,13 @@ func _run() -> void:
 	_check(int(GameState.player.get("money", 0)) == previous_money - int(travel_plan.get("fare", 0)), "快速旅行应扣除驿路费用")
 	_check(GameState.world_events.size() > previous_event_count, "快速旅行应写入旅行事件")
 	_check(GameState.resolve_fast_travel_risk(travel_plan).is_empty(), "低风险驿路不应触发旅途后果")
+	player.world_map = local_area
+	player.position = Vector2(stage_rect.size.x * 0.5, stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO)
+	player._refresh_stage_depth_scale()
+	_check(player.stage_depth_scale > 1.08, "玩家在局部地图前景站位应明显放大")
+	player.world_map = world_map
+	player.position = GameState.player_position
+	player._refresh_stage_depth_scale()
 	var map_panel = WORLD_MAP_PANEL_SCRIPT.new()
 	add_child(map_panel)
 	map_panel.show_panel()
@@ -185,6 +198,21 @@ func _max_textured_actor_height(nodes: Array) -> float:
 		var texture_size: Vector2 = actor.sprite_node.texture.get_size()
 		max_height = maxf(max_height, texture_size.y * actor.sprite_node.scale.y)
 	return max_height
+
+func _actor_depth_scale_range(nodes: Array) -> float:
+	var min_scale := INF
+	var max_scale := -INF
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not actor.data.has("map_actor_scale"):
+			continue
+		var actor_scale := float(actor.data.get("map_actor_scale", 1.0))
+		min_scale = minf(min_scale, actor_scale)
+		max_scale = maxf(max_scale, actor_scale)
+	if min_scale == INF:
+		return 0.0
+	return max_scale - min_scale
 
 func _actors_have_idle_motion(nodes: Array) -> bool:
 	for actor in nodes:
