@@ -54,10 +54,14 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_CONTACT_GLOW_ALPHA > 0.08, "玩家脚下应保留接触光表现")
 	_check(PLAYER_SCRIPT.STEP_DUST_RADIUS.x >= 8.0, "玩家移动应保留脚步尘表现参数")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
-	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 100.0, "NPC 地图贴图基础高度不应继续偏小")
-	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.15, "NPC 局部横版舞台应叠加额外角色存在感缩放")
-	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.10, "NPC 局部横版舞台应保留最低视觉体量")
+	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 108.0, "NPC 地图贴图基础高度不应继续偏小")
+	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.28, "NPC 局部横版舞台应叠加额外角色存在感缩放")
+	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE > 1.0 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE > 1.0, "掌门/敌人应在局部横版舞台获得额外体量")
+	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.16, "NPC 局部横版舞台应保留最低视觉体量")
+	_check(NPC_SCRIPT.STAGE_RIM_ALPHA >= 0.12, "NPC 局部横版舞台应有贴图轮廓高光")
+	_check(NPC_SCRIPT.STAGE_ROLE_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应有身份提示动效")
 	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
+	_check(_stage_role_scale_bonus(), "掌门/敌人局部舞台体量应大于普通 NPC")
 
 	var local_area = LOCAL_AREA_SCRIPT.new()
 	test_root.add_child(local_area)
@@ -94,6 +98,7 @@ func _run() -> void:
 	_check(_actor_depth_scale_range(local_area.npc_nodes) >= 0.10, "局部 NPC 应按舞台前后排产生大小差异")
 	_check(_actors_marked_stage(local_area.npc_nodes), "局部地图 NPC 应标记为横版舞台角色")
 	_check(_actors_have_idle_motion(local_area.npc_nodes), "局部地图 NPC 应有待机轻微动态")
+	_check(_actors_have_stage_rim(local_area.npc_nodes), "局部地图 NPC 应显示舞台贴图轮廓高光")
 	_check(_texture_variant_count(local_area, LOCAL_TILE_MOUNTAIN) >= 4, "局部地图应加载多变体山体瓦片")
 	_check(_min_actor_distance(local_area.npc_nodes) >= GameData.TILE_SIZE * 1.35, "平安镇 NPC 间距过近")
 	_check(_actors_use_y_sort(local_area.npc_nodes), "局部地图 NPC 应按脚底 Y 坐标排序")
@@ -246,6 +251,31 @@ func _actors_have_idle_motion(nodes: Array) -> bool:
 		if is_instance_valid(actor) and actor.visual_phase > 0.0:
 			return true
 	return false
+
+func _actors_have_stage_rim(nodes: Array) -> bool:
+	for actor in nodes:
+		if not is_instance_valid(actor):
+			continue
+		if not bool(actor.data.get("stage_actor", false)):
+			continue
+		if actor.sprite_rim_node != null and actor.sprite_rim_node.visible:
+			return true
+	return false
+
+func _stage_role_scale_bonus() -> bool:
+	var normal = NPC_SCRIPT.new()
+	normal.data = {"stage_actor": true, "map_actor_scale": 1.0, "npc_type": "normal"}
+	var master = NPC_SCRIPT.new()
+	master.data = {"stage_actor": true, "map_actor_scale": 1.0, "npc_type": "master", "is_master": true}
+	var enemy = NPC_SCRIPT.new()
+	enemy.data = {"stage_actor": true, "map_actor_scale": 1.0, "npc_type": "enemy"}
+	var normal_scale: float = normal._map_actor_scale()
+	var master_scale: float = master._map_actor_scale()
+	var enemy_scale: float = enemy._map_actor_scale()
+	normal.free()
+	master.free()
+	enemy.free()
+	return master_scale > normal_scale and enemy_scale > normal_scale
 
 func _actors_marked_stage(nodes: Array) -> bool:
 	if nodes.is_empty():

@@ -9,23 +9,31 @@ var ambient_panel: PanelContainer
 var ambient_label: Label
 var sprite_node: Sprite2D
 var sprite_outline_node: Sprite2D
+var sprite_rim_node: Sprite2D
 var using_sprite_asset := false
 var ambient_timer := 0.0
 var visual_phase := 0.0
 var sprite_base_scale := Vector2.ONE
 var sprite_outline_base_scale := Vector2.ONE
+var sprite_rim_base_scale := Vector2.ONE
 var sprite_base_position := Vector2.ZERO
 var sprite_outline_base_position := Vector2.ZERO
+var sprite_rim_base_position := Vector2.ZERO
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 104.0
-const MASTER_SPRITE_HEIGHT := 122.0
-const ENEMY_SPRITE_HEIGHT := 118.0
-const STAGE_PRESENCE_SCALE := 1.26
-const STAGE_SPRITE_MIN_SCALE := 1.12
-const STAGE_SPRITE_MAX_SCALE := 1.52
+const BASE_SPRITE_HEIGHT := 108.0
+const MASTER_SPRITE_HEIGHT := 132.0
+const ENEMY_SPRITE_HEIGHT := 128.0
+const STAGE_PRESENCE_SCALE := 1.30
+const STAGE_MASTER_EXTRA_SCALE := 1.07
+const STAGE_ENEMY_EXTRA_SCALE := 1.08
+const STAGE_SPRITE_MIN_SCALE := 1.18
+const STAGE_SPRITE_MAX_SCALE := 1.62
 const CONTACT_GLOW_ALPHA := 0.115
+const STAGE_RIM_ALPHA := 0.15
+const STAGE_ROLE_CUE_ALPHA := 0.18
+const STAGE_IDENTITY_MOTES := 6
 const AMBIENT_BUBBLE_WIDTH := 172.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
@@ -182,7 +190,12 @@ func _visual_offset() -> Vector2:
 func _map_actor_scale() -> float:
 	var value := float(data.get("map_actor_scale", 1.0))
 	if _is_stage_actor():
-		return clampf(value * STAGE_PRESENCE_SCALE, STAGE_SPRITE_MIN_SCALE, STAGE_SPRITE_MAX_SCALE)
+		var scale := value * STAGE_PRESENCE_SCALE
+		if is_master():
+			scale *= STAGE_MASTER_EXTRA_SCALE
+		elif is_enemy():
+			scale *= STAGE_ENEMY_EXTRA_SCALE
+		return clampf(scale, STAGE_SPRITE_MIN_SCALE, STAGE_SPRITE_MAX_SCALE)
 	return clampf(value, 0.55, 1.25)
 
 func _is_stage_actor() -> bool:
@@ -213,8 +226,15 @@ func _refresh_sprite_asset() -> void:
 		sprite_node.z_index = 2
 		sprite_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		add_child(sprite_node)
+	if sprite_rim_node == null:
+		sprite_rim_node = Sprite2D.new()
+		sprite_rim_node.centered = true
+		sprite_rim_node.z_index = 3
+		sprite_rim_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		add_child(sprite_rim_node)
 	sprite_outline_node.texture = texture
 	sprite_node.texture = texture
+	sprite_rim_node.texture = texture
 	var texture_size: Vector2 = texture.get_size()
 	var target_height := BASE_SPRITE_HEIGHT
 	var target_width := 80.0
@@ -228,6 +248,9 @@ func _refresh_sprite_asset() -> void:
 		target_height = 114.0
 		target_width = 96.0
 	var map_scale := _map_actor_scale()
+	var appearance := GameData.get_npc_appearance(data)
+	var accent := _color(appearance.get("accent", [0.78, 0.62, 0.32]), Color(0.78, 0.62, 0.32))
+	var rim_color := _stage_role_color(accent)
 	target_height *= map_scale
 	target_width *= map_scale
 	var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
@@ -241,9 +264,15 @@ func _refresh_sprite_asset() -> void:
 	sprite_node.scale = sprite_base_scale
 	sprite_node.position = sprite_base_position
 	sprite_node.visible = true
+	sprite_rim_base_scale = Vector2.ONE * factor * 1.015
+	sprite_rim_base_position = Vector2(1.4 * map_scale, -10.2 * map_scale)
+	sprite_rim_node.scale = sprite_rim_base_scale
+	sprite_rim_node.position = sprite_rim_base_position
+	sprite_rim_node.modulate = Color(rim_color.r, rim_color.g, rim_color.b, STAGE_RIM_ALPHA)
+	sprite_rim_node.visible = _is_stage_actor()
 	using_sprite_asset = true
 	if name_label != null:
-		name_label.z_index = 3
+		name_label.z_index = 4
 		name_label.position = Vector2(-58, -92 * map_scale)
 	_update_sprite_motion()
 
@@ -253,6 +282,8 @@ func _clear_sprite_asset() -> void:
 		sprite_outline_node.visible = false
 	if sprite_node != null:
 		sprite_node.visible = false
+	if sprite_rim_node != null:
+		sprite_rim_node.visible = false
 
 func _draw() -> void:
 	var appearance := GameData.get_npc_appearance(data)
@@ -267,6 +298,7 @@ func _draw() -> void:
 		_draw_actor_shadow(Vector2(3, 25 * map_scale), Vector2(23.0 * map_scale, 6.8 * map_scale), 0.96)
 		_draw_contact_light(accent, map_scale)
 		_draw_aura(appearance, accent)
+		_draw_stage_identity_cues(appearance, accent, map_scale)
 		if highlighted:
 			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 			draw_circle(Vector2(0, 31 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
@@ -341,6 +373,14 @@ func _update_sprite_motion() -> void:
 	sprite_outline_node.position = sprite_outline_base_position + Vector2(sway_x, float_y + 0.25)
 	sprite_node.rotation = stance_roll
 	sprite_outline_node.rotation = stance_roll
+	if sprite_rim_node != null:
+		var rim_color := _stage_role_color(_color(GameData.get_npc_appearance(data).get("accent", [0.78, 0.62, 0.32]), Color(0.78, 0.62, 0.32)))
+		var rim_alpha := STAGE_RIM_ALPHA * (0.68 + absf(wave) * 0.32)
+		sprite_rim_node.scale = sprite_rim_base_scale * Vector2(width_pulse + 0.006, height_pulse + 0.004)
+		sprite_rim_node.position = sprite_rim_base_position + Vector2(sway_x + 0.35 * stage_motion, float_y - 0.25)
+		sprite_rim_node.rotation = stance_roll
+		sprite_rim_node.modulate = Color(rim_color.r, rim_color.g, rim_color.b, rim_alpha)
+		sprite_rim_node.visible = _is_stage_actor()
 
 func _draw_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
 	var points := PackedVector2Array()
@@ -395,6 +435,41 @@ func _draw_aura(appearance: Dictionary, accent: Color) -> void:
 		draw_circle(Vector2(0, 1), 25.0, Color(0.70, 0.08, 0.06, 0.10))
 	if str(appearance.get("motif", "none")) == "snow":
 		draw_circle(Vector2(0, -4), 24.0, Color(0.80, 0.92, 1.0, 0.12))
+
+func _draw_stage_identity_cues(_appearance: Dictionary, accent: Color, map_scale: float) -> void:
+	if not _is_stage_actor():
+		return
+	var npc_id := int(data.get("id", 0))
+	var phase := visual_phase * 1.15 + float(npc_id % 31) * 0.19
+	var pulse := 0.5 + sin(phase) * 0.5
+	var role_color := _stage_role_color(accent)
+	var alpha := STAGE_ROLE_CUE_ALPHA * (0.70 + pulse * 0.30)
+	if is_master():
+		var center := Vector2(0.0, -2.0 * map_scale)
+		draw_arc(center, 33.0 * map_scale, -0.25, PI + 0.25, 46, Color(role_color.r, role_color.g, role_color.b, alpha), 2.0)
+		for i in range(STAGE_IDENTITY_MOTES):
+			var angle := phase * 0.52 + float(i) * TAU / float(STAGE_IDENTITY_MOTES)
+			var pos := center + Vector2(cos(angle) * 28.0 * map_scale, sin(angle) * 7.5 * map_scale)
+			draw_circle(pos, 1.4 * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 1.25))
+	elif is_enemy():
+		var slash_y := 16.0 * map_scale
+		draw_line(Vector2(-28.0 * map_scale, slash_y), Vector2(30.0 * map_scale, slash_y - 8.0 * map_scale), Color(role_color.r, role_color.g, role_color.b, alpha), 2.3)
+		draw_line(Vector2(-20.0 * map_scale, slash_y + 6.0 * map_scale), Vector2(22.0 * map_scale, slash_y - 2.0 * map_scale), Color(role_color.r, role_color.g, role_color.b, alpha * 0.70), 1.5)
+	elif bool(data.get("has_quests", false)):
+		var cue_pos := Vector2(18.0 * map_scale, -55.0 * map_scale)
+		draw_arc(cue_pos, (9.0 + pulse * 2.0) * map_scale, 0.0, TAU, 30, Color(role_color.r, role_color.g, role_color.b, alpha * 1.35), 1.5)
+		draw_line(cue_pos + Vector2(-3.0, -4.0) * map_scale, cue_pos + Vector2(3.0, 4.0) * map_scale, Color(role_color.r, role_color.g, role_color.b, alpha * 1.20), 1.4)
+	else:
+		draw_arc(Vector2(0.0, 18.0 * map_scale), 24.0 * map_scale, PI * 0.12, PI * 0.88, 28, Color(role_color.r, role_color.g, role_color.b, alpha * 0.50), 1.4)
+
+func _stage_role_color(accent: Color) -> Color:
+	if is_enemy():
+		return Color(0.95, 0.16, 0.10)
+	if is_master():
+		return accent.lightened(0.32)
+	if bool(data.get("has_quests", false)):
+		return Color(1.0, 0.76, 0.24)
+	return accent.lightened(0.12)
 
 func _draw_contact_light(accent: Color, map_scale: float) -> void:
 	var npc_id := int(data.get("id", 0))
