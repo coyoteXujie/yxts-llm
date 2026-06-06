@@ -102,6 +102,9 @@ const SIDE_VIEW_PERSPECTIVE_EDGE_ALPHA := 0.18
 const SIDE_VIEW_PARALLAX_LAYER_COUNT := 4
 const SIDE_VIEW_BACKDROP_DETAIL_COUNT := 18
 const SIDE_VIEW_PARALLAX_DRIFT := 0.28
+const SIDE_VIEW_SETPIECE_COUNT := 12
+const SIDE_VIEW_SETPIECE_ALPHA := 0.36
+const SIDE_VIEW_SETPIECE_DEPTH_BANDS := 3
 const SIDE_VIEW_AMBIENT_SPEED := 0.82
 const SIDE_VIEW_AMBIENT_PARTICLES := 32
 const STAGE_DEPTH_TOP_RATIO := 0.48
@@ -1456,6 +1459,7 @@ func _draw_side_view_stage() -> void:
 	draw_rect(sky_rect, Color(0.02, 0.018, 0.015, 0.18), true)
 	_draw_side_view_silhouettes(size, palette)
 	_draw_side_view_midground(size, palette)
+	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
 	_draw_side_view_ambient(size, palette)
 	_draw_side_view_foreground(size, palette)
@@ -1737,6 +1741,163 @@ func _draw_stage_low_horizon_props(size: Vector2, y: float, accent: Color) -> vo
 		var height := tile_size * (0.28 + float(i % 3) * 0.08)
 		_draw_ellipse_poly(Vector2(x, y + tile_size * 0.20), Vector2(tile_size * (0.30 + float(i % 2) * 0.08), tile_size * 0.08), Color(0.0, 0.0, 0.0, 0.12))
 		draw_line(Vector2(x, y + tile_size * 0.18), Vector2(x + tile_size * 0.10, y - height), Color(accent.r, accent.g, accent.b, 0.12), 1.6)
+
+func _draw_side_view_setpiece_row(size: Vector2, palette: Dictionary) -> void:
+	var terrain := str(current_region.get("terrain", ""))
+	var region_type := str(current_region.get("type", "wild"))
+	var accent: Color = palette["accent"]
+	var base_y := size.y * 0.565
+	for band in range(SIDE_VIEW_SETPIECE_DEPTH_BANDS):
+		var band_t := float(band) / float(maxi(1, SIDE_VIEW_SETPIECE_DEPTH_BANDS - 1))
+		var y := base_y + tile_size * (-0.30 + band_t * 0.52)
+		var band_alpha := SIDE_VIEW_SETPIECE_ALPHA * (0.42 + band_t * 0.42)
+		var shadow := Color(0.0, 0.0, 0.0, band_alpha * 0.22)
+		draw_line(Vector2(size.x * 0.05, y + tile_size * 0.18), Vector2(size.x * 0.95, y + tile_size * 0.08), shadow, 2.0 + band_t * 2.0)
+		for i in range(SIDE_VIEW_SETPIECE_COUNT):
+			if (i + band) % 2 == 1:
+				continue
+			var t := float(i) / float(maxi(1, SIDE_VIEW_SETPIECE_COUNT - 1))
+			var drift := sin(stage_visual_phase * 0.18 + float(i) * 0.73 + float(band)) * tile_size * 0.035 * (1.0 - band_t * 0.34)
+			var x := lerpf(-tile_size * 0.52, size.x + tile_size * 0.36, t) + drift
+			var setpiece_scale := 0.74 + band_t * 0.28 + float((i * 7 + band) % 5) * 0.035
+			var alpha := band_alpha * (0.72 + float(i % 3) * 0.08)
+			if region_type == "city" or region_type == "town":
+				_draw_stage_setpiece_shopfront(x, y, setpiece_scale, accent, alpha, i)
+			elif region_type == "sect":
+				_draw_stage_setpiece_pillar(x, y, setpiece_scale, accent, alpha, i)
+			elif _terrain_has_water(terrain):
+				_draw_stage_setpiece_dock(x, y, setpiece_scale, accent, alpha, i)
+			elif _terrain_has_forest(terrain):
+				_draw_stage_setpiece_tree(x, y, setpiece_scale, accent, alpha, i)
+			elif terrain.contains("snow"):
+				_draw_stage_setpiece_ice(x, y, setpiece_scale, accent, alpha, i)
+			elif terrain.contains("desert"):
+				_draw_stage_setpiece_canopy(x, y, setpiece_scale, accent, alpha, i)
+			else:
+				_draw_stage_setpiece_stone(x, y, setpiece_scale, accent, alpha, i)
+
+func _draw_stage_setpiece_shopfront(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var width := tile_size * (1.02 + float(index % 3) * 0.14) * scale
+	var height := tile_size * (0.96 + float((index + 1) % 3) * 0.13) * scale
+	var wall := Rect2(Vector2(x - width * 0.50, y - height), Vector2(width, height))
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.11 * scale), Vector2(width * 0.42, tile_size * 0.070 * scale), Color(0.0, 0.0, 0.0, alpha * 0.32))
+	draw_rect(wall, Color(0.045, 0.025, 0.014, alpha * 0.70), true)
+	draw_rect(Rect2(wall.position + Vector2(width * 0.12, height * 0.36), Vector2(width * 0.76, height * 0.22)), Color(accent.r, accent.g, accent.b, alpha * 0.22), true)
+	draw_polygon(PackedVector2Array([
+		Vector2(x - width * 0.62, y - height + tile_size * 0.14 * scale),
+		Vector2(x, y - height - tile_size * 0.26 * scale),
+		Vector2(x + width * 0.62, y - height + tile_size * 0.14 * scale),
+		Vector2(x + width * 0.50, y - height + tile_size * 0.30 * scale),
+		Vector2(x - width * 0.50, y - height + tile_size * 0.30 * scale)
+	]), PackedColorArray([
+		Color(0.08, 0.040, 0.022, alpha),
+		Color(accent.r, accent.g, accent.b, alpha * 0.42),
+		Color(0.07, 0.035, 0.020, alpha),
+		Color(0.025, 0.015, 0.010, alpha * 0.92),
+		Color(0.025, 0.015, 0.010, alpha * 0.92)
+	]))
+	if index % 3 == 0:
+		draw_circle(Vector2(x + width * 0.28, y - height * 0.44), tile_size * 0.055 * scale, Color(1.0, 0.58, 0.20, alpha * 0.48))
+
+func _draw_stage_setpiece_pillar(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var height := tile_size * (1.42 + float(index % 3) * 0.18) * scale
+	var width := tile_size * 0.20 * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.10 * scale), Vector2(tile_size * 0.34 * scale, tile_size * 0.060 * scale), Color(0.0, 0.0, 0.0, alpha * 0.30))
+	draw_rect(Rect2(Vector2(x - width * 0.5, y - height), Vector2(width, height)), Color(0.036, 0.030, 0.024, alpha), true)
+	draw_rect(Rect2(Vector2(x - width * 1.20, y - height), Vector2(width * 2.40, tile_size * 0.14 * scale)), Color(accent.r, accent.g, accent.b, alpha * 0.30), true)
+	draw_line(Vector2(x + width * 0.20, y - height + tile_size * 0.12 * scale), Vector2(x + width * 0.20, y - tile_size * 0.10 * scale), Color(accent.r, accent.g, accent.b, alpha * 0.20), 1.2)
+	if index % 2 == 0:
+		draw_polygon(PackedVector2Array([
+			Vector2(x + width * 0.65, y - height * 0.84),
+			Vector2(x + width * 3.1, y - height * 0.74),
+			Vector2(x + width * 2.7, y - height * 0.46),
+			Vector2(x + width * 0.65, y - height * 0.52)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.50),
+			Color(accent.r, accent.g, accent.b, alpha * 0.32),
+			Color(0.018, 0.014, 0.010, alpha * 0.42),
+			Color(0.018, 0.014, 0.010, alpha * 0.48)
+		]))
+
+func _draw_stage_setpiece_dock(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var h := tile_size * (0.92 + float(index % 3) * 0.13) * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.13 * scale), Vector2(tile_size * 0.40 * scale, tile_size * 0.050 * scale), Color(0.0, 0.0, 0.0, alpha * 0.24))
+	draw_line(Vector2(x, y - h), Vector2(x - tile_size * 0.10 * scale, y + tile_size * 0.24 * scale), Color(0.035, 0.025, 0.016, alpha), 2.0 * scale)
+	draw_line(Vector2(x - tile_size * 0.40 * scale, y - h * 0.70), Vector2(x + tile_size * 0.52 * scale, y - h * 0.78), Color(0.06, 0.046, 0.026, alpha * 0.86), 2.0 * scale)
+	draw_line(Vector2(x - tile_size * 0.36 * scale, y - h * 0.40), Vector2(x + tile_size * 0.44 * scale, y - h * 0.48), Color(accent.r, accent.g, accent.b, alpha * 0.28), 1.2)
+	if index % 4 == 0:
+		draw_polygon(PackedVector2Array([
+			Vector2(x + tile_size * 0.18 * scale, y - h * 1.10),
+			Vector2(x + tile_size * 0.62 * scale, y - h * 0.88),
+			Vector2(x + tile_size * 0.20 * scale, y - h * 0.62)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.34),
+			Color(0.78, 0.92, 0.94, alpha * 0.24),
+			Color(0.20, 0.36, 0.38, alpha * 0.26)
+		]))
+
+func _draw_stage_setpiece_tree(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var height := tile_size * (1.26 + float(index % 4) * 0.18) * scale
+	var lean := sin(float(index) * 1.13) * tile_size * 0.16 * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.10 * scale), Vector2(tile_size * 0.34 * scale, tile_size * 0.060 * scale), Color(0.0, 0.0, 0.0, alpha * 0.30))
+	draw_line(Vector2(x, y), Vector2(x + lean, y - height), Color(0.006, 0.034, 0.014, alpha), 3.0 * scale)
+	draw_line(Vector2(x + lean * 0.72, y - height * 0.62), Vector2(x + lean + tile_size * 0.56 * scale, y - height * 0.78), Color(accent.r, accent.g, accent.b, alpha * 0.34), 1.5)
+	_draw_ellipse_poly(Vector2(x + lean + tile_size * 0.22 * scale, y - height * 0.86), Vector2(tile_size * 0.36 * scale, tile_size * 0.13 * scale), Color(0.02, 0.09, 0.032, alpha * 0.42))
+
+func _draw_stage_setpiece_ice(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var height := tile_size * (0.78 + float(index % 3) * 0.15) * scale
+	var width := tile_size * (0.52 + float((index + 1) % 3) * 0.09) * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.08 * scale), Vector2(width * 0.48, tile_size * 0.050 * scale), Color(0.0, 0.0, 0.0, alpha * 0.20))
+	draw_polygon(PackedVector2Array([
+		Vector2(x - width * 0.45, y),
+		Vector2(x - width * 0.10, y - height),
+		Vector2(x + width * 0.42, y - height * 0.70),
+		Vector2(x + width * 0.50, y + tile_size * 0.06 * scale)
+	]), PackedColorArray([
+		Color(0.56, 0.70, 0.78, alpha * 0.54),
+		Color(0.86, 0.96, 1.0, alpha * 0.58),
+		Color(accent.r, accent.g, accent.b, alpha * 0.42),
+		Color(0.32, 0.42, 0.50, alpha * 0.46)
+	]))
+	draw_line(Vector2(x - width * 0.02, y - height * 0.82), Vector2(x + width * 0.24, y - height * 0.10), Color(1.0, 1.0, 1.0, alpha * 0.32), 1.0)
+
+func _draw_stage_setpiece_canopy(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var width := tile_size * (0.90 + float(index % 3) * 0.14) * scale
+	var height := tile_size * 0.84 * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.09 * scale), Vector2(width * 0.46, tile_size * 0.055 * scale), Color(0.0, 0.0, 0.0, alpha * 0.24))
+	draw_line(Vector2(x - width * 0.36, y - height * 0.70), Vector2(x - width * 0.30, y), Color(0.12, 0.075, 0.034, alpha), 1.8)
+	draw_line(Vector2(x + width * 0.36, y - height * 0.68), Vector2(x + width * 0.30, y), Color(0.12, 0.075, 0.034, alpha), 1.8)
+	draw_polygon(PackedVector2Array([
+		Vector2(x - width * 0.50, y - height * 0.72),
+		Vector2(x - width * 0.04, y - height * 0.98),
+		Vector2(x + width * 0.52, y - height * 0.76),
+		Vector2(x + width * 0.42, y - height * 0.60),
+		Vector2(x - width * 0.42, y - height * 0.58)
+	]), PackedColorArray([
+		Color(0.18, 0.10, 0.045, alpha * 0.72),
+		Color(accent.r, accent.g, accent.b, alpha * 0.38),
+		Color(0.16, 0.09, 0.04, alpha * 0.72),
+		Color(0.09, 0.055, 0.030, alpha * 0.82),
+		Color(0.10, 0.060, 0.032, alpha * 0.84)
+	]))
+
+func _draw_stage_setpiece_stone(x: float, y: float, scale: float, accent: Color, alpha: float, index: int) -> void:
+	var width := tile_size * (0.60 + float(index % 3) * 0.12) * scale
+	var height := tile_size * (0.46 + float((index + 2) % 3) * 0.10) * scale
+	_draw_ellipse_poly(Vector2(x, y + tile_size * 0.08 * scale), Vector2(width * 0.52, tile_size * 0.055 * scale), Color(0.0, 0.0, 0.0, alpha * 0.28))
+	draw_polygon(PackedVector2Array([
+		Vector2(x - width * 0.52, y + tile_size * 0.02 * scale),
+		Vector2(x - width * 0.20, y - height),
+		Vector2(x + width * 0.42, y - height * 0.78),
+		Vector2(x + width * 0.58, y - height * 0.08),
+		Vector2(x + width * 0.12, y + tile_size * 0.08 * scale)
+	]), PackedColorArray([
+		Color(0.025, 0.023, 0.020, alpha * 0.90),
+		Color(accent.r, accent.g, accent.b, alpha * 0.22),
+		Color(0.060, 0.054, 0.044, alpha * 0.70),
+		Color(0.018, 0.016, 0.014, alpha * 0.88),
+		Color(0.030, 0.026, 0.021, alpha * 0.86)
+	]))
 
 func _draw_side_view_ground(size: Vector2, palette: Dictionary) -> void:
 	var top_y := size.y * 0.48

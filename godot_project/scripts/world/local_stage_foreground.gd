@@ -8,6 +8,8 @@ const BOTTOM_OCCLUDER_COUNT := 10
 const BOTTOM_OCCLUDER_ALPHA := 0.24
 const HANGING_FOREGROUND_COUNT := 8
 const HANGING_FOREGROUND_ALPHA := 0.28
+const FRONT_SETPIECE_COUNT := 6
+const FRONT_SETPIECE_ALPHA := 0.30
 
 var current_region: Dictionary = {}
 var map_size := Vector2.ZERO
@@ -33,6 +35,7 @@ func _draw() -> void:
 	_draw_top_depth(accent, region_type, terrain)
 	_draw_hanging_foreground(accent, region_type, terrain)
 	_draw_side_occluders(accent, region_type, terrain)
+	_draw_front_setpieces(accent, region_type, terrain)
 	_draw_bottom_occluders(accent, region_type, terrain)
 	_draw_foreground_mist(accent, terrain)
 	_draw_bottom_vignette(accent)
@@ -221,6 +224,104 @@ func _draw_side_occluders(accent: Color, region_type: String, terrain: String) -
 		elif _terrain_has_forest(terrain):
 			draw_line(Vector2(left_x, map_size.y), Vector2(left_x + tile_size * 0.18, y - height), Color(0.004, 0.030, 0.012, left_alpha + 0.08), 3.2 + t * 2.0)
 			draw_line(Vector2(right_x, map_size.y), Vector2(right_x - tile_size * 0.18, y - height * 0.92), Color(0.004, 0.030, 0.012, right_alpha + 0.06), 3.0 + t * 1.7)
+
+func _draw_front_setpieces(accent: Color, region_type: String, terrain: String) -> void:
+	for i in range(FRONT_SETPIECE_COUNT):
+		var t := float(i) / float(maxi(1, FRONT_SETPIECE_COUNT - 1))
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var edge_x := tile_size * (0.18 + t * 0.42) if side < 0.0 else map_size.x - tile_size * (0.34 + t * 0.42)
+		var y := map_size.y * (0.58 + float((i * 5) % 19) / 55.0)
+		var scale := 0.82 + t * 0.42
+		var alpha := FRONT_SETPIECE_ALPHA * (0.62 + t * 0.38)
+		if region_type == "city" or region_type == "town":
+			_draw_front_arch_post(edge_x, y, scale, accent, alpha, side, i)
+		elif region_type == "sect":
+			_draw_front_banner_pillar(edge_x, y, scale, accent, alpha, side, i)
+		elif _terrain_has_water(terrain):
+			_draw_front_dock_piling(edge_x, y, scale, accent, alpha, side, i)
+		elif _terrain_has_forest(terrain):
+			_draw_front_tree_trunk(edge_x, y, scale, accent, alpha, side, i)
+		elif terrain.contains("snow"):
+			_draw_front_frost_post(edge_x, y, scale, accent, alpha, side, i)
+		else:
+			_draw_front_rock_slab(edge_x, y, scale, accent, alpha, side, i)
+
+func _draw_front_arch_post(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var height := tile_size * (1.56 + float(index % 3) * 0.22) * scale
+	var width := tile_size * (0.20 + float(index % 2) * 0.04) * scale
+	_draw_ellipse(x, y + tile_size * 0.05 * scale, Vector2(width * 1.15, tile_size * 0.055 * scale), Color(0.0, 0.0, 0.0, alpha * 0.42))
+	draw_rect(Rect2(Vector2(x - width * 0.5, y - height), Vector2(width, height)), Color(0.018, 0.011, 0.007, alpha), true)
+	draw_line(Vector2(x + side * width * 0.28, y - height + tile_size * 0.18 * scale), Vector2(x + side * width * 0.28, y - tile_size * 0.10 * scale), Color(accent.r, accent.g, accent.b, alpha * 0.18), 1.2)
+	var beam_end := x - side * tile_size * (0.86 + float(index % 2) * 0.18) * scale
+	draw_line(Vector2(x, y - height * 0.82), Vector2(beam_end, y - height * 0.92), Color(0.025, 0.015, 0.010, alpha * 0.86), 3.0 * scale)
+	if index % 2 == 0:
+		var lamp := Vector2(x - side * tile_size * 0.26 * scale, y - height * 0.58)
+		var pulse := 0.5 + sin(visual_phase * 2.2 + float(index)) * 0.5
+		draw_line(lamp + Vector2(0.0, -tile_size * 0.20 * scale), lamp, Color(0.72, 0.42, 0.20, alpha * 0.44), 1.0)
+		draw_circle(lamp, tile_size * 0.060 * scale, Color(1.0, 0.58, 0.20, alpha * (0.36 + pulse * 0.18)))
+
+func _draw_front_banner_pillar(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var height := tile_size * (1.80 + float(index % 3) * 0.18) * scale
+	draw_rect(Rect2(Vector2(x - tile_size * 0.10 * scale, y - height), Vector2(tile_size * 0.20 * scale, height)), Color(0.020, 0.016, 0.012, alpha), true)
+	draw_rect(Rect2(Vector2(x - tile_size * 0.28 * scale, y - height), Vector2(tile_size * 0.56 * scale, tile_size * 0.12 * scale)), Color(accent.r, accent.g, accent.b, alpha * 0.28), true)
+	var banner_w := tile_size * 0.42 * scale
+	draw_polygon(PackedVector2Array([
+		Vector2(x, y - height * 0.86),
+		Vector2(x - side * banner_w, y - height * 0.78),
+		Vector2(x - side * banner_w * 0.82, y - height * 0.44),
+		Vector2(x, y - height * 0.50)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, alpha * 0.80),
+		Color(accent.r, accent.g, accent.b, alpha * 0.46),
+		Color(0.015, 0.012, 0.009, alpha * 0.72),
+		Color(0.018, 0.014, 0.010, alpha * 0.76)
+	]))
+
+func _draw_front_dock_piling(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var height := tile_size * (1.14 + float(index % 4) * 0.14) * scale
+	_draw_ellipse(x, y + tile_size * 0.06 * scale, Vector2(tile_size * 0.24 * scale, tile_size * 0.055 * scale), Color(0.0, 0.0, 0.0, alpha * 0.34))
+	draw_line(Vector2(x, y - height), Vector2(x - side * tile_size * 0.08 * scale, y + tile_size * 0.22 * scale), Color(0.020, 0.016, 0.010, alpha), 3.0 * scale)
+	draw_line(Vector2(x - side * tile_size * 0.46 * scale, y - height * 0.66), Vector2(x + side * tile_size * 0.20 * scale, y - height * 0.76), Color(0.045, 0.034, 0.020, alpha * 0.86), 2.0 * scale)
+	draw_line(Vector2(x - side * tile_size * 0.40 * scale, y - height * 0.46), Vector2(x + side * tile_size * 0.20 * scale, y - height * 0.56), Color(accent.r, accent.g, accent.b, alpha * 0.22), 1.0)
+
+func _draw_front_tree_trunk(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var height := tile_size * (1.95 + float(index % 3) * 0.24) * scale
+	var lean := side * tile_size * (0.16 + float(index % 2) * 0.08) * scale
+	_draw_ellipse(x, y + tile_size * 0.08 * scale, Vector2(tile_size * 0.34 * scale, tile_size * 0.070 * scale), Color(0.0, 0.0, 0.0, alpha * 0.40))
+	draw_line(Vector2(x, y + tile_size * 0.10 * scale), Vector2(x + lean, y - height), Color(0.004, 0.026, 0.010, alpha + 0.06), 5.0 * scale)
+	draw_line(Vector2(x + lean * 0.55, y - height * 0.62), Vector2(x - side * tile_size * 0.72 * scale, y - height * 0.80), Color(0.005, 0.035, 0.012, alpha * 0.88), 2.0 * scale)
+	_draw_ellipse(x - side * tile_size * 0.58 * scale, y - height * 0.84, Vector2(tile_size * 0.46 * scale, tile_size * 0.16 * scale), Color(accent.r * 0.22, accent.g * 0.40, accent.b * 0.20, alpha * 0.34))
+
+func _draw_front_frost_post(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var height := tile_size * (1.24 + float(index % 3) * 0.18) * scale
+	draw_line(Vector2(x, y), Vector2(x + side * tile_size * 0.10 * scale, y - height), Color(0.54, 0.70, 0.78, alpha * 0.72), 2.6 * scale)
+	draw_polygon(PackedVector2Array([
+		Vector2(x + side * tile_size * 0.08 * scale, y - height * 0.92),
+		Vector2(x - side * tile_size * 0.24 * scale, y - height * 0.62),
+		Vector2(x - side * tile_size * 0.10 * scale, y - height * 0.48)
+	]), PackedColorArray([
+		Color(0.86, 0.96, 1.0, alpha * 0.64),
+		Color(accent.r, accent.g, accent.b, alpha * 0.34),
+		Color(0.45, 0.58, 0.66, alpha * 0.52)
+	]))
+
+func _draw_front_rock_slab(x: float, y: float, scale: float, accent: Color, alpha: float, side: float, index: int) -> void:
+	var width := tile_size * (0.52 + float(index % 3) * 0.10) * scale
+	var height := tile_size * (0.76 + float((index + 1) % 3) * 0.13) * scale
+	_draw_ellipse(x, y + tile_size * 0.06 * scale, Vector2(width * 0.56, tile_size * 0.065 * scale), Color(0.0, 0.0, 0.0, alpha * 0.38))
+	draw_polygon(PackedVector2Array([
+		Vector2(x - width * 0.46, y),
+		Vector2(x - width * 0.28, y - height * 0.72),
+		Vector2(x + width * 0.14, y - height),
+		Vector2(x + width * 0.52, y - height * 0.18),
+		Vector2(x + width * 0.22, y + tile_size * 0.06 * scale)
+	]), PackedColorArray([
+		Color(0.012, 0.010, 0.008, alpha),
+		Color(accent.r, accent.g, accent.b, alpha * 0.18),
+		Color(0.045, 0.040, 0.032, alpha * 0.70),
+		Color(0.018, 0.016, 0.013, alpha * 0.94),
+		Color(0.014, 0.012, 0.010, alpha)
+	]))
 
 func _draw_bottom_occluders(accent: Color, region_type: String, terrain: String) -> void:
 	for i in range(BOTTOM_OCCLUDER_COUNT):
