@@ -29,6 +29,8 @@ const PLAYER_STAGE_ARM_SWING_ALPHA := 0.28
 const PLAYER_STAGE_STEP_ARC_ALPHA := 0.22
 const PLAYER_STAGE_IDLE_GUARD_ALPHA := 0.18
 const PLAYER_STAGE_READY_STANCE_ALPHA := 0.24
+const PLAYER_STAGE_BREATH_AURA_RINGS := 3
+const PLAYER_STAGE_BREATH_AURA_ALPHA := 0.18
 const PLAYER_STAGE_CENTERLINE_ALPHA := 0.24
 const PLAYER_STAGE_LANE_LOCK_ALPHA := 0.20
 const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
@@ -138,6 +140,7 @@ func _draw() -> void:
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, false)
 			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
 			_draw_stage_player_faction_sigil(top_left, draw_size, trim, moving, facing_side)
+			_draw_stage_player_breath_aura(top_left, draw_size, trim, moving, facing_side)
 		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
 		if stage_actor:
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, true)
@@ -568,6 +571,66 @@ func _draw_stage_player_faction_sigil(top_left: Vector2, draw_size: Vector2, acc
 			draw_arc(center + Vector2(side * radius * 0.14, radius * 0.10), radius * 0.50, PI * 1.08, PI * 1.70, 18, Color(1.0, 0.94, 0.70, alpha * 0.52), 1.0)
 		_:
 			draw_arc(center, radius * 0.74, PI * 0.10, PI * 0.90, 28, Color(sigil_color.r, sigil_color.g, sigil_color.b, alpha), 1.3)
+
+func _draw_stage_player_breath_aura(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
+	if moving:
+		return
+	var faction := str(GameState.player.get("faction", "none"))
+	var phase := sin(walk_phase * 0.62)
+	var center := top_left + Vector2(draw_size.x * (0.50 + side * 0.024), draw_size.y * 0.620)
+	for i in range(PLAYER_STAGE_BREATH_AURA_RINGS):
+		var layer := float(i) / float(maxi(1, PLAYER_STAGE_BREATH_AURA_RINGS - 1))
+		var radius := draw_size.x * (0.225 + layer * 0.070 + phase * 0.006)
+		var y_offset := draw_size.y * (-0.020 + layer * 0.045)
+		var alpha := PLAYER_STAGE_BREATH_AURA_ALPHA * (0.62 - layer * 0.13 + absf(phase) * 0.12)
+		var ring_center := center + Vector2(side * draw_size.x * (0.014 + layer * 0.012), y_offset)
+		draw_arc(ring_center, radius, PI * (0.06 + layer * 0.035), PI * (0.92 - layer * 0.025), 30, Color(accent.r, accent.g, accent.b, alpha), 1.1 + layer * 0.4)
+		draw_arc(ring_center + Vector2(-side * draw_size.x * 0.020, draw_size.y * 0.050), radius * (0.68 - layer * 0.06), PI * 1.08, PI * 1.78, 24, Color(1.0, 0.92, 0.62, alpha * 0.48), 0.9)
+	_draw_stage_player_faction_breath_detail(faction, center, draw_size, accent, side, phase)
+
+func _draw_stage_player_faction_breath_detail(faction: String, center: Vector2, draw_size: Vector2, accent: Color, side: float, phase: float) -> void:
+	var alpha := PLAYER_STAGE_BREATH_AURA_ALPHA * (0.72 + absf(phase) * 0.22)
+	match faction:
+		"taiji":
+			draw_arc(center, draw_size.x * 0.22, PI * 0.02, PI * 1.04, 32, Color(accent.r, accent.g, accent.b, alpha * 0.74), 1.3)
+			draw_arc(center + Vector2(side * draw_size.x * 0.030, draw_size.y * 0.026), draw_size.x * 0.145, PI * 1.02, PI * 1.92, 24, Color(1.0, 0.95, 0.78, alpha * 0.52), 1.0)
+		"flower":
+			for i in range(5):
+				var angle := walk_phase * 0.18 + float(i) * TAU / 5.0
+				var pos := center + Vector2(cos(angle), sin(angle) * 0.46) * draw_size.x * 0.185
+				draw_circle(pos, clampf(draw_size.x * 0.014, 1.1, 2.0), Color(accent.r, accent.g, accent.b, alpha * 0.72))
+		"xueshan":
+			for i in range(4):
+				var angle := float(i) * PI * 0.25
+				var arm := Vector2(cos(angle), sin(angle) * 0.48) * draw_size.x * 0.155
+				draw_line(center - arm, center + arm, Color(0.82, 0.94, 1.0, alpha * 0.70), 0.9)
+		"honglian":
+			for i in range(3):
+				var x := center.x + side * draw_size.x * (-0.11 + float(i) * 0.095)
+				var low := center.y + draw_size.y * 0.090
+				var high := center.y - draw_size.y * (0.050 + float(i % 2) * 0.030 + absf(phase) * 0.014)
+				draw_line(Vector2(x, low), Vector2(x + side * draw_size.x * 0.040, high), Color(1.0, 0.40, 0.16, alpha * 0.70), 1.2)
+				draw_line(Vector2(x + side * draw_size.x * 0.030, low - draw_size.y * 0.030), Vector2(x - side * draw_size.x * 0.012, high + draw_size.y * 0.026), Color(1.0, 0.82, 0.38, alpha * 0.42), 0.8)
+		"naja":
+			var last := center + Vector2(-side * draw_size.x * 0.18, draw_size.y * 0.035)
+			for i in range(1, 7):
+				var t := float(i) / 6.0
+				var pos := center + Vector2(lerpf(-side * draw_size.x * 0.18, side * draw_size.x * 0.18, t), sin(t * TAU + phase) * draw_size.y * 0.030)
+				draw_line(last, pos, Color(accent.r, accent.g, accent.b, alpha * 0.66), 1.1)
+				last = pos
+		"bagua":
+			for i in range(4):
+				var angle := float(i) * PI * 0.5 + phase * 0.08
+				var pos := center + Vector2(cos(angle), sin(angle) * 0.52) * draw_size.x * 0.18
+				draw_line(pos - Vector2(side * draw_size.x * 0.030, 0.0), pos + Vector2(side * draw_size.x * 0.030, 0.0), Color(1.0, 0.90, 0.58, alpha * 0.64), 1.0)
+		"xiaoyao":
+			for i in range(3):
+				var layer := float(i)
+				var start := center + Vector2(-side * draw_size.x * (0.18 - layer * 0.035), draw_size.y * (0.050 + layer * 0.030))
+				var end := start + Vector2(side * draw_size.x * (0.26 + layer * 0.030), -draw_size.y * (0.050 + absf(phase) * 0.020))
+				draw_line(start, end, Color(accent.r, accent.g, accent.b, alpha * (0.68 - layer * 0.12)), 1.0)
+		_:
+			draw_line(center + Vector2(-side * draw_size.x * 0.18, draw_size.y * 0.06), center + Vector2(side * draw_size.x * 0.18, -draw_size.y * 0.02), Color(1.0, 0.90, 0.58, alpha * 0.48), 1.0)
 
 func _draw_stage_player_ground_lock(accent: Color, depth_scale: float, moving: bool, lane_offset_y: float = 0.0) -> void:
 	var step := absf(sin(walk_phase)) if moving else 0.28 + sin(walk_phase * 0.55) * 0.08

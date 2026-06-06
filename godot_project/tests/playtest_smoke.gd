@@ -246,6 +246,8 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_FOOT_ANCHOR_ALPHA >= 0.20, "玩家局部横版地图应显示脚步锚点")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_WEAPON_POSE_ALPHA >= 0.30, "玩家局部横版地图应显示前持武器姿态")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_SHOULDER_GLOW_ALPHA >= 0.16, "玩家局部横版地图应显示肩部高光姿态层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_RINGS >= 3, "玩家局部横版待机应保留多层呼吸气场")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_ALPHA >= 0.16, "玩家局部横版待机呼吸气场应有足够可见度")
 	player.world_map = world_map
 	player.position = GameState.player_position
 	player._refresh_stage_depth_scale()
