@@ -1,5 +1,6 @@
 {
   "qinghe": {
+    "floor": "res://assets/world/stage_layers/qinghe_floor_layer_v1.png",
     "midground": "res://assets/world/stage_layers/qinghe_shopfront_layer_v2.png",
     "foreground": "res://assets/world/stage_layers/qinghe_foreground_layer_v1.png"
   }

@@ -144,7 +144,7 @@ def main() -> int:
         if not asset_path.exists():
             errors.append(f"scene background path missing for {region_id}: {background_path}")
 
-    allowed_stage_layers = {"midground", "foreground"}
+    allowed_stage_layers = {"floor", "midground", "foreground"}
     for region_id, layers in stage_layer_assets.items():
         if region_id not in region_id_set:
             errors.append(f"stage layer mapping references missing region {region_id}")

@@ -95,6 +95,8 @@ const SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA := 0.22
 const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_ALPHA := 0.62
 const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOG_ALPHA := 0.14
 const SIDE_VIEW_PAINTED_MIDGROUND_LAYER_FOOT_ALPHA := 0.18
+const SIDE_VIEW_PAINTED_FLOOR_LAYER_ALPHA := 0.50
+const SIDE_VIEW_PAINTED_FLOOR_LAYER_FOOT_ALPHA := 0.22
 const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
@@ -168,6 +170,7 @@ var shop_return_tile := Vector2i.ZERO
 var tile_textures: Dictionary = {}
 var scene_background_texture: Texture2D
 var scene_midground_layer_texture: Texture2D
+var scene_floor_layer_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
 var side_view_stage_enabled := true
 var stage_visual_phase := 0.0
@@ -206,6 +209,7 @@ func _load_tile_textures() -> void:
 func _load_region_scene_background() -> void:
 	scene_background_texture = null
 	scene_midground_layer_texture = null
+	scene_floor_layer_texture = null
 	var region_id := str(current_region.get("id", ""))
 	var path := GameData.get_scene_background_path(region_id)
 	if not path.is_empty():
@@ -213,6 +217,9 @@ func _load_region_scene_background() -> void:
 	var layer_path := GameData.get_stage_layer_path(region_id, "midground")
 	if not layer_path.is_empty():
 		scene_midground_layer_texture = GameData.load_texture(layer_path, true)
+	var floor_layer_path := GameData.get_stage_layer_path(region_id, "floor")
+	if not floor_layer_path.is_empty():
+		scene_floor_layer_texture = GameData.load_texture(floor_layer_path, true)
 
 func setup_region(region: Dictionary) -> void:
 	if tile_textures.is_empty():
@@ -1555,6 +1562,7 @@ func _draw_side_view_stage() -> void:
 	_draw_side_view_upper_platforms(size, palette)
 	_draw_side_view_setpiece_row(size, palette)
 	_draw_side_view_ground(size, palette)
+	_draw_side_view_painted_floor_layer(size, palette)
 	_draw_side_view_director_pass(size, palette)
 	_draw_side_view_living_silhouettes(size, palette)
 	_draw_side_view_ambient(size, palette)
@@ -1629,6 +1637,26 @@ func _draw_side_view_painted_midground_layer(size: Vector2, palette: Dictionary)
 		Rect2(Vector2(size.x * 0.90, 0.0), Vector2(size.x * 0.10, size.y)),
 		Color(0.0, 0.0, 0.0, 0.0),
 		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_BACKDROP_EDGE_ALPHA * 0.62)
+	)
+
+func _draw_side_view_painted_floor_layer(size: Vector2, palette: Dictionary) -> void:
+	if scene_floor_layer_texture == null:
+		return
+	var accent: Color = palette["accent"]
+	var floor_rect := Rect2(
+		Vector2(-size.x * 0.035, size.y * 0.020),
+		Vector2(size.x * 1.070, size.y * 1.035)
+	)
+	draw_texture_rect(scene_floor_layer_texture, floor_rect, false, Color(1.0, 1.0, 1.0, SIDE_VIEW_PAINTED_FLOOR_LAYER_ALPHA))
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, size.y * 0.50), Vector2(size.x, size.y * 0.24)),
+		Color(accent.r, accent.g, accent.b, 0.0),
+		Color(accent.r, accent.g, accent.b, SIDE_VIEW_PAINTED_FLOOR_LAYER_FOOT_ALPHA * 0.32)
+	)
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2(0.0, size.y * 0.72), Vector2(size.x, size.y * 0.28)),
+		Color(0.0, 0.0, 0.0, 0.0),
+		Color(0.0, 0.0, 0.0, SIDE_VIEW_PAINTED_FLOOR_LAYER_FOOT_ALPHA)
 	)
 
 func _draw_stage_vertical_gradient(rect: Rect2, top_color: Color, bottom_color: Color) -> void:
