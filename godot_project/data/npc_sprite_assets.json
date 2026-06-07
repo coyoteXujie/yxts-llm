@@ -1,9 +1,9 @@
 {
   "平阿四": "res://assets/characters/npc/map_sprites_v2/ping_asi_stage_v2.png",
-  "店小二": "res://assets/characters/reference_map_sprites/waiter_ref.png",
+  "店小二": "res://assets/characters/npc/map_sprites_v2/waiter_stage_v2.png",
   "阎商": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
   "葛朗台": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
-  "阿青": "res://assets/characters/reference_map_sprites/tofu_seller_ref.png",
+  "阿青": "res://assets/characters/npc/map_sprites_v2/aqing_stage_v2.png",
   "厨师": "res://assets/characters/reference_map_sprites/waiter_ref.png",
   "屠夫": "res://assets/characters/reference_map_sprites/bandit_axe_ref.png",
   "卖花女": "res://assets/characters/reference_map_sprites/tofu_seller_ref.png",
