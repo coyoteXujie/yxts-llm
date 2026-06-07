@@ -39,6 +39,9 @@ const STAGE_PRESENCE_SCALE := 1.44
 const STAGE_BASE_SPRITE_WIDTH := 108.0
 const STAGE_MASTER_SPRITE_WIDTH := 120.0
 const STAGE_ENEMY_SPRITE_WIDTH := 118.0
+const STAGE_WIDE_SPRITE_ASPECT_START := 1.08
+const STAGE_WIDE_SPRITE_ASPECT_FULL := 1.50
+const STAGE_WIDE_SPRITE_WIDTH_BONUS := 1.62
 const STAGE_MASTER_EXTRA_SCALE := 1.09
 const STAGE_ENEMY_EXTRA_SCALE := 1.11
 const STAGE_SPRITE_MIN_SCALE := 1.30
@@ -349,6 +352,7 @@ func _refresh_sprite_asset() -> void:
 			target_width = STAGE_MASTER_SPRITE_WIDTH
 		elif is_enemy():
 			target_width = STAGE_ENEMY_SPRITE_WIDTH
+		target_width *= _stage_sprite_width_allowance(texture_size)
 	if str(data.get("name", "")) == "神秘人":
 		target_height = 114.0
 		target_width = 96.0
@@ -380,6 +384,16 @@ func _refresh_sprite_asset() -> void:
 		name_label.z_index = 8
 		name_label.position = Vector2(-58, -100 * map_scale)
 	_update_sprite_motion()
+
+func _stage_sprite_width_allowance(texture_size: Vector2) -> float:
+	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
+		return 1.0
+	var aspect := texture_size.x / texture_size.y
+	if aspect <= STAGE_WIDE_SPRITE_ASPECT_START:
+		return 1.0
+	var span := maxf(0.01, STAGE_WIDE_SPRITE_ASPECT_FULL - STAGE_WIDE_SPRITE_ASPECT_START)
+	var t := clampf((aspect - STAGE_WIDE_SPRITE_ASPECT_START) / span, 0.0, 1.0)
+	return lerpf(1.0, STAGE_WIDE_SPRITE_WIDTH_BONUS, t)
 
 func _clear_sprite_asset() -> void:
 	using_sprite_asset = false

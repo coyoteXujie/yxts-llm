@@ -118,6 +118,7 @@ func _run() -> void:
 	_check(NPC_SCRIPT.STAGE_MASTER_EXTRA_SCALE >= 1.08 and NPC_SCRIPT.STAGE_ENEMY_EXTRA_SCALE >= 1.10, "掌门/敌人应在局部横版舞台获得额外体量")
 	_check(NPC_SCRIPT.STAGE_SPRITE_MIN_SCALE >= 1.28, "NPC 局部横版舞台应保留最低视觉体量")
 	_check(NPC_SCRIPT.STAGE_SPRITE_MAX_SCALE >= 1.84, "NPC 局部横版舞台应允许前景角色获得更强体量")
+	_check(NPC_SCRIPT.STAGE_WIDE_SPRITE_WIDTH_BONUS >= 1.50, "NPC 局部横版舞台应给宽道具 sprite 足够宽度余量")
 	_check(NPC_SCRIPT.STAGE_RIM_ALPHA >= 0.12, "NPC 局部横版舞台应有贴图轮廓高光")
 	_check(NPC_SCRIPT.STAGE_ROLE_CUE_ALPHA >= 0.16, "NPC 局部横版舞台应有身份提示动效")
 	_check(NPC_SCRIPT.CONTACT_GLOW_ALPHA > 0.08, "NPC 脚下应保留接触光表现")
@@ -248,6 +249,8 @@ func _run() -> void:
 	_check(_textured_prop_count(local_area.prop_nodes) > 0, "平安镇 2.5D 道具应加载 PNG 资源")
 	_check(_max_textured_actor_height(local_area.npc_nodes) >= 115.0, "局部地图 NPC 贴图显示不应继续偏小")
 	_check(_max_textured_actor_height(local_area.npc_nodes) >= 135.0, "局部横版舞台 NPC 贴图应具备更强存在感")
+	_check(_textured_actor_height_by_name(local_area.npc_nodes, "小商贩") >= 145.0, "小商贩宽道具 sprite 不应被宽度预算压得过小")
+	_check(_textured_actor_height_by_name(local_area.npc_nodes, "厨师") >= 145.0, "厨师宽道具 sprite 不应被宽度预算压得过小")
 	_check(NPC_SCRIPT.STAGE_BASE_SPRITE_WIDTH >= 108.0, "局部横版舞台 NPC 应放开贴图宽度预算")
 	_check(NPC_SCRIPT.STAGE_MASTER_SPRITE_WIDTH >= 118.0 and NPC_SCRIPT.STAGE_ENEMY_SPRITE_WIDTH >= 116.0, "局部横版舞台掌门/敌人应放开更高贴图宽度预算")
 	_check(_actor_depth_scale_range(local_area.npc_nodes) >= 0.10, "局部 NPC 应按舞台前后排产生大小差异")
@@ -415,6 +418,16 @@ func _max_textured_actor_height(nodes: Array) -> float:
 		var texture_size: Vector2 = actor.sprite_node.texture.get_size()
 		max_height = maxf(max_height, texture_size.y * actor.sprite_node.scale.y)
 	return max_height
+
+func _textured_actor_height_by_name(nodes: Array, actor_name: String) -> float:
+	for actor in nodes:
+		if not is_instance_valid(actor) or str(actor.data.get("name", "")) != actor_name:
+			continue
+		if actor.sprite_node == null or actor.sprite_node.texture == null:
+			return 0.0
+		var texture_size: Vector2 = actor.sprite_node.texture.get_size()
+		return texture_size.y * actor.sprite_node.scale.y
+	return 0.0
 
 func _actor_depth_scale_range(nodes: Array) -> float:
 	var min_scale := INF
