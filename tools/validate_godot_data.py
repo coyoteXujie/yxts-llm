@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import struct
 import sys
 from collections import Counter
 from pathlib import Path
@@ -12,10 +13,35 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "godot_project" / "data"
 MAP_WIDTH = 96
 MAP_HEIGHT = 72
+MIN_STAGE_LAYER_WIDTH = 1280
+MIN_STAGE_LAYER_HEIGHT = 720
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 def load_json(name: str):
     return json.loads((DATA / name).read_text(encoding="utf-8"))
+
+
+def resolve_asset_path(path: str) -> Path:
+    return ROOT / "godot_project" / path.removeprefix("res://")
+
+
+def read_png_info(path: Path) -> tuple[int, int, int] | None:
+    with path.open("rb") as handle:
+        if handle.read(8) != PNG_SIGNATURE:
+            return None
+        length_data = handle.read(4)
+        if len(length_data) != 4:
+            return None
+        length = struct.unpack(">I", length_data)[0]
+        chunk_type = handle.read(4)
+        if chunk_type != b"IHDR" or length < 13:
+            return None
+        data = handle.read(length)
+        if len(data) < 13:
+            return None
+        width, height, _bit_depth, color_type, _compression, _filter, _interlace = struct.unpack(">IIBBBBB", data[:13])
+        return width, height, color_type
 
 
 def main() -> int:
@@ -147,18 +173,55 @@ def main() -> int:
             errors.append(f"scene background path missing for {region_id}: {background_path}")
 
     allowed_stage_layers = {"floor", "midground", "foreground"}
+    required_stage_layers = {"floor", "midground", "foreground"}
     for region_id, layers in stage_layer_assets.items():
         if region_id not in region_id_set:
             errors.append(f"stage layer mapping references missing region {region_id}")
         if not isinstance(layers, dict):
             errors.append(f"stage layer mapping for {region_id} must be an object")
             continue
+        missing_layers = required_stage_layers - set(layers.keys())
+        if missing_layers:
+            errors.append(f"stage layer mapping for {region_id} missing layers: {', '.join(sorted(missing_layers))}")
+        layer_sizes: dict[str, tuple[int, int]] = {}
         for layer_name, layer_path in layers.items():
             if layer_name not in allowed_stage_layers:
                 errors.append(f"stage layer mapping for {region_id} has unknown layer {layer_name}")
-            asset_path = ROOT / "godot_project" / str(layer_path).removeprefix("res://")
-            if not asset_path.exists():
+            resolved_path = resolve_asset_path(str(layer_path))
+            if not resolved_path.exists():
                 errors.append(f"stage layer path missing for {region_id}.{layer_name}: {layer_path}")
+                continue
+            png_info = read_png_info(resolved_path)
+            if png_info is None:
+                errors.append(f"stage layer path for {region_id}.{layer_name} is not a valid PNG: {layer_path}")
+                continue
+            width, height, color_type = png_info
+            if width < MIN_STAGE_LAYER_WIDTH or height < MIN_STAGE_LAYER_HEIGHT:
+                errors.append(
+                    f"stage layer {region_id}.{layer_name} resolution {width}x{height}, "
+                    f"expected at least {MIN_STAGE_LAYER_WIDTH}x{MIN_STAGE_LAYER_HEIGHT}"
+                )
+            if color_type not in {4, 6}:
+                errors.append(f"stage layer {region_id}.{layer_name} must include alpha channel: {layer_path}")
+            layer_sizes[layer_name] = (width, height)
+        if len(set(layer_sizes.values())) > 1:
+            size_desc = ", ".join(f"{name}={size[0]}x{size[1]}" for name, size in sorted(layer_sizes.items()))
+            errors.append(f"stage layers for {region_id} must share the same source size: {size_desc}")
+        background_path = scene_background_assets.get(region_id, "")
+        if layer_sizes and background_path:
+            resolved_background = resolve_asset_path(str(background_path))
+            if resolved_background.exists():
+                background_info = read_png_info(resolved_background)
+                if background_info is None:
+                    errors.append(f"scene background for layered stage {region_id} is not a valid PNG: {background_path}")
+                else:
+                    background_size = (background_info[0], background_info[1])
+                    expected_size = next(iter(layer_sizes.values()))
+                    if background_size != expected_size:
+                        errors.append(
+                            f"scene background for layered stage {region_id} must match stage layer size: "
+                            f"background={background_size[0]}x{background_size[1]} layers={expected_size[0]}x{expected_size[1]}"
+                        )
 
     allowed_combat_stage_layers = {"backdrop", "midground", "floor", "foreground"}
     for region_id, layers in combat_stage_assets.items():
