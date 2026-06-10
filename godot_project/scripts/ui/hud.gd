@@ -19,6 +19,7 @@ var prompt_panel: PanelContainer
 var prompt_box: HBoxContainer
 var prompt_label: Label
 var prompt_chips: Array[PanelContainer] = []
+var last_prompt_text := ""
 var toast_label: Label
 var minimap
 var region_banner_panel: PanelContainer
@@ -59,6 +60,9 @@ func _process(delta: float) -> void:
 			region_banner_panel.hide()
 
 func set_prompt(text: String) -> void:
+	if text == last_prompt_text:
+		return
+	last_prompt_text = text
 	prompt_label.text = text
 	if prompt_panel == null or prompt_box == null:
 		prompt_label.visible = not text.is_empty()

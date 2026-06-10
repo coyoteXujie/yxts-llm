@@ -31,6 +31,8 @@ func _run() -> void:
 	if main.hud.prompt_chips.size() > 0:
 		var primary_prompt_chip: PanelContainer = main.hud.prompt_chips[0]
 		_check(main.hud.prompt_chips.size() == 5 and primary_prompt_chip.custom_minimum_size.x >= 74.0, "HUD 快捷栏应生成稳定尺寸的操作 chip")
+		main.hud.set_prompt("E 探索古井（井台）    B 背包  J 任务  K 修炼  M 地图")
+		_check(main.hud.prompt_chips.size() == 5 and main.hud.prompt_chips[0] == primary_prompt_chip, "HUD 相同提示不应每帧重建快捷栏 chip")
 	else:
 		_check(false, "HUD 快捷栏应生成操作 chip")
 
