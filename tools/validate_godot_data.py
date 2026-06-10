@@ -16,6 +16,11 @@ MAP_HEIGHT = 72
 MIN_STAGE_LAYER_WIDTH = 1280
 MIN_STAGE_LAYER_HEIGHT = 720
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MIN_DETAILED_STAGE_LAYER_BYTES = {
+    ("qinghe", "floor"): 70_000,
+    ("qinghe", "midground"): 120_000,
+    ("qinghe", "foreground"): 78_000,
+}
 
 
 def load_json(name: str):
@@ -191,6 +196,12 @@ def main() -> int:
             if not resolved_path.exists():
                 errors.append(f"stage layer path missing for {region_id}.{layer_name}: {layer_path}")
                 continue
+            minimum_bytes = MIN_DETAILED_STAGE_LAYER_BYTES.get((str(region_id), str(layer_name)))
+            if minimum_bytes is not None and resolved_path.stat().st_size < minimum_bytes:
+                errors.append(
+                    f"stage layer {region_id}.{layer_name} is too small for the detailed Qinghe DNF street asset: "
+                    f"{resolved_path.stat().st_size} bytes, expected at least {minimum_bytes}"
+                )
             png_info = read_png_info(resolved_path)
             if png_info is None:
                 errors.append(f"stage layer path for {region_id}.{layer_name} is not a valid PNG: {layer_path}")
