@@ -442,6 +442,13 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_SHELF_ALPHA >= 0.76, "商铺内景应有可见货架层")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_THEME_PROP_ALPHA >= 0.82, "商铺内景应按店铺类型绘制主题道具")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_LIGHT_ALPHA >= 0.28, "商铺内景应有灯光氛围层")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_SIGNBOARD_ALPHA >= 0.72, "商铺内景应有明显后墙招牌焦点")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_DEPTH_ARCH_ALPHA >= 0.40, "商铺内景应保留梁柱/拱架纵深")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_SERVICE_ZONE_ALPHA >= 0.30, "商铺内景应标识柜台服务区和玩家站位")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FLOOR_LANE_ALPHA >= 0.20, "商铺内景地面应有透视走位引导")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FOREGROUND_VIGNETTE_ALPHA >= 0.42, "商铺内景应有近景梁柱压场")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_PERSPECTIVE_GUIDE_COUNT >= 8, "商铺内景应绘制足够地面透视线")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_DISPLAY_CLUSTER_COUNT >= 5, "商铺内景应按店铺类型补充陈列物")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")
