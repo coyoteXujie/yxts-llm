@@ -465,6 +465,19 @@ func _run() -> void:
 	_check(beiling_midground_layer != null and beiling_floor_layer != null and beiling_midground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山中景层应与地面层同尺寸对齐")
 	_check(beiling_foreground_layer != null and beiling_floor_layer != null and beiling_foreground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山前景层应与地面层同尺寸对齐")
 
+	local_area.setup_region(GameData.get_region("bashu_bamboo"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("bashu_bamboo").ends_with("scene_bashu_bamboo_dnf_bamboo_v1.png"), "巴蜀竹海应接入 DNF 式竹林山道整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "巴蜀竹海局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "巴蜀竹海应加载竹林中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("bashu_bamboo", "floor").ends_with("bashu_bamboo_dnf_floor_v1.png"), "巴蜀竹海应映射竹林地面贴图层")
+	var bamboo_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("bashu_bamboo", "floor"), true)
+	var bamboo_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("bashu_bamboo", "midground"), true)
+	var bamboo_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("bashu_bamboo", "foreground"), true)
+	_check(bamboo_floor_layer != null and bamboo_floor_layer.get_size().x >= 1600.0 and bamboo_floor_layer.get_size().y >= 900.0, "巴蜀竹海地面层应具备横版舞台分辨率")
+	_check(bamboo_midground_layer != null and bamboo_floor_layer != null and bamboo_midground_layer.get_size() == bamboo_floor_layer.get_size(), "巴蜀竹海中景层应与地面层同尺寸对齐")
+	_check(bamboo_foreground_layer != null and bamboo_floor_layer != null and bamboo_foreground_layer.get_size() == bamboo_floor_layer.get_size(), "巴蜀竹海前景层应与地面层同尺寸对齐")
+
 	local_area.setup_region(GameData.get_region("flower_sect"))
 	await get_tree().process_frame
 	_check(GameData.get_scene_background_path("flower_sect").ends_with("scene_flower_sect_dnf_garden_v1.png"), "花间派应接入 DNF 式花林门派整屏背景")
