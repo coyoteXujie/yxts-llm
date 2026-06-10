@@ -20,9 +20,14 @@ var quantity_plus_button: Button
 var quantity_max_button: Button
 var total_label: Label
 var primary_button: Button
+var confirm_overlay: Control
+var confirm_title_label: Label
+var confirm_body_label: Label
+var confirm_accept_button: Button
 var item_ids: Array[String] = []
 var buyback_stock: Dictionary = {}
 var buyback_prices: Dictionary = {}
+var pending_transaction: Dictionary = {}
 var shop_mode := MODE_BUY
 var selected_item_id := ""
 var selected_item_index := -1
@@ -42,11 +47,15 @@ func show_shop(data: Dictionary) -> void:
 	shop_mode = MODE_BUY
 	buyback_stock.clear()
 	buyback_prices.clear()
+	pending_transaction.clear()
+	if confirm_overlay != null:
+		confirm_overlay.hide()
 	_refresh()
 	show()
 	GameState.set_mode(GameState.Mode.SHOP)
 
 func close_panel() -> void:
+	_hide_transaction_confirmation()
 	hide()
 	GameState.set_mode(GameState.Mode.EXPLORE)
 
@@ -178,6 +187,56 @@ func _build() -> void:
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
+	_build_confirmation_overlay()
+
+func _build_confirmation_overlay() -> void:
+	var overlay := ColorRect.new()
+	confirm_overlay = overlay
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.color = Color(0.025, 0.018, 0.012, 0.58)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 120
+	overlay.hide()
+	add_child(overlay)
+
+	var card := PanelContainer.new()
+	card.position = Vector2(410, 210)
+	card.size = Vector2(460, 230)
+	card.add_theme_stylebox_override("panel", _panel_style())
+	overlay.add_child(card)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	card.add_child(box)
+
+	confirm_title_label = Label.new()
+	confirm_title_label.text = "确认交易"
+	confirm_title_label.add_theme_font_size_override("font_size", 24)
+	confirm_title_label.add_theme_color_override("font_color", Color(0.98, 0.78, 0.36))
+	box.add_child(confirm_title_label)
+
+	confirm_body_label = Label.new()
+	confirm_body_label.custom_minimum_size = Vector2(410, 108)
+	confirm_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	confirm_body_label.add_theme_font_size_override("font_size", 17)
+	confirm_body_label.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
+	box.add_child(confirm_body_label)
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 8)
+	box.add_child(actions)
+
+	var cancel_button := Button.new()
+	cancel_button.text = "取消"
+	cancel_button.pressed.connect(_hide_transaction_confirmation)
+	actions.add_child(cancel_button)
+
+	confirm_accept_button = Button.new()
+	confirm_accept_button.text = "确认交易"
+	confirm_accept_button.pressed.connect(_confirm_pending_transaction)
+	actions.add_child(confirm_accept_button)
+
 func _refresh() -> void:
 	if item_list == null:
 		return
@@ -257,12 +316,7 @@ func _select_item(index: int) -> void:
 	_update_transaction_controls()
 
 func _confirm_selected() -> void:
-	if shop_mode == MODE_SELL:
-		_sell_selected()
-	elif shop_mode == MODE_BUYBACK:
-		_buyback_selected()
-	else:
-		_buy_selected()
+	_open_transaction_confirmation()
 
 func _buy_selected() -> void:
 	var selected := item_list.get_selected_items()
@@ -272,8 +326,7 @@ func _buy_selected() -> void:
 	if index >= 0 and index < item_ids.size():
 		var item_id := item_ids[index]
 		var buy_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
-		if GameState.buy_item(item_id, buy_count):
-			_refresh()
+		_execute_buy(item_id, buy_count)
 
 func _sell_selected() -> void:
 	var selected := item_list.get_selected_items()
@@ -283,9 +336,7 @@ func _sell_selected() -> void:
 	if index >= 0 and index < item_ids.size():
 		var item_id := item_ids[index]
 		var sell_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
-		if GameState.sell_item(item_id, sell_count):
-			_add_buyback_stock(item_id, sell_count, _sell_price(item_id))
-			_refresh()
+		_execute_sell(item_id, sell_count)
 
 func _buyback_selected() -> void:
 	var selected := item_list.get_selected_items()
@@ -295,14 +346,12 @@ func _buyback_selected() -> void:
 	if index >= 0 and index < item_ids.size():
 		var item_id := item_ids[index]
 		var buyback_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
-		var price := _buyback_price(item_id)
-		if GameState.buy_item(item_id, buyback_count, price):
-			_remove_buyback_stock(item_id, buyback_count)
-			_refresh()
+		_execute_buyback(item_id, buyback_count)
 
 func _set_shop_mode(next_mode: String) -> void:
 	if shop_mode == next_mode:
 		return
+	_hide_transaction_confirmation()
 	shop_mode = next_mode
 	_refresh()
 
@@ -400,6 +449,83 @@ func _unit_price_for_mode(item_id: String) -> int:
 	if shop_mode == MODE_BUYBACK:
 		return _buyback_price(item_id)
 	return _buy_price(item_id)
+
+func _execute_buy(item_id: String, count: int) -> void:
+	if GameState.buy_item(item_id, count):
+		_refresh()
+
+func _execute_sell(item_id: String, count: int) -> void:
+	if GameState.sell_item(item_id, count):
+		_add_buyback_stock(item_id, count, _sell_price(item_id))
+		_refresh()
+
+func _execute_buyback(item_id: String, count: int) -> void:
+	var price := _buyback_price(item_id)
+	if GameState.buy_item(item_id, count, price):
+		_remove_buyback_stock(item_id, count)
+		_refresh()
+
+func _open_transaction_confirmation() -> void:
+	var selected := item_list.get_selected_items()
+	if selected.is_empty():
+		return
+	var index := int(selected[0])
+	if index < 0 or index >= item_ids.size():
+		return
+	var item_id := item_ids[index]
+	var max_quantity := _max_quantity_for(item_id)
+	if max_quantity <= 0:
+		return
+	var tx_count := clampi(quantity, 1, max_quantity)
+	var unit_price := _unit_price_for_mode(item_id)
+	pending_transaction = {
+		"mode": shop_mode,
+		"item_id": item_id,
+		"count": tx_count,
+		"unit_price": unit_price
+	}
+	var item := GameData.get_item(item_id)
+	var verb := _trade_verb()
+	var total_word := "收入" if shop_mode == MODE_SELL else "合计"
+	if confirm_title_label != null:
+		confirm_title_label.text = "确认%s" % verb
+	if confirm_body_label != null:
+		confirm_body_label.text = "%s %s x%d\n单价：%d 两\n%s：%d 两\n当前银两：%d" % [
+			verb,
+			str(item.get("name", item_id)),
+			tx_count,
+			unit_price,
+			total_word,
+			unit_price * tx_count,
+			int(GameState.player.get("money", 0))
+		]
+	if confirm_accept_button != null:
+		confirm_accept_button.text = "确认%s" % verb
+	if confirm_overlay != null:
+		confirm_overlay.show()
+
+func _confirm_pending_transaction() -> void:
+	if pending_transaction.is_empty():
+		return
+	var tx := pending_transaction.duplicate(true)
+	_hide_transaction_confirmation()
+	var mode := str(tx.get("mode", MODE_BUY))
+	var item_id := str(tx.get("item_id", ""))
+	var tx_count := int(tx.get("count", 1))
+	if item_id.is_empty() or tx_count <= 0:
+		return
+	match mode:
+		MODE_SELL:
+			_execute_sell(item_id, tx_count)
+		MODE_BUYBACK:
+			_execute_buyback(item_id, tx_count)
+		_:
+			_execute_buy(item_id, tx_count)
+
+func _hide_transaction_confirmation() -> void:
+	pending_transaction.clear()
+	if confirm_overlay != null:
+		confirm_overlay.hide()
 
 func _buy_price(item_id: String) -> int:
 	var item := GameData.get_item(item_id)
