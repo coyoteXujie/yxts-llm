@@ -1,0 +1,66 @@
+{
+  "qinghe": {
+    "landmarks": [
+      {"label": "镇口告示", "description": "告示上写着近路、盗匪和失物，许多小任务会从这里冒头。", "kind": "notice", "tile": [20, 10], "reward_money": 2},
+      {"label": "练武空场", "description": "空场地面被脚步磨亮，是镇上年轻人练拳脚的地方。", "kind": "training", "tile": [42, 27], "reward_exp": 4},
+      {"label": "老井茶棚", "description": "井水清冽，茶棚边常有赶路人歇脚。", "kind": "well", "tile": [11, 28], "reward_item": "item_baozi"}
+    ],
+    "resources": [
+      {"label": "田埂药草", "description": "田埂边长着几株常见药草，适合初行江湖的人练手采摘。", "kind": "herb", "tile": [46, 30], "reward_item": "item_red_flower"},
+      {"label": "茶棚食盒", "description": "茶棚老板见你赶路，塞给你一个热包子。", "kind": "cache", "tile": [12, 27], "reward_item": "item_baozi"}
+    ]
+  },
+  "luoyang": {
+    "landmarks": [
+      {"label": "苏家旧宅", "description": "墙根还有焦黑旧痕，洛阳旧火的线索并没有被岁月完全抹去。", "kind": "ruin", "tile": [25, 34], "reward_exp": 8},
+      {"label": "天街武馆", "description": "木人桩排在院中，来往侠少在这里试拳脚。", "kind": "training", "tile": [56, 19], "reward_exp": 6}
+    ],
+    "resources": [
+      {"label": "街边食盒", "description": "街边摊贩收摊前分你一份热食。", "kind": "cache", "tile": [22, 35], "reward_item": "item_baozi"},
+      {"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": [56, 19], "reward_item": "item_yao"}
+    ]
+  },
+  "linan": {
+    "landmarks": [
+      {"label": "画舫码头", "description": "水雾贴着河面，船娘唱词里夹着花间旧事。", "kind": "dock", "tile": [24, 33], "reward_item": "item_fish"},
+      {"label": "烟雨廊桥", "description": "桥下水声不断，适合听风，也适合藏信。", "kind": "bridge", "tile": [52, 20], "reward_exp": 6}
+    ],
+    "resources": [
+      {"label": "街边食盒", "description": "街边摊贩收摊前分你一份热食。", "kind": "cache", "tile": [22, 35], "reward_item": "item_baozi"},
+      {"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": [56, 19], "reward_item": "item_yao"},
+      {"label": "河边鱼篓", "description": "河边鱼篓压在水草旁，里面还有一尾活鱼。", "kind": "fish", "tile": [68, 20], "reward_item": "item_fish"}
+    ]
+  },
+  "beiling_mtn": {
+    "landmarks": [
+      {"label": "山壁石洞", "description": "洞口冷风外涌，石缝里藏着前人留下的伤药。", "kind": "cave", "tile": [57, 13], "reward_item": "item_yao"},
+      {"label": "观云石台", "description": "站在石台上能远望山势，胸中郁气也散了些。", "kind": "ruin", "tile": [15, 16], "reward_exp": 7}
+    ],
+    "resources": [
+      {"label": "野草药坡", "description": "路边药坡长着几株常见药草。", "kind": "herb", "tile": [12, 13], "reward_item": "item_red_flower"},
+      {"label": "破棚食盒", "description": "破棚木桌下有个食盒，里面还有一个包子。", "kind": "cache", "tile": [28, 33], "reward_item": "item_baozi"},
+      {"label": "山壁矿点", "description": "山壁露出一点矿脉，虽然不能锻成兵器，也能换些银两。", "kind": "ore", "tile": [59, 12], "reward_money": 5}
+    ]
+  },
+  "bashu_bamboo": {
+    "landmarks": [
+      {"label": "林下药坡", "description": "潮湿树影下生着药草，采摘时要避开毒虫。", "kind": "herb", "tile": [13, 13], "reward_item": "item_red_flower"},
+      {"label": "竹影小径", "description": "竹影斜落，风一吹像有许多人低声说话。", "kind": "shrine", "tile": [54, 35], "reward_exp": 6}
+    ],
+    "resources": [
+      {"label": "野草药坡", "description": "路边药坡长着几株常见药草。", "kind": "herb", "tile": [12, 13], "reward_item": "item_red_flower"},
+      {"label": "破棚食盒", "description": "破棚木桌下有个食盒，里面还有一个包子。", "kind": "cache", "tile": [28, 33], "reward_item": "item_baozi"},
+      {"label": "林下药草", "description": "林下潮湿，药草长得比镇外更好。", "kind": "herb", "tile": [13, 13], "reward_item": "item_red_flower"}
+    ]
+  },
+  "flower_sect": {
+    "landmarks": [
+      {"label": "演武坪", "description": "花间派弟子在此晨练，步伐与呼吸自成章法。", "kind": "training", "tile": [32, 30], "reward_exp": 8},
+      {"label": "祖师碑", "description": "碑前香灰未冷，门派戒律和前人名号刻得很深。", "kind": "shrine", "tile": [32, 12], "reward_exp": 6}
+    ],
+    "resources": [
+      {"label": "练功药罐", "description": "演武坪旁备着跌打药，弟子们用后会及时补上。", "kind": "herb", "tile": [20, 31], "reward_item": "item_yao"},
+      {"label": "香案供钱", "description": "香案上有几枚散钱，知客让你拿去添置路粮。", "kind": "coin", "tile": [44, 13], "reward_money": 3}
+    ]
+  }
+}

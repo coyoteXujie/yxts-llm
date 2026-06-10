@@ -67,6 +67,56 @@ def _validate_region_shop_list(errors: list[str], owner: str, shops, allowed_sho
         seen.add(shop_key)
 
 
+def _local_region_size(region_type: str) -> tuple[int, int]:
+    if region_type == "city":
+        return 80, 54
+    if region_type == "town":
+        return 58, 40
+    if region_type == "sect":
+        return 64, 44
+    return 72, 48
+
+
+def _validate_region_point_list(
+    errors: list[str],
+    owner: str,
+    points,
+    item_ids: set[str],
+    map_size: tuple[int, int],
+    allowed_point_kinds: set[str],
+) -> None:
+    if not isinstance(points, list):
+        errors.append(f"region point mapping for {owner} must be a list")
+        return
+    if not points:
+        errors.append(f"region point mapping for {owner} must not be empty")
+    for index, point in enumerate(points):
+        point_owner = f"{owner}[{index}]"
+        if not isinstance(point, dict):
+            errors.append(f"region point {point_owner} must be an object")
+            continue
+        for required_key in ("label", "description", "kind", "tile"):
+            if required_key not in point:
+                errors.append(f"region point {point_owner} missing {required_key}")
+        if str(point.get("kind", "")) not in allowed_point_kinds:
+            errors.append(f"region point {point_owner} has unknown kind {point.get('kind')}")
+        tile = point.get("tile", [])
+        if not isinstance(tile, list) or len(tile) < 2:
+            errors.append(f"region point {point_owner} tile must be [x, y]")
+        else:
+            x, y = int(tile[0]), int(tile[1])
+            if x < 0 or y < 0 or x >= map_size[0] or y >= map_size[1]:
+                errors.append(f"region point {point_owner} tile {tile} outside local map {map_size[0]}x{map_size[1]}")
+        reward_item = str(point.get("reward_item", ""))
+        if reward_item and reward_item not in item_ids:
+            errors.append(f"region point {point_owner} references missing reward item {reward_item}")
+        for reward_key in ("reward_money", "reward_exp", "reward_count"):
+            if reward_key in point and not isinstance(point[reward_key], int):
+                errors.append(f"region point {point_owner}.{reward_key} must be an integer")
+        if int(point.get("reward_count", 1)) < 1:
+            errors.append(f"region point {point_owner}.reward_count must be positive")
+
+
 def main() -> int:
     errors: list[str] = []
     npcs = load_json("npcs.json")
@@ -82,12 +132,18 @@ def main() -> int:
     combat_stage_assets = load_json("combat_stage_assets.json")
     combat_actor_frames = load_json("combat_actor_frames.json")
     region_shop_assets = load_json("region_shops.json")
+    region_point_assets = load_json("region_points.json")
 
     item_ids = {item["id"] for item in items}
     npc_names = {npc["name"] for npc in npcs}
     region_ids = [region["id"] for region in regions]
     region_id_set = set(region_ids)
+    regions_by_id = {region["id"]: region for region in regions}
     allowed_shop_ids = {"inn", "medicine", "blacksmith", "tailor", "market", "teahouse"}
+    allowed_point_kinds = {
+        "notice", "well", "market", "training", "shrine", "dock", "water", "bridge",
+        "ruin", "cave", "herb", "flower", "cache", "coin", "fish", "ore",
+    }
     skill_text = (ROOT / "godot_project" / "scripts" / "autoload" / "game_data.gd").read_text(encoding="utf-8")
     skill_ids = set(re.findall(r'"(kf_[a-zA-Z0-9_]+)"', skill_text))
 
@@ -215,6 +271,33 @@ def main() -> int:
                 errors.append(f"region shop mapping references missing region {region_id}")
             _validate_region_shop_list(errors, str(region_id), shops, allowed_shop_ids)
 
+    if not isinstance(region_point_assets, dict):
+        errors.append("region_points.json must be an object")
+    else:
+        for region_id, entry in region_point_assets.items():
+            if region_id not in region_id_set:
+                errors.append(f"region point mapping references missing region {region_id}")
+                continue
+            if not isinstance(entry, dict):
+                errors.append(f"region point mapping for {region_id} must be an object")
+                continue
+            unknown_sections = set(entry.keys()) - {"landmarks", "resources"}
+            if unknown_sections:
+                errors.append(f"region point mapping for {region_id} has unknown sections: {', '.join(sorted(unknown_sections))}")
+            map_size = _local_region_size(str(regions_by_id[region_id].get("type", "wild")))
+            for point_type in ("landmarks", "resources"):
+                if point_type not in entry:
+                    errors.append(f"region point mapping for {region_id} missing {point_type}")
+                    continue
+                _validate_region_point_list(
+                    errors,
+                    f"{region_id}.{point_type}",
+                    entry[point_type],
+                    item_ids,
+                    map_size,
+                    allowed_point_kinds,
+                )
+
     allowed_stage_layers = {"floor", "midground", "foreground"}
     required_stage_layers = {"floor", "midground", "foreground"}
     for region_id, layers in stage_layer_assets.items():
@@ -316,7 +399,7 @@ def main() -> int:
     print(
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
         f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
-        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} region_shops={len(region_shop_assets)} "
+        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} region_shops={len(region_shop_assets)} region_points={len(region_point_assets)} "
         f"combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
     )
     return 0

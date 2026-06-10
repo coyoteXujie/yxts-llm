@@ -1049,6 +1049,9 @@ func _add_resource_portals() -> void:
 		})
 
 func _resources_for_region() -> Array:
+	var configured := _configured_region_points("resources")
+	if not configured.is_empty():
+		return configured
 	var region_type := str(current_region.get("type", "wild"))
 	var terrain := str(current_region.get("terrain", ""))
 	var resources: Array = []
@@ -1076,6 +1079,9 @@ func _resources_for_region() -> Array:
 	return resources
 
 func _landmarks_for_region() -> Array:
+	var configured := _configured_region_points("landmarks")
+	if not configured.is_empty():
+		return configured
 	var region_type := str(current_region.get("type", "wild"))
 	var region_id := str(current_region.get("id", ""))
 	var terrain := str(current_region.get("terrain", ""))
@@ -1088,6 +1094,20 @@ func _landmarks_for_region() -> Array:
 			return _sect_landmarks(region_id)
 		_:
 			return _wild_landmarks(terrain)
+
+func _configured_region_points(point_type: String) -> Array:
+	var region_id := str(current_region.get("id", ""))
+	var points := GameData.get_region_points(region_id, point_type)
+	var result: Array = []
+	for point in points:
+		var normalized: Dictionary = point.duplicate(true)
+		var tile_value = normalized.get("tile", [])
+		if typeof(tile_value) == TYPE_ARRAY:
+			var tile_data: Array = tile_value
+			if tile_data.size() >= 2:
+				normalized["tile"] = Vector2i(int(tile_data[0]), int(tile_data[1]))
+		result.append(normalized)
+	return result
 
 func _city_landmarks(region_id: String) -> Array:
 	match region_id:

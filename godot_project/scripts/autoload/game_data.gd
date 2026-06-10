@@ -647,6 +647,7 @@ var stage_layer_assets: Dictionary = {}
 var combat_stage_assets: Dictionary = {}
 var combat_actor_frames: Dictionary = {}
 var region_shop_assets: Dictionary = {}
+var region_point_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
@@ -675,6 +676,7 @@ func load_database() -> void:
 	_load_combat_stage_assets()
 	_load_combat_actor_frames()
 	_load_region_shop_assets()
+	_load_region_point_assets()
 	_load_regions()
 
 func _load_items() -> void:
@@ -799,6 +801,32 @@ func _load_region_shop_assets() -> void:
 				region_shop_assets["_defaults"] = defaults
 			continue
 		region_shop_assets[str(key)] = _string_array(entry)
+
+func _load_region_point_assets() -> void:
+	region_point_assets.clear()
+	var file := FileAccess.open("res://data/region_points.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for region_id in parsed.keys():
+		var entry = parsed[region_id]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var normalized := {}
+		for point_type in ["landmarks", "resources"]:
+			normalized[point_type] = _dictionary_array(entry.get(point_type, []))
+		region_point_assets[str(region_id)] = normalized
+
+func _dictionary_array(value) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	for item in value:
+		if typeof(item) == TYPE_DICTIONARY:
+			result.append((item as Dictionary).duplicate(true))
+	return result
 
 func _string_array(value) -> Array[String]:
 	var result: Array[String] = []
@@ -1051,6 +1079,11 @@ func get_region_shop_ids(region: Dictionary) -> Array[String]:
 		var defaults: Dictionary = region_shop_assets.get("_defaults", {})
 		configured = defaults.get(region_type, [])
 	return _string_array(configured)
+
+func get_region_points(region_id: String, point_type: String) -> Array[Dictionary]:
+	var entry: Dictionary = region_point_assets.get(region_id, {})
+	var points = entry.get(point_type, [])
+	return _dictionary_array(points)
 
 func get_combat_actor_frame_paths(actor_key: String, action_name: String) -> Array:
 	var actions: Dictionary = combat_actor_frames.get(actor_key, {})
