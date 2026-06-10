@@ -375,12 +375,20 @@ func _run() -> void:
 	_check(not _first_portal(local_area, "travel_region").is_empty(), "平安镇应生成相邻区域转场入口")
 	_check(_portal_count(local_area, "landmark") >= 3, "平安镇应生成可互动地标")
 	_check(_portal_count(local_area, "resource") >= 2, "平安镇应生成每日资源点")
+	_check(LOCAL_AREA_SCRIPT.RICH_SHOP_INTERIOR_ENABLED, "商铺内景应启用高完成度室内 overlay")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO > 0.38 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO < 0.56, "商铺内景应保留横版后墙和透视地面比例")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ALPHA >= 0.86, "商铺内景柜台应作为主视觉层")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_SHELF_ALPHA >= 0.76, "商铺内景应有可见货架层")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_THEME_PROP_ALPHA >= 0.82, "商铺内景应按店铺类型绘制主题道具")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_LIGHT_ALPHA >= 0.28, "商铺内景应有灯光氛围层")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")
 	if not shop_portal.is_empty():
 		local_area.enter_shop(shop_portal)
 		await get_tree().process_frame
+		_check(local_area.current_mode == "shop" and not local_area.side_view_stage_enabled, "商铺内景应切出室外横版街景模式")
+		_check(not local_area.active_shop_id.is_empty() and LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS.has(local_area.active_shop_id), "商铺内景应保留当前店铺类型用于主题绘制")
 		_check(local_area.npc_nodes.size() == 1, "商铺内应生成 1 名掌柜")
 		_check(local_area.scene_background_texture == null, "商铺内景不应继续叠加区域背景")
 		_check(local_area.stage_postfx_overlay == null or not local_area.stage_postfx_overlay.visible, "商铺内景不应显示局部横版后期光影层")

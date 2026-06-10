@@ -204,6 +204,12 @@ const LOCAL_TOWN_SHOP_ENTRANCE_ALPHA := 0.82
 const LOCAL_TOWN_SHOP_DOOR_GLOW_ALPHA := 0.34
 const LOCAL_TOWN_SHOP_SIGN_WIDTH := 104.0
 const LOCAL_TOWN_SHOP_SIGN_HEIGHT := 24.0
+const RICH_SHOP_INTERIOR_ENABLED := true
+const SHOP_INTERIOR_BACK_WALL_RATIO := 0.48
+const SHOP_INTERIOR_COUNTER_ALPHA := 0.92
+const SHOP_INTERIOR_SHELF_ALPHA := 0.82
+const SHOP_INTERIOR_THEME_PROP_ALPHA := 0.88
+const SHOP_INTERIOR_LIGHT_ALPHA := 0.32
 const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.86
@@ -3800,6 +3806,12 @@ func _draw_shop_overlay() -> void:
 	var size := get_world_rect().size
 	var shop: Dictionary = SHOP_DEFINITIONS.get(active_shop_id, {})
 	var accent: Color = shop.get("accent", Color(0.80, 0.54, 0.28))
+	if RICH_SHOP_INTERIOR_ENABLED:
+		_draw_rich_shop_interior(size, active_shop_id, accent)
+		return
+	_draw_legacy_shop_overlay(size, accent)
+
+func _draw_legacy_shop_overlay(size: Vector2, accent: Color) -> void:
 	draw_rect(Rect2(0, 0, size.x, tile_size * 2.0), Color(0.18, 0.10, 0.06, 0.48), true)
 	draw_line(Vector2(tile_size, tile_size * 2.05), Vector2(size.x - tile_size, tile_size * 2.05), accent.darkened(0.25), 3.0)
 	for x in range(3, map_width - 3, 5):
@@ -3808,6 +3820,177 @@ func _draw_shop_overlay() -> void:
 		draw_circle(hanger + Vector2(0, 11), 4.0, accent.lightened(0.18))
 	draw_rect(Rect2(Vector2(tile_size * 2, tile_size * 3), Vector2(size.x - tile_size * 4, tile_size * 0.34)), Color(0.86, 0.64, 0.34, 0.20), true)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.025, 0.015, 0.25), false, 3.0)
+
+func _draw_rich_shop_interior(size: Vector2, shop_id: String, accent: Color) -> void:
+	var wall_bottom := size.y * SHOP_INTERIOR_BACK_WALL_RATIO
+	var floor_rect := Rect2(Vector2(0.0, wall_bottom), Vector2(size.x, size.y - wall_bottom))
+	_draw_shop_wall(size, wall_bottom, accent)
+	_draw_shop_floor(size, floor_rect, accent)
+	_draw_shop_counter(size, wall_bottom, accent)
+	_draw_shop_shelves(size, wall_bottom, accent)
+	_draw_shop_theme_props(size, wall_bottom, shop_id, accent)
+	_draw_shop_lighting(size, wall_bottom, accent)
+	_draw_shop_foreground_frame(size, accent)
+
+func _draw_shop_wall(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	_draw_stage_vertical_gradient(
+		Rect2(Vector2.ZERO, Vector2(size.x, wall_bottom)),
+		Color(0.22, 0.13, 0.075, 0.94),
+		Color(0.39, 0.25, 0.145, 0.92)
+	)
+	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, tile_size * 0.62)), Color(0.055, 0.032, 0.020, 0.72), true)
+	for x in range(2, map_width - 1, 5):
+		var beam_x := x * tile_size
+		draw_rect(Rect2(Vector2(beam_x, tile_size * 0.10), Vector2(tile_size * 0.34, wall_bottom + tile_size * 0.26)), Color(0.13, 0.070, 0.038, 0.58), true)
+		draw_line(Vector2(beam_x + tile_size * 0.08, tile_size * 0.72), Vector2(beam_x + tile_size * 0.12, wall_bottom - tile_size * 0.32), Color(0.72, 0.48, 0.24, 0.16), 1.1)
+	for i in range(4):
+		var y := tile_size * (1.00 + float(i) * 0.88)
+		draw_line(Vector2(tile_size * 1.1, y), Vector2(size.x - tile_size * 1.1, y - tile_size * 0.10), Color(0.09, 0.050, 0.030, 0.36), 2.0)
+		draw_line(Vector2(tile_size * 1.1, y + tile_size * 0.10), Vector2(size.x - tile_size * 1.1, y), Color(accent.r, accent.g, accent.b, 0.09), 1.0)
+	draw_rect(Rect2(Vector2(tile_size * 1.0, wall_bottom - tile_size * 0.26), Vector2(size.x - tile_size * 2.0, tile_size * 0.22)), Color(0.08, 0.045, 0.025, 0.54), true)
+
+func _draw_shop_floor(size: Vector2, floor_rect: Rect2, accent: Color) -> void:
+	_draw_stage_vertical_gradient(
+		floor_rect,
+		Color(0.45, 0.32, 0.19, 0.90),
+		Color(0.20, 0.12, 0.075, 0.94)
+	)
+	var top_y := floor_rect.position.y
+	var bottom_y := floor_rect.end.y
+	for i in range(9):
+		var t := float(i) / 8.0
+		var y := lerpf(top_y + tile_size * 0.15, bottom_y - tile_size * 0.44, t * t)
+		draw_line(Vector2(tile_size * (0.8 - t * 0.7), y), Vector2(size.x - tile_size * (0.8 - t * 0.7), y - tile_size * 0.10), Color(0.09, 0.052, 0.032, 0.25), 1.2 + t * 1.8)
+	for i in range(12):
+		var t := float(i) / 11.0
+		var x := lerpf(tile_size * 0.7, size.x - tile_size * 0.7, t)
+		draw_line(Vector2(x, bottom_y), Vector2(lerpf(size.x * 0.44, size.x * 0.56, t), top_y + tile_size * 0.05), Color(0.12, 0.070, 0.045, 0.15), 1.0)
+	_draw_ellipse_poly(Vector2(size.x * 0.50, top_y + tile_size * 2.35), Vector2(size.x * 0.33, tile_size * 0.34), Color(accent.r, accent.g, accent.b, 0.10))
+	draw_rect(Rect2(Vector2(0.0, size.y - tile_size * 1.05), Vector2(size.x, tile_size * 1.10)), Color(0.020, 0.014, 0.010, 0.38), true)
+
+func _draw_shop_counter(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	var counter_rect := Rect2(Vector2(size.x * 0.13, wall_bottom - tile_size * 1.38), Vector2(size.x * 0.74, tile_size * 1.48))
+	draw_rect(counter_rect.grow(5.0), Color(0.035, 0.020, 0.012, SHOP_INTERIOR_COUNTER_ALPHA * 0.36), true)
+	draw_rect(counter_rect, Color(0.25, 0.13, 0.065, SHOP_INTERIOR_COUNTER_ALPHA), true)
+	draw_rect(Rect2(counter_rect.position, Vector2(counter_rect.size.x, tile_size * 0.23)), Color(0.56, 0.32, 0.14, SHOP_INTERIOR_COUNTER_ALPHA * 0.82), true)
+	for i in range(7):
+		var x := counter_rect.position.x + counter_rect.size.x * (float(i) + 0.5) / 7.0
+		draw_line(Vector2(x, counter_rect.position.y + tile_size * 0.18), Vector2(x - tile_size * 0.06, counter_rect.end.y - tile_size * 0.08), Color(0.08, 0.045, 0.026, 0.34), 1.2)
+	draw_line(counter_rect.position + Vector2(tile_size * 0.28, tile_size * 0.44), counter_rect.position + Vector2(counter_rect.size.x - tile_size * 0.28, tile_size * 0.34), Color(accent.r, accent.g, accent.b, 0.30), 1.5)
+
+func _draw_shop_shelves(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for side in [-1.0, 1.0]:
+		var x := size.x * (0.16 if side < 0.0 else 0.84)
+		var shelf := Rect2(Vector2(x - tile_size * 2.05, tile_size * 1.26), Vector2(tile_size * 4.10, wall_bottom - tile_size * 2.05))
+		draw_rect(shelf, Color(0.12, 0.065, 0.035, SHOP_INTERIOR_SHELF_ALPHA), true)
+		draw_rect(shelf, Color(0.80, 0.55, 0.28, SHOP_INTERIOR_SHELF_ALPHA * 0.38), false, 1.5)
+		for row in range(3):
+			var y := shelf.position.y + tile_size * (0.62 + float(row) * 1.02)
+			draw_line(Vector2(shelf.position.x + tile_size * 0.18, y), Vector2(shelf.end.x - tile_size * 0.18, y - tile_size * 0.04), Color(0.62, 0.38, 0.18, SHOP_INTERIOR_SHELF_ALPHA * 0.64), 2.0)
+			for col in range(4):
+				var px := shelf.position.x + tile_size * (0.54 + float(col) * 0.86)
+				var item_color := accent.lightened(0.10 + float((row + col) % 3) * 0.08)
+				draw_circle(Vector2(px, y - tile_size * 0.20), 3.8 + float((row + col) % 2), Color(item_color.r, item_color.g, item_color.b, 0.55))
+
+func _draw_shop_theme_props(size: Vector2, wall_bottom: float, shop_id: String, accent: Color) -> void:
+	match shop_id:
+		"blacksmith":
+			_draw_shop_blacksmith_props(size, wall_bottom, accent)
+		"medicine":
+			_draw_shop_medicine_props(size, wall_bottom, accent)
+		"inn":
+			_draw_shop_inn_props(size, wall_bottom, accent)
+		"tailor":
+			_draw_shop_tailor_props(size, wall_bottom, accent)
+		"market":
+			_draw_shop_market_props(size, wall_bottom, accent)
+		"teahouse":
+			_draw_shop_teahouse_props(size, wall_bottom, accent)
+		_:
+			_draw_shop_market_props(size, wall_bottom, accent)
+
+func _draw_shop_blacksmith_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	var forge := Vector2(size.x * 0.76, wall_bottom + tile_size * 1.10)
+	_draw_ellipse_poly(forge + Vector2(0, tile_size * 0.38), Vector2(tile_size * 1.50, tile_size * 0.26), Color(0.0, 0.0, 0.0, 0.30))
+	draw_rect(Rect2(forge - Vector2(tile_size * 1.00, tile_size * 0.42), Vector2(tile_size * 2.00, tile_size * 0.86)), Color(0.14, 0.075, 0.045, SHOP_INTERIOR_THEME_PROP_ALPHA), true)
+	draw_circle(forge, tile_size * 0.40, Color(1.0, 0.30, 0.12, 0.40))
+	draw_circle(forge, tile_size * 0.20, Color(1.0, 0.74, 0.24, 0.55))
+	var anvil := Vector2(size.x * 0.30, wall_bottom + tile_size * 2.25)
+	draw_rect(Rect2(anvil - Vector2(tile_size * 0.54, tile_size * 0.18), Vector2(tile_size * 1.08, tile_size * 0.34)), Color(0.18, 0.18, 0.17, 0.82), true)
+	draw_line(anvil + Vector2(-tile_size * 0.62, -tile_size * 0.10), anvil + Vector2(tile_size * 0.76, -tile_size * 0.16), Color(0.70, 0.68, 0.58, 0.42), 2.0)
+	for i in range(4):
+		var x := size.x * (0.46 + float(i) * 0.055)
+		draw_line(Vector2(x, tile_size * 1.50), Vector2(x + tile_size * 0.46, wall_bottom - tile_size * 0.30), Color(0.80, 0.82, 0.76, 0.42), 2.0)
+
+func _draw_shop_medicine_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	var cabinet := Rect2(Vector2(size.x * 0.37, tile_size * 1.20), Vector2(size.x * 0.26, wall_bottom - tile_size * 1.72))
+	draw_rect(cabinet, Color(0.15, 0.08, 0.045, SHOP_INTERIOR_THEME_PROP_ALPHA), true)
+	for row in range(4):
+		for col in range(5):
+			var cell := Rect2(cabinet.position + Vector2(tile_size * (0.20 + col * 0.72), tile_size * (0.22 + row * 0.55)), Vector2(tile_size * 0.52, tile_size * 0.34))
+			draw_rect(cell, Color(0.34, 0.20, 0.10, 0.74), true)
+			draw_circle(cell.get_center() + Vector2(0.0, tile_size * 0.08), 1.6, Color(accent.r, accent.g, accent.b, 0.46))
+	for i in range(6):
+		var p := Vector2(size.x * (0.23 + float(i) * 0.09), wall_bottom + tile_size * (1.0 + float(i % 2) * 0.28))
+		draw_line(p, p + Vector2(tile_size * 0.12, -tile_size * 0.54), Color(0.20, 0.42, 0.18, 0.58), 1.4)
+		draw_circle(p + Vector2(tile_size * 0.10, -tile_size * 0.58), 4.5, Color(accent.r, accent.g, accent.b, 0.48))
+
+func _draw_shop_inn_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for i in range(3):
+		var center := Vector2(size.x * (0.28 + float(i) * 0.22), wall_bottom + tile_size * (1.95 + float(i % 2) * 0.25))
+		_draw_ellipse_poly(center, Vector2(tile_size * 0.72, tile_size * 0.20), Color(0.09, 0.050, 0.030, 0.42))
+		draw_rect(Rect2(center - Vector2(tile_size * 0.62, tile_size * 0.18), Vector2(tile_size * 1.24, tile_size * 0.28)), Color(0.29, 0.16, 0.075, SHOP_INTERIOR_THEME_PROP_ALPHA), true)
+		draw_line(center + Vector2(-tile_size * 0.50, -tile_size * 0.13), center + Vector2(tile_size * 0.54, -tile_size * 0.18), Color(accent.r, accent.g, accent.b, 0.32), 1.2)
+	for x in [size.x * 0.14, size.x * 0.86]:
+		for j in range(2):
+			var jar := Vector2(x + float(j) * tile_size * 0.38 * (-1.0 if x > size.x * 0.5 else 1.0), wall_bottom + tile_size * (2.70 + float(j) * 0.08))
+			draw_circle(jar, tile_size * 0.20, Color(0.34, 0.13, 0.075, 0.76))
+			draw_rect(Rect2(jar + Vector2(-tile_size * 0.11, -tile_size * 0.28), Vector2(tile_size * 0.22, tile_size * 0.16)), Color(0.52, 0.26, 0.11, 0.72), true)
+
+func _draw_shop_tailor_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for i in range(6):
+		var x := size.x * (0.21 + float(i) * 0.105)
+		var top := wall_bottom - tile_size * (0.20 + float(i % 2) * 0.12)
+		draw_line(Vector2(x, top), Vector2(x + tile_size * 0.18, wall_bottom + tile_size * 1.58), Color(accent.r, accent.g, accent.b, 0.52), 5.0)
+		draw_line(Vector2(x + tile_size * 0.16, top + tile_size * 0.10), Vector2(x + tile_size * 0.34, wall_bottom + tile_size * 1.62), Color(0.92, 0.74, 0.88, 0.34), 3.0)
+	var stand := Vector2(size.x * 0.78, wall_bottom + tile_size * 1.54)
+	draw_line(stand + Vector2(0, -tile_size * 1.08), stand, Color(0.16, 0.08, 0.05, 0.72), 2.0)
+	draw_polygon(PackedVector2Array([stand + Vector2(0, -tile_size * 1.10), stand + Vector2(tile_size * 0.42, -tile_size * 0.40), stand + Vector2(0, tile_size * 0.10), stand + Vector2(-tile_size * 0.42, -tile_size * 0.40)]), PackedColorArray([Color(accent.r, accent.g, accent.b, 0.44), Color(accent.r, accent.g, accent.b, 0.30), Color(accent.r, accent.g, accent.b, 0.24), Color(accent.r, accent.g, accent.b, 0.30)]))
+
+func _draw_shop_market_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for i in range(8):
+		var x := size.x * (0.17 + float(i % 4) * 0.19)
+		var y := wall_bottom + tile_size * (1.35 + float(i / 4) * 1.18)
+		var crate := Rect2(Vector2(x - tile_size * 0.36, y - tile_size * 0.20), Vector2(tile_size * 0.72, tile_size * 0.42))
+		draw_rect(crate, Color(0.26, 0.14, 0.07, SHOP_INTERIOR_THEME_PROP_ALPHA), true)
+		draw_line(crate.position + Vector2(tile_size * 0.08, tile_size * 0.10), crate.end - Vector2(tile_size * 0.08, tile_size * 0.14), Color(accent.r, accent.g, accent.b, 0.28), 1.0)
+		draw_circle(Vector2(x, y - tile_size * 0.30), 5.0 + float(i % 3), Color(accent.r, accent.g, accent.b, 0.44))
+
+func _draw_shop_teahouse_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for i in range(2):
+		var center := Vector2(size.x * (0.36 + float(i) * 0.28), wall_bottom + tile_size * 2.08)
+		_draw_ellipse_poly(center, Vector2(tile_size * 0.72, tile_size * 0.18), Color(0.04, 0.028, 0.018, 0.35))
+		draw_circle(center, tile_size * 0.34, Color(0.24, 0.13, 0.07, SHOP_INTERIOR_THEME_PROP_ALPHA * 0.92))
+		draw_circle(center + Vector2(tile_size * 0.18, -tile_size * 0.07), tile_size * 0.09, Color(accent.r, accent.g, accent.b, 0.46))
+	var screen := Rect2(Vector2(size.x * 0.13, tile_size * 1.20), Vector2(size.x * 0.18, wall_bottom - tile_size * 1.18))
+	draw_rect(screen, Color(0.12, 0.085, 0.052, 0.68), true)
+	for i in range(3):
+		var x := screen.position.x + screen.size.x * float(i + 1) / 4.0
+		draw_line(Vector2(x, screen.position.y + tile_size * 0.20), Vector2(x, screen.end.y - tile_size * 0.20), Color(accent.r, accent.g, accent.b, 0.24), 1.0)
+
+func _draw_shop_lighting(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for x in [size.x * 0.24, size.x * 0.50, size.x * 0.76]:
+		var y := tile_size * 1.06
+		draw_line(Vector2(x, tile_size * 0.48), Vector2(x, y), Color(0.88, 0.70, 0.38, 0.38), 1.1)
+		draw_circle(Vector2(x, y + tile_size * 0.18), tile_size * 0.14, Color(accent.r, accent.g, accent.b, 0.74))
+		_draw_ellipse_poly(Vector2(x, wall_bottom + tile_size * 0.10), Vector2(tile_size * 1.28, tile_size * 0.24), Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_LIGHT_ALPHA * 0.25))
+	_draw_stage_vertical_gradient(Rect2(Vector2(0.0, 0.0), size), Color(0.0, 0.0, 0.0, 0.12), Color(0.0, 0.0, 0.0, 0.30))
+
+func _draw_shop_foreground_frame(size: Vector2, accent: Color) -> void:
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.025, 0.015, 0.010, 0.34), false, 4.0)
+	draw_rect(Rect2(Vector2(0.0, 0.0), Vector2(size.x, tile_size * 0.42)), Color(0.025, 0.015, 0.010, 0.66), true)
+	draw_rect(Rect2(Vector2(0.0, size.y - tile_size * 0.38), Vector2(size.x, tile_size * 0.42)), Color(0.010, 0.007, 0.005, 0.54), true)
+	draw_line(Vector2(tile_size * 0.55, tile_size * 0.58), Vector2(size.x - tile_size * 0.55, tile_size * 0.48), Color(accent.r, accent.g, accent.b, 0.18), 1.5)
 
 func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 	var seed := (x * 31 + y * 17) % 19
