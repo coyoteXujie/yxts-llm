@@ -3,6 +3,7 @@ class_name ShopPanel
 
 const MODE_BUY := "buy"
 const MODE_SELL := "sell"
+const MODE_BUYBACK := "buyback"
 
 var npc_data: Dictionary = {}
 var title_label: Label
@@ -12,6 +13,7 @@ var item_preview: TextureRect
 var details: Label
 var buy_mode_button: Button
 var sell_mode_button: Button
+var buyback_mode_button: Button
 var quantity_label: Label
 var quantity_minus_button: Button
 var quantity_plus_button: Button
@@ -19,6 +21,8 @@ var quantity_max_button: Button
 var total_label: Label
 var primary_button: Button
 var item_ids: Array[String] = []
+var buyback_stock: Dictionary = {}
+var buyback_prices: Dictionary = {}
 var shop_mode := MODE_BUY
 var selected_item_id := ""
 var selected_item_index := -1
@@ -36,6 +40,8 @@ func _ready() -> void:
 func show_shop(data: Dictionary) -> void:
 	npc_data = data
 	shop_mode = MODE_BUY
+	buyback_stock.clear()
+	buyback_prices.clear()
 	_refresh()
 	show()
 	GameState.set_mode(GameState.Mode.SHOP)
@@ -79,6 +85,11 @@ func _build() -> void:
 	sell_mode_button.text = "出售"
 	sell_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_SELL))
 	mode_row.add_child(sell_mode_button)
+
+	buyback_mode_button = Button.new()
+	buyback_mode_button.text = "回购"
+	buyback_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_BUYBACK))
+	mode_row.add_child(buyback_mode_button)
 
 	item_list = ItemList.new()
 	item_list.custom_minimum_size = Vector2(430, 232)
@@ -181,9 +192,11 @@ func _refresh() -> void:
 	_update_mode_buttons()
 	if shop_mode == MODE_SELL:
 		_refresh_sell_items()
+	elif shop_mode == MODE_BUYBACK:
+		_refresh_buyback_items()
 	else:
 		_refresh_buy_items()
-	details.text = "选择物品查看详情。"
+	details.text = "暂无可回购物品。" if shop_mode == MODE_BUYBACK and item_ids.is_empty() else "选择物品查看详情。"
 	if item_preview != null:
 		item_preview.texture = null
 	_update_transaction_controls()
@@ -207,6 +220,18 @@ func _refresh_sell_items() -> void:
 		item_ids.append(item_id)
 		item_list.add_item(_sell_item_label(item_id, item, count), _load_item_icon(item_id))
 
+func _refresh_buyback_items() -> void:
+	var ids := buyback_stock.keys()
+	ids.sort()
+	for item_id_value in ids:
+		var item_id := str(item_id_value)
+		var count := int(buyback_stock.get(item_id, 0))
+		if count <= 0:
+			continue
+		var item := GameData.get_item(item_id)
+		item_ids.append(item_id)
+		item_list.add_item(_buyback_item_label(item_id, item, count), _load_item_icon(item_id))
+
 func _select_item(index: int) -> void:
 	if index < 0 or index >= item_ids.size():
 		return
@@ -217,6 +242,8 @@ func _select_item(index: int) -> void:
 	quantity = clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
 	if shop_mode == MODE_SELL:
 		details.text = _sell_item_detail(item_id, item)
+	elif shop_mode == MODE_BUYBACK:
+		details.text = _buyback_item_detail(item_id, item)
 	else:
 		details.text = "%s\n%s\n类型：%s    价格：%d 两\n%s" % [
 			str(item.get("name", item_id)),
@@ -232,6 +259,8 @@ func _select_item(index: int) -> void:
 func _confirm_selected() -> void:
 	if shop_mode == MODE_SELL:
 		_sell_selected()
+	elif shop_mode == MODE_BUYBACK:
+		_buyback_selected()
 	else:
 		_buy_selected()
 
@@ -255,6 +284,20 @@ func _sell_selected() -> void:
 		var item_id := item_ids[index]
 		var sell_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
 		if GameState.sell_item(item_id, sell_count):
+			_add_buyback_stock(item_id, sell_count, _sell_price(item_id))
+			_refresh()
+
+func _buyback_selected() -> void:
+	var selected := item_list.get_selected_items()
+	if selected.is_empty():
+		return
+	var index := int(selected[0])
+	if index >= 0 and index < item_ids.size():
+		var item_id := item_ids[index]
+		var buyback_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
+		var price := _buyback_price(item_id)
+		if GameState.buy_item(item_id, buyback_count, price):
+			_remove_buyback_stock(item_id, buyback_count)
 			_refresh()
 
 func _set_shop_mode(next_mode: String) -> void:
@@ -280,6 +323,8 @@ func _update_mode_buttons() -> void:
 		buy_mode_button.disabled = shop_mode == MODE_BUY
 	if sell_mode_button != null:
 		sell_mode_button.disabled = shop_mode == MODE_SELL
+	if buyback_mode_button != null:
+		buyback_mode_button.disabled = shop_mode == MODE_BUYBACK
 	_update_transaction_controls()
 
 func _set_quantity(next_quantity: int) -> void:
@@ -298,6 +343,12 @@ func _max_quantity_for(item_id: String) -> int:
 		if _is_item_equipped(item_id):
 			return 0
 		return maxi(0, int(GameState.inventory.get(item_id, 0)))
+	if shop_mode == MODE_BUYBACK:
+		var stock := maxi(0, int(buyback_stock.get(item_id, 0)))
+		var buyback_price := _buyback_price(item_id)
+		if buyback_price <= 0:
+			return stock
+		return mini(stock, int(GameState.player.get("money", 0)) / buyback_price)
 	var price := _buy_price(item_id)
 	if price <= 0:
 		return 99
@@ -318,7 +369,7 @@ func _update_transaction_controls() -> void:
 		quantity_max_button.disabled = not can_trade or max_quantity <= 1
 	if primary_button != null:
 		primary_button.disabled = not can_trade
-		var verb := "卖出" if shop_mode == MODE_SELL else "购买"
+		var verb := _trade_verb()
 		primary_button.text = "%s x%d" % [verb, quantity] if can_trade else verb
 	if total_label != null:
 		total_label.text = _transaction_summary(selected_item_id, quantity, max_quantity)
@@ -329,12 +380,26 @@ func _transaction_summary(item_id: String, count: int, max_quantity: int) -> Str
 	if max_quantity <= 0:
 		if shop_mode == MODE_SELL and _is_item_equipped(item_id):
 			return "已装备，不能出售"
-		if shop_mode == MODE_BUY:
+		if shop_mode == MODE_BUY or shop_mode == MODE_BUYBACK:
 			return "银两不足"
 		return "暂无可交易数量"
-	var unit_price := _sell_price(item_id) if shop_mode == MODE_SELL else _buy_price(item_id)
+	var unit_price := _unit_price_for_mode(item_id)
 	var verb := "收入" if shop_mode == MODE_SELL else "合计"
 	return "%s：%d 两" % [verb, unit_price * count]
+
+func _trade_verb() -> String:
+	if shop_mode == MODE_SELL:
+		return "卖出"
+	if shop_mode == MODE_BUYBACK:
+		return "回购"
+	return "购买"
+
+func _unit_price_for_mode(item_id: String) -> int:
+	if shop_mode == MODE_SELL:
+		return _sell_price(item_id)
+	if shop_mode == MODE_BUYBACK:
+		return _buyback_price(item_id)
+	return _buy_price(item_id)
 
 func _buy_price(item_id: String) -> int:
 	var item := GameData.get_item(item_id)
@@ -344,6 +409,25 @@ func _buy_price(item_id: String) -> int:
 
 func _sell_price(item_id: String) -> int:
 	return GameState.get_item_sell_price(item_id)
+
+func _buyback_price(item_id: String) -> int:
+	if buyback_prices.has(item_id):
+		return int(buyback_prices.get(item_id, 0))
+	return _sell_price(item_id)
+
+func _add_buyback_stock(item_id: String, count: int, price: int) -> void:
+	if item_id.is_empty() or count <= 0:
+		return
+	buyback_stock[item_id] = int(buyback_stock.get(item_id, 0)) + count
+	buyback_prices[item_id] = price
+
+func _remove_buyback_stock(item_id: String, count: int) -> void:
+	if item_id.is_empty() or count <= 0:
+		return
+	buyback_stock[item_id] = int(buyback_stock.get(item_id, 0)) - count
+	if int(buyback_stock.get(item_id, 0)) <= 0:
+		buyback_stock.erase(item_id)
+		buyback_prices.erase(item_id)
 
 func _on_player_changed(_player: Dictionary) -> void:
 	if visible:
@@ -420,6 +504,9 @@ func _sell_item_label(item_id: String, item: Dictionary, count: int) -> String:
 	var equipped := "  已装备" if _is_item_equipped(item_id) else ""
 	return "%s x%d  卖%d两%s" % [str(item.get("name", item_id)), count, GameState.get_item_sell_price(item_id), equipped]
 
+func _buyback_item_label(item_id: String, item: Dictionary, count: int) -> String:
+	return "%s x%d  回购%d两" % [str(item.get("name", item_id)), count, _buyback_price(item_id)]
+
 func _sell_item_detail(item_id: String, item: Dictionary) -> String:
 	var blocked := "\n已装备，不能出售" if _is_item_equipped(item_id) else ""
 	return "%s\n%s\n类型：%s    出售价：%d 两\n%s%s" % [
@@ -429,6 +516,14 @@ func _sell_item_detail(item_id: String, item: Dictionary) -> String:
 		GameState.get_item_sell_price(item_id),
 		_format_effects(item),
 		blocked
+	]
+
+func _buyback_item_detail(item_id: String, item: Dictionary) -> String:
+	return "%s\n刚刚卖出的物品，可按原出售价买回。\n类型：%s    回购价：%d 两\n%s" % [
+		str(item.get("name", item_id)),
+		_type_name(str(item.get("type", ""))),
+		_buyback_price(item_id),
+		_format_effects(item)
 	]
 
 func _is_item_equipped(item_id: String) -> bool:
