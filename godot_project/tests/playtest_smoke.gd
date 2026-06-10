@@ -191,6 +191,10 @@ func _run() -> void:
 	_check(float(bamboo_stage_profile.get("tree_density", 0.0)) >= 0.88, "巴蜀竹海 profile 应提供高树冠密度")
 	var xueshan_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("xueshan_sect"))
 	_check(str(xueshan_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_SECT_SNOW and bool(xueshan_stage_profile.get("is_sect", false)), "雪山派应走雪山门派 profile")
+	var flower_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("flower_sect"))
+	_check(str(flower_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_SECT_FOREST and bool(flower_stage_profile.get("is_sect", false)), "花间派应走花林门派 profile")
+	_check(bool(flower_stage_profile.get("has_forest", false)) and float(flower_stage_profile.get("tree_density", 0.0)) >= 0.78, "花间派 profile 应提供高花林/树冠密度")
+	_check(float(flower_stage_profile.get("landmark_density", 0.0)) >= 0.80 and float(flower_stage_profile.get("building_density", 0.0)) >= 0.40, "花间派 profile 应保留门派建筑与地标密度")
 
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
@@ -460,6 +464,19 @@ func _run() -> void:
 	_check(beiling_floor_layer != null and beiling_floor_layer.get_size().x >= 1600.0 and beiling_floor_layer.get_size().y >= 900.0, "北岭群山地面层应具备横版舞台分辨率")
 	_check(beiling_midground_layer != null and beiling_floor_layer != null and beiling_midground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山中景层应与地面层同尺寸对齐")
 	_check(beiling_foreground_layer != null and beiling_floor_layer != null and beiling_foreground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("flower_sect"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("flower_sect").ends_with("scene_flower_sect_dnf_garden_v1.png"), "花间派应接入 DNF 式花林门派整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "花间派局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "花间派应加载门派庭院中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("flower_sect", "floor").ends_with("flower_sect_dnf_garden_floor_v1.png"), "花间派应映射门派庭院地面贴图层")
+	var flower_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("flower_sect", "floor"), true)
+	var flower_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("flower_sect", "midground"), true)
+	var flower_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("flower_sect", "foreground"), true)
+	_check(flower_floor_layer != null and flower_floor_layer.get_size().x >= 1600.0 and flower_floor_layer.get_size().y >= 900.0, "花间派地面层应具备横版舞台分辨率")
+	_check(flower_midground_layer != null and flower_floor_layer != null and flower_midground_layer.get_size() == flower_floor_layer.get_size(), "花间派中景层应与地面层同尺寸对齐")
+	_check(flower_foreground_layer != null and flower_floor_layer != null and flower_foreground_layer.get_size() == flower_floor_layer.get_size(), "花间派前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("emei_sacred"))
 	await get_tree().process_frame
