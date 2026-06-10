@@ -646,6 +646,7 @@ var scene_background_assets: Dictionary = {}
 var stage_layer_assets: Dictionary = {}
 var combat_stage_assets: Dictionary = {}
 var combat_actor_frames: Dictionary = {}
+var region_shop_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
@@ -673,6 +674,7 @@ func load_database() -> void:
 	_load_stage_layer_assets()
 	_load_combat_stage_assets()
 	_load_combat_actor_frames()
+	_load_region_shop_assets()
 	_load_regions()
 
 func _load_items() -> void:
@@ -778,6 +780,33 @@ func _load_combat_actor_frames() -> void:
 				normalized.append(str(frame_path))
 			actions[str(action_name)] = normalized
 		combat_actor_frames[str(actor_key)] = actions
+
+func _load_region_shop_assets() -> void:
+	region_shop_assets.clear()
+	var file := FileAccess.open("res://data/region_shops.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for key in parsed.keys():
+		var entry = parsed[key]
+		if str(key) == "_defaults":
+			if typeof(entry) == TYPE_DICTIONARY:
+				var defaults := {}
+				for region_type in entry.keys():
+					defaults[str(region_type)] = _string_array(entry[region_type])
+				region_shop_assets["_defaults"] = defaults
+			continue
+		region_shop_assets[str(key)] = _string_array(entry)
+
+func _string_array(value) -> Array[String]:
+	var result: Array[String] = []
+	if typeof(value) != TYPE_ARRAY:
+		return result
+	for item in value:
+		result.append(str(item))
+	return result
 
 func _load_asset_mapping(path: String, target: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -1013,6 +1042,15 @@ func get_combat_stage_layer_path(region_id: String, layer_name: String) -> Strin
 func get_combat_actor_frames(actor_key: String) -> Dictionary:
 	var actions: Dictionary = combat_actor_frames.get(actor_key, {})
 	return actions.duplicate(true)
+
+func get_region_shop_ids(region: Dictionary) -> Array[String]:
+	var region_id := str(region.get("id", ""))
+	var region_type := str(region.get("type", "wild"))
+	var configured = region_shop_assets.get(region_id, [])
+	if typeof(configured) != TYPE_ARRAY or configured.is_empty():
+		var defaults: Dictionary = region_shop_assets.get("_defaults", {})
+		configured = defaults.get(region_type, [])
+	return _string_array(configured)
 
 func get_combat_actor_frame_paths(actor_key: String, action_name: String) -> Array:
 	var actions: Dictionary = combat_actor_frames.get(actor_key, {})

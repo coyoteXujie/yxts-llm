@@ -840,7 +840,7 @@ func _generate_sect_region() -> void:
 	_fill_rect(Rect2i(12, map_height / 2 - 5, 12, 9), Tile.BUILDING)
 	_fill_rect(Rect2i(map_width - 24, map_height / 2 - 5, 12, 9), Tile.BUILDING)
 	_apply_sect_identity()
-	_place_shops(["medicine", "market"])
+	_place_shops(_shop_plan_for_region())
 
 func _apply_sect_identity() -> void:
 	var region_id := str(current_region.get("id", ""))
@@ -1886,6 +1886,9 @@ func _is_near_entry_tile(tile: Vector2i) -> bool:
 func _shop_plan_for_region() -> Array:
 	var region_type := str(current_region.get("type", "wild"))
 	var region_id := str(current_region.get("id", ""))
+	var configured := GameData.get_region_shop_ids(current_region)
+	if not configured.is_empty():
+		return configured
 	if region_type == "city":
 		match region_id:
 			"linan":

@@ -49,6 +49,24 @@ def read_png_info(path: Path) -> tuple[int, int, int] | None:
         return width, height, color_type
 
 
+def _validate_region_shop_list(errors: list[str], owner: str, shops, allowed_shop_ids: set[str]) -> None:
+    if not isinstance(shops, list):
+        errors.append(f"region shop mapping for {owner} must be a list")
+        return
+    if not shops:
+        errors.append(f"region shop mapping for {owner} must not be empty")
+    if len(shops) > 6:
+        errors.append(f"region shop mapping for {owner} has {len(shops)} shops, but the local map has 6 shop slots")
+    seen: set[str] = set()
+    for shop_id in shops:
+        shop_key = str(shop_id)
+        if shop_key not in allowed_shop_ids:
+            errors.append(f"region shop mapping for {owner} references unknown shop {shop_key}")
+        if shop_key in seen:
+            errors.append(f"region shop mapping for {owner} repeats shop {shop_key}")
+        seen.add(shop_key)
+
+
 def main() -> int:
     errors: list[str] = []
     npcs = load_json("npcs.json")
@@ -63,11 +81,13 @@ def main() -> int:
     stage_layer_assets = load_json("stage_layer_assets.json")
     combat_stage_assets = load_json("combat_stage_assets.json")
     combat_actor_frames = load_json("combat_actor_frames.json")
+    region_shop_assets = load_json("region_shops.json")
 
     item_ids = {item["id"] for item in items}
     npc_names = {npc["name"] for npc in npcs}
     region_ids = [region["id"] for region in regions]
     region_id_set = set(region_ids)
+    allowed_shop_ids = {"inn", "medicine", "blacksmith", "tailor", "market", "teahouse"}
     skill_text = (ROOT / "godot_project" / "scripts" / "autoload" / "game_data.gd").read_text(encoding="utf-8")
     skill_ids = set(re.findall(r'"(kf_[a-zA-Z0-9_]+)"', skill_text))
 
@@ -177,6 +197,24 @@ def main() -> int:
         if not asset_path.exists():
             errors.append(f"scene background path missing for {region_id}: {background_path}")
 
+    if not isinstance(region_shop_assets, dict):
+        errors.append("region_shops.json must be an object")
+    else:
+        default_shops = region_shop_assets.get("_defaults", {})
+        if not isinstance(default_shops, dict):
+            errors.append("region_shops.json _defaults must be an object")
+        else:
+            for region_type, shops in default_shops.items():
+                if region_type not in {"city", "town", "sect"}:
+                    errors.append(f"region_shops.json has unknown default region type {region_type}")
+                _validate_region_shop_list(errors, f"_defaults.{region_type}", shops, allowed_shop_ids)
+        for region_id, shops in region_shop_assets.items():
+            if region_id == "_defaults":
+                continue
+            if region_id not in region_id_set:
+                errors.append(f"region shop mapping references missing region {region_id}")
+            _validate_region_shop_list(errors, str(region_id), shops, allowed_shop_ids)
+
     allowed_stage_layers = {"floor", "midground", "foreground"}
     required_stage_layers = {"floor", "midground", "foreground"}
     for region_id, layers in stage_layer_assets.items():
@@ -278,7 +316,8 @@ def main() -> int:
     print(
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
         f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
-        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
+        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} region_shops={len(region_shop_assets)} "
+        f"combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
     )
     return 0
 
