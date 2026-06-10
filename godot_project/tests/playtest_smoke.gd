@@ -418,6 +418,16 @@ func _run() -> void:
 
 	local_area.setup_region(GameData.get_region("linan"))
 	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("linan").ends_with("scene_linan_dnf_water_city_v1.png"), "临安应接入 DNF 式水城横版整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "临安局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "临安应加载水城中景和地面/水道贴图层")
+	_check(GameData.get_stage_layer_path("linan", "floor").ends_with("linan_dnf_water_floor_v1.png"), "临安应映射水城地面/水道贴图层")
+	var linan_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("linan", "floor"), true)
+	var linan_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("linan", "midground"), true)
+	var linan_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("linan", "foreground"), true)
+	_check(linan_floor_layer != null and linan_floor_layer.get_size().x >= 1600.0 and linan_floor_layer.get_size().y >= 900.0, "临安水城地面层应具备横版舞台分辨率")
+	_check(linan_midground_layer != null and linan_floor_layer != null and linan_midground_layer.get_size() == linan_floor_layer.get_size(), "临安水城中景层应与地面层同尺寸对齐")
+	_check(linan_foreground_layer != null and linan_floor_layer != null and linan_foreground_layer.get_size() == linan_floor_layer.get_size(), "临安水城前景层应与地面层同尺寸对齐")
 	_check(not local_area.is_tile_walkable(_first_tile_with_id(local_area, LOCAL_TILE_WATER)), "临安局部水面应不可通行")
 
 	local_area.setup_region(GameData.get_region("emei_sacred"))

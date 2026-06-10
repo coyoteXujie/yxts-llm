@@ -1,4 +1,9 @@
 {
+  "linan": {
+    "floor": "res://assets/world/stage_layers/linan_dnf_water_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/linan_dnf_waterfront_v1.png",
+    "foreground": "res://assets/world/stage_layers/linan_dnf_water_foreground_v1.png"
+  },
   "qinghe": {
     "floor": "res://assets/world/stage_layers/qinghe_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/qinghe_dnf_shopfronts_v1.png",
