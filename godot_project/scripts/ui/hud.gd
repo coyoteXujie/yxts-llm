@@ -2,6 +2,9 @@ extends Control
 class_name HudView
 
 const MINIMAP_SCRIPT := preload("res://scripts/ui/minimap_canvas.gd")
+const HUD_PROMPT_CHIP_MIN_WIDTH := 74.0
+const HUD_PROMPT_PRIMARY_ALPHA := 0.88
+const HUD_PROMPT_SECONDARY_ALPHA := 0.70
 
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
@@ -12,7 +15,10 @@ var quest_hint_label: Label
 var time_label: Label
 var region_label: Label
 var rumor_label: Label
+var prompt_panel: PanelContainer
+var prompt_box: HBoxContainer
 var prompt_label: Label
+var prompt_chips: Array[PanelContainer] = []
 var toast_label: Label
 var minimap
 var region_banner_panel: PanelContainer
@@ -54,7 +60,13 @@ func _process(delta: float) -> void:
 
 func set_prompt(text: String) -> void:
 	prompt_label.text = text
-	prompt_label.visible = not text.is_empty()
+	if prompt_panel == null or prompt_box == null:
+		prompt_label.visible = not text.is_empty()
+		return
+	var segments := _prompt_segments(text)
+	_refresh_prompt_chips(segments)
+	prompt_panel.visible = not text.is_empty()
+	prompt_label.visible = segments.is_empty() and not text.is_empty()
 
 func show_toast(text: String) -> void:
 	toast_label.text = text
@@ -144,19 +156,33 @@ func _build_minimap() -> void:
 	panel.add_child(minimap)
 
 func _build_prompt() -> void:
-	var panel := PanelContainer.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = Vector2(16, 642)
-	panel.size = Vector2(560, 44)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.045, 0.040, 0.032, 0.66), Color(0.58, 0.44, 0.22, 0.48)))
-	add_child(panel)
+	prompt_panel = PanelContainer.new()
+	prompt_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	prompt_panel.anchor_left = 0.0
+	prompt_panel.anchor_right = 1.0
+	prompt_panel.anchor_top = 1.0
+	prompt_panel.anchor_bottom = 1.0
+	prompt_panel.offset_left = 16
+	prompt_panel.offset_right = -16
+	prompt_panel.offset_top = -76
+	prompt_panel.offset_bottom = -18
+	prompt_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.040, 0.035, 0.028, 0.74), Color(0.66, 0.50, 0.24, 0.58)))
+	add_child(prompt_panel)
+
+	prompt_box = HBoxContainer.new()
+	prompt_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prompt_box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	prompt_box.add_theme_constant_override("separation", 8)
+	prompt_panel.add_child(prompt_box)
 
 	prompt_label = Label.new()
+	prompt_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	prompt_label.add_theme_font_size_override("font_size", 18)
 	prompt_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
-	panel.add_child(prompt_label)
+	prompt_box.add_child(prompt_label)
 	prompt_label.hide()
+	prompt_panel.hide()
 
 func _build_region_banner() -> void:
 	region_banner_panel = PanelContainer.new()
@@ -270,6 +296,93 @@ func _on_world_events_changed(events: Array) -> void:
 		suffix
 	]
 
+func _prompt_segments(text: String) -> Array:
+	var segments: Array = []
+	var normalized := text.strip_edges()
+	if normalized.is_empty():
+		return segments
+	var tokens := normalized.split(" ", false)
+	var current_key := ""
+	var current_words := PackedStringArray()
+	for raw_token in tokens:
+		var token := str(raw_token).strip_edges()
+		if token.is_empty():
+			continue
+		if _is_prompt_key_token(token):
+			if not current_key.is_empty() or not current_words.is_empty():
+				segments.append({
+					"key": current_key,
+					"label": " ".join(current_words).strip_edges()
+				})
+			current_key = token
+			current_words = PackedStringArray()
+		else:
+			current_words.append(token)
+	if not current_key.is_empty() or not current_words.is_empty():
+		segments.append({
+			"key": current_key,
+			"label": " ".join(current_words).strip_edges()
+		})
+	return segments
+
+func _is_prompt_key_token(token: String) -> bool:
+	match token:
+		"E", "T", "F", "B", "J", "K", "M", "Esc", "F5/F9", "Enter":
+			return true
+	return false
+
+func _refresh_prompt_chips(segments: Array) -> void:
+	if prompt_box == null:
+		return
+	for chip in prompt_chips:
+		if is_instance_valid(chip):
+			prompt_box.remove_child(chip)
+			chip.queue_free()
+	prompt_chips.clear()
+	if segments.is_empty():
+		return
+	for i in range(segments.size()):
+		var segment: Dictionary = segments[i]
+		var chip := _make_prompt_chip(str(segment.get("key", "")), str(segment.get("label", "")), i == 0)
+		prompt_box.add_child(chip)
+		prompt_chips.append(chip)
+
+func _make_prompt_chip(key: String, label_text: String, primary: bool) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	chip.custom_minimum_size = Vector2(HUD_PROMPT_CHIP_MIN_WIDTH + clampf(float(label_text.length()) * 9.5, 28.0, 170.0), 32)
+	chip.add_theme_stylebox_override("panel", _prompt_chip_style(primary))
+
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 7)
+	chip.add_child(row)
+
+	var key_badge := PanelContainer.new()
+	key_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_badge.custom_minimum_size = Vector2(maxf(32.0, float(key.length()) * 9.0 + 18.0), 22)
+	key_badge.add_theme_stylebox_override("panel", _prompt_key_style(primary))
+	row.add_child(key_badge)
+
+	var key_label := Label.new()
+	key_label.text = key
+	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	key_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	key_label.add_theme_font_size_override("font_size", 13)
+	key_label.add_theme_color_override("font_color", Color(0.98, 0.88, 0.58))
+	key_badge.add_child(key_label)
+
+	var value_label := Label.new()
+	value_label.text = label_text
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.clip_text = true
+	value_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	value_label.add_theme_font_size_override("font_size", 15 if primary else 14)
+	value_label.add_theme_color_override("font_color", Color(0.96, 0.88, 0.68) if primary else Color(0.78, 0.80, 0.72))
+	row.add_child(value_label)
+	return chip
+
 func _show_region_banner(region: Dictionary, state: Dictionary) -> void:
 	if region_banner_panel == null or region_banner_label == null:
 		return
@@ -302,6 +415,43 @@ func _danger_text(danger: int) -> String:
 	if danger >= 2:
 		return "谨慎"
 	return "安全"
+
+func _prompt_chip_style(primary: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	var alpha := HUD_PROMPT_PRIMARY_ALPHA if primary else HUD_PROMPT_SECONDARY_ALPHA
+	style.bg_color = Color(0.075, 0.064, 0.044, alpha)
+	style.border_color = Color(0.78, 0.56, 0.24, 0.72 if primary else 0.42)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
+	style.content_margin_left = 8
+	style.content_margin_right = 10
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	return style
+
+func _prompt_key_style(primary: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.20, 0.14, 0.065, 0.90 if primary else 0.72)
+	style.border_color = Color(0.95, 0.70, 0.30, 0.64 if primary else 0.38)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	return style
 
 func _panel_style(bg: Color, border: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
