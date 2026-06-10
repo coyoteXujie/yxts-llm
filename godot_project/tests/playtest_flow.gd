@@ -105,11 +105,15 @@ func _run() -> void:
 			_check(main.local_area.current_mode == "region", "出门后应回到局部区域")
 		if not travel_portal.is_empty():
 			var target_region_id := str(travel_portal.get("target_region_id", ""))
+			var before_travel_time := float(GameState.day) * 24.0 + GameState.hour
+			var before_event_count := GameState.world_events.size()
 			main._travel_to_linked_region(travel_portal)
 			await _frames(3)
 			_check(main.active_map == main.local_area, "相邻区域转场后仍应停留在局部地图层")
 			_check(str(main.local_area.current_region.get("id", "")) == target_region_id, "相邻区域转场应切换目标区域")
 			_check(main.local_area.portals.size() >= 2, "目标区域应继续生成入口")
+			_check(float(GameState.day) * 24.0 + GameState.hour > before_travel_time, "相邻区域转场应推进路程时间")
+			_check(GameState.world_events.size() > before_event_count, "相邻区域转场应写入行路事件")
 		main._return_to_world()
 		await _frames(2)
 		_check(main.active_map == main.world_map, "应能从局部地图返回世界地图")

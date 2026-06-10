@@ -429,6 +429,12 @@ func _region_enter_prompt(region: Dictionary) -> String:
 	return "E 进入%s" % str(region.get("name", "区域"))
 
 func _portal_prompt(portal: Dictionary) -> String:
+	if str(portal.get("type", "")) == "travel_region":
+		var direction := str(portal.get("direction_label", "路"))
+		var hours := float(portal.get("travel_hours", 0.0))
+		var risk := str(portal.get("risk_label", ""))
+		if hours > 0.0 and not risk.is_empty():
+			return "%s（%s路 %.1f时辰，%s）" % [str(portal.get("label", "入口")), direction, hours, risk]
 	return str(portal.get("label", "入口"))
 
 func _handle_enter_area() -> void:
@@ -497,12 +503,31 @@ func _travel_to_linked_region(portal: Dictionary) -> void:
 	if target_region.is_empty():
 		EventBus.emit_toast("这条路暂时走不通")
 		return
+	var source_name := str(local_area.current_region.get("name", GameState.current_region_name)) if local_area != null else GameState.current_region_name
+	var travel_hours := float(portal.get("travel_hours", 0.0))
+	var risk_label := str(portal.get("risk_label", ""))
+	if travel_hours > 0.0:
+		GameState.advance_hours(travel_hours)
 	world_return_position = world_map.get_region_entry_position(target_id)
 	local_area.setup_region(target_region)
 	local_area.show()
 	_transition_player_to_map(local_area, local_area.get_entry_position(str(portal.get("entry_kind", "area"))))
 	_update_current_region()
-	EventBus.emit_toast("抵达%s" % str(target_region.get("name", target_id)))
+	if travel_hours > 0.0:
+		GameState.append_world_event(
+			"travel",
+			"山路抵达%s" % str(target_region.get("name", target_id)),
+			"你从%s沿%s赶到%s，用去%.1f时辰，路况%s。" % [
+				source_name,
+				str(portal.get("direction_label", "道路")),
+				str(target_region.get("name", target_id)),
+				travel_hours,
+				risk_label if not risk_label.is_empty() else "平稳"
+			],
+			target_id,
+			clampi(int(portal.get("risk_level", 1)), 1, 3)
+		)
+	EventBus.emit_toast("抵达%s%s" % [str(target_region.get("name", target_id)), " · %.1f时辰" % travel_hours if travel_hours > 0.0 else ""])
 
 func _inspect_landmark(portal: Dictionary) -> void:
 	var region_id := str(local_area.current_region.get("id", "region"))

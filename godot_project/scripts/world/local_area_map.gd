@@ -230,6 +230,10 @@ const LOCAL_TOWN_SHOP_ENTRANCE_ALPHA := 0.82
 const LOCAL_TOWN_SHOP_DOOR_GLOW_ALPHA := 0.34
 const LOCAL_TOWN_SHOP_SIGN_WIDTH := 104.0
 const LOCAL_TOWN_SHOP_SIGN_HEIGHT := 24.0
+const LOCAL_TRAVEL_GATE_ALPHA := 0.78
+const LOCAL_TRAVEL_GATE_GLOW_ALPHA := 0.24
+const LOCAL_TRAVEL_BOARD_WIDTH := 178.0
+const LOCAL_TRAVEL_BOARD_HEIGHT := 42.0
 const RICH_SHOP_INTERIOR_ENABLED := true
 const SHOP_INTERIOR_BACK_WALL_RATIO := 0.48
 const SHOP_INTERIOR_COUNTER_ALPHA := 0.92
@@ -1209,6 +1213,7 @@ func _add_region_travel_portals() -> void:
 		direction_counts[direction] = direction_index + 1
 		var tile := _travel_portal_tile(direction, direction_index)
 		_paint_travel_path(tile, direction)
+		var travel_meta := _travel_portal_metadata(target, direction)
 		_add_portal(
 			"travel_%s" % target_id,
 			"前往%s" % str(target.get("name", target_id)),
@@ -1216,7 +1221,8 @@ func _add_region_travel_portals() -> void:
 			tile,
 			"",
 			target_id,
-			_opposite_direction(direction)
+			_opposite_direction(direction),
+			travel_meta
 		)
 
 func _travel_portal_limit() -> int:
@@ -1280,7 +1286,48 @@ func _region_center(region: Dictionary) -> Vector2:
 		return Vector2(float(center_data[0]), float(center_data[1]))
 	return Vector2.ZERO
 
-func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String, target_region_id: String = "", entry_kind: String = "") -> void:
+func _travel_portal_metadata(target: Dictionary, direction: String) -> Dictionary:
+	var distance := _local_route_distance(current_region, target)
+	var risk_level := clampi(maxi(int(current_region.get("danger", 1)), int(target.get("danger", 1))), 1, 5)
+	var hours := roundf(clampf(distance / 7.5 + float(risk_level) * 0.42, 0.5, 8.0) * 2.0) / 2.0
+	return {
+		"direction": direction,
+		"direction_label": _travel_direction_label(direction),
+		"travel_distance": distance,
+		"travel_hours": hours,
+		"risk_level": risk_level,
+		"risk_label": _local_route_risk_label(risk_level)
+	}
+
+func _local_route_distance(source: Dictionary, target: Dictionary) -> float:
+	if source.is_empty() or target.is_empty():
+		return 0.0
+	return roundf(_region_center(source).distance_to(_region_center(target)) * 10.0) / 10.0
+
+func _travel_direction_label(direction: String) -> String:
+	match direction:
+		"north":
+			return "北"
+		"south":
+			return "南"
+		"east":
+			return "东"
+		"west":
+			return "西"
+	return "路"
+
+func _local_route_risk_label(risk_level: int) -> String:
+	if risk_level >= 5:
+		return "极险"
+	if risk_level >= 4:
+		return "险路"
+	if risk_level >= 3:
+		return "危险"
+	if risk_level >= 2:
+		return "谨慎"
+	return "平稳"
+
+func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String, target_region_id: String = "", entry_kind: String = "", metadata: Dictionary = {}) -> void:
 	var portal := {
 		"id": id,
 		"label": label,
@@ -1292,6 +1339,8 @@ func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_i
 		portal["target_region_id"] = target_region_id
 	if not entry_kind.is_empty():
 		portal["entry_kind"] = entry_kind
+	for key in metadata.keys():
+		portal[key] = metadata[key]
 	portals.append(portal)
 
 func _generate_shop_map(shop_id: String) -> void:
@@ -1544,23 +1593,27 @@ func _build_portal_labels() -> void:
 		var portal_type := str(portal.get("type", ""))
 		var label := Label.new()
 		label.name = str(portal.get("id", ""))
-		label.text = str(portal.get("label", "入口"))
+		label.text = _portal_label_text(portal)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) + Vector2(-68, -50)
-		label.size = Vector2(136, 24)
+		var label_size := Vector2(136, 24)
+		if portal_type == "travel_region":
+			label_size = Vector2(LOCAL_TRAVEL_BOARD_WIDTH, LOCAL_TRAVEL_BOARD_HEIGHT)
+		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) - label_size * 0.5 + Vector2(0, -46)
+		label.size = label_size
 		label.z_index = 3900
-		label.add_theme_font_size_override("font_size", 13)
+		label.add_theme_font_size_override("font_size", 12 if portal_type == "travel_region" else 13)
 		label.add_theme_color_override("font_color", Color(0.96, 0.82, 0.44))
 		label.add_theme_color_override("font_shadow_color", Color(0.04, 0.03, 0.02, 0.92))
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
+		label.add_theme_constant_override("line_spacing", -2)
 		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource":
 			var board := StyleBoxFlat.new()
 			if portal_type == "travel_region":
-				board.bg_color = Color(0.08, 0.16, 0.12, 0.74)
-				board.border_color = Color(0.72, 0.84, 0.52, 0.58)
+				board.bg_color = Color(0.06, 0.12, 0.10, 0.82)
+				board.border_color = _travel_risk_color(int(portal.get("risk_level", 1)), 0.68)
 			elif portal_type == "landmark":
 				board.bg_color = Color(0.16, 0.12, 0.07, 0.72)
 				board.border_color = Color(0.80, 0.68, 0.38, 0.56)
@@ -1576,6 +1629,17 @@ func _build_portal_labels() -> void:
 		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource"
 		add_child(label)
 		portal_labels.append(label)
+
+func _portal_label_text(portal: Dictionary) -> String:
+	if str(portal.get("type", "")) != "travel_region":
+		return str(portal.get("label", "入口"))
+	var label := str(portal.get("label", "入口"))
+	var direction := str(portal.get("direction_label", "路"))
+	var hours := float(portal.get("travel_hours", 0.0))
+	var risk := str(portal.get("risk_label", ""))
+	if hours <= 0.0:
+		return "%s\n%s路 · %s" % [label, direction, risk]
+	return "%s\n%s路 %.1f时辰 · %s" % [label, direction, hours, risk]
 
 func _clear_portal_labels() -> void:
 	for label in portal_labels:
@@ -4080,14 +4144,84 @@ func _draw_portals() -> void:
 
 func _draw_portal_signs() -> void:
 	for portal in portals:
-		if str(portal.get("type", "")) != "shop":
-			continue
+		var portal_type := str(portal.get("type", ""))
 		var tile_data: Array = portal.get("tile", [0, 0])
 		var pos := tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1])))
-		var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", "")), {})
-		var accent: Color = shop.get("accent", Color(0.86, 0.58, 0.28))
 		var highlighted := str(portal.get("id", "")) == highlighted_portal_id
-		_draw_stage_shop_entrance(pos, accent, highlighted)
+		if portal_type == "shop":
+			var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", "")), {})
+			var accent: Color = shop.get("accent", Color(0.86, 0.58, 0.28))
+			_draw_stage_shop_entrance(pos, accent, highlighted)
+		elif portal_type == "travel_region":
+			_draw_stage_travel_gate(pos, portal, highlighted)
+
+func _draw_stage_travel_gate(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
+	var direction := str(portal.get("direction", "south"))
+	var side := _travel_direction_vector(direction)
+	var risk_level := int(portal.get("risk_level", 1))
+	var accent := _travel_risk_color(risk_level, 1.0)
+	var alpha := LOCAL_TRAVEL_GATE_ALPHA * (1.20 if highlighted else 1.0)
+	var glow_alpha := LOCAL_TRAVEL_GATE_GLOW_ALPHA * (1.46 if highlighted else 1.0)
+	var tangent := Vector2(-side.y, side.x)
+	if tangent == Vector2.ZERO:
+		tangent = Vector2.RIGHT
+	var gate_center := pos - side * 30.0
+	var road_a := pos - tangent * 58.0 + side * 18.0
+	var road_b := pos + tangent * 58.0 + side * 18.0
+	var road_c := pos + tangent * 80.0 - side * 76.0
+	var road_d := pos - tangent * 80.0 - side * 76.0
+	draw_polygon(PackedVector2Array([road_a, road_b, road_c, road_d]), PackedColorArray([
+		Color(0.18, 0.14, 0.08, alpha * 0.42),
+		Color(0.22, 0.18, 0.10, alpha * 0.46),
+		Color(0.08, 0.06, 0.04, alpha * 0.18),
+		Color(0.10, 0.07, 0.04, alpha * 0.22)
+	]))
+	draw_line(pos - tangent * 70.0 - side * 28.0, pos + tangent * 70.0 - side * 28.0, Color(accent.r, accent.g, accent.b, alpha * 0.44), 2.0)
+	draw_line(pos - tangent * 50.0 + side * 8.0, pos + tangent * 50.0 + side * 8.0, Color(0.0, 0.0, 0.0, alpha * 0.30), 2.0)
+	var post_left := gate_center - tangent * 58.0
+	var post_right := gate_center + tangent * 58.0
+	for post in [post_left, post_right]:
+		draw_line(post + side * 36.0, post - side * 70.0, Color(0.12, 0.075, 0.040, alpha), 6.0)
+		draw_line(post + side * 26.0, post - side * 62.0, Color(accent.r, accent.g, accent.b, alpha * 0.18), 2.0)
+	draw_line(post_left - side * 62.0, post_right - side * 62.0, Color(0.14, 0.075, 0.040, alpha), 8.0)
+	draw_line(post_left - side * 70.0, post_right - side * 70.0, Color(accent.r, accent.g, accent.b, alpha * 0.40), 2.0)
+	var board_rect := Rect2(gate_center - Vector2(LOCAL_TRAVEL_BOARD_WIDTH * 0.5, 96.0), Vector2(LOCAL_TRAVEL_BOARD_WIDTH, 30.0))
+	draw_rect(board_rect, Color(0.035, 0.070, 0.055, alpha * 0.88), true)
+	draw_rect(board_rect.grow(-2.0), Color(accent.r * 0.34, accent.g * 0.34, accent.b * 0.26, alpha * 0.70), true)
+	draw_line(board_rect.position + Vector2(8, board_rect.size.y - 4), board_rect.position + Vector2(board_rect.size.x - 8, 5), Color(0.92, 0.82, 0.48, alpha * 0.28), 1.1)
+	var arrow_tip := pos - side * 92.0
+	var arrow_base := pos - side * 54.0
+	var arrow_left := arrow_base - tangent * 14.0
+	var arrow_right := arrow_base + tangent * 14.0
+	draw_polygon(PackedVector2Array([arrow_tip, arrow_left, arrow_right]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, alpha * 0.72),
+		Color(0.94, 0.84, 0.46, alpha * 0.48),
+		Color(0.94, 0.84, 0.46, alpha * 0.48)
+	]))
+	draw_circle(pos - side * 12.0, 24.0 if highlighted else 18.0, Color(accent.r, accent.g, accent.b, glow_alpha))
+
+func _travel_direction_vector(direction: String) -> Vector2:
+	match direction:
+		"north":
+			return Vector2.UP
+		"south":
+			return Vector2.DOWN
+		"east":
+			return Vector2.RIGHT
+		"west":
+			return Vector2.LEFT
+	return Vector2.DOWN
+
+func _travel_risk_color(risk_level: int, alpha: float = 1.0) -> Color:
+	if risk_level >= 5:
+		return Color(0.82, 0.18, 0.16, alpha)
+	if risk_level >= 4:
+		return Color(0.86, 0.36, 0.18, alpha)
+	if risk_level >= 3:
+		return Color(0.90, 0.62, 0.24, alpha)
+	if risk_level >= 2:
+		return Color(0.78, 0.78, 0.38, alpha)
+	return Color(0.54, 0.82, 0.48, alpha)
 
 func _draw_stage_shop_entrance(pos: Vector2, accent: Color, highlighted: bool) -> void:
 	var alpha := LOCAL_TOWN_SHOP_ENTRANCE_ALPHA * (1.16 if highlighted else 1.0)

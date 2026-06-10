@@ -399,7 +399,13 @@ func _run() -> void:
 	_check((map_panel.map_canvas.route_plan.get("route", []) as Array).size() >= 2, "世界地图面板应把选中区域的驿路线传给地图画布")
 	map_panel.close_panel()
 	map_panel.queue_free()
-	_check(not _first_portal(local_area, "travel_region").is_empty(), "平安镇应生成相邻区域转场入口")
+	var travel_region_portal := _first_portal(local_area, "travel_region")
+	_check(not travel_region_portal.is_empty(), "平安镇应生成相邻区域转场入口")
+	_check(not str(travel_region_portal.get("direction", "")).is_empty() and not str(travel_region_portal.get("direction_label", "")).is_empty(), "相邻区域入口应带方向信息")
+	_check(float(travel_region_portal.get("travel_hours", 0.0)) >= 0.5, "相邻区域入口应带预计行路耗时")
+	_check(int(travel_region_portal.get("risk_level", 0)) >= 1 and not str(travel_region_portal.get("risk_label", "")).is_empty(), "相邻区域入口应带路况风险")
+	var travel_region_label := _portal_label(local_area, str(travel_region_portal.get("id", "")))
+	_check(travel_region_label != null and travel_region_label.text.contains("时辰") and travel_region_label.text.contains("路"), "相邻区域入口标签应展示方向、耗时和风险")
 	_check(_portal_count(local_area, "landmark") >= 3, "平安镇应生成可互动地标")
 	_check(_portal_count(local_area, "resource") >= 2, "平安镇应生成每日资源点")
 	_check(LOCAL_AREA_SCRIPT.RICH_SHOP_INTERIOR_ENABLED, "商铺内景应启用高完成度室内 overlay")
@@ -533,6 +539,12 @@ func _portal_count(local_area, portal_type: String) -> int:
 		if str(portal.get("type", "")) == portal_type:
 			count += 1
 	return count
+
+func _portal_label(local_area, portal_id: String) -> Label:
+	for label in local_area.portal_labels:
+		if is_instance_valid(label) and str(label.name) == portal_id:
+			return label
+	return null
 
 func _tile_ratio(map_node, tile_id: int) -> float:
 	var count := 0
