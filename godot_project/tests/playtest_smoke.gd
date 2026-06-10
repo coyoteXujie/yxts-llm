@@ -175,6 +175,10 @@ func _run() -> void:
 	_check(str(qinghe_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_STARTER_TOWN, "平安镇应走新手镇横版街景 profile")
 	_check(bool(qinghe_stage_profile.get("has_market", false)) and bool(qinghe_stage_profile.get("has_lanterns", false)), "新手镇 profile 应标记市集门脸和灯笼层")
 	_check(float(qinghe_stage_profile.get("market_density", 0.0)) >= 0.60, "新手镇 profile 应提供足够商铺/商贩密度")
+	var luoyang_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("luoyang"))
+	_check(str(luoyang_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_CITY, "洛阳应走都城街道 profile")
+	_check(bool(luoyang_stage_profile.get("has_market", false)) and bool(luoyang_stage_profile.get("has_lanterns", false)), "洛阳都城 profile 应标记市井门脸和灯笼层")
+	_check(float(luoyang_stage_profile.get("building_density", 0.0)) >= 0.70 and float(luoyang_stage_profile.get("market_density", 0.0)) >= 0.80, "洛阳都城 profile 应提供高建筑/市场密度")
 	var linan_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("linan"))
 	_check(str(linan_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_WATER_CITY, "临安应走水城街道 profile")
 	_check(bool(linan_stage_profile.get("has_water", false)) and bool(linan_stage_profile.get("has_bridge", false)), "临安水城 profile 应标记水系和桥")
@@ -415,6 +419,19 @@ func _run() -> void:
 		if local_area.npc_nodes.size() > 0:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data
 			_check((keeper_data.get("sell_items", []) as Array).size() > 0, "商铺掌柜应带商品列表")
+
+	local_area.setup_region(GameData.get_region("luoyang"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("luoyang").ends_with("scene_luoyang_dnf_capital_v1.png"), "洛阳应接入 DNF 式都城横版整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "洛阳局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "洛阳应加载都城中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("luoyang", "floor").ends_with("luoyang_dnf_capital_floor_v1.png"), "洛阳应映射都城地面贴图层")
+	var luoyang_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("luoyang", "floor"), true)
+	var luoyang_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("luoyang", "midground"), true)
+	var luoyang_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("luoyang", "foreground"), true)
+	_check(luoyang_floor_layer != null and luoyang_floor_layer.get_size().x >= 1600.0 and luoyang_floor_layer.get_size().y >= 900.0, "洛阳都城地面层应具备横版舞台分辨率")
+	_check(luoyang_midground_layer != null and luoyang_floor_layer != null and luoyang_midground_layer.get_size() == luoyang_floor_layer.get_size(), "洛阳都城中景层应与地面层同尺寸对齐")
+	_check(luoyang_foreground_layer != null and luoyang_floor_layer != null and luoyang_foreground_layer.get_size() == luoyang_floor_layer.get_size(), "洛阳都城前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("linan"))
 	await get_tree().process_frame
