@@ -185,6 +185,7 @@ func _run() -> void:
 	_check(float(linan_stage_profile.get("bridge_density", 0.0)) >= 0.70, "临安水城 profile 应具备足够桥/码头密度")
 	var beiling_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("beiling_mtn"))
 	_check(str(beiling_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_MOUNTAIN and bool(beiling_stage_profile.get("has_mountain", false)), "北岭群山应走山道 profile")
+	_check(float(beiling_stage_profile.get("landmark_density", 0.0)) >= 0.50 and float(beiling_stage_profile.get("tree_density", 0.0)) >= 0.20, "北岭群山 profile 应提供山体和林木地标密度")
 	var bamboo_stage_profile: Dictionary = local_area.get_stage_scene_profile(GameData.get_region("bashu_bamboo"))
 	_check(str(bamboo_stage_profile.get("style", "")) == LOCAL_AREA_SCRIPT.STAGE_SCENE_STYLE_BAMBOO and bool(bamboo_stage_profile.get("has_forest", false)), "巴蜀竹海应走竹林 profile")
 	_check(float(bamboo_stage_profile.get("tree_density", 0.0)) >= 0.88, "巴蜀竹海 profile 应提供高树冠密度")
@@ -446,6 +447,19 @@ func _run() -> void:
 	_check(linan_midground_layer != null and linan_floor_layer != null and linan_midground_layer.get_size() == linan_floor_layer.get_size(), "临安水城中景层应与地面层同尺寸对齐")
 	_check(linan_foreground_layer != null and linan_floor_layer != null and linan_foreground_layer.get_size() == linan_floor_layer.get_size(), "临安水城前景层应与地面层同尺寸对齐")
 	_check(not local_area.is_tile_walkable(_first_tile_with_id(local_area, LOCAL_TILE_WATER)), "临安局部水面应不可通行")
+
+	local_area.setup_region(GameData.get_region("beiling_mtn"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("beiling_mtn").ends_with("scene_beiling_mtn_dnf_mountain_v1.png"), "北岭群山应接入 DNF 式野外山道整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "北岭群山局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "北岭群山应加载山道中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("beiling_mtn", "floor").ends_with("beiling_mtn_dnf_mountain_floor_v1.png"), "北岭群山应映射山道地面贴图层")
+	var beiling_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("beiling_mtn", "floor"), true)
+	var beiling_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("beiling_mtn", "midground"), true)
+	var beiling_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("beiling_mtn", "foreground"), true)
+	_check(beiling_floor_layer != null and beiling_floor_layer.get_size().x >= 1600.0 and beiling_floor_layer.get_size().y >= 900.0, "北岭群山地面层应具备横版舞台分辨率")
+	_check(beiling_midground_layer != null and beiling_floor_layer != null and beiling_midground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山中景层应与地面层同尺寸对齐")
+	_check(beiling_foreground_layer != null and beiling_floor_layer != null and beiling_foreground_layer.get_size() == beiling_floor_layer.get_size(), "北岭群山前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("emei_sacred"))
 	await get_tree().process_frame
