@@ -43,6 +43,15 @@ const PLAYER_STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const PLAYER_STAGE_SIDE_INPUT_DEADZONE := 0.20
 const PLAYER_STAGE_TURN_ACCENT_ALPHA := 0.24
 const PLAYER_STAGE_TURN_ACCENT_DURATION := 0.18
+const PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED := true
+const PLAYER_STAGE_TURN_BLEND_SPEED := 8.5
+const PLAYER_STAGE_TURN_SETTLE_SPEED := 5.2
+const PLAYER_STAGE_TURN_SQUASH_MIN := 0.78
+const PLAYER_STAGE_TURN_BODY_SLIDE := 13.0
+const PLAYER_STAGE_SIDE_PROFILE_ALPHA := 0.24
+const PLAYER_STAGE_SIDE_PROFILE_SHADOW_ALPHA := 0.18
+const PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA := 0.32
+const PLAYER_STAGE_RUN_STRIDE_ALPHA := 0.28
 const PLAYER_SPRITE_SOURCE_FACES_LEFT := true
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
@@ -63,6 +72,11 @@ var lateral_facing_side := 1.0
 var has_lateral_facing_side := false
 var turn_accent_timer := 0.0
 var turn_accent_side := 1.0
+var visual_facing_side := 1.0
+var visual_facing_initialized := false
+var stage_turn_progress := 0.0
+var stage_turn_from_side := 1.0
+var stage_turn_to_side := 1.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -76,6 +90,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_refresh_stage_depth_scale()
 	_refresh_stage_lane_anchor()
+	_update_stage_visual_facing(delta)
 	var moving := movement_enabled and velocity.length() > 1.0
 	walk_phase += delta * (10.5 if moving else 1.45)
 	if turn_accent_timer > 0.0:
@@ -149,10 +164,15 @@ func _draw() -> void:
 		var draw_size := texture_size * factor * Vector2(1.0 + step_sway * 0.018, breath - step_sway * 0.006)
 		var foot_y := 35.0 * depth_scale + bob + lane_visual_offset * 0.55
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
-		var facing_side := _facing_side()
+		var facing_side := _stage_draw_facing_side() if stage_actor else _facing_side()
+		if stage_actor and PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+			var original_width := draw_size.x
+			draw_size.x *= get_stage_pose_width_scale(moving)
+			top_left.x += (original_width - draw_size.x) * 0.5 + get_stage_pose_x_offset(original_width, facing_side)
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
 		_draw_oriented_sprite_texture(sprite_texture, outline_rect, facing_side, Color(0.02, 0.018, 0.014, 0.58))
 		if stage_actor:
+			_draw_stage_player_directional_pose_layers(top_left, draw_size, trim, moving, facing_side, false)
 			_draw_stage_player_run_ribbons(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_footwork(top_left, draw_size, trim, moving, facing_side)
@@ -164,6 +184,7 @@ func _draw() -> void:
 			_draw_stage_player_breath_aura(top_left, draw_size, trim, moving, facing_side)
 		_draw_oriented_sprite_texture(sprite_texture, Rect2(top_left, draw_size), facing_side)
 		if stage_actor:
+			_draw_stage_player_directional_pose_layers(top_left, draw_size, trim, moving, facing_side, true)
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, true)
 			_draw_stage_player_step_arcs(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_front_layers(top_left, draw_size, trim, moving, facing_side)
@@ -312,12 +333,76 @@ func _facing_side() -> float:
 func _update_lateral_facing(input_vector: Vector2) -> void:
 	if absf(input_vector.x) <= PLAYER_STAGE_SIDE_INPUT_DEADZONE:
 		return
+	var previous_side := lateral_facing_side if has_lateral_facing_side else _facing_side()
 	var next_side := -1.0 if input_vector.x < 0.0 else 1.0
 	if not has_lateral_facing_side or absf(next_side - lateral_facing_side) > 0.01:
 		turn_accent_timer = PLAYER_STAGE_TURN_ACCENT_DURATION
 		turn_accent_side = next_side
+		_begin_stage_turn(previous_side, next_side)
 	lateral_facing_side = next_side
 	has_lateral_facing_side = true
+
+func _begin_stage_turn(previous_side: float, next_side: float) -> void:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return
+	var from_side := -1.0 if previous_side < 0.0 else 1.0
+	var to_side := -1.0 if next_side < 0.0 else 1.0
+	if absf(from_side - to_side) <= 0.01:
+		return
+	stage_turn_from_side = from_side
+	stage_turn_to_side = to_side
+	stage_turn_progress = 1.0
+	if not visual_facing_initialized:
+		visual_facing_side = from_side
+		visual_facing_initialized = true
+
+func _update_stage_visual_facing(delta: float) -> void:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return
+	var target_side := _facing_side()
+	target_side = -1.0 if target_side < 0.0 else 1.0
+	if not visual_facing_initialized:
+		visual_facing_side = target_side
+		visual_facing_initialized = true
+	if absf(target_side - _stage_draw_facing_side()) > 0.01 and stage_turn_progress <= 0.0:
+		_begin_stage_turn(_stage_draw_facing_side(), target_side)
+	var step := maxf(delta * PLAYER_STAGE_TURN_BLEND_SPEED, 0.0)
+	visual_facing_side = move_toward(visual_facing_side, target_side, step)
+	if absf(visual_facing_side) < 0.05:
+		visual_facing_side = target_side * 0.05
+	if stage_turn_progress > 0.0:
+		stage_turn_progress = maxf(0.0, stage_turn_progress - delta * PLAYER_STAGE_TURN_SETTLE_SPEED)
+
+func _stage_draw_facing_side() -> float:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return _facing_side()
+	if stage_turn_progress > 0.01:
+		return stage_turn_to_side
+	if not visual_facing_initialized:
+		return _facing_side()
+	if absf(visual_facing_side) < 0.05:
+		return _facing_side()
+	return -1.0 if visual_facing_side < 0.0 else 1.0
+
+func get_stage_turn_strength() -> float:
+	return clampf(stage_turn_progress, 0.0, 1.0)
+
+func get_stage_pose_width_scale(moving: bool = false) -> float:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return 1.0
+	var turn_strength := get_stage_turn_strength()
+	var stride_bonus := absf(sin(walk_phase)) * 0.018 if moving else 0.0
+	var width_scale := 1.0 - turn_strength * (1.0 - PLAYER_STAGE_TURN_SQUASH_MIN) + stride_bonus
+	return clampf(width_scale, PLAYER_STAGE_TURN_SQUASH_MIN, 1.04)
+
+func get_stage_pose_x_offset(draw_width: float, side: float) -> float:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return 0.0
+	var turn_strength := get_stage_turn_strength()
+	var side_amount := clampf(absf(visual_facing_side), 0.0, 1.0)
+	var turn_slide := PLAYER_STAGE_TURN_BODY_SLIDE * turn_strength
+	var profile_slide := draw_width * 0.018 * (1.0 - side_amount)
+	return side * (turn_slide - profile_slide)
 
 func _should_mirror_sprite_for_side(side: float) -> bool:
 	var desired_side := -1.0 if side < 0.0 else 1.0
@@ -390,6 +475,57 @@ func _draw_stage_motion_afterimage(top_left: Vector2, draw_size: Vector2, accent
 	offset.x -= side * clampf(draw_size.x * 0.026, 2.0, 5.5)
 	var alpha := PLAYER_MOTION_AFTERIMAGE_ALPHA * (0.45 + step * 0.55)
 	_draw_oriented_sprite_texture(sprite_texture, Rect2(top_left + offset, draw_size), side, Color(accent.r, accent.g, accent.b, alpha))
+
+func _draw_stage_player_directional_pose_layers(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float, front_layer: bool) -> void:
+	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
+		return
+	var turn_strength := get_stage_turn_strength()
+	var phase := sin(walk_phase * (1.34 if moving else 0.62))
+	var side_amount := clampf(absf(visual_facing_side), 0.0, 1.0)
+	var shoulder := top_left + Vector2(draw_size.x * (0.50 + side * (0.135 + phase * 0.006)), draw_size.y * 0.335)
+	var hip := top_left + Vector2(draw_size.x * (0.50 + side * (0.045 + phase * 0.010)), draw_size.y * 0.635)
+	var foot := top_left + Vector2(draw_size.x * (0.50 + side * (0.210 + phase * 0.024)), draw_size.y * 0.958)
+	if not front_layer:
+		var rear_alpha := PLAYER_STAGE_SIDE_PROFILE_SHADOW_ALPHA * (0.66 + turn_strength * 0.58)
+		var rear_shoulder := top_left + Vector2(draw_size.x * (0.50 - side * 0.120), draw_size.y * 0.360)
+		var rear_hip := top_left + Vector2(draw_size.x * (0.48 - side * 0.095), draw_size.y * 0.660)
+		var rear_hem := top_left + Vector2(draw_size.x * (0.47 - side * (0.185 + phase * 0.018)), draw_size.y * 0.925)
+		draw_polygon(PackedVector2Array([rear_shoulder, rear_hip, rear_hem, top_left + Vector2(draw_size.x * (0.50 - side * 0.020), draw_size.y * 0.790)]), PackedColorArray([
+			Color(0.020, 0.016, 0.012, rear_alpha * 0.78),
+			Color(0.020, 0.016, 0.012, rear_alpha),
+			Color(0.020, 0.016, 0.012, rear_alpha * 0.62),
+			Color(accent.r, accent.g, accent.b, rear_alpha * 0.42)
+		]))
+		if turn_strength > 0.02:
+			var old_side := stage_turn_from_side
+			var old_shoulder := top_left + Vector2(draw_size.x * (0.50 + old_side * 0.18), draw_size.y * 0.325)
+			var old_foot := top_left + Vector2(draw_size.x * (0.50 + old_side * 0.245), draw_size.y * 0.945)
+			draw_line(old_foot, old_shoulder, Color(accent.r, accent.g, accent.b, PLAYER_STAGE_TURN_ACCENT_ALPHA * turn_strength * 0.50), clampf(draw_size.x * 0.011, 1.0, 1.8))
+			draw_arc(old_shoulder, draw_size.x * 0.13, -PI * 0.28, PI * 0.64, 18, Color(1.0, 0.88, 0.52, PLAYER_STAGE_TURN_ACCENT_ALPHA * turn_strength * 0.58), 1.2)
+		return
+
+	var profile_alpha := PLAYER_STAGE_SIDE_PROFILE_ALPHA * (0.58 + side_amount * 0.20 + turn_strength * 0.34)
+	var chest := top_left + Vector2(draw_size.x * (0.50 + side * (0.095 + phase * 0.010)), draw_size.y * 0.475)
+	var front_hand := top_left + Vector2(draw_size.x * (0.50 + side * (0.295 + phase * 0.026)), draw_size.y * (0.505 + phase * 0.010))
+	var back_hand := top_left + Vector2(draw_size.x * (0.50 - side * 0.135), draw_size.y * (0.535 - phase * 0.008))
+	draw_line(shoulder, chest, Color(1.0, 0.90, 0.58, profile_alpha * 0.78), clampf(draw_size.x * 0.012, 1.0, 1.9))
+	draw_line(chest, hip, Color(accent.r, accent.g, accent.b, profile_alpha), clampf(draw_size.x * 0.014, 1.1, 2.2))
+	draw_line(chest, front_hand, Color(accent.r, accent.g, accent.b, profile_alpha * 0.92), clampf(draw_size.x * 0.016, 1.2, 2.5))
+	draw_line(back_hand, chest, Color(0.030, 0.022, 0.016, profile_alpha * 0.70), clampf(draw_size.x * 0.012, 0.9, 1.8))
+	var weapon_tip := front_hand + Vector2(side * draw_size.x * (0.270 + turn_strength * 0.060), -draw_size.y * (0.155 + phase * 0.014))
+	draw_line(front_hand, weapon_tip, Color(0.96, 0.92, 0.74, PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA * (0.72 + turn_strength * 0.22)), clampf(draw_size.x * 0.012, 1.0, 2.0))
+	draw_line(weapon_tip - Vector2(side * draw_size.x * 0.040, -draw_size.y * 0.012), weapon_tip + Vector2(side * draw_size.x * 0.050, draw_size.y * 0.024), Color(1.0, 0.82, 0.36, PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA * 0.46), 1.0)
+	var head := top_left + Vector2(draw_size.x * (0.50 + side * (0.042 + turn_strength * 0.018)), draw_size.y * 0.225)
+	draw_arc(head + Vector2(side * draw_size.x * 0.012, draw_size.y * 0.006), draw_size.x * 0.060, -PI * 0.40, PI * 0.50, 18, Color(1.0, 0.90, 0.60, profile_alpha * 0.66), 1.0)
+	draw_line(head, head + Vector2(side * draw_size.x * 0.125, draw_size.y * (0.010 + phase * 0.004)), Color(1.0, 0.95, 0.72, profile_alpha * 0.62), 1.0)
+	if moving:
+		var stride_alpha := PLAYER_STAGE_RUN_STRIDE_ALPHA * (0.62 + absf(phase) * 0.28)
+		draw_line(hip, foot, Color(accent.r, accent.g, accent.b, stride_alpha * 0.70), clampf(draw_size.x * 0.011, 0.9, 1.7))
+		for index in range(2):
+			var layer := float(index)
+			var start := foot - Vector2(side * draw_size.x * (0.080 + layer * 0.050), draw_size.y * (0.010 + layer * 0.014))
+			var end := start + Vector2(side * draw_size.x * (0.180 + layer * 0.045), -draw_size.y * (0.018 + layer * 0.010))
+			draw_line(start, end, Color(1.0, 0.84, 0.40, stride_alpha * (0.54 - layer * 0.14)), 1.0)
 
 func _draw_stage_player_back_layers(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var flutter := sin(walk_phase * (1.45 if moving else 0.78))

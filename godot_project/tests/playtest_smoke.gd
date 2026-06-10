@@ -397,6 +397,14 @@ func _run() -> void:
 	player._update_lateral_facing(Vector2.RIGHT)
 	player.position = Vector2(stage_rect.size.x * 0.75, stage_rect.size.y * 0.62)
 	_check(player._facing_side() > 0.0, "玩家横向输入后，上下移动或换站位仍应保持最后横版朝向")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED, "玩家横版朝向应启用独立方向姿态状态，而不是只做贴图镜像")
+	player._update_lateral_facing(Vector2.LEFT)
+	_check(player.get_stage_turn_strength() > 0.75 and player._stage_draw_facing_side() < 0.0, "玩家横向反向输入应立即进入转身姿态并指向新方向")
+	var turn_width_scale := player.get_stage_pose_width_scale(true)
+	_check(turn_width_scale >= PLAYER_SCRIPT.PLAYER_STAGE_TURN_SQUASH_MIN and turn_width_scale < 1.0, "玩家转身时应压缩侧身宽度形成转身帧，而不是静态镜像")
+	_check(absf(player.get_stage_pose_x_offset(100.0, -1.0)) > 1.0, "玩家转身时应产生身体横向错位")
+	player._update_stage_visual_facing(1.0)
+	_check(player.visual_facing_side < 0.0 and player.get_stage_turn_strength() <= 0.01, "玩家转身状态应收敛到新的左向侧身")
 	var front_lane_y := stage_rect.size.y * LOCAL_AREA_SCRIPT.STAGE_DEPTH_BOTTOM_RATIO
 	if not lane_positions.is_empty():
 		front_lane_y = float(lane_positions[lane_positions.size() - 1])
@@ -412,6 +420,7 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_SHOULDER_GLOW_ALPHA >= 0.16, "玩家局部横版地图应显示肩部高光姿态层")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_RINGS >= 3, "玩家局部横版待机应保留多层呼吸气场")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_BREATH_AURA_ALPHA >= 0.16, "玩家局部横版待机呼吸气场应有足够可见度")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_SIDE_PROFILE_ALPHA >= 0.20 and PLAYER_SCRIPT.PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA >= 0.28, "玩家横版侧身应有方向化前层、武器和视线叠层")
 	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_AIR_CUT_COUNT >= 6, "战斗舞台攻击事件应保留多段空气斩痕")
 	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_AIR_CUT_ALPHA >= 0.22, "战斗舞台空气斩痕应有足够可见度")
 	_check(COMBAT_STAGE_SCRIPT.COMBAT_EVENT_FOREGROUND_RIPPLE_COUNT >= 5, "战斗舞台攻击事件应保留近景气浪层")
