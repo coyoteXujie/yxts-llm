@@ -183,6 +183,32 @@ const SIDE_VIEW_DEPTH_FOG_BAND_COUNT := 6
 const SIDE_VIEW_PLATFORM_RIM_COUNT := 4
 const SIDE_VIEW_STAGE_FOCUS_RAY_COUNT := 7
 const SIDE_VIEW_STAGE_FOCUS_ALPHA := 0.16
+const SIDE_VIEW_REGION_PROFILE_ENABLED := true
+const STAGE_SCENE_STYLE_CITY := "city_street"
+const STAGE_SCENE_STYLE_WATER_CITY := "water_city_street"
+const STAGE_SCENE_STYLE_RIVER_CITY := "river_city_street"
+const STAGE_SCENE_STYLE_TOWN := "town_street"
+const STAGE_SCENE_STYLE_STARTER_TOWN := "starter_town_street"
+const STAGE_SCENE_STYLE_WATER_TOWN := "water_town_street"
+const STAGE_SCENE_STYLE_WATERWAY := "waterway"
+const STAGE_SCENE_STYLE_FOREST := "forest_path"
+const STAGE_SCENE_STYLE_BAMBOO := "bamboo_forest"
+const STAGE_SCENE_STYLE_MOUNTAIN := "mountain_pass"
+const STAGE_SCENE_STYLE_GORGE := "gorge_pass"
+const STAGE_SCENE_STYLE_DESERT := "desert_road"
+const STAGE_SCENE_STYLE_SNOW := "snow_peak"
+const STAGE_SCENE_STYLE_FIELD := "field_plain"
+const STAGE_SCENE_STYLE_SECT := "sect_ground"
+const STAGE_SCENE_STYLE_SECT_WATER := "sect_water"
+const STAGE_SCENE_STYLE_SECT_FOREST := "sect_forest"
+const STAGE_SCENE_STYLE_SECT_MOUNTAIN := "sect_mountain"
+const STAGE_SCENE_STYLE_SECT_SNOW := "sect_snow"
+const STAGE_SCENE_STYLE_WILD := "wild_road"
+const STAGE_SCENE_PROFILE_STYLE_COUNT := 20
+const SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA := 0.34
+const SIDE_VIEW_PROFILE_FOREST_CANOPY_ALPHA := 0.42
+const SIDE_VIEW_PROFILE_MOUNTAIN_LEDGE_ALPHA := 0.38
+const SIDE_VIEW_PROFILE_TOWN_SIGN_ALPHA := 0.30
 const SIDE_VIEW_PLAY_LANE_COUNT := 5
 const SIDE_VIEW_PLAY_LANE_ALPHA := 0.22
 const SIDE_VIEW_PLAY_LANE_EDGE_ALPHA := 0.30
@@ -375,6 +401,146 @@ func get_actor_depth_scale(world_position: Vector2) -> float:
 
 func is_side_view_stage_active() -> bool:
 	return current_mode == "region" and side_view_stage_enabled
+
+func get_stage_scene_profile(region: Dictionary = {}) -> Dictionary:
+	var source: Dictionary = current_region if region.is_empty() else region
+	var region_id := str(source.get("id", ""))
+	var region_type := str(source.get("type", "wild"))
+	var terrain := str(source.get("terrain", "plain")).to_lower()
+	var is_city := region_type == "city"
+	var is_town := region_type == "town"
+	var is_sect := region_type == "sect"
+	var has_snow := terrain.contains("snow")
+	var has_desert := terrain.contains("desert")
+	var has_water := _terrain_has_water(terrain)
+	var has_field := terrain.contains("field") or terrain.contains("plain") or terrain.contains("garden")
+	var has_forest := terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("flower") or terrain.contains("garden")
+	var has_mountain := _terrain_has_mountain(terrain) or terrain.contains("mound") or terrain.contains("pass")
+	var has_gorge := terrain.contains("gorge") or terrain.contains("cliff") or terrain.contains("valley")
+	var style := STAGE_SCENE_STYLE_WILD
+	if has_snow:
+		style = STAGE_SCENE_STYLE_SECT_SNOW if is_sect else STAGE_SCENE_STYLE_SNOW
+	elif has_desert:
+		style = STAGE_SCENE_STYLE_DESERT
+	elif is_sect:
+		if has_water:
+			style = STAGE_SCENE_STYLE_SECT_WATER
+		elif has_forest:
+			style = STAGE_SCENE_STYLE_SECT_FOREST
+		elif has_mountain:
+			style = STAGE_SCENE_STYLE_SECT_MOUNTAIN
+		else:
+			style = STAGE_SCENE_STYLE_SECT
+	elif is_city:
+		if terrain.contains("water"):
+			style = STAGE_SCENE_STYLE_WATER_CITY
+		elif terrain.contains("river") or has_water:
+			style = STAGE_SCENE_STYLE_RIVER_CITY
+		else:
+			style = STAGE_SCENE_STYLE_CITY
+	elif is_town:
+		if region_id == "qinghe" or terrain.contains("starter"):
+			style = STAGE_SCENE_STYLE_STARTER_TOWN
+		elif has_water:
+			style = STAGE_SCENE_STYLE_WATER_TOWN
+		elif has_gorge:
+			style = STAGE_SCENE_STYLE_GORGE
+		elif has_mountain:
+			style = STAGE_SCENE_STYLE_MOUNTAIN
+		else:
+			style = STAGE_SCENE_STYLE_TOWN
+	elif has_water:
+		style = STAGE_SCENE_STYLE_WATERWAY
+	elif terrain.contains("bamboo"):
+		style = STAGE_SCENE_STYLE_BAMBOO
+	elif has_forest:
+		style = STAGE_SCENE_STYLE_FOREST
+	elif has_gorge:
+		style = STAGE_SCENE_STYLE_GORGE
+	elif has_mountain:
+		style = STAGE_SCENE_STYLE_MOUNTAIN
+	elif has_field:
+		style = STAGE_SCENE_STYLE_FIELD
+
+	var market_density := 0.0
+	if is_city:
+		market_density = 0.86
+	elif is_town:
+		market_density = 0.68
+	elif is_sect:
+		market_density = 0.18
+
+	var bridge_density := 0.0
+	if has_water:
+		bridge_density = 0.72 if (is_city or is_town) else 0.56
+	elif has_gorge:
+		bridge_density = 0.24
+
+	var tree_density := 0.12
+	if style == STAGE_SCENE_STYLE_BAMBOO:
+		tree_density = 0.92
+	elif has_forest:
+		tree_density = 0.78
+	elif has_field:
+		tree_density = 0.42
+	elif has_mountain:
+		tree_density = 0.26
+	elif is_city or is_town:
+		tree_density = 0.28
+	if has_desert:
+		tree_density = 0.04
+
+	var landmark_density := 0.38
+	if is_sect:
+		landmark_density = 0.86
+	elif is_city:
+		landmark_density = 0.82
+	elif is_town:
+		landmark_density = 0.64
+	elif has_water or has_forest or has_mountain:
+		landmark_density = 0.56
+
+	var building_density := 0.10
+	if is_city:
+		building_density = 0.78
+	elif is_town:
+		building_density = 0.54
+	elif is_sect:
+		building_density = 0.46
+
+	var ambient_strength := 0.78
+	if has_water or has_snow or is_sect:
+		ambient_strength = 1.06
+	elif has_forest:
+		ambient_strength = 0.94
+	elif has_desert:
+		ambient_strength = 0.88
+
+	return {
+		"region_id": region_id,
+		"region_type": region_type,
+		"terrain": terrain,
+		"style": style,
+		"is_city": is_city,
+		"is_town": is_town,
+		"is_sect": is_sect,
+		"has_water": has_water,
+		"has_forest": has_forest,
+		"has_mountain": has_mountain,
+		"has_gorge": has_gorge,
+		"has_snow": has_snow,
+		"has_desert": has_desert,
+		"has_field": has_field,
+		"has_bridge": bridge_density > 0.0,
+		"has_market": market_density > 0.0,
+		"has_lanterns": is_city or is_town or is_sect,
+		"market_density": market_density,
+		"bridge_density": bridge_density,
+		"tree_density": tree_density,
+		"landmark_density": landmark_density,
+		"building_density": building_density,
+		"ambient_strength": ambient_strength
+	}
 
 func get_stage_play_lane_y_positions() -> Array[float]:
 	if not is_side_view_stage_active():
@@ -1590,9 +1756,10 @@ func _shop_plan_for_region() -> Array:
 
 func _region_profile() -> Dictionary:
 	var region_id := str(current_region.get("id", ""))
+	var stage_profile := get_stage_scene_profile(current_region)
 	return {
-		"water_city": region_id == "linan",
-		"garden_city": region_id == "chengdu" or region_id == "linan"
+		"water_city": str(stage_profile.get("style", "")) == STAGE_SCENE_STYLE_WATER_CITY,
+		"garden_city": region_id == "chengdu" or region_id == "linan" or str(stage_profile.get("style", "")) == STAGE_SCENE_STYLE_FIELD
 	}
 
 func _draw() -> void:
@@ -1935,6 +2102,7 @@ func _draw_side_view_stage() -> void:
 	if not painted_stage_stack:
 		_draw_side_view_silhouettes(size, palette)
 		_draw_side_view_midground(size, palette)
+		_draw_stage_profile_landmarks(size, palette, get_stage_scene_profile())
 	_draw_side_view_painted_midground_layer(size, palette)
 	if not painted_stage_stack:
 		_draw_side_view_street_facades(size, palette)
@@ -2130,6 +2298,185 @@ func _draw_side_view_midground(size: Vector2, palette: Dictionary) -> void:
 		_draw_stage_rock_terrace(size, y, accent)
 	else:
 		_draw_stage_low_horizon_props(size, y, accent)
+
+func _draw_stage_profile_landmarks(size: Vector2, palette: Dictionary, profile: Dictionary) -> void:
+	if not SIDE_VIEW_REGION_PROFILE_ENABLED:
+		return
+	var style := str(profile.get("style", STAGE_SCENE_STYLE_WILD))
+	var accent: Color = palette["accent"]
+	if bool(profile.get("has_water", false)):
+		_draw_stage_profile_water_and_bridges(size, accent, float(profile.get("bridge_density", 0.0)), style)
+	if bool(profile.get("has_mountain", false)):
+		_draw_stage_profile_mountain_ledges(size, palette, float(profile.get("landmark_density", 0.0)), style)
+	if bool(profile.get("has_forest", false)):
+		_draw_stage_profile_forest_canopy(size, accent, float(profile.get("tree_density", 0.0)), style)
+	if bool(profile.get("has_market", false)):
+		_draw_stage_profile_market_signs(size, accent, float(profile.get("market_density", 0.0)), style)
+	if bool(profile.get("is_sect", false)):
+		_draw_stage_profile_sect_marks(size, accent, float(profile.get("landmark_density", 0.0)), style)
+	if style == STAGE_SCENE_STYLE_FIELD:
+		_draw_stage_profile_field_edges(size, accent, float(profile.get("tree_density", 0.0)))
+
+func _draw_stage_profile_water_and_bridges(size: Vector2, accent: Color, density: float, style: String) -> void:
+	var water_y := size.y * (0.505 if style == STAGE_SCENE_STYLE_WATER_CITY or style == STAGE_SCENE_STYLE_RIVER_CITY else 0.535)
+	var water_h := tile_size * (1.25 + density * 0.86)
+	var water_color := Color(0.06, 0.22, 0.26, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 0.58)
+	draw_polygon(PackedVector2Array([
+		Vector2(-tile_size * 0.8, water_y),
+		Vector2(size.x + tile_size * 0.8, water_y - tile_size * 0.15),
+		Vector2(size.x + tile_size * 0.9, water_y + water_h),
+		Vector2(-tile_size * 0.9, water_y + water_h + tile_size * 0.18)
+	]), PackedColorArray([
+		Color(accent.r, accent.g, accent.b, water_color.a * 0.44),
+		water_color.lightened(0.12),
+		water_color.darkened(0.34),
+		water_color.darkened(0.24)
+	]))
+	for ripple in range(5):
+		var t := float(ripple) / 4.0
+		var y := water_y + water_h * (0.16 + t * 0.58)
+		var drift := sin(stage_visual_phase * (0.38 + t * 0.12) + float(ripple)) * tile_size * 0.22
+		draw_line(Vector2(size.x * 0.08 + drift, y), Vector2(size.x * 0.92 + drift * 0.35, y - tile_size * 0.10), Color(0.78, 0.96, 1.0, 0.055 + density * 0.050), 1.2 + t)
+	if density <= 0.0:
+		return
+	var bridge_y := water_y + water_h * 0.42
+	var bridge_width := size.x * (0.22 + density * 0.16)
+	var bridge_x := size.x * 0.50 - bridge_width * 0.50
+	var bridge_depth := tile_size * (0.34 + density * 0.18)
+	draw_polygon(PackedVector2Array([
+		Vector2(bridge_x, bridge_y - bridge_depth * 0.55),
+		Vector2(bridge_x + bridge_width, bridge_y - bridge_depth * 0.72),
+		Vector2(bridge_x + bridge_width + tile_size * 0.40, bridge_y + bridge_depth * 0.40),
+		Vector2(bridge_x - tile_size * 0.34, bridge_y + bridge_depth * 0.55)
+	]), PackedColorArray([
+		Color(0.22, 0.12, 0.055, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA),
+		Color(0.28, 0.16, 0.070, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA),
+		Color(0.075, 0.045, 0.024, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 1.05),
+		Color(0.10, 0.060, 0.032, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 1.05)
+	]))
+	for plank in range(7):
+		var p := float(plank) / 6.0
+		var x := lerpf(bridge_x + tile_size * 0.12, bridge_x + bridge_width - tile_size * 0.10, p)
+		draw_line(Vector2(x, bridge_y - bridge_depth * 0.60), Vector2(x + tile_size * 0.16, bridge_y + bridge_depth * 0.42), Color(0.0, 0.0, 0.0, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 0.38), 1.0)
+	for post in range(4):
+		var p := float(post) / 3.0
+		var x := lerpf(bridge_x + bridge_width * 0.08, bridge_x + bridge_width * 0.92, p)
+		var post_y := bridge_y - bridge_depth * (0.78 + float(post % 2) * 0.10)
+		draw_line(Vector2(x, post_y - tile_size * 0.30), Vector2(x - tile_size * 0.05, bridge_y + bridge_depth * 0.10), Color(0.025, 0.016, 0.010, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 0.92), 1.8)
+		if post < 3:
+			var nx := lerpf(bridge_x + bridge_width * 0.08, bridge_x + bridge_width * 0.92, float(post + 1) / 3.0)
+			draw_line(Vector2(x, post_y - tile_size * 0.12), Vector2(nx, post_y - tile_size * 0.20), Color(accent.r, accent.g, accent.b, SIDE_VIEW_PROFILE_WATER_BRIDGE_ALPHA * 0.38), 1.1)
+
+func _draw_stage_profile_forest_canopy(size: Vector2, accent: Color, density: float, style: String) -> void:
+	var count := clampi(int(round(4.0 + density * 7.0)), 4, 11)
+	var canopy_alpha := SIDE_VIEW_PROFILE_FOREST_CANOPY_ALPHA * (0.62 + density * 0.32)
+	var bamboo_bias := 1.0 if style == STAGE_SCENE_STYLE_BAMBOO else 0.0
+	for i in range(count):
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var edge_x := tile_size * 0.55 if side < 0.0 else size.x - tile_size * 0.55
+		var y := size.y * (0.405 + float((i * 5) % 7) * 0.012)
+		var trunk_h := tile_size * (1.35 + float(i % 4) * 0.18 + bamboo_bias * 0.38)
+		var lean := side * tile_size * (0.20 + float(i % 3) * 0.10)
+		var trunk_top := Vector2(edge_x - side * tile_size * (0.25 + float(i) * 0.06), y - trunk_h)
+		var trunk_base := Vector2(edge_x + side * tile_size * (0.18 + float(i % 2) * 0.10), y + tile_size * 0.72)
+		draw_line(trunk_base, trunk_top, Color(0.004, 0.034, 0.014, canopy_alpha * 0.86), 2.3 + bamboo_bias)
+		if bamboo_bias > 0.0:
+			for joint in range(3):
+				var jt := float(joint + 1) / 4.0
+				var joint_pos := trunk_base.lerp(trunk_top, jt)
+				draw_line(joint_pos + Vector2(-side * tile_size * 0.08, 0.0), joint_pos + Vector2(side * tile_size * 0.12, -tile_size * 0.02), Color(accent.r, accent.g, accent.b, canopy_alpha * 0.46), 0.9)
+		var crown := trunk_top + Vector2(-side * tile_size * (0.30 + float(i % 3) * 0.14) + lean, tile_size * 0.10)
+		_draw_ellipse_poly(crown, Vector2(tile_size * (0.54 + density * 0.18), tile_size * 0.16), Color(0.012, 0.080, 0.026, canopy_alpha * 0.64))
+		_draw_ellipse_poly(crown + Vector2(-side * tile_size * 0.30, tile_size * 0.12), Vector2(tile_size * (0.36 + density * 0.12), tile_size * 0.10), Color(accent.r * 0.34, accent.g * 0.52, accent.b * 0.28, canopy_alpha * 0.34))
+
+func _draw_stage_profile_mountain_ledges(size: Vector2, palette: Dictionary, density: float, style: String) -> void:
+	var accent: Color = palette["accent"]
+	var floor_color: Color = palette["floor"]
+	var ledge_count := clampi(int(round(3.0 + density * 4.0)), 3, 7)
+	var snow_tint := style == STAGE_SCENE_STYLE_SNOW or style == STAGE_SCENE_STYLE_SECT_SNOW
+	for i in range(ledge_count):
+		var t := float(i) / float(maxi(1, ledge_count - 1))
+		var y := size.y * (0.405 + t * 0.110)
+		var width := size.x * (0.14 + float((i + 1) % 3) * 0.035)
+		var x := lerpf(size.x * 0.04, size.x * 0.78, t)
+		if i % 2 == 1:
+			x = size.x - x - width
+		var alpha := SIDE_VIEW_PROFILE_MOUNTAIN_LEDGE_ALPHA * (0.58 + t * 0.32)
+		var top_color := floor_color.lightened(0.08 if not snow_tint else 0.28)
+		var face_color := floor_color.darkened(0.24)
+		draw_polygon(PackedVector2Array([
+			Vector2(x, y),
+			Vector2(x + width, y - tile_size * 0.12),
+			Vector2(x + width + tile_size * 0.38, y + tile_size * 0.42),
+			Vector2(x - tile_size * 0.28, y + tile_size * 0.54)
+		]), PackedColorArray([
+			Color(accent.r, accent.g, accent.b, alpha * 0.26),
+			Color(top_color.r, top_color.g, top_color.b, alpha * 0.74),
+			Color(face_color.r, face_color.g, face_color.b, alpha * 0.86),
+			Color(0.018, 0.016, 0.014, alpha * 0.92)
+		]))
+		draw_line(Vector2(x + tile_size * 0.10, y + tile_size * 0.08), Vector2(x + width - tile_size * 0.10, y - tile_size * 0.06), Color(accent.r, accent.g, accent.b, alpha * 0.42), 1.2 + t)
+		if snow_tint:
+			draw_line(Vector2(x + tile_size * 0.18, y - tile_size * 0.03), Vector2(x + width * 0.76, y - tile_size * 0.12), Color(0.90, 0.98, 1.0, alpha * 0.46), 1.1)
+
+func _draw_stage_profile_market_signs(size: Vector2, accent: Color, density: float, style: String) -> void:
+	var count := clampi(int(round(3.0 + density * 6.0)), 3, 9)
+	var base_y := size.y * (0.398 if style == STAGE_SCENE_STYLE_CITY or style == STAGE_SCENE_STYLE_WATER_CITY or style == STAGE_SCENE_STYLE_RIVER_CITY else 0.425)
+	for i in range(count):
+		var t := float(i) / float(maxi(1, count - 1))
+		var x := lerpf(size.x * 0.10, size.x * 0.90, t) + sin(float(i) * 1.71) * tile_size * 0.16
+		var y := base_y + tile_size * float((i * 3) % 5) * 0.06
+		var alpha := SIDE_VIEW_PROFILE_TOWN_SIGN_ALPHA * (0.70 + density * 0.24)
+		var sign_w := tile_size * (0.44 + float(i % 3) * 0.08)
+		var sign_h := tile_size * 0.22
+		draw_line(Vector2(x, y - tile_size * 0.42), Vector2(x, y), Color(0.42, 0.25, 0.12, alpha * 0.86), 1.1)
+		draw_rect(Rect2(Vector2(x - sign_w * 0.5, y), Vector2(sign_w, sign_h)), Color(0.11, 0.045, 0.022, alpha), true)
+		draw_rect(Rect2(Vector2(x - sign_w * 0.5 + 2.0, y + 2.0), Vector2(sign_w - 4.0, sign_h - 4.0)), Color(accent.r, accent.g, accent.b, alpha * 0.32), true)
+		if i % 2 == 0:
+			var lamp := Vector2(x + sign_w * 0.62, y + sign_h * 0.72)
+			var pulse := 0.5 + sin(stage_visual_phase * 2.0 + float(i)) * 0.5
+			draw_circle(lamp, tile_size * (0.14 + pulse * 0.04), Color(1.0, 0.60, 0.20, alpha * 0.08))
+			draw_rect(Rect2(lamp - Vector2(tile_size * 0.040, tile_size * 0.050), Vector2(tile_size * 0.08, tile_size * 0.10)), Color(0.92, 0.30, 0.15, alpha * 0.58), true)
+
+func _draw_stage_profile_sect_marks(size: Vector2, accent: Color, density: float, style: String) -> void:
+	var center_x := size.x * 0.50
+	var base_y := size.y * 0.462
+	var alpha := SIDE_VIEW_PROFILE_MOUNTAIN_LEDGE_ALPHA * (0.68 + density * 0.24)
+	var banner_color := accent
+	if style == STAGE_SCENE_STYLE_SECT_SNOW:
+		banner_color = Color(0.76, 0.92, 1.0, 1.0)
+	elif style == STAGE_SCENE_STYLE_SECT_FOREST:
+		banner_color = Color(0.52, 0.82, 0.40, 1.0)
+	for side_value in [-1.0, 1.0]:
+		var side := float(side_value)
+		var pole_x := center_x + side * size.x * 0.18
+		draw_line(Vector2(pole_x, base_y - tile_size * 1.22), Vector2(pole_x - side * tile_size * 0.06, base_y + tile_size * 0.44), Color(0.025, 0.018, 0.012, alpha), 2.3)
+		draw_polygon(PackedVector2Array([
+			Vector2(pole_x, base_y - tile_size * 1.08),
+			Vector2(pole_x - side * tile_size * 0.70, base_y - tile_size * 0.92),
+			Vector2(pole_x - side * tile_size * 0.58, base_y - tile_size * 0.42),
+			Vector2(pole_x, base_y - tile_size * 0.50)
+		]), PackedColorArray([
+			Color(banner_color.r, banner_color.g, banner_color.b, alpha * 0.62),
+			Color(banner_color.r, banner_color.g, banner_color.b, alpha * 0.46),
+			Color(0.020, 0.014, 0.010, alpha * 0.48),
+			Color(0.020, 0.014, 0.010, alpha * 0.54)
+		]))
+	draw_arc(Vector2(center_x, base_y + tile_size * 0.05), tile_size * (2.1 + density * 0.5), PI * 0.08, PI * 0.92, 48, Color(banner_color.r, banner_color.g, banner_color.b, alpha * 0.24), 2.0)
+	draw_line(Vector2(center_x - tile_size * 1.32, base_y + tile_size * 0.32), Vector2(center_x + tile_size * 1.32, base_y + tile_size * 0.20), Color(0.0, 0.0, 0.0, alpha * 0.50), 2.0)
+
+func _draw_stage_profile_field_edges(size: Vector2, accent: Color, density: float) -> void:
+	var row_count := clampi(int(round(3.0 + density * 4.0)), 3, 6)
+	for row in range(row_count):
+		var t := float(row) / float(maxi(1, row_count - 1))
+		var y := size.y * (0.505 + t * 0.105)
+		var inset := lerpf(size.x * 0.10, size.x * 0.02, t)
+		var alpha := SIDE_VIEW_PROFILE_FOREST_CANOPY_ALPHA * (0.16 + t * 0.12)
+		draw_line(Vector2(inset, y), Vector2(size.x - inset, y - tile_size * 0.10), Color(accent.r, accent.g, accent.b, alpha), 1.4 + t)
+		for clump in range(6):
+			var p := float(clump) / 5.0
+			var x := lerpf(inset + tile_size * 0.30, size.x - inset - tile_size * 0.30, p)
+			draw_line(Vector2(x, y + tile_size * 0.06), Vector2(x + tile_size * 0.10, y - tile_size * 0.18), Color(0.08, 0.18, 0.055, alpha * 1.4), 1.0)
 
 func _draw_stage_parallax_backdrop(size: Vector2, horizon: float, palette: Dictionary) -> void:
 	var accent: Color = palette["accent"]
@@ -3555,43 +3902,57 @@ func _draw_side_view_foreground(size: Vector2, palette: Dictionary) -> void:
 	_draw_stage_mist_band(size, size.y * 0.82, Color(accent.r, accent.g, accent.b, 0.09))
 
 func _side_view_palette() -> Dictionary:
-	var terrain := str(current_region.get("terrain", ""))
-	var region_type := str(current_region.get("type", "wild"))
+	var profile := get_stage_scene_profile()
+	var style := str(profile.get("style", STAGE_SCENE_STYLE_WILD))
 	var sky := Color(0.29, 0.34, 0.31, 0.30)
 	var far := Color(0.10, 0.12, 0.10, 0.34)
 	var mid := Color(0.16, 0.18, 0.13, 0.30)
 	var floor := Color(0.42, 0.36, 0.24, 1.0)
 	var accent := Color(0.82, 0.62, 0.32, 1.0)
-	if terrain.contains("snow"):
+	if style == STAGE_SCENE_STYLE_SNOW or style == STAGE_SCENE_STYLE_SECT_SNOW:
 		sky = Color(0.48, 0.58, 0.66, 0.34)
 		far = Color(0.34, 0.42, 0.50, 0.34)
 		mid = Color(0.52, 0.58, 0.62, 0.28)
 		floor = Color(0.58, 0.64, 0.66, 1.0)
 		accent = Color(0.70, 0.90, 1.0, 1.0)
-	elif terrain.contains("desert"):
+	elif style == STAGE_SCENE_STYLE_DESERT:
 		sky = Color(0.58, 0.46, 0.28, 0.32)
 		far = Color(0.46, 0.32, 0.18, 0.34)
 		mid = Color(0.63, 0.46, 0.24, 0.28)
 		floor = Color(0.56, 0.42, 0.24, 1.0)
 		accent = Color(0.95, 0.72, 0.36, 1.0)
-	elif _terrain_has_water(terrain):
+	elif style == STAGE_SCENE_STYLE_WATER_CITY or style == STAGE_SCENE_STYLE_RIVER_CITY or style == STAGE_SCENE_STYLE_WATER_TOWN or style == STAGE_SCENE_STYLE_WATERWAY or style == STAGE_SCENE_STYLE_SECT_WATER:
 		sky = Color(0.27, 0.42, 0.47, 0.30)
 		far = Color(0.12, 0.22, 0.26, 0.34)
 		mid = Color(0.18, 0.32, 0.36, 0.28)
 		floor = Color(0.30, 0.39, 0.36, 1.0)
 		accent = Color(0.58, 0.82, 0.86, 1.0)
-	elif _terrain_has_forest(terrain):
+	elif style == STAGE_SCENE_STYLE_BAMBOO or style == STAGE_SCENE_STYLE_FOREST or style == STAGE_SCENE_STYLE_SECT_FOREST:
 		sky = Color(0.22, 0.34, 0.24, 0.30)
 		far = Color(0.06, 0.16, 0.08, 0.36)
 		mid = Color(0.12, 0.25, 0.12, 0.30)
 		floor = Color(0.26, 0.34, 0.20, 1.0)
 		accent = Color(0.50, 0.76, 0.38, 1.0)
-	elif region_type == "sect":
+	elif style == STAGE_SCENE_STYLE_MOUNTAIN or style == STAGE_SCENE_STYLE_GORGE or style == STAGE_SCENE_STYLE_SECT_MOUNTAIN:
+		sky = Color(0.35, 0.36, 0.34, 0.32)
+		far = Color(0.18, 0.18, 0.16, 0.36)
+		mid = Color(0.28, 0.27, 0.22, 0.30)
+		floor = Color(0.38, 0.34, 0.27, 1.0)
+		accent = Color(0.72, 0.64, 0.42, 1.0)
+	elif style == STAGE_SCENE_STYLE_FIELD:
+		sky = Color(0.30, 0.42, 0.28, 0.30)
+		far = Color(0.10, 0.18, 0.09, 0.34)
+		mid = Color(0.22, 0.32, 0.16, 0.28)
+		floor = Color(0.35, 0.42, 0.23, 1.0)
+		accent = Color(0.74, 0.82, 0.38, 1.0)
+	elif style == STAGE_SCENE_STYLE_SECT:
 		floor = Color(0.38, 0.34, 0.27, 1.0)
 		accent = GameData.get_faction_color(str(current_region.get("faction", "none"))).lightened(0.20)
-	elif region_type == "city" or region_type == "town":
+	elif style == STAGE_SCENE_STYLE_CITY or style == STAGE_SCENE_STYLE_TOWN or style == STAGE_SCENE_STYLE_STARTER_TOWN:
 		floor = Color(0.44, 0.34, 0.22, 1.0)
 		accent = Color(0.92, 0.60, 0.28, 1.0)
+	if bool(profile.get("is_sect", false)) and style != STAGE_SCENE_STYLE_SECT:
+		accent = accent.lerp(GameData.get_faction_color(str(current_region.get("faction", "none"))).lightened(0.18), 0.36)
 	return {
 		"sky": sky,
 		"far": far,
