@@ -12,9 +12,17 @@ var item_preview: TextureRect
 var details: Label
 var buy_mode_button: Button
 var sell_mode_button: Button
+var quantity_label: Label
+var quantity_minus_button: Button
+var quantity_plus_button: Button
+var quantity_max_button: Button
+var total_label: Label
 var primary_button: Button
 var item_ids: Array[String] = []
 var shop_mode := MODE_BUY
+var selected_item_id := ""
+var selected_item_index := -1
+var quantity := 1
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -102,6 +110,48 @@ func _build() -> void:
 	details.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
 	detail_row.add_child(details)
 
+	var quantity_row := HBoxContainer.new()
+	quantity_row.add_theme_constant_override("separation", 8)
+	box.add_child(quantity_row)
+
+	var quantity_title := Label.new()
+	quantity_title.text = "数量"
+	quantity_title.add_theme_font_size_override("font_size", 15)
+	quantity_title.add_theme_color_override("font_color", Color(0.82, 0.76, 0.62))
+	quantity_row.add_child(quantity_title)
+
+	quantity_minus_button = Button.new()
+	quantity_minus_button.text = "-"
+	quantity_minus_button.tooltip_text = "减少交易数量"
+	quantity_minus_button.pressed.connect(func() -> void: _set_quantity(quantity - 1))
+	quantity_row.add_child(quantity_minus_button)
+
+	quantity_label = Label.new()
+	quantity_label.custom_minimum_size = Vector2(42, 26)
+	quantity_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	quantity_label.add_theme_font_size_override("font_size", 16)
+	quantity_label.add_theme_color_override("font_color", Color(0.96, 0.82, 0.46))
+	quantity_row.add_child(quantity_label)
+
+	quantity_plus_button = Button.new()
+	quantity_plus_button.text = "+"
+	quantity_plus_button.tooltip_text = "增加交易数量"
+	quantity_plus_button.pressed.connect(func() -> void: _set_quantity(quantity + 1))
+	quantity_row.add_child(quantity_plus_button)
+
+	quantity_max_button = Button.new()
+	quantity_max_button.text = "最大"
+	quantity_max_button.tooltip_text = "设为当前可交易最大数量"
+	quantity_max_button.pressed.connect(func() -> void: _set_quantity(_max_quantity_for_selected()))
+	quantity_row.add_child(quantity_max_button)
+
+	total_label = Label.new()
+	total_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	total_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	total_label.add_theme_font_size_override("font_size", 15)
+	total_label.add_theme_color_override("font_color", Color(0.82, 0.78, 0.64))
+	quantity_row.add_child(total_label)
+
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	actions.add_theme_constant_override("separation", 8)
@@ -122,6 +172,9 @@ func _refresh() -> void:
 		return
 	item_list.clear()
 	item_ids.clear()
+	selected_item_id = ""
+	selected_item_index = -1
+	quantity = 1
 	if title_label != null:
 		title_label.text = _shop_title()
 	_update_money_label()
@@ -133,6 +186,7 @@ func _refresh() -> void:
 	details.text = "选择物品查看详情。"
 	if item_preview != null:
 		item_preview.texture = null
+	_update_transaction_controls()
 
 func _refresh_buy_items() -> void:
 	var sell_items: Array = npc_data.get("sell_items", [])
@@ -158,6 +212,9 @@ func _select_item(index: int) -> void:
 		return
 	var item_id := item_ids[index]
 	var item := GameData.get_item(item_id)
+	selected_item_id = item_id
+	selected_item_index = index
+	quantity = clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
 	if shop_mode == MODE_SELL:
 		details.text = _sell_item_detail(item_id, item)
 	else:
@@ -167,9 +224,10 @@ func _select_item(index: int) -> void:
 			_type_name(str(item.get("type", ""))),
 			int(item.get("price", 0)),
 			_format_effects(item)
-		]
+	]
 	if item_preview != null:
 		item_preview.texture = _load_item_icon(item_id)
+	_update_transaction_controls()
 
 func _confirm_selected() -> void:
 	if shop_mode == MODE_SELL:
@@ -183,8 +241,10 @@ func _buy_selected() -> void:
 		return
 	var index := int(selected[0])
 	if index >= 0 and index < item_ids.size():
-		if GameState.buy_item(item_ids[index]):
-			_update_money_label()
+		var item_id := item_ids[index]
+		var buy_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
+		if GameState.buy_item(item_id, buy_count):
+			_refresh()
 
 func _sell_selected() -> void:
 	var selected := item_list.get_selected_items()
@@ -192,7 +252,9 @@ func _sell_selected() -> void:
 		return
 	var index := int(selected[0])
 	if index >= 0 and index < item_ids.size():
-		if GameState.sell_item(item_ids[index]):
+		var item_id := item_ids[index]
+		var sell_count := clampi(quantity, 1, maxi(1, _max_quantity_for(item_id)))
+		if GameState.sell_item(item_id, sell_count):
 			_refresh()
 
 func _set_shop_mode(next_mode: String) -> void:
@@ -218,8 +280,70 @@ func _update_mode_buttons() -> void:
 		buy_mode_button.disabled = shop_mode == MODE_BUY
 	if sell_mode_button != null:
 		sell_mode_button.disabled = shop_mode == MODE_SELL
+	_update_transaction_controls()
+
+func _set_quantity(next_quantity: int) -> void:
+	quantity = clampi(next_quantity, 1, maxi(1, _max_quantity_for_selected()))
+	_update_transaction_controls()
+
+func _max_quantity_for_selected() -> int:
+	if selected_item_id.is_empty():
+		return 1
+	return _max_quantity_for(selected_item_id)
+
+func _max_quantity_for(item_id: String) -> int:
+	if item_id.is_empty():
+		return 1
+	if shop_mode == MODE_SELL:
+		if _is_item_equipped(item_id):
+			return 0
+		return maxi(0, int(GameState.inventory.get(item_id, 0)))
+	var price := _buy_price(item_id)
+	if price <= 0:
+		return 99
+	return clampi(int(GameState.player.get("money", 0)) / price, 0, 99)
+
+func _update_transaction_controls() -> void:
+	var has_selection := not selected_item_id.is_empty()
+	var max_quantity := _max_quantity_for_selected()
+	var can_trade := has_selection and max_quantity > 0
+	quantity = clampi(quantity, 1, maxi(1, max_quantity))
+	if quantity_label != null:
+		quantity_label.text = str(quantity)
+	if quantity_minus_button != null:
+		quantity_minus_button.disabled = not can_trade or quantity <= 1
+	if quantity_plus_button != null:
+		quantity_plus_button.disabled = not can_trade or quantity >= max_quantity
+	if quantity_max_button != null:
+		quantity_max_button.disabled = not can_trade or max_quantity <= 1
 	if primary_button != null:
-		primary_button.text = "卖出" if shop_mode == MODE_SELL else "购买"
+		primary_button.disabled = not can_trade
+		var verb := "卖出" if shop_mode == MODE_SELL else "购买"
+		primary_button.text = "%s x%d" % [verb, quantity] if can_trade else verb
+	if total_label != null:
+		total_label.text = _transaction_summary(selected_item_id, quantity, max_quantity)
+
+func _transaction_summary(item_id: String, count: int, max_quantity: int) -> String:
+	if item_id.is_empty():
+		return "请选择物品"
+	if max_quantity <= 0:
+		if shop_mode == MODE_SELL and _is_item_equipped(item_id):
+			return "已装备，不能出售"
+		if shop_mode == MODE_BUY:
+			return "银两不足"
+		return "暂无可交易数量"
+	var unit_price := _sell_price(item_id) if shop_mode == MODE_SELL else _buy_price(item_id)
+	var verb := "收入" if shop_mode == MODE_SELL else "合计"
+	return "%s：%d 两" % [verb, unit_price * count]
+
+func _buy_price(item_id: String) -> int:
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return 0
+	return int(item.get("price", 0))
+
+func _sell_price(item_id: String) -> int:
+	return GameState.get_item_sell_price(item_id)
 
 func _on_player_changed(_player: Dictionary) -> void:
 	if visible:

@@ -1320,17 +1320,23 @@ func _apply_equipment_stats(item_id: String, direction: int) -> void:
 	if effects.has("defense"):
 		player["defense"] = int(player.get("defense", 0)) + int(effects["defense"]) * direction
 
-func buy_item(item_id: String, price_override: int = -1) -> bool:
+func buy_item(item_id: String, count: int = 1, price_override: int = -1) -> bool:
 	var item := GameData.get_item(item_id)
 	if item.is_empty():
+		return false
+	if count <= 0:
 		return false
 	var price := int(item.get("price", 0))
 	if price_override >= 0:
 		price = price_override
-	if not spend_money(price):
+	var total_price := price * count
+	if not spend_money(total_price):
 		return false
-	add_item(item_id, 1)
-	EventBus.emit_toast("买入%s" % str(item.get("name", item_id)))
+	add_item(item_id, count)
+	if count > 1:
+		EventBus.emit_toast("买入%s x%d" % [str(item.get("name", item_id)), count])
+	else:
+		EventBus.emit_toast("买入%s" % str(item.get("name", item_id)))
 	return true
 
 func sell_item(item_id: String, count: int = 1, price_override: int = -1) -> bool:
