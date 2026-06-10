@@ -1333,6 +1333,31 @@ func buy_item(item_id: String, price_override: int = -1) -> bool:
 	EventBus.emit_toast("买入%s" % str(item.get("name", item_id)))
 	return true
 
+func sell_item(item_id: String, count: int = 1, price_override: int = -1) -> bool:
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return false
+	if count <= 0:
+		return false
+	if int(inventory.get(item_id, 0)) < count:
+		return false
+	if equipment.values().has(item_id):
+		EventBus.emit_toast("已装备的物品不能出售")
+		return false
+	var price := price_override if price_override >= 0 else get_item_sell_price(item_id)
+	if not remove_item(item_id, count):
+		return false
+	player["money"] = int(player.get("money", 0)) + price * count
+	EventBus.player_changed.emit(player)
+	EventBus.emit_toast("卖出%s，获得%d两" % [str(item.get("name", item_id)), price * count])
+	return true
+
+func get_item_sell_price(item_id: String) -> int:
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return 0
+	return maxi(1, int(round(float(item.get("price", 0)) * 0.45)))
+
 func rest(cost: int = 12) -> bool:
 	if not spend_money(cost):
 		return false

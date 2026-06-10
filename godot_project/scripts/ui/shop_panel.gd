@@ -1,13 +1,20 @@
 extends Control
 class_name ShopPanel
 
+const MODE_BUY := "buy"
+const MODE_SELL := "sell"
+
 var npc_data: Dictionary = {}
 var title_label: Label
 var money_label: Label
 var item_list: ItemList
 var item_preview: TextureRect
 var details: Label
+var buy_mode_button: Button
+var sell_mode_button: Button
+var primary_button: Button
 var item_ids: Array[String] = []
+var shop_mode := MODE_BUY
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -15,9 +22,12 @@ func _ready() -> void:
 	_build()
 	if not EventBus.player_changed.is_connected(_on_player_changed):
 		EventBus.player_changed.connect(_on_player_changed)
+	if not EventBus.inventory_changed.is_connected(_on_inventory_changed):
+		EventBus.inventory_changed.connect(_on_inventory_changed)
 
 func show_shop(data: Dictionary) -> void:
 	npc_data = data
+	shop_mode = MODE_BUY
 	_refresh()
 	show()
 	GameState.set_mode(GameState.Mode.SHOP)
@@ -48,8 +58,22 @@ func _build() -> void:
 	money_label.add_theme_color_override("font_color", Color(0.72, 0.68, 0.56))
 	box.add_child(money_label)
 
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 8)
+	box.add_child(mode_row)
+
+	buy_mode_button = Button.new()
+	buy_mode_button.text = "买入"
+	buy_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_BUY))
+	mode_row.add_child(buy_mode_button)
+
+	sell_mode_button = Button.new()
+	sell_mode_button.text = "出售"
+	sell_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_SELL))
+	mode_row.add_child(sell_mode_button)
+
 	item_list = ItemList.new()
-	item_list.custom_minimum_size = Vector2(430, 270)
+	item_list.custom_minimum_size = Vector2(430, 232)
 	item_list.fixed_icon_size = Vector2i(36, 36)
 	item_list.icon_mode = ItemList.ICON_MODE_LEFT
 	item_list.item_selected.connect(_select_item)
@@ -83,10 +107,10 @@ func _build() -> void:
 	actions.add_theme_constant_override("separation", 8)
 	box.add_child(actions)
 
-	var buy_button := Button.new()
-	buy_button.text = "购买"
-	buy_button.pressed.connect(_buy_selected)
-	actions.add_child(buy_button)
+	primary_button = Button.new()
+	primary_button.text = "购买"
+	primary_button.pressed.connect(_confirm_selected)
+	actions.add_child(primary_button)
 
 	var close_button := Button.new()
 	close_button.text = "离开"
@@ -101,29 +125,57 @@ func _refresh() -> void:
 	if title_label != null:
 		title_label.text = _shop_title()
 	_update_money_label()
+	_update_mode_buttons()
+	if shop_mode == MODE_SELL:
+		_refresh_sell_items()
+	else:
+		_refresh_buy_items()
+	details.text = "选择物品查看详情。"
+	if item_preview != null:
+		item_preview.texture = null
+
+func _refresh_buy_items() -> void:
 	var sell_items: Array = npc_data.get("sell_items", [])
 	for item_id in sell_items:
 		var item := GameData.get_item(str(item_id))
 		item_ids.append(str(item_id))
 		item_list.add_item("%s  %d两" % [str(item.get("name", item_id)), int(item.get("price", 0))], _load_item_icon(str(item_id)))
-	details.text = "选择商品查看详情。"
-	if item_preview != null:
-		item_preview.texture = null
+
+func _refresh_sell_items() -> void:
+	var ids := GameState.inventory.keys()
+	ids.sort()
+	for item_id_value in ids:
+		var item_id := str(item_id_value)
+		var count := int(GameState.inventory.get(item_id, 0))
+		if count <= 0:
+			continue
+		var item := GameData.get_item(item_id)
+		item_ids.append(item_id)
+		item_list.add_item(_sell_item_label(item_id, item, count), _load_item_icon(item_id))
 
 func _select_item(index: int) -> void:
 	if index < 0 or index >= item_ids.size():
 		return
 	var item_id := item_ids[index]
 	var item := GameData.get_item(item_id)
-	details.text = "%s\n%s\n类型：%s    价格：%d 两\n%s" % [
-		str(item.get("name", item_id)),
-		str(item.get("description", "")),
-		_type_name(str(item.get("type", ""))),
-		int(item.get("price", 0)),
-		_format_effects(item)
-	]
+	if shop_mode == MODE_SELL:
+		details.text = _sell_item_detail(item_id, item)
+	else:
+		details.text = "%s\n%s\n类型：%s    价格：%d 两\n%s" % [
+			str(item.get("name", item_id)),
+			str(item.get("description", "")),
+			_type_name(str(item.get("type", ""))),
+			int(item.get("price", 0)),
+			_format_effects(item)
+		]
 	if item_preview != null:
 		item_preview.texture = _load_item_icon(item_id)
+
+func _confirm_selected() -> void:
+	if shop_mode == MODE_SELL:
+		_sell_selected()
+	else:
+		_buy_selected()
 
 func _buy_selected() -> void:
 	var selected := item_list.get_selected_items()
@@ -133,6 +185,21 @@ func _buy_selected() -> void:
 	if index >= 0 and index < item_ids.size():
 		if GameState.buy_item(item_ids[index]):
 			_update_money_label()
+
+func _sell_selected() -> void:
+	var selected := item_list.get_selected_items()
+	if selected.is_empty():
+		return
+	var index := int(selected[0])
+	if index >= 0 and index < item_ids.size():
+		if GameState.sell_item(item_ids[index]):
+			_refresh()
+
+func _set_shop_mode(next_mode: String) -> void:
+	if shop_mode == next_mode:
+		return
+	shop_mode = next_mode
+	_refresh()
 
 func _shop_title() -> String:
 	var shop_name := str(npc_data.get("shop_name", "商店"))
@@ -146,9 +213,21 @@ func _update_money_label() -> void:
 		return
 	money_label.text = "银两：%d" % int(GameState.player.get("money", 0))
 
+func _update_mode_buttons() -> void:
+	if buy_mode_button != null:
+		buy_mode_button.disabled = shop_mode == MODE_BUY
+	if sell_mode_button != null:
+		sell_mode_button.disabled = shop_mode == MODE_SELL
+	if primary_button != null:
+		primary_button.text = "卖出" if shop_mode == MODE_SELL else "购买"
+
 func _on_player_changed(_player: Dictionary) -> void:
 	if visible:
-		_update_money_label()
+		_refresh()
+
+func _on_inventory_changed(_inventory: Dictionary) -> void:
+	if visible:
+		_refresh()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
@@ -212,6 +291,24 @@ func _format_effects(item: Dictionary) -> String:
 	if parts.is_empty():
 		return "效果：无"
 	return "效果：%s" % "，".join(parts)
+
+func _sell_item_label(item_id: String, item: Dictionary, count: int) -> String:
+	var equipped := "  已装备" if _is_item_equipped(item_id) else ""
+	return "%s x%d  卖%d两%s" % [str(item.get("name", item_id)), count, GameState.get_item_sell_price(item_id), equipped]
+
+func _sell_item_detail(item_id: String, item: Dictionary) -> String:
+	var blocked := "\n已装备，不能出售" if _is_item_equipped(item_id) else ""
+	return "%s\n%s\n类型：%s    出售价：%d 两\n%s%s" % [
+		str(item.get("name", item_id)),
+		str(item.get("description", "")),
+		_type_name(str(item.get("type", ""))),
+		GameState.get_item_sell_price(item_id),
+		_format_effects(item),
+		blocked
+	]
+
+func _is_item_equipped(item_id: String) -> bool:
+	return GameState.equipment.values().has(item_id)
 
 func _type_name(item_type: String) -> String:
 	match item_type:
