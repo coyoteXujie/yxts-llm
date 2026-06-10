@@ -30,6 +30,8 @@ def main() -> int:
     skill_icon_assets = load_json("skill_icon_assets.json")
     scene_background_assets = load_json("scene_background_assets.json")
     stage_layer_assets = load_json("stage_layer_assets.json")
+    combat_stage_assets = load_json("combat_stage_assets.json")
+    combat_actor_frames = load_json("combat_actor_frames.json")
 
     item_ids = {item["id"] for item in items}
     npc_names = {npc["name"] for npc in npcs}
@@ -158,6 +160,42 @@ def main() -> int:
             if not asset_path.exists():
                 errors.append(f"stage layer path missing for {region_id}.{layer_name}: {layer_path}")
 
+    allowed_combat_stage_layers = {"backdrop", "midground", "floor", "foreground"}
+    for region_id, layers in combat_stage_assets.items():
+        if region_id not in region_id_set:
+            errors.append(f"combat stage mapping references missing region {region_id}")
+        if not isinstance(layers, dict):
+            errors.append(f"combat stage mapping for {region_id} must be an object")
+            continue
+        missing_layers = allowed_combat_stage_layers - set(layers.keys())
+        if missing_layers:
+            errors.append(f"combat stage mapping for {region_id} missing layers: {', '.join(sorted(missing_layers))}")
+        for layer_name, layer_path in layers.items():
+            if layer_name not in allowed_combat_stage_layers:
+                errors.append(f"combat stage mapping for {region_id} has unknown layer {layer_name}")
+            asset_path = ROOT / "godot_project" / str(layer_path).removeprefix("res://")
+            if not asset_path.exists():
+                errors.append(f"combat stage layer path missing for {region_id}.{layer_name}: {layer_path}")
+
+    required_actor_actions = {"idle", "attack", "hurt", "down"}
+    for actor_key, actions in combat_actor_frames.items():
+        if not isinstance(actions, dict):
+            errors.append(f"combat actor frame mapping for {actor_key} must be an object")
+            continue
+        missing_actions = required_actor_actions - set(actions.keys())
+        if missing_actions:
+            errors.append(f"combat actor frame mapping for {actor_key} missing actions: {', '.join(sorted(missing_actions))}")
+        for action_name, frames in actions.items():
+            if action_name not in required_actor_actions:
+                errors.append(f"combat actor frame mapping for {actor_key} has unknown action {action_name}")
+            if not isinstance(frames, list) or not frames:
+                errors.append(f"combat actor frame mapping for {actor_key}.{action_name} must be a non-empty list")
+                continue
+            for frame_path in frames:
+                asset_path = ROOT / "godot_project" / str(frame_path).removeprefix("res://")
+                if not asset_path.exists():
+                    errors.append(f"combat actor frame path missing for {actor_key}.{action_name}: {frame_path}")
+
     if errors:
         for error in errors:
             print(f"ERROR: {error}")
@@ -166,7 +204,7 @@ def main() -> int:
     print(
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
         f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
-        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)}"
+        f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
     )
     return 0
 

@@ -644,6 +644,8 @@ var item_icon_assets: Dictionary = {}
 var skill_icon_assets: Dictionary = {}
 var scene_background_assets: Dictionary = {}
 var stage_layer_assets: Dictionary = {}
+var combat_stage_assets: Dictionary = {}
+var combat_actor_frames: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
@@ -669,6 +671,8 @@ func load_database() -> void:
 	_load_skill_icon_assets()
 	_load_scene_background_assets()
 	_load_stage_layer_assets()
+	_load_combat_stage_assets()
+	_load_combat_actor_frames()
 	_load_regions()
 
 func _load_items() -> void:
@@ -734,6 +738,46 @@ func _load_stage_layer_assets() -> void:
 		for layer_name in entry.keys():
 			layers[str(layer_name)] = str(entry[layer_name])
 		stage_layer_assets[str(region_id)] = layers
+
+func _load_combat_stage_assets() -> void:
+	combat_stage_assets.clear()
+	var file := FileAccess.open("res://data/combat_stage_assets.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for region_id in parsed.keys():
+		var entry = parsed[region_id]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var layers := {}
+		for layer_name in entry.keys():
+			layers[str(layer_name)] = str(entry[layer_name])
+		combat_stage_assets[str(region_id)] = layers
+
+func _load_combat_actor_frames() -> void:
+	combat_actor_frames.clear()
+	var file := FileAccess.open("res://data/combat_actor_frames.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for actor_key in parsed.keys():
+		var entry = parsed[actor_key]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var actions := {}
+		for action_name in entry.keys():
+			var frames = entry[action_name]
+			if typeof(frames) != TYPE_ARRAY:
+				continue
+			var normalized: Array[String] = []
+			for frame_path in frames:
+				normalized.append(str(frame_path))
+			actions[str(action_name)] = normalized
+		combat_actor_frames[str(actor_key)] = actions
 
 func _load_asset_mapping(path: String, target: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -958,12 +1002,34 @@ func get_stage_layer_path(region_id: String, layer_name: String) -> String:
 	var layers: Dictionary = stage_layer_assets.get(region_id, {})
 	return str(layers.get(layer_name, ""))
 
+func get_combat_stage_assets(region_id: String) -> Dictionary:
+	var layers: Dictionary = combat_stage_assets.get(region_id, {})
+	return layers.duplicate(true)
+
+func get_combat_stage_layer_path(region_id: String, layer_name: String) -> String:
+	var layers: Dictionary = combat_stage_assets.get(region_id, {})
+	return str(layers.get(layer_name, ""))
+
+func get_combat_actor_frames(actor_key: String) -> Dictionary:
+	var actions: Dictionary = combat_actor_frames.get(actor_key, {})
+	return actions.duplicate(true)
+
+func get_combat_actor_frame_paths(actor_key: String, action_name: String) -> Array:
+	var actions: Dictionary = combat_actor_frames.get(actor_key, {})
+	var frames: Array = actions.get(action_name, [])
+	return frames.duplicate()
+
 func load_texture(path: String, use_mipmaps: bool = false) -> Texture2D:
 	if path.is_empty():
 		return null
 	var cache_key := "%s#mipmap" % path if use_mipmaps else path
 	if texture_cache.has(cache_key):
 		return texture_cache[cache_key]
+	if ResourceLoader.exists(path):
+		var resource := ResourceLoader.load(path)
+		if resource is Texture2D:
+			texture_cache[cache_key] = resource
+			return resource
 	var image := Image.new()
 	if image.load(path) != OK:
 		return null

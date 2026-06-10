@@ -21,17 +21,14 @@ func _run() -> void:
 	await _frames(3)
 
 	_check(GameState.mode == GameState.Mode.EXPLORE, "新游戏后应进入探索模式")
-	_check(main.active_map == main.world_map, "新游戏应停留在世界地图")
-	_check(main.player_actor != null and main.player_actor.world_map == main.world_map, "玩家应绑定世界地图")
+	_check(main.active_map == main.local_area, "新游戏应直接进入平安镇横版城镇")
+	_check(main.player_actor != null and main.player_actor.world_map == main.local_area, "玩家新游戏后应绑定局部城镇地图")
+	_check(not main.world_map.visible and main.local_area.visible, "新游戏首屏不应继续显示世界大地图")
 
 	var qinghe := GameData.get_region("qinghe")
 	_check(not qinghe.is_empty(), "测试区域 qinghe 应存在")
 	if not qinghe.is_empty():
-		main.player_actor.position = main.world_map.get_region_entry_position("qinghe")
-		main._update_current_region()
-		main._enter_local_region(qinghe)
-		await _frames(3)
-		_check(main.active_map == main.local_area, "应能从世界地图进入平安镇局部地图")
+		_check(str(main.local_area.current_region.get("id", "")) == "qinghe", "新游戏首个局部城镇应为平安镇")
 		_check(main.local_area.current_mode == "region", "进入平安镇后应处于区域模式")
 		_check(main.local_area.npc_nodes.size() >= 8, "平安镇局部地图应有镇民")
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")

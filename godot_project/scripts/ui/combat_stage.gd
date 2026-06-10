@@ -2,9 +2,22 @@ extends Control
 class_name CombatStage
 
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
+const STAGE_BACKDROP_RENDERER := preload("res://scripts/shared/stage_backdrop_renderer.gd")
 
 const PLAYER_STAGE_HEIGHT := 146.0
 const ENEMY_STAGE_HEIGHT := 154.0
+const COMBAT_STAGE_REFERENCE_HEIGHT := 334.0
+const COMBAT_STAGE_ACTOR_MAX_SCALE := 1.68
+const COMBAT_STAGE_MOTION_MAX_SCALE := 1.45
+const COMBAT_STAGE_FOUNDATION_ENABLED := true
+const COMBAT_STAGE_BACKGROUND_TEXTURE_ALPHA := 0.58
+const COMBAT_STAGE_ASSET_LAYERS_ENABLED := true
+const COMBAT_STAGE_BACKDROP_ALPHA := 0.96
+const COMBAT_STAGE_MIDGROUND_ALPHA := 0.94
+const COMBAT_STAGE_FLOOR_ALPHA := 0.92
+const COMBAT_STAGE_FOREGROUND_ALPHA := 0.90
+const COMBAT_ACTOR_FRAME_ANIMATION_ENABLED := true
+const COMBAT_ACTOR_REQUIRED_ACTIONS := ["idle", "attack", "hurt", "down"]
 const ACTOR_AFTERIMAGE_ALPHA := 0.22
 const CONTACT_GLOW_ALPHA := 0.18
 const DAMAGE_NUMBER_RISE := 28.0
@@ -43,7 +56,19 @@ var enemy: Dictionary = {}
 var snapshot: Dictionary = {}
 var player_texture: Texture2D
 var enemy_texture: Texture2D
+var player_frame_key := ""
+var enemy_frame_key := ""
+var player_action_frames: Dictionary = {}
+var enemy_action_frames: Dictionary = {}
+var player_frame_textures: Dictionary = {}
+var enemy_frame_textures: Dictionary = {}
 var background_texture: Texture2D
+var combat_stage_assets: Dictionary = {}
+var stage_backdrop_texture: Texture2D
+var stage_midground_texture: Texture2D
+var stage_floor_texture: Texture2D
+var stage_foreground_texture: Texture2D
+var current_region: Dictionary = {}
 var terrain_key := "plain"
 var terrain_color := Color(0.35, 0.34, 0.25)
 var accent_color := Color(0.86, 0.65, 0.34)
@@ -100,21 +125,30 @@ func clear() -> void:
 	queue_redraw()
 
 func _refresh_assets() -> void:
+	player_frame_key = "player_%s" % _player_sprite_key()
+	enemy_frame_key = "npc_%s" % str(enemy.get("name", ""))
 	player_texture = _load_player_texture()
 	enemy_texture = _load_enemy_texture()
-	background_texture = _load_region_background()
-	var region: Dictionary = GameData.get_region(GameState.current_region_id)
-	terrain_key = str(region.get("terrain", "plain"))
-	terrain_color = _terrain_color(terrain_key, str(region.get("type", "wild")))
+	current_region = GameData.get_region(GameState.current_region_id).duplicate(true)
+	if current_region.is_empty():
+		current_region = {"id": "", "type": "wild", "terrain": "plain"}
+	terrain_key = str(current_region.get("terrain", "plain"))
+	terrain_color = _terrain_color(terrain_key, str(current_region.get("type", "wild")))
 	accent_color = GameData.get_faction_color(str(GameState.player.get("faction", "none"))).lightened(0.08)
+	background_texture = _load_region_background()
+	_refresh_combat_stage_assets()
+	_refresh_combat_actor_frames()
 
-func _load_player_texture() -> Texture2D:
+func _player_sprite_key() -> String:
 	var gender := str(GameState.player.get("gender", "male"))
 	if gender != "female":
 		gender = "male"
 	var faction := str(GameState.player.get("faction", "none"))
-	var key := "%s_%s" % [gender, faction]
-	var path := str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get(key, "res://assets/characters/player/player_%s_%s.png" % [gender, faction]))
+	return "%s_%s" % [gender, faction]
+
+func _load_player_texture() -> Texture2D:
+	var key := _player_sprite_key()
+	var path := str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get(key, "res://assets/characters/player/player_%s.png" % key))
 	var texture := GameData.load_texture(path, true)
 	if texture == null and key != "male_none":
 		texture = GameData.load_texture(str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", "res://assets/characters/player/player_male_none.png")), true)
@@ -136,6 +170,39 @@ func _load_region_background() -> Texture2D:
 	if path.is_empty():
 		return null
 	return GameData.load_texture(path, true)
+
+func _refresh_combat_stage_assets() -> void:
+	combat_stage_assets = GameData.get_combat_stage_assets(GameState.current_region_id)
+	stage_backdrop_texture = _load_combat_stage_texture("backdrop")
+	stage_midground_texture = _load_combat_stage_texture("midground")
+	stage_floor_texture = _load_combat_stage_texture("floor")
+	stage_foreground_texture = _load_combat_stage_texture("foreground")
+
+func _load_combat_stage_texture(layer_name: String) -> Texture2D:
+	var path := str(combat_stage_assets.get(layer_name, ""))
+	if path.is_empty():
+		return null
+	return GameData.load_texture(path, true)
+
+func _refresh_combat_actor_frames() -> void:
+	player_action_frames = GameData.get_combat_actor_frames(player_frame_key)
+	if player_action_frames.is_empty() and player_frame_key != "player_male_none":
+		player_action_frames = GameData.get_combat_actor_frames("player_male_none")
+	enemy_action_frames = GameData.get_combat_actor_frames(enemy_frame_key)
+	player_frame_textures = _load_actor_frame_textures(player_action_frames)
+	enemy_frame_textures = _load_actor_frame_textures(enemy_action_frames)
+
+func _load_actor_frame_textures(action_frames: Dictionary) -> Dictionary:
+	var textures := {}
+	for action_name in action_frames.keys():
+		var frame_paths: Array = action_frames.get(action_name, [])
+		var loaded := []
+		for frame_path in frame_paths:
+			var texture := GameData.load_texture(str(frame_path), true)
+			if texture != null:
+				loaded.append(texture)
+		textures[str(action_name)] = loaded
+	return textures
 
 func _consume_latest_event() -> void:
 	var events: Array = snapshot.get("events", [])
@@ -162,9 +229,12 @@ func _draw() -> void:
 	draw_set_transform(shake, 0.0, Vector2.ONE)
 	_draw_backplate(rect)
 	_draw_background(rect)
-	_draw_parallax_silhouette(rect)
+	if stage_backdrop_texture == null:
+		_draw_parallax_silhouette(rect)
 	_draw_stage_back_life(rect)
+	_draw_painted_midground(rect)
 	_draw_lane(rect)
+	_draw_painted_floor(rect)
 	_draw_stage_mid_props(rect)
 	_draw_combatants(rect)
 	_draw_foreground(rect)
@@ -176,9 +246,17 @@ func _draw_backplate(rect: Rect2) -> void:
 	draw_rect(rect, Color(0.04, 0.035, 0.028, 0.92), true)
 
 func _draw_background(rect: Rect2) -> void:
-	if background_texture != null:
-		_draw_cover_texture(background_texture, rect, Color(0.88, 0.86, 0.78, 0.78))
-	else:
+	if COMBAT_STAGE_FOUNDATION_ENABLED:
+		var palette := _stage_palette()
+		var stage_tile_size := maxi(32, int(rect.size.y / 7.0))
+		STAGE_BACKDROP_RENDERER.draw_stage_foundation(self, rect.size, stage_tile_size, current_region, pulse, palette)
+	if stage_backdrop_texture != null and COMBAT_STAGE_ASSET_LAYERS_ENABLED:
+		_draw_cover_texture(stage_backdrop_texture, rect, Color(1.0, 1.0, 1.0, COMBAT_STAGE_BACKDROP_ALPHA))
+		if background_texture != null:
+			_draw_cover_texture(background_texture, rect, Color(1.0, 1.0, 1.0, COMBAT_STAGE_BACKGROUND_TEXTURE_ALPHA * 0.16))
+	elif background_texture != null:
+		_draw_cover_texture(background_texture, rect, Color(1.0, 1.0, 1.0, COMBAT_STAGE_BACKGROUND_TEXTURE_ALPHA))
+	elif not COMBAT_STAGE_FOUNDATION_ENABLED:
 		draw_rect(rect, terrain_color.darkened(0.48), true)
 		draw_rect(Rect2(rect.position, Vector2(rect.size.x, rect.size.y * 0.44)), terrain_color.darkened(0.24), true)
 		draw_rect(Rect2(rect.position + Vector2(0, rect.size.y * 0.44), Vector2(rect.size.x, rect.size.y * 0.56)), terrain_color.darkened(0.06), true)
@@ -190,6 +268,17 @@ func _draw_background(rect: Rect2) -> void:
 		var width := rect.size.x * (0.55 + float(index % 2) * 0.16)
 		var x := rect.position.x + fmod(pulse * (8.0 + index * 2.0) + float(index) * 91.0, rect.size.x + width) - width
 		_draw_soft_band(Rect2(Vector2(x, y), Vector2(width, 16 + index * 3)), Color(0.92, 0.88, 0.76, haze_alpha))
+
+func _draw_painted_midground(rect: Rect2) -> void:
+	_draw_combat_stage_texture_layer(stage_midground_texture, rect, COMBAT_STAGE_MIDGROUND_ALPHA)
+
+func _draw_painted_floor(rect: Rect2) -> void:
+	_draw_combat_stage_texture_layer(stage_floor_texture, rect, COMBAT_STAGE_FLOOR_ALPHA)
+
+func _draw_combat_stage_texture_layer(texture: Texture2D, rect: Rect2, alpha: float) -> void:
+	if not COMBAT_STAGE_ASSET_LAYERS_ENABLED or texture == null:
+		return
+	_draw_cover_texture(texture, rect, Color(1.0, 1.0, 1.0, alpha))
 
 func _draw_cover_texture(texture: Texture2D, rect: Rect2, modulate: Color) -> void:
 	var texture_size := texture.get_size()
@@ -361,6 +450,10 @@ func _draw_combatants(rect: Rect2) -> void:
 	var enemy_draw_foot: Vector2 = enemy_pose.get("foot", enemy_foot)
 	var player_action := float(player_pose.get("action", 0.0))
 	var enemy_action := float(enemy_pose.get("action", 0.0))
+	var player_height := _scaled_stage_actor_height(PLAYER_STAGE_HEIGHT, rect)
+	var enemy_height := _scaled_stage_actor_height(ENEMY_STAGE_HEIGHT, rect)
+	var player_draw_texture := _actor_texture_for_pose("player", player_texture, player_pose)
+	var enemy_draw_texture := _actor_texture_for_pose("enemy", enemy_texture, enemy_pose)
 	var player_shadow_scale := 1.08 + player_action * 0.08 + float(player_pose.get("low_hp", 0.0)) * 0.04
 	var enemy_shadow_scale := 1.15 + enemy_action * 0.08 + float(enemy_pose.get("low_hp", 0.0)) * 0.04
 	_draw_combat_footwork_trails(rect, player_draw_foot, enemy_draw_foot, player_pose, enemy_pose)
@@ -368,10 +461,10 @@ func _draw_combatants(rect: Rect2) -> void:
 	_draw_actor_shadow(enemy_draw_foot, enemy_shadow_scale)
 	_draw_actor_contact_light(player_draw_foot, accent_color, 0.90 + player_action * 0.45, 1.0)
 	_draw_actor_contact_light(enemy_draw_foot, Color(0.78, 0.18, 0.12), 0.82 + enemy_action * 0.45, 1.08)
-	_draw_actor_afterimage(player_texture, player_draw_foot + Vector2(float(player_pose.get("afterimage_x", 0.0)), 0.0), PLAYER_STAGE_HEIGHT, accent_color.lightened(0.22), float(player_pose.get("afterimage", 0.0)))
-	_draw_actor_afterimage(enemy_texture, enemy_draw_foot + Vector2(float(enemy_pose.get("afterimage_x", 0.0)), 0.0), ENEMY_STAGE_HEIGHT, Color(0.95, 0.32, 0.18), float(enemy_pose.get("afterimage", 0.0)))
-	_draw_player_actor(player_pose)
-	_draw_enemy_actor(enemy_pose)
+	_draw_actor_afterimage(player_draw_texture, player_draw_foot + Vector2(float(player_pose.get("afterimage_x", 0.0)), 0.0), player_height, accent_color.lightened(0.22), float(player_pose.get("afterimage", 0.0)))
+	_draw_actor_afterimage(enemy_draw_texture, enemy_draw_foot + Vector2(float(enemy_pose.get("afterimage_x", 0.0)), 0.0), enemy_height, Color(0.95, 0.32, 0.18), float(enemy_pose.get("afterimage", 0.0)))
+	_draw_player_actor(player_pose, player_height, player_draw_texture)
+	_draw_enemy_actor(enemy_pose, enemy_height, enemy_draw_texture)
 	_draw_actor_combat_pose_lines(player_draw_foot, "player", player_pose, accent_color.lightened(0.12))
 	_draw_actor_combat_pose_lines(enemy_draw_foot, "enemy", enemy_pose, Color(0.95, 0.28, 0.18))
 	_draw_status_bars(player_foot, enemy_foot)
@@ -393,6 +486,8 @@ func _actor_pose(side: String, base_foot: Vector2) -> Dictionary:
 		"afterimage": 0.0,
 		"afterimage_x": 0.0,
 		"low_hp": low_hp,
+		"frame_action": "idle",
+		"frame_index": int(floor(pulse * 2.0)) % 2,
 		"collapsed": false
 	}
 	if hp_ratio <= 0.0:
@@ -400,6 +495,8 @@ func _actor_pose(side: String, base_foot: Vector2) -> Dictionary:
 		pose["scale_y"] = 0.42
 		pose["lift"] = 0.0
 		pose["collapsed"] = true
+		pose["frame_action"] = "down"
+		pose["frame_index"] = 0
 		pose["foot"] = base_foot + Vector2(0.0, 8.0)
 		return pose
 	if event_timer <= 0.0:
@@ -407,6 +504,7 @@ func _actor_pose(side: String, base_foot: Vector2) -> Dictionary:
 	var hostile_event := event_kind == "damage" or event_kind == "phase" or event_kind == "stun" or event_kind == "miss"
 	if not hostile_event:
 		return pose
+	var motion_scale := _stage_motion_scale()
 	var attacker_side := "player" if event_target == "enemy" else "enemy"
 	var elapsed := 1.0 - _event_life_ratio()
 	var windup := _pose_window(elapsed, 0.16, 0.17)
@@ -415,25 +513,34 @@ func _actor_pose(side: String, base_foot: Vector2) -> Dictionary:
 	var hit_hold := _hit_freeze_alpha()
 	if side == attacker_side:
 		var direction := 1.0 if side == "player" else -1.0
-		var lunge := drive * (ACTOR_LUNGE_PIXELS + hit_hold * 8.0)
-		var windback := windup * ACTOR_WINDUP_PIXELS
-		var settle := recover * ACTOR_RECOVER_PIXELS
+		var lunge := drive * (ACTOR_LUNGE_PIXELS + hit_hold * 8.0) * motion_scale
+		var windback := windup * ACTOR_WINDUP_PIXELS * motion_scale
+		var settle := recover * ACTOR_RECOVER_PIXELS * motion_scale
 		var attack_foot: Vector2 = pose["foot"]
-		pose["foot"] = attack_foot + Vector2(direction * (lunge - windback - settle), -drive * 4.0 + windup * 1.5)
+		pose["foot"] = attack_foot + Vector2(direction * (lunge - windback - settle), (-drive * 4.0 + windup * 1.5) * motion_scale)
 		pose["scale_x"] = float(pose["scale_x"]) + drive * ACTOR_ATTACK_STRETCH - windup * 0.03
 		pose["scale_y"] = float(pose["scale_y"]) + windup * 0.05 - drive * 0.04
 		pose["action"] = clampf(maxf(drive, windup * 0.55) + hit_hold * 0.20, 0.0, 1.0)
 		pose["afterimage"] = clampf(drive + hit_hold * 0.35, 0.0, 1.0)
 		pose["afterimage_x"] = -direction * (24.0 + lunge * 0.65)
+		pose["frame_action"] = "attack"
+		if drive > 0.34 or hit_hold > 0.20:
+			pose["frame_index"] = 1
+		elif recover > 0.36:
+			pose["frame_index"] = 2
+		else:
+			pose["frame_index"] = 0
 	elif event_kind != "miss" and side == event_target:
 		var hurt_direction := -1.0 if side == "player" else 1.0
-		var hurt_wave := sin(elapsed * PI * 3.0) * (1.0 - hit_hold) * 3.0
+		var hurt_wave := sin(elapsed * PI * 3.0) * (1.0 - hit_hold) * 3.0 * motion_scale
 		var hurt_foot: Vector2 = pose["foot"]
-		pose["foot"] = hurt_foot + Vector2(hurt_direction * (hit_hold * ACTOR_HURT_RECOIL_PIXELS + hurt_wave), hit_hold * 2.5)
+		pose["foot"] = hurt_foot + Vector2(hurt_direction * (hit_hold * ACTOR_HURT_RECOIL_PIXELS * motion_scale + hurt_wave), hit_hold * 2.5 * motion_scale)
 		pose["scale_x"] = float(pose["scale_x"]) + hit_hold * ACTOR_HURT_SQUASH
 		pose["scale_y"] = float(pose["scale_y"]) - hit_hold * ACTOR_HURT_SQUASH
 		pose["hurt"] = hit_hold
 		pose["flash"] = hit_hold
+		pose["frame_action"] = "hurt"
+		pose["frame_index"] = 0 if hit_hold > 0.34 else 1
 	return pose
 
 func _actor_hp_ratio(side: String) -> float:
@@ -459,23 +566,38 @@ func _actor_tint(side: String, base: Color, pose: Dictionary) -> Color:
 		tint = tint.darkened(0.28)
 	return tint
 
-func _draw_player_actor(pose: Dictionary) -> void:
+func _draw_player_actor(pose: Dictionary, target_height: float, texture: Texture2D) -> void:
 	var foot: Vector2 = pose.get("foot", Vector2.ZERO)
 	var action_intensity := float(pose.get("action", 0.0))
-	if player_texture != null:
+	if texture != null:
 		var tint := _actor_tint("player", Color(1.0, 1.0, 1.0, 1.0), pose)
-		_draw_actor_texture(player_texture, foot, PLAYER_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity, pose)
+		_draw_actor_texture(texture, foot, target_height + action_intensity * 8.0 * _stage_motion_scale(), tint, action_intensity, pose)
 	else:
 		_draw_actor_fallback(foot, accent_color, "你")
 
-func _draw_enemy_actor(pose: Dictionary) -> void:
+func _draw_enemy_actor(pose: Dictionary, target_height: float, texture: Texture2D) -> void:
 	var foot: Vector2 = pose.get("foot", Vector2.ZERO)
 	var action_intensity := float(pose.get("action", 0.0))
-	if enemy_texture != null:
+	if texture != null:
 		var tint := _actor_tint("enemy", Color(1.0, 0.96, 0.91, 1.0), pose)
-		_draw_actor_texture(enemy_texture, foot, ENEMY_STAGE_HEIGHT + action_intensity * 8.0, tint, action_intensity, pose)
+		_draw_actor_texture(texture, foot, target_height + action_intensity * 8.0 * _stage_motion_scale(), tint, action_intensity, pose)
 	else:
 		_draw_actor_fallback(foot, Color(0.62, 0.18, 0.14), str(enemy.get("name", "敌")))
+
+func _actor_texture_for_pose(side: String, fallback: Texture2D, pose: Dictionary) -> Texture2D:
+	if not COMBAT_ACTOR_FRAME_ANIMATION_ENABLED:
+		return fallback
+	var frame_bank: Dictionary = player_frame_textures if side == "player" else enemy_frame_textures
+	if frame_bank.is_empty():
+		return fallback
+	var action_name := str(pose.get("frame_action", "idle"))
+	var frames: Array = frame_bank.get(action_name, [])
+	if frames.is_empty() and action_name != "idle":
+		frames = frame_bank.get("idle", [])
+	if frames.is_empty():
+		return fallback
+	var frame_index := int(pose.get("frame_index", 0))
+	return frames[abs(frame_index) % frames.size()]
 
 func _draw_actor_texture(texture: Texture2D, foot: Vector2, target_height: float, tint: Color, action_intensity: float = 0.0, pose: Dictionary = {}) -> void:
 	var texture_size := texture.get_size()
@@ -514,6 +636,13 @@ func _draw_actor_afterimage(texture: Texture2D, foot: Vector2, target_height: fl
 	var draw_size := texture_size * factor
 	var top_left := foot - Vector2(draw_size.x * 0.5, draw_size.y)
 	draw_texture_rect(texture, Rect2(top_left, draw_size), false, Color(tint.r, tint.g, tint.b, ACTOR_AFTERIMAGE_ALPHA * alpha))
+
+func _scaled_stage_actor_height(base_height: float, rect: Rect2) -> float:
+	var scale := clampf(rect.size.y / COMBAT_STAGE_REFERENCE_HEIGHT, 1.0, COMBAT_STAGE_ACTOR_MAX_SCALE)
+	return base_height * scale
+
+func _stage_motion_scale() -> float:
+	return clampf(size.y / COMBAT_STAGE_REFERENCE_HEIGHT, 1.0, COMBAT_STAGE_MOTION_MAX_SCALE)
 
 func _draw_combat_footwork_trails(rect: Rect2, player_foot: Vector2, enemy_foot: Vector2, player_pose: Dictionary, enemy_pose: Dictionary) -> void:
 	var player_intensity := clampf(float(player_pose.get("action", 0.0)) + float(player_pose.get("hurt", 0.0)) * 0.48 + float(player_pose.get("low_hp", 0.0)) * 0.24, 0.16, 1.0)
@@ -939,6 +1068,7 @@ func _draw_foreground(rect: Rect2) -> void:
 	elif _is_forest_terrain():
 		_draw_bamboo_cluster(rect, rect.position.y + rect.size.y * 0.40, rect.position.x + 28.0, Color(0.02, 0.09, 0.05, 0.46))
 		_draw_bamboo_cluster(rect, rect.position.y + rect.size.y * 0.42, rect.position.x + rect.size.x - 34.0, Color(0.02, 0.09, 0.05, 0.42))
+	_draw_combat_stage_texture_layer(stage_foreground_texture, rect, COMBAT_STAGE_FOREGROUND_ALPHA)
 
 func _draw_stage_foreground_pressure(rect: Rect2) -> void:
 	var alpha := COMBAT_STAGE_FOREGROUND_PRESSURE_ALPHA
@@ -1110,6 +1240,51 @@ func _terrain_color(terrain: String, region_type: String) -> Color:
 	if region_type == "sect" or terrain.contains("sect") or terrain.contains("temple"):
 		return Color(0.36, 0.34, 0.28)
 	return Color(0.34, 0.36, 0.24)
+
+func _stage_palette() -> Dictionary:
+	var region_type := str(current_region.get("type", "wild"))
+	var sky := Color(0.29, 0.34, 0.31, 0.34)
+	var far := Color(0.10, 0.12, 0.10, 0.42)
+	var mid := Color(0.16, 0.18, 0.13, 0.36)
+	var floor := terrain_color.lightened(0.08)
+	var accent := accent_color
+	if terrain_key.contains("snow"):
+		sky = Color(0.48, 0.58, 0.66, 0.38)
+		far = Color(0.34, 0.42, 0.50, 0.42)
+		mid = Color(0.52, 0.58, 0.62, 0.34)
+		floor = Color(0.58, 0.64, 0.66, 1.0)
+		accent = Color(0.70, 0.90, 1.0, 1.0)
+	elif terrain_key.contains("desert"):
+		sky = Color(0.58, 0.46, 0.28, 0.36)
+		far = Color(0.46, 0.32, 0.18, 0.42)
+		mid = Color(0.63, 0.46, 0.24, 0.34)
+		floor = Color(0.56, 0.42, 0.24, 1.0)
+		accent = Color(0.95, 0.72, 0.36, 1.0)
+	elif terrain_key.contains("river") or terrain_key.contains("lake") or terrain_key.contains("water") or terrain_key.contains("canal") or terrain_key.contains("ford"):
+		sky = Color(0.27, 0.42, 0.47, 0.34)
+		far = Color(0.12, 0.22, 0.26, 0.42)
+		mid = Color(0.18, 0.32, 0.36, 0.34)
+		floor = Color(0.30, 0.39, 0.36, 1.0)
+		accent = Color(0.58, 0.82, 0.86, 1.0)
+	elif terrain_key.contains("forest") or terrain_key.contains("bamboo") or terrain_key.contains("garden") or terrain_key.contains("field"):
+		sky = Color(0.22, 0.34, 0.24, 0.34)
+		far = Color(0.06, 0.16, 0.08, 0.44)
+		mid = Color(0.12, 0.25, 0.12, 0.36)
+		floor = Color(0.26, 0.34, 0.20, 1.0)
+		accent = Color(0.50, 0.76, 0.38, 1.0)
+	elif region_type == "sect":
+		floor = Color(0.38, 0.34, 0.27, 1.0)
+		accent = GameData.get_faction_color(str(current_region.get("faction", "none"))).lightened(0.20)
+	elif region_type == "city" or region_type == "town":
+		floor = Color(0.44, 0.34, 0.22, 1.0)
+		accent = Color(0.92, 0.60, 0.28, 1.0)
+	return {
+		"sky": sky,
+		"far": far,
+		"mid": mid,
+		"floor": floor,
+		"accent": accent
+	}
 
 func _is_snow_terrain() -> bool:
 	return terrain_key.contains("snow")

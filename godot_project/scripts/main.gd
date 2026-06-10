@@ -19,6 +19,11 @@ const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 
 const WORLD_CAMERA_ZOOM := Vector2(0.92, 0.92)
 const LOCAL_CAMERA_ZOOM := Vector2(0.98, 0.98)
+const WORLD_CAMERA_SMOOTHING_SPEED := 10.0
+const LOCAL_CAMERA_SMOOTHING_ENABLED := false
+const LOCAL_CAMERA_SMOOTHING_SPEED := 28.0
+const NEW_GAME_STARTS_IN_LOCAL_TOWN := true
+const NEW_GAME_START_REGION_ID := "qinghe"
 const AMBIENT_NPC_INTERVAL := 6.8
 const AMBIENT_NPC_RADIUS := 430.0
 const POST_TRANSITION_RESET_DELAY := 1.2
@@ -72,7 +77,7 @@ func _ready() -> void:
 
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
+	camera.position_smoothing_speed = WORLD_CAMERA_SMOOTHING_SPEED
 	camera.zoom = WORLD_CAMERA_ZOOM
 	player_actor.add_child(camera)
 	camera.make_current()
@@ -252,12 +257,28 @@ func _continue_game() -> void:
 
 func _start_new_game(config: Dictionary) -> void:
 	GameState.new_game(config)
-	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()
 	world_map.set_target_region(GameState.map_target_region_id)
-	_update_current_region()
+	var started_in_town := false
+	if NEW_GAME_STARTS_IN_LOCAL_TOWN:
+		started_in_town = _enter_new_game_start_region()
+	if not started_in_town:
+		_switch_to_world_map(GameState.player_position)
+		_update_current_region()
 	_close_gameplay_panels()
 	EventBus.emit_toast("新的江湖开始")
+
+func _enter_new_game_start_region() -> bool:
+	var region := GameData.get_region(NEW_GAME_START_REGION_ID)
+	if region.is_empty() or not _can_enter_region(region):
+		return false
+	world_return_position = world_map.get_region_entry_position(NEW_GAME_START_REGION_ID)
+	world_map.hide()
+	local_area.setup_region(region)
+	local_area.show()
+	_transition_player_to_map(local_area, local_area.get_entry_position("world"))
+	_update_current_region()
+	return true
 
 func _close_gameplay_panels() -> void:
 	dialogue_panel.hide()
@@ -623,8 +644,12 @@ func _apply_camera_zoom() -> void:
 		return
 	if active_map == world_map:
 		camera.zoom = WORLD_CAMERA_ZOOM
+		camera.position_smoothing_enabled = true
+		camera.position_smoothing_speed = WORLD_CAMERA_SMOOTHING_SPEED
 	else:
 		camera.zoom = LOCAL_CAMERA_ZOOM
+		camera.position_smoothing_enabled = LOCAL_CAMERA_SMOOTHING_ENABLED
+		camera.position_smoothing_speed = LOCAL_CAMERA_SMOOTHING_SPEED
 
 func _register_inputs() -> void:
 	_add_key_action("move_up", [KEY_W, KEY_UP])

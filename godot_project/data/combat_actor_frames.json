@@ -1,0 +1,56 @@
+{
+  "player_male_none": {
+    "idle": [
+      "res://assets/characters/player/actions/male_none/idle_0.png",
+      "res://assets/characters/player/actions/male_none/idle_1.png"
+    ],
+    "attack": [
+      "res://assets/characters/player/actions/male_none/attack_0.png",
+      "res://assets/characters/player/actions/male_none/attack_1.png",
+      "res://assets/characters/player/actions/male_none/attack_2.png"
+    ],
+    "hurt": [
+      "res://assets/characters/player/actions/male_none/hurt_0.png",
+      "res://assets/characters/player/actions/male_none/hurt_1.png"
+    ],
+    "down": [
+      "res://assets/characters/player/actions/male_none/down_0.png"
+    ]
+  },
+  "npc_流氓": {
+    "idle": [
+      "res://assets/characters/npc/actions/thug/idle_0.png",
+      "res://assets/characters/npc/actions/thug/idle_1.png"
+    ],
+    "attack": [
+      "res://assets/characters/npc/actions/thug/attack_0.png",
+      "res://assets/characters/npc/actions/thug/attack_1.png",
+      "res://assets/characters/npc/actions/thug/attack_2.png"
+    ],
+    "hurt": [
+      "res://assets/characters/npc/actions/thug/hurt_0.png",
+      "res://assets/characters/npc/actions/thug/hurt_1.png"
+    ],
+    "down": [
+      "res://assets/characters/npc/actions/thug/down_0.png"
+    ]
+  },
+  "npc_流氓头": {
+    "idle": [
+      "res://assets/characters/npc/actions/thug_leader/idle_0.png",
+      "res://assets/characters/npc/actions/thug_leader/idle_1.png"
+    ],
+    "attack": [
+      "res://assets/characters/npc/actions/thug_leader/attack_0.png",
+      "res://assets/characters/npc/actions/thug_leader/attack_1.png",
+      "res://assets/characters/npc/actions/thug_leader/attack_2.png"
+    ],
+    "hurt": [
+      "res://assets/characters/npc/actions/thug_leader/hurt_0.png",
+      "res://assets/characters/npc/actions/thug_leader/hurt_1.png"
+    ],
+    "down": [
+      "res://assets/characters/npc/actions/thug_leader/down_0.png"
+    ]
+  }
+}

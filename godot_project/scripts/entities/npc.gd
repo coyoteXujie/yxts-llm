@@ -1,6 +1,8 @@
 extends Node2D
 class_name NpcActor
 
+const StageVisualProfile = preload("res://scripts/shared/stage_visual_profile.gd")
+
 var data: Dictionary = {}
 var highlighted := false
 var tile_size := 48
@@ -26,26 +28,27 @@ var sprite_rim_base_scale := Vector2.ONE
 var sprite_base_position := Vector2.ZERO
 var sprite_outline_base_position := Vector2.ZERO
 var sprite_rim_base_position := Vector2.ZERO
+var visual_update_accumulator := 0.0
 
 const USE_FULL_SPRITES_ON_MAP := true
 const MAP_ACTOR_SCALE := 0.92
-const BASE_SPRITE_HEIGHT := 126.0
-const BASE_SPRITE_WIDTH := 86.0
-const MASTER_SPRITE_HEIGHT := 156.0
-const MASTER_SPRITE_WIDTH := 94.0
-const ENEMY_SPRITE_HEIGHT := 152.0
-const ENEMY_SPRITE_WIDTH := 92.0
-const STAGE_PRESENCE_SCALE := 1.44
-const STAGE_BASE_SPRITE_WIDTH := 108.0
-const STAGE_MASTER_SPRITE_WIDTH := 120.0
-const STAGE_ENEMY_SPRITE_WIDTH := 118.0
+const BASE_SPRITE_HEIGHT := StageVisualProfile.STAGE_SIDE_VIEW_NPC_BASE_HEIGHT
+const BASE_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_BASE_WIDTH
+const MASTER_SPRITE_HEIGHT := StageVisualProfile.STAGE_SIDE_VIEW_NPC_MASTER_HEIGHT
+const MASTER_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_MASTER_WIDTH
+const ENEMY_SPRITE_HEIGHT := StageVisualProfile.STAGE_SIDE_VIEW_NPC_ENEMY_HEIGHT
+const ENEMY_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_ENEMY_WIDTH
+const STAGE_PRESENCE_SCALE := StageVisualProfile.NPC_STAGE_ACTOR_SCALE
+const STAGE_BASE_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_STAGE_BASE_WIDTH
+const STAGE_MASTER_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_STAGE_MASTER_WIDTH
+const STAGE_ENEMY_SPRITE_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_NPC_STAGE_ENEMY_WIDTH
 const STAGE_WIDE_SPRITE_ASPECT_START := 1.08
 const STAGE_WIDE_SPRITE_ASPECT_FULL := 1.50
 const STAGE_WIDE_SPRITE_WIDTH_BONUS := 1.62
-const STAGE_MASTER_EXTRA_SCALE := 1.09
-const STAGE_ENEMY_EXTRA_SCALE := 1.11
-const STAGE_SPRITE_MIN_SCALE := 1.30
-const STAGE_SPRITE_MAX_SCALE := 1.86
+const STAGE_MASTER_SCALE_BIAS := StageVisualProfile.NPC_MASTER_STAGE_SCALE_BIAS
+const STAGE_ENEMY_SCALE_BIAS := StageVisualProfile.NPC_ENEMY_STAGE_SCALE_BIAS
+const STAGE_SPRITE_MIN_SCALE := StageVisualProfile.STAGE_SPRITE_MIN_SCALE
+const STAGE_SPRITE_MAX_SCALE := StageVisualProfile.STAGE_SPRITE_MAX_SCALE
 const CONTACT_GLOW_ALPHA := 0.115
 const STAGE_RIM_ALPHA := 0.15
 const STAGE_ROLE_CUE_ALPHA := 0.18
@@ -72,6 +75,7 @@ const STAGE_FACING_CUE_ALPHA := 0.18
 const STAGE_HEAD_TURN_ALPHA := 0.20
 const STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const AMBIENT_BUBBLE_WIDTH := 172.0
+const NPC_IDLE_VISUAL_UPDATE_INTERVAL := 1.0 / 15.0
 
 func setup(new_data: Dictionary, new_tile_size: int) -> void:
 	data = new_data
@@ -98,8 +102,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	visual_phase += delta * _idle_motion_speed()
-	_update_sprite_motion()
-	queue_redraw()
+	visual_update_accumulator += delta
+	if visual_update_accumulator >= NPC_IDLE_VISUAL_UPDATE_INTERVAL:
+		visual_update_accumulator = fposmod(visual_update_accumulator, NPC_IDLE_VISUAL_UPDATE_INTERVAL)
+		_update_sprite_motion()
+		queue_redraw()
 	if ambient_panel != null and ambient_panel.visible:
 		ambient_timer -= delta
 		if ambient_timer <= 0.0:
@@ -227,13 +234,16 @@ func _visual_offset() -> Vector2:
 func _map_actor_scale() -> float:
 	var value := float(data.get("map_actor_scale", 1.0))
 	if _is_stage_actor():
-		var scale := value * STAGE_PRESENCE_SCALE
-		if is_master():
-			scale *= STAGE_MASTER_EXTRA_SCALE
-		elif is_enemy():
-			scale *= STAGE_ENEMY_EXTRA_SCALE
+		var scale := value * STAGE_PRESENCE_SCALE * _stage_actor_scale_bias()
 		return clampf(scale, STAGE_SPRITE_MIN_SCALE, STAGE_SPRITE_MAX_SCALE)
 	return clampf(value, 0.55, 1.25)
+
+func _stage_actor_scale_bias() -> float:
+	if is_master():
+		return STAGE_MASTER_SCALE_BIAS
+	if is_enemy():
+		return STAGE_ENEMY_SCALE_BIAS
+	return 1.0
 
 func _is_stage_actor() -> bool:
 	return bool(data.get("stage_actor", false))

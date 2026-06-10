@@ -26,6 +26,8 @@ enum Tile {
 
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const MAP_PROP_SCRIPT := preload("res://scripts/world/map_prop.gd")
+const StageVisualProfile = preload("res://scripts/shared/stage_visual_profile.gd")
+const STAGE_SURFACE_DETAIL_RENDERER := preload("res://scripts/shared/stage_surface_detail_renderer.gd")
 
 const TILE_TEXTURE_PATHS := {
 	Tile.GRASS: "res://assets/world/tiles/tile_grass.png",
@@ -67,28 +69,144 @@ const LANDMARKS := [
 	{"name": "花间派", "tile": [88, 46], "size": 17, "color": [1.00, 0.70, 0.82]},
 ]
 
-const WORLD_NPC_SCALE := 0.58
+const WORLD_NPC_SCALE := 1.0
 const WORLD_NPC_MIN_SPACING := 4
+const WORLD_USE_TILE_TEXTURES := false
+const WORLD_PAINTED_BACKDROP_ENABLED := true
+const WORLD_PAINTED_BACKDROP_PATH := "res://assets/world/backdrops/world_map_painted_v1.png"
+const WORLD_PAINTED_BACKDROP_ALPHA := 1.0
+const WORLD_PAINTED_BACKDROP_Z_INDEX := -3800
+const WORLD_PAINTED_BACKDROP_REPLACES_TILE_BASE := true
+const WORLD_PAINTED_BACKDROP_MIN_WIDTH := 2300.0
+const WORLD_PAINTED_BACKDROP_MIN_HEIGHT := 1700.0
+const WORLD_PAINTED_ATMOSPHERE_ALPHA := 0.16
+const WORLD_PAINTED_REGION_MARKER_ALPHA := 0.26
+const WORLD_DYNAMIC_VISUALS_ENABLED := false
+const WORLD_PAINTERLY_SKIP_SCENE_TEXTURES := true
+const WORLD_PAINTERLY_TILE_VARIATION := 0.23
+const WORLD_PAINTERLY_TILE_GRAIN_ALPHA := 0.12
+const WORLD_PAINTERLY_TILE_BLOB_COUNT := 4
+const WORLD_PAINTERLY_TILE_OVERDRAW := 1.24
+const WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_COUNT := 300
+const WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_RADIUS_MIN := 0.78
+const WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_RADIUS_MAX := 2.42
+const WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_ALPHA := 0.030
+const WORLD_PAINTERLY_MELT_STROKE_COUNT := 260
+const WORLD_PAINTERLY_MELT_BLOB_COUNT := 90
+const WORLD_PAINTERLY_MELT_STROKE_ALPHA := 0.032
+const WORLD_PAINTERLY_MELT_BLOB_ALPHA := 0.020
+const WORLD_PAINTERLY_BUILDING_BLOCK_ALPHA := 0.11
 const TILE_VARIANT_COUNT := 4
+const WORLD_REGION_BACKDROP_TYPES := ["city", "town", "sect", "wild"]
+const WORLD_REGION_BACKDROP_BASE_ALPHA := 0.22
+const WORLD_REGION_BACKDROP_ALPHA_BOOST := 0.08
+const WORLD_REGION_BACKDROP_TINT_ALPHA := 0.24
+const WORLD_REGION_BACKDROP_FALLBACK_ALPHA := 0.16
+const WORLD_REGION_BACKDROP_ALPHA_BY_TYPE := {
+	"city": 0.46,
+	"town": 0.36,
+	"sect": 0.40,
+	"wild": 0.22
+}
+const WORLD_REGION_BACKDROP_TINT_BY_TYPE := {
+	"city": Color(0.58, 0.38, 0.14, 1.0),
+	"town": Color(0.46, 0.33, 0.14, 1.0),
+	"sect": Color(0.40, 0.46, 0.18, 1.0),
+	"wild": Color(0.26, 0.32, 0.22, 1.0)
+}
+const WORLD_STAGE_VISUAL_SPEED := 0.28
+const WORLD_STAGE_DEPTH_TOP_RATIO := 0.44
+const WORLD_STAGE_DEPTH_BOTTOM_RATIO := 0.96
+const WORLD_STAGE_MIN_SCALE := 0.86
+const WORLD_STAGE_MAX_SCALE := 1.24
+const WORLD_STAGE_LANE_COUNT := 6
+const WORLD_STAGE_LANE_FULL_DISTANCE := 18.0
+const WORLD_STAGE_LANE_MAX_DISTANCE := 102.0
+const WORLD_STAGE_LANE_MAX_STRENGTH := 0.95
+const WORLD_STAGE_LANE_SIDE_OFFSET := 30.0
+const WORLD_STAGE_BACKDROP_COLOR_BY_TERRAIN := {
+	"snow": Color(0.72, 0.86, 1.00, 1.0),
+	"desert": Color(0.84, 0.72, 0.49, 1.0),
+	"marsh": Color(0.32, 0.52, 0.39, 1.0),
+	"forest": Color(0.29, 0.50, 0.30, 1.0),
+	"bamboo": Color(0.27, 0.46, 0.31, 1.0),
+	"mountain": Color(0.30, 0.30, 0.25, 1.0),
+	"river": Color(0.34, 0.58, 0.68, 1.0),
+	"water": Color(0.30, 0.60, 0.68, 1.0),
+	"cliff": Color(0.30, 0.30, 0.22, 1.0),
+	"plain": Color(0.40, 0.45, 0.28, 1.0),
+	"field": Color(0.46, 0.50, 0.29, 1.0),
+	"city": Color(0.56, 0.40, 0.20, 1.0),
+	"sect": Color(0.46, 0.47, 0.31, 1.0)
+}
+const WORLD_STAGE_FOG_BAND_COUNT := 7
+const WORLD_STAGE_FOG_BASE_ALPHA := 0.10
+const WORLD_STAGE_LANE_LINE_ALPHA := 0.16
+const WORLD_STAGE_LANE_DEEP_ALPHA := 0.22
+const WORLD_STAGE_FAR_SHADE_ALPHA := 0.23
+const WORLD_STAGE_MID_SHADE_ALPHA := 0.20
+const WORLD_STAGE_FRONT_SHADE_ALPHA := 0.26
+const WORLD_MAP_TILE_TRANSITION_DECIMATION := StageVisualProfile.WORLD_MAP_TILE_TRANSITION_DECIMATION
+const WORLD_MAP_TILE_DETAIL_DECIMATION := StageVisualProfile.WORLD_MAP_TILE_DETAIL_DECIMATION
+const WORLD_MAP_BUILDING_OVERLAY_DECIMATION := StageVisualProfile.WORLD_MAP_BUILDING_OVERLAY_DECIMATION
+const WORLD_PAINTERLY_STROKE_COUNT := StageVisualProfile.WORLD_PAINTERLY_STROKE_COUNT
+const WORLD_PAINTERLY_STROKE_ALPHA := StageVisualProfile.WORLD_PAINTERLY_STROKE_ALPHA
+const WORLD_PAINTERLY_BLOB_COUNT := StageVisualProfile.WORLD_PAINTERLY_BLOB_COUNT
+const WORLD_PAINTERLY_BLOB_ALPHA := StageVisualProfile.WORLD_PAINTERLY_BLOB_ALPHA
+const WORLD_BUILDING_EDGE_DECIMATION := StageVisualProfile.WORLD_BUILDING_EDGE_DECIMATION
+const WORLD_BUILDING_EDGE_ALPHA := StageVisualProfile.WORLD_BUILDING_EDGE_ALPHA
+const WORLD_BUILDING_EDGE_WIDTH := StageVisualProfile.WORLD_BUILDING_EDGE_WIDTH
+const WORLD_BUILDING_SURFACE_STROKE_COUNT := StageVisualProfile.WORLD_BUILDING_SURFACE_STROKE_COUNT
+const WORLD_BUILDING_SURFACE_DOT_COUNT := StageVisualProfile.WORLD_BUILDING_SURFACE_DOT_COUNT
+const WORLD_BUILDING_SURFACE_ALPHA := StageVisualProfile.WORLD_BUILDING_SURFACE_ALPHA
+const WORLD_BUILDING_SURFACE_SEED_BASE := StageVisualProfile.WORLD_BUILDING_SURFACE_SEED_BASE
+const WORLD_BUILDING_SURFACE_LINE_JITTER := StageVisualProfile.WORLD_BUILDING_SURFACE_LINE_JITTER
+const WORLD_BUILDING_FACADE_PILLAR_COUNT := StageVisualProfile.WORLD_BUILDING_FACADE_PILLAR_COUNT
+const WORLD_BUILDING_FACADE_WINDOW_ROWS := StageVisualProfile.WORLD_BUILDING_FACADE_WINDOW_ROWS
+const WORLD_BUILDING_FACADE_WINDOW_COLUMNS := StageVisualProfile.WORLD_BUILDING_FACADE_WINDOW_COLUMNS
+const WORLD_BUILDING_FACADE_WINDOW_ALPHA := StageVisualProfile.WORLD_BUILDING_FACADE_WINDOW_ALPHA
+const WORLD_BUILDING_FACADE_SHADOW_ALPHA := StageVisualProfile.WORLD_BUILDING_FACADE_SHADOW_ALPHA
+const WORLD_BUILDING_FACADE_SEED_BASE := StageVisualProfile.WORLD_BUILDING_FACADE_SEED_BASE
+const WORLD_BUILDING_FACADE_LINE_JITTER := StageVisualProfile.WORLD_BUILDING_FACADE_LINE_JITTER
+const WORLD_STAGE_OCCLUDER_COUNT := 15
+const WORLD_STAGE_OCCLUDER_ALPHA := 0.28
+const WORLD_STAGE_OCCLUDER_DEPTH_ALPHA := 0.34
+const WORLD_STAGE_OCCLUDER_WIDTH := 0.20
 
 var tile_size := GameData.TILE_SIZE
 var map_width := GameData.MAP_WIDTH
 var map_height := GameData.MAP_HEIGHT
 var tiles: Array = []
+var region_backdrop_textures: Dictionary = {}
 var npc_nodes: Array = []
 var landmark_labels: Array[Label] = []
 var prop_nodes: Array[Node2D] = []
 var tile_textures: Dictionary = {}
 var target_region_id := ""
 var world_npc_tiles: Array[Vector2i] = []
+var stage_layer_textures: Dictionary = {}
+var stage_visual_phase := 0.0
+var painted_backdrop_texture: Texture2D = null
+var painted_backdrop_sprite: Sprite2D = null
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	_load_tile_textures()
+	region_backdrop_textures.clear()
+	stage_layer_textures.clear()
+	if WORLD_USE_TILE_TEXTURES:
+		_load_tile_textures()
 	generate_map()
+	_setup_painted_backdrop()
 	_build_depth_props()
 	_build_landmark_labels()
 	spawn_npcs()
+	set_process(WORLD_USE_TILE_TEXTURES and WORLD_DYNAMIC_VISUALS_ENABLED)
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	if not (WORLD_USE_TILE_TEXTURES and WORLD_DYNAMIC_VISUALS_ENABLED):
+		return
+	stage_visual_phase = fposmod(stage_visual_phase + delta * WORLD_STAGE_VISUAL_SPEED, 10000.0)
 	queue_redraw()
 
 func _load_tile_textures() -> void:
@@ -107,6 +225,59 @@ func _load_tile_textures() -> void:
 		if not variants.is_empty():
 			tile_textures[int(tile_id)] = variants
 
+func _setup_painted_backdrop() -> void:
+	painted_backdrop_texture = null
+	if not WORLD_PAINTED_BACKDROP_ENABLED:
+		if painted_backdrop_sprite != null:
+			painted_backdrop_sprite.visible = false
+		return
+	painted_backdrop_texture = GameData.load_texture(WORLD_PAINTED_BACKDROP_PATH, true)
+	if painted_backdrop_texture == null:
+		if painted_backdrop_sprite != null:
+			painted_backdrop_sprite.visible = false
+		return
+	if painted_backdrop_sprite == null:
+		painted_backdrop_sprite = Sprite2D.new()
+		painted_backdrop_sprite.name = "PaintedWorldBackdrop"
+		painted_backdrop_sprite.centered = false
+		painted_backdrop_sprite.z_index = WORLD_PAINTED_BACKDROP_Z_INDEX
+		painted_backdrop_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		add_child(painted_backdrop_sprite)
+		move_child(painted_backdrop_sprite, 0)
+	painted_backdrop_sprite.texture = painted_backdrop_texture
+	painted_backdrop_sprite.position = Vector2.ZERO
+	var texture_size := painted_backdrop_texture.get_size()
+	var world_size := get_world_rect().size
+	if texture_size.x > 0.0 and texture_size.y > 0.0 and world_size.x > 0.0 and world_size.y > 0.0:
+		painted_backdrop_sprite.scale = Vector2(world_size.x / texture_size.x, world_size.y / texture_size.y)
+	painted_backdrop_sprite.modulate = Color(1.0, 1.0, 1.0, WORLD_PAINTED_BACKDROP_ALPHA)
+	painted_backdrop_sprite.visible = true
+
+func is_painted_world_backdrop_active() -> bool:
+	return WORLD_PAINTED_BACKDROP_ENABLED and painted_backdrop_texture != null and painted_backdrop_sprite != null and painted_backdrop_sprite.visible
+
+func get_painted_world_backdrop_size() -> Vector2:
+	if painted_backdrop_texture == null:
+		return Vector2.ZERO
+	return painted_backdrop_texture.get_size()
+
+func _region_backdrop_texture(region_id: String) -> Texture2D:
+	if region_backdrop_textures.has(region_id):
+		return region_backdrop_textures[region_id]
+	var path := GameData.get_scene_background_path(region_id)
+	var texture := GameData.load_texture(path, true)
+	region_backdrop_textures[region_id] = texture
+	return texture
+
+func _world_stage_layer_texture(region_id: String, layer_name: String) -> Texture2D:
+	var key := "%s:%s" % [region_id, layer_name]
+	if stage_layer_textures.has(key):
+		return stage_layer_textures[key]
+	var path := GameData.get_stage_layer_path(region_id, layer_name)
+	var texture := GameData.load_texture(path, true)
+	stage_layer_textures[key] = texture
+	return texture
+
 func tile_to_world(tile: Vector2i) -> Vector2:
 	return Vector2(tile.x * tile_size + tile_size * 0.5, tile.y * tile_size + tile_size * 0.5)
 
@@ -115,6 +286,126 @@ func world_to_tile(world_position: Vector2) -> Vector2i:
 
 func get_region_at_world_position(world_position: Vector2) -> Dictionary:
 	return GameData.get_region_at_tile(world_to_tile(world_position))
+
+func get_actor_depth_scale(world_position: Vector2) -> float:
+	var rect := get_world_rect()
+	if rect.size.y <= 0.0:
+		return 1.0
+	var top_y := rect.size.y * WORLD_STAGE_DEPTH_TOP_RATIO
+	var bottom_y := rect.size.y * WORLD_STAGE_DEPTH_BOTTOM_RATIO
+	var depth := clampf((world_position.y - top_y) / maxf(1.0, bottom_y - top_y), 0.0, 1.0)
+	return lerpf(WORLD_STAGE_MIN_SCALE, WORLD_STAGE_MAX_SCALE, depth)
+
+func is_side_view_stage_active() -> bool:
+	return true
+
+func get_stage_play_lane_y_positions() -> Array[float]:
+	return _world_stage_lane_positions()
+
+func get_stage_lane_anchor(world_position: Vector2) -> Dictionary:
+	var lane_positions := _world_stage_lane_positions()
+	if lane_positions.is_empty():
+		return {}
+	var best_index := 0
+	var best_lane := float(lane_positions[0])
+	var best_distance := absf(world_position.y - best_lane)
+	for index in range(1, lane_positions.size()):
+		var lane_y: float = float(lane_positions[index])
+		var distance := absf(world_position.y - lane_y)
+		if distance < best_distance:
+			best_distance = distance
+			best_lane = lane_y
+			best_index = index
+	var falloff := maxf(1.0, WORLD_STAGE_LANE_MAX_DISTANCE - WORLD_STAGE_LANE_FULL_DISTANCE)
+	var strength := 1.0 - maxf(0.0, best_distance - WORLD_STAGE_LANE_FULL_DISTANCE) / falloff
+	return {
+		"lane_y": best_lane,
+		"offset_y": best_lane - world_position.y,
+		"distance": best_distance,
+		"strength": clampf(strength * WORLD_STAGE_LANE_MAX_STRENGTH, 0.0, 1.0),
+		"index": best_index
+	}
+
+func _world_stage_terrain_palette(region_type: String, terrain: String) -> Color:
+	var base: Color = Color(0.32, 0.40, 0.24, 1.0)
+	var accent: Color = Color(0.78, 0.54, 0.24, 1.0)
+	var terrain_key := terrain.to_lower()
+	match region_type:
+		"city":
+			base = Color(0.54, 0.42, 0.26, 1.0)
+			accent = Color(0.96, 0.68, 0.34, 1.0)
+		"town":
+			base = Color(0.46, 0.36, 0.22, 1.0)
+			accent = Color(0.90, 0.62, 0.30, 1.0)
+		"sect":
+			base = Color(0.36, 0.35, 0.24, 1.0)
+			accent = Color(0.72, 0.92, 0.44, 1.0)
+		_:
+			base = WORLD_REGION_BACKDROP_TINT_BY_TYPE.get(region_type, base)
+			if terrain_key.contains("water") or terrain_key.contains("river") or terrain_key.contains("lake"):
+				base = WORLD_REGION_BACKDROP_TINT_BY_TYPE.get("wild", Color(0.26, 0.32, 0.22, 1.0)).lightened(0.02)
+				accent = Color(0.58, 0.82, 0.86, 1.0)
+			elif terrain_key.contains("snow"):
+				base = Color(0.62, 0.74, 0.86, 1.0)
+				accent = Color(0.72, 0.90, 1.0, 1.0)
+			elif terrain_key.contains("desert") or terrain_key.contains("plateau"):
+				base = Color(0.56, 0.42, 0.24, 1.0)
+				accent = Color(0.95, 0.70, 0.32, 1.0)
+			elif terrain_key.contains("forest") or terrain_key.contains("bamboo"):
+				base = Color(0.28, 0.40, 0.24, 1.0)
+				accent = Color(0.48, 0.82, 0.40, 1.0)
+			elif terrain_key.contains("mountain") or terrain_key.contains("cliff"):
+				base = Color(0.34, 0.30, 0.26, 1.0)
+				accent = Color(0.72, 0.62, 0.38, 1.0)
+			elif terrain_key.contains("marsh"):
+				base = Color(0.22, 0.39, 0.34, 1.0)
+				accent = Color(0.24, 0.86, 0.70, 1.0)
+	return base.lerp(accent, 0.16)
+
+func _sample_world_stage_tint(rect: Rect2) -> Color:
+	var hour_factor := float(GameState.hour) / 24.0
+	var day_cycle := 0.5 + 0.5 * sin(TAU * hour_factor + 1.2)
+	var base := Color(0.25, 0.34, 0.42, 1.0)
+	var noon := Color(0.54, 0.70, 0.88, 1.0)
+	var dusk := Color(0.30, 0.22, 0.14, 1.0)
+	if GameState.hour >= 18.0 or GameState.hour <= 6.0:
+		base = Color(0.14, 0.15, 0.18, 1.0)
+		dusk = Color(0.38, 0.20, 0.14, 1.0)
+	var world_fog := clampf(fmod(rect.size.x + rect.size.y, 120.0) / 120.0, 0.0, 0.5)
+	return base.lerp(noon, day_cycle * 0.55).lerp(dusk, day_cycle * 0.35 * (1.0 - world_fog * 0.2))
+
+func _world_stage_lane_positions() -> Array[float]:
+	var size := get_world_rect().size
+	if size.x <= 0.0 or size.y <= 0.0:
+		return []
+	var top_y := size.y * WORLD_STAGE_DEPTH_TOP_RATIO
+	var bottom_y := size.y * WORLD_STAGE_DEPTH_BOTTOM_RATIO
+	var positions: Array[float] = []
+	for i in range(WORLD_STAGE_LANE_COUNT):
+		var t := (float(i) + 0.5) / float(maxi(1, WORLD_STAGE_LANE_COUNT))
+		positions.append(lerpf(top_y, bottom_y, t))
+	return positions
+
+func _draw_soft_quad(position: Vector2, size: Vector2, tint: Color) -> void:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	draw_polygon(PackedVector2Array([
+		position,
+		position + Vector2(size.x, 0.0),
+		position + Vector2(size.x + tile_size * 0.12, size.y),
+		position + Vector2(-tile_size * 0.12, size.y)
+	]), PackedColorArray([
+		Color(tint.r, tint.g, tint.b, tint.a * 0.05),
+		Color(tint.r, tint.g, tint.b, tint.a * 0.10),
+		Color(tint.r, tint.g, tint.b, tint.a * 0.55),
+		Color(tint.r, tint.g, tint.b, tint.a * 0.55)
+	]))
+
+func get_stage_actor_facing_side(world_position: Vector2) -> float:
+	var rect := get_world_rect()
+	if rect.size.x <= 0.0:
+		return 1.0
+	return -1.0 if world_position.x > rect.size.x * 0.5 else 1.0
 
 func get_world_rect() -> Rect2:
 	return Rect2(Vector2.ZERO, Vector2(map_width * tile_size, map_height * tile_size))
@@ -349,7 +640,16 @@ func spawn_npcs() -> void:
 		var tile := _world_npc_tile(world_data, world_npc_tiles.size())
 		world_data["pos_x"] = tile.x
 		world_data["pos_y"] = tile.y
-		world_data["map_actor_scale"] = WORLD_NPC_SCALE
+		var world_position := tile_to_world(tile)
+		world_data["map_actor_scale"] = get_actor_depth_scale(world_position) * WORLD_NPC_SCALE
+		world_data["stage_actor"] = true
+		world_data["stage_facing_side"] = get_stage_actor_facing_side(world_position)
+		var anchor := get_stage_lane_anchor(world_position)
+		if not anchor.is_empty():
+			world_data["stage_lane_y"] = float(anchor.get("lane_y", world_position.y))
+			world_data["stage_lane_offset_y"] = float(anchor.get("offset_y", 0.0))
+			world_data["stage_lane_strength"] = float(anchor.get("strength", 0.0))
+			world_data["stage_lane_index"] = int(anchor.get("index", -1))
 		actor.setup(world_data, tile_size)
 		npc_nodes.append(actor)
 
@@ -550,21 +850,633 @@ func _build_landmark_labels() -> void:
 		landmark_labels.append(label)
 
 func _draw() -> void:
+	var painted_backdrop_active := is_painted_world_backdrop_active()
+	if painted_backdrop_active and WORLD_PAINTED_BACKDROP_REPLACES_TILE_BASE:
+		_draw_painted_world_backdrop_atmosphere()
+	else:
+		_draw_world_stage_backdrop()
+		_draw_base_layer()
+		if not WORLD_USE_TILE_TEXTURES:
+			_draw_world_painterly_cohesion_pass()
+			_draw_world_painterly_boundary_soften_pass()
+		_draw_world_surface_brush_layers()
+		_draw_world_depth_planes()
+		_draw_world_decoration_layer()
+		if not (WORLD_PAINTERLY_SKIP_SCENE_TEXTURES and not WORLD_USE_TILE_TEXTURES):
+			_draw_region_backdrops()
+			_draw_world_stage_region_layers()
+	_draw_region_overlays()
+	_draw_target_region_overlay()
+	if painted_backdrop_active and WORLD_PAINTED_BACKDROP_REPLACES_TILE_BASE:
+		_draw_painted_world_edge_focus()
+	else:
+		_draw_world_stage_foreground()
+
+func _draw_painted_world_backdrop_atmosphere() -> void:
+	var rect := get_world_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	for i in range(5):
+		var t := float(i) / 4.0
+		var y := rect.size.y * (0.10 + t * 0.74)
+		var alpha := WORLD_PAINTED_ATMOSPHERE_ALPHA * (0.44 - t * 0.18)
+		var sweep := sin(stage_visual_phase * 0.12 + float(i) * 1.7) * tile_size * 0.22
+		draw_line(
+			Vector2(rect.size.x * 0.08 + sweep, y),
+			Vector2(rect.size.x * 0.92 + sweep * 0.45, y + tile_size * (0.34 + t * 0.32)),
+			Color(1.0, 0.84, 0.52, alpha),
+			1.6 + t * 1.2
+		)
+	draw_rect(Rect2(rect.position, Vector2(rect.size.x, rect.size.y * 0.20)), Color(0.08, 0.10, 0.12, WORLD_PAINTED_ATMOSPHERE_ALPHA * 0.30), true)
+
+func _draw_painted_world_edge_focus() -> void:
+	var rect := get_world_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	var top_alpha := WORLD_PAINTED_ATMOSPHERE_ALPHA * 0.36
+	var bottom_alpha := WORLD_PAINTED_ATMOSPHERE_ALPHA * 0.62
+	draw_polygon(PackedVector2Array([
+		Vector2(0.0, rect.size.y * 0.72),
+		Vector2(rect.size.x, rect.size.y * 0.70),
+		Vector2(rect.size.x, rect.size.y),
+		Vector2(0.0, rect.size.y)
+	]), PackedColorArray([
+		Color(0.05, 0.04, 0.03, top_alpha),
+		Color(0.05, 0.04, 0.03, top_alpha * 0.86),
+		Color(0.02, 0.015, 0.01, bottom_alpha),
+		Color(0.02, 0.015, 0.01, bottom_alpha)
+	]))
+
+func _draw_world_stage_backdrop() -> void:
+	var rect := get_world_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	draw_rect(rect, Color(0.06, 0.08, 0.09, 1.0), true)
+	_draw_world_stage_sky_gradient(rect)
+	_draw_world_stage_light_fade(rect)
+	_draw_world_stage_fog_planes(rect)
+	for region in GameData.get_regions():
+		var terrain := str(region.get("terrain", "wild"))
+		var region_type := str(region.get("type", "wild"))
+		var region_color := _world_stage_terrain_palette(region_type, terrain)
+		var region_rect := _region_pixel_rect(region)
+		if region_rect.size.x <= 0.0 or region_rect.size.y <= 0.0:
+			continue
+		var inset := minf(minf(tile_size * 0.22, region_rect.size.x * 0.16), region_rect.size.y * 0.16)
+		_draw_world_region_stage_sheet(region_rect, region_color)
+
+func _draw_world_stage_sky_gradient(rect: Rect2) -> void:
+	var center_tint := _sample_world_stage_tint(rect)
+	draw_polygon(PackedVector2Array([
+		rect.position,
+		rect.position + Vector2(rect.size.x, 0.0),
+		rect.position + rect.size,
+		rect.position + Vector2(0.0, rect.size.y),
+		rect.position + Vector2(rect.size.x * 0.60, rect.size.y * 0.24),
+		rect.position + Vector2(rect.size.x * 0.24, rect.size.y * 0.20)
+	]), PackedColorArray([
+		Color(center_tint.r, center_tint.g, center_tint.b, 0.74),
+		Color(center_tint.r, center_tint.g, center_tint.b, 0.66),
+		Color(0.03, 0.03, 0.03, 0.82),
+		Color(0.02, 0.02, 0.02, 0.90),
+		Color(0.01, 0.01, 0.02, 0.88),
+		Color(0.01, 0.01, 0.02, 0.82)
+	]))
+
+func _draw_world_stage_light_fade(rect: Rect2) -> void:
+	var phase := stage_visual_phase * 0.6
+	for i in range(3):
+		var y := rect.size.y * (0.16 + float(i) * 0.09)
+		var drift := sin(phase + float(i)) * tile_size * 0.12
+		draw_line(Vector2(drift + 8.0, y), Vector2(rect.size.x - drift - 8.0, y + tile_size * 0.20), Color(1.0, 0.88, 0.62, 0.10 + float(i) * 0.02), 1.8)
+	var glow := Color(0.96, 0.74, 0.36, 0.10)
+	draw_rect(Rect2(Vector2(rect.size.x * 0.22, rect.size.y * 0.03), Vector2(rect.size.x * 0.56, rect.size.y * 0.13)), glow, false, 2.0)
+
+func _draw_world_stage_fog_planes(rect: Rect2) -> void:
+	for i in range(WORLD_STAGE_FOG_BAND_COUNT):
+		var t := float(i) / float(WORLD_STAGE_FOG_BAND_COUNT)
+		var y := rect.size.y * (0.28 + t * 0.68)
+		var alpha := WORLD_STAGE_FOG_BASE_ALPHA * (1.0 - t * 0.48)
+		var sweep := sin(stage_visual_phase * 0.12 + float(i) * 1.2) * tile_size * 0.34
+		var width := rect.size.x * (1.0 - t * 0.18)
+		var offset := (rect.size.x - width) * 0.5
+		var top := y - tile_size * 0.40
+		var bottom := y + tile_size * 0.55
+		var color := Color(0.94, 0.90, 0.79, alpha)
+		draw_polygon(PackedVector2Array([
+			Vector2(offset + sweep, top),
+			Vector2(offset + width + sweep, top),
+			Vector2(offset + width * 1.02 + sweep, bottom),
+			Vector2(offset - width * 0.02 + sweep, bottom)
+		]), PackedColorArray([Color(color.r, color.g, color.b, color.a), Color(color.r, color.g, color.b, color.a), Color(color.r, color.g, color.b, 0.0), Color(color.r, color.g, color.b, 0.0)]))
+
+func _draw_world_stage_region_layers() -> void:
+	if WORLD_PAINTERLY_SKIP_SCENE_TEXTURES and not WORLD_USE_TILE_TEXTURES:
+		return
+	for region in GameData.get_regions():
+		var region_id := str(region.get("id", ""))
+		var terrain := str(region.get("terrain", "wild"))
+		var region_type := str(region.get("type", "wild"))
+		var rect := _region_pixel_rect(region)
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		var midground := _world_stage_layer_texture(region_id, "midground")
+		if midground != null:
+			draw_texture_rect(midground, rect, false, Color(1.0, 1.0, 1.0, 0.22))
+		var floor := _world_stage_layer_texture(region_id, "floor")
+		if floor != null:
+			var alpha := 0.24 if region_type != "wild" else 0.16
+			draw_texture_rect(floor, rect, false, Color(1.0, 1.0, 1.0, alpha))
+		_draw_world_region_stage_shadow(rect, _world_stage_terrain_palette(region_type, terrain))
+
+func _draw_world_region_stage_sheet(region_rect: Rect2, tint: Color) -> void:
+	draw_rect(region_rect.grow(2.0), Color(tint.r, tint.g, tint.b, WORLD_STAGE_FAR_SHADE_ALPHA), false, 2.4)
+	_draw_world_region_stage_sheet_lines(region_rect, tint)
+
+func _draw_world_region_stage_sheet_lines(region_rect: Rect2, tint: Color) -> void:
+	var lines := 6
+	for index in range(lines):
+		var t := float(index + 1) / float(lines + 1)
+		var y := region_rect.position.y + region_rect.size.y * (0.15 + t * 0.62)
+		var x1 := region_rect.position.x + region_rect.size.x * 0.06
+		var x2 := region_rect.position.x + region_rect.size.x * 0.94
+		var jitter := sin(stage_visual_phase + float(index) * 1.8 + region_rect.position.x * 0.003) * tile_size * 0.08
+		draw_line(Vector2(x1 + jitter, y), Vector2(x2 - jitter, y + tile_size * 0.18), Color(tint.r, tint.g, tint.b, 0.12 + float(index) * 0.013), 1.3)
+
+func _draw_world_stage_sunbeams(size: Vector2, tint: Color) -> void:
+	for i in range(5):
+		var side := 1.0 if i % 2 == 0 else -1.0
+		var x := size.x * (0.16 + float(i) * 0.16) + sin(stage_visual_phase * 0.25 + float(i)) * tile_size * 0.15 * side
+		var top := Vector2(clampf(x, 0.0, size.x), 0.0)
+		var bottom := Vector2(clampf(x + side * tile_size * 0.9, 0.0, size.x), size.y * 0.84)
+		draw_polygon(PackedVector2Array([
+			top + Vector2(-tile_size * 0.30, 0.0),
+			top + Vector2(tile_size * 0.30, 0.0),
+			bottom + Vector2(tile_size * 1.10, 0.0),
+			bottom + Vector2(-tile_size * 1.10, 0.0)
+		]), PackedColorArray([
+			Color(tint.r, tint.g, tint.b, 0.08),
+			Color(tint.r, tint.g, tint.b, 0.07),
+			Color(tint.r, tint.g, tint.b, 0.00),
+			Color(tint.r, tint.g, tint.b, 0.00)
+		]))
+
+func _draw_world_region_stage_shadow(region_rect: Rect2, tint: Color) -> void:
+	var near := region_rect.position.y + region_rect.size.y * 0.52
+	var far := region_rect.position.y + region_rect.size.y * 0.98
+	_draw_soft_quad(region_rect.position, region_rect.size, tint)
+	draw_rect(Rect2(region_rect.position.x + tile_size * 0.36, near, maxf(region_rect.size.x - tile_size * 0.72, 1.0), tile_size * 0.36), Color(0.03, 0.03, 0.03, WORLD_STAGE_MID_SHADE_ALPHA), false, 2.0)
+	for i in range(2):
+		var y := near + tile_size * (1.2 + float(i) * 0.32)
+		draw_line(Vector2(region_rect.position.x + tile_size * 0.06, y), Vector2(region_rect.position.x + region_rect.size.x - tile_size * 0.06, y + tile_size * 0.10), Color(tint.r, tint.g, tint.b, WORLD_STAGE_LANE_LINE_ALPHA * 0.85), 0.8)
+
+func _draw_world_depth_planes() -> void:
+	var size := get_world_rect().size
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	_draw_stage_play_lanes(size)
+	_draw_world_stage_floor_guides(size)
+	_draw_world_stage_lens_fade(size)
+
+func _draw_stage_play_lanes(size: Vector2) -> void:
+	if WORLD_STAGE_LANE_COUNT <= 0:
+		return
+	var top_y := size.y * WORLD_STAGE_DEPTH_TOP_RATIO
+	var bottom_y := size.y * WORLD_STAGE_DEPTH_BOTTOM_RATIO
+	var lane_divisor := maxf(1.0, float(WORLD_STAGE_LANE_COUNT - 1))
+	for i in range(WORLD_STAGE_LANE_COUNT):
+		var t0 := float(i) / float(WORLD_STAGE_LANE_COUNT)
+		var t1 := float(i + 1) / float(WORLD_STAGE_LANE_COUNT)
+		var y0 := lerpf(top_y, bottom_y, t0)
+		var y1 := lerpf(top_y, bottom_y, t1)
+		var inset0 := size.x * (0.095 + t0 * 0.065) + WORLD_STAGE_LANE_SIDE_OFFSET * ((float(i) / lane_divisor) - 0.5)
+		var inset1 := size.x * (0.095 + t1 * 0.065) + WORLD_STAGE_LANE_SIDE_OFFSET * ((float(i + 1) / lane_divisor) - 0.5)
+		var alpha := WORLD_STAGE_LANE_DEEP_ALPHA * (0.36 + t1 * 0.72)
+		draw_polygon(PackedVector2Array([
+			Vector2(inset0, y0),
+			Vector2(size.x - inset0, y0),
+			Vector2(size.x - inset1, y1),
+			Vector2(inset1, y1)
+		]), PackedColorArray([
+			Color(0.08, 0.07, 0.05, alpha * 0.34),
+			Color(0.08, 0.07, 0.05, alpha * 0.22),
+			Color(0.00, 0.00, 0.00, alpha * 0.54),
+			Color(0.00, 0.00, 0.00, alpha * 0.56)
+		]))
+		var glow := Color(0.94, 0.86, 0.72, WORLD_STAGE_LANE_LINE_ALPHA * (0.34 + t1 * 0.22))
+		draw_line(Vector2(inset0 + tile_size * 0.10, y0 - tile_size * 0.07), Vector2(size.x - inset0 - tile_size * 0.10, y0 - tile_size * 0.14), glow, 1.4 + t0 * 1.1)
+		draw_line(Vector2(inset1 + tile_size * 0.10, y1 + tile_size * 0.10), Vector2(size.x - inset1 - tile_size * 0.10, y1 + tile_size * 0.08), glow, 1.8 + t1 * 1.3)
+
+func _draw_world_stage_floor_guides(size: Vector2) -> void:
+	var top_y := size.y * 0.34
+	for i in range(4):
+		var t := float(i) / 3.0
+		var y := lerpf(top_y, size.y * 0.94, t)
+		var left := size.x * (0.17 + t * 0.10)
+		var right := size.x - left
+		var drift := sin(stage_visual_phase * 0.18 + float(i) * 2.0) * tile_size * 0.16
+		var top_alpha := 0.08 + float(i) * 0.02
+		draw_line(Vector2(left + drift, y), Vector2(right + drift, y), Color(0.88, 0.80, 0.66, top_alpha), 2.1 + float(i) * 0.2)
+		draw_line(Vector2(left + drift * 1.05, y + tile_size * 0.24), Vector2(right + drift * 1.05, y + tile_size * 0.24), Color(0.18, 0.15, 0.10, 0.14), 1.1)
+
+func _draw_world_stage_lens_fade(size: Vector2) -> void:
+	var horizon := size.y * 0.54
+	_draw_soft_quad(Vector2(0.0, 0.0), size, Color(0.00, 0.00, 0.00, WORLD_STAGE_FAR_SHADE_ALPHA))
+	var left := PackedVector2Array([
+		Vector2(0.0, horizon),
+		Vector2(size.x * 0.10, size.y),
+		Vector2(0.0, size.y)
+	])
+	draw_polygon(left, PackedColorArray([Color(0.0, 0.0, 0.0, WORLD_STAGE_MID_SHADE_ALPHA), Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, WORLD_STAGE_MID_SHADE_ALPHA)]))
+	var right := PackedVector2Array([
+		Vector2(size.x, horizon),
+		Vector2(size.x, size.y),
+		Vector2(size.x * 0.90, size.y)
+	])
+	draw_polygon(right, PackedColorArray([Color(0.0, 0.0, 0.0, WORLD_STAGE_MID_SHADE_ALPHA), Color(0.0, 0.0, 0.0, 0.0), Color(0.0, 0.0, 0.0, WORLD_STAGE_MID_SHADE_ALPHA)]))
+
+func _draw_world_stage_foreground() -> void:
+	var size := get_world_rect().size
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	var foreground_top := size.y * 0.67
+	var near_rect := Rect2(0.0, foreground_top, size.x, size.y - foreground_top)
+	draw_polygon(PackedVector2Array([
+		Vector2(0.0, foreground_top),
+		Vector2(size.x, foreground_top + tile_size * 0.12),
+		Vector2(size.x, size.y),
+		Vector2(0.0, size.y)
+	]), PackedColorArray([
+		Color(0.03, 0.03, 0.03, WORLD_STAGE_FRONT_SHADE_ALPHA * 0.56),
+		Color(0.04, 0.04, 0.04, WORLD_STAGE_FRONT_SHADE_ALPHA * 1.05),
+		Color(0.05, 0.03, 0.02, WORLD_STAGE_FRONT_SHADE_ALPHA * 1.18),
+		Color(0.04, 0.03, 0.02, WORLD_STAGE_FRONT_SHADE_ALPHA * 1.08)
+	]))
+	_draw_world_stage_occluders(near_rect)
+	_draw_world_stage_setpiece_shadows(size)
+
+func _draw_world_stage_occluders(near_rect: Rect2) -> void:
+	for i in range(WORLD_STAGE_OCCLUDER_COUNT):
+		var t := float(i) / float(maxi(1, WORLD_STAGE_OCCLUDER_COUNT - 1))
+		var world_seed := _tile_seed(i + 77, i * 13 + 3)
+		var x := fposmod(float(i * 13) + sin(stage_visual_phase * 0.45 + float(i) * 0.6) * near_rect.size.x * 0.10, near_rect.size.x - tile_size)
+		var y := lerpf(near_rect.position.y + near_rect.size.y * 0.06, near_rect.position.y + near_rect.size.y * 0.72, t)
+		var width := tile_size * (WORLD_STAGE_OCCLUDER_WIDTH + float((world_seed + i) % 17) * 0.004)
+		var height := tile_size * (2.7 + float(i % 3) * 0.35 + absf(cos(stage_visual_phase + float(i))) * 0.55)
+		var alpha := WORLD_STAGE_OCCLUDER_DEPTH_ALPHA * (0.38 + t * 0.36) * (0.7 + float(i % 4) * 0.08)
+		draw_polygon(PackedVector2Array([
+			Vector2(x, y + height),
+			Vector2(x + width, y + height),
+			Vector2(x + width * 0.58, y),
+			Vector2(x + width * 0.12, y)
+		]), PackedColorArray([
+			Color(0.03, 0.03, 0.03, WORLD_STAGE_OCCLUDER_ALPHA * alpha),
+			Color(0.05, 0.04, 0.03, WORLD_STAGE_OCCLUDER_ALPHA * alpha),
+			Color(0.06, 0.04, 0.03, WORLD_STAGE_OCCLUDER_DEPTH_ALPHA * alpha),
+			Color(0.04, 0.03, 0.02, WORLD_STAGE_OCCLUDER_DEPTH_ALPHA * alpha)
+		]))
+
+func _draw_world_stage_setpiece_shadows(size: Vector2) -> void:
+	for i in range(3):
+		var anchor := float(i)
+		var x := fposmod(anchor * 31.0 + stage_visual_phase * tile_size * 0.4 + float(i) * tile_size * 2.0, size.x + tile_size * 3.0) - tile_size * 1.5
+		var y := size.y * (0.70 + float(i) * 0.08)
+		var scale := 1.0 + sin(stage_visual_phase + float(i) * 0.77) * 0.12
+		var width := tile_size * (2.2 + float(i) * 0.22) * scale
+		var roof := Vector2(width * 0.32, tile_size * (0.16 + float(i) * 0.07))
+		draw_polygon(PackedVector2Array([
+			Vector2(x, y),
+			Vector2(x + width, y),
+			Vector2(x + width * 0.72, y + tile_size * 0.75),
+			Vector2(x + width * 0.28, y + tile_size * 0.75)
+		]), PackedColorArray([Color(0.05, 0.04, 0.02, 0.10), Color(0.08, 0.05, 0.03, 0.13), Color(0.09, 0.06, 0.03, 0.11), Color(0.06, 0.04, 0.03, 0.08)]))
+		draw_polygon(PackedVector2Array([
+			Vector2(x + roof.x, y),
+			Vector2(x + width - roof.x, y),
+			Vector2(x + width - roof.x * 0.12, y + roof.y),
+			Vector2(x + roof.x * 0.80, y + roof.y)
+		]), PackedColorArray([
+			Color(0.16, 0.11, 0.07, 0.18 * WORLD_STAGE_FRONT_SHADE_ALPHA),
+			Color(0.21, 0.12, 0.07, 0.11 * WORLD_STAGE_FRONT_SHADE_ALPHA),
+			Color(0.14, 0.08, 0.05, 0.10 * WORLD_STAGE_FRONT_SHADE_ALPHA),
+			Color(0.07, 0.04, 0.03, 0.09 * WORLD_STAGE_FRONT_SHADE_ALPHA)
+		]))
+
+func _draw_base_layer() -> void:
 	for y in range(map_height):
 		for x in range(map_width):
 			var tile_id: int = tiles[y][x]
 			var rect := Rect2(x * tile_size, y * tile_size, tile_size, tile_size)
-			var texture := _tile_texture(tile_id, x, y)
-			if texture != null:
-				draw_texture_rect(texture, rect, false)
+			if WORLD_USE_TILE_TEXTURES:
+				var texture := _tile_texture(tile_id, x, y)
+				if texture != null:
+					draw_texture_rect(texture, rect, false)
+				else:
+					draw_rect(rect, _tile_color(tile_id), true)
 			else:
-				draw_rect(rect, _tile_color(tile_id), true)
-			_draw_tile_transition(rect, tile_id, x, y)
-			_draw_tile_detail(rect, tile_id, x, y)
-			_draw_2_5d_tile_overlay(rect, tile_id, x, y)
-	_draw_world_decoration_layer()
-	_draw_region_overlays()
-	_draw_target_region_overlay()
+				_draw_world_painterly_tile_base(rect, tile_id, x, y)
+				if _is_world_building_tile(tile_id):
+					_draw_world_painterly_building_block(rect, tile_id, x, y)
+			if WORLD_USE_TILE_TEXTURES:
+				if _should_draw_world_map_tile_transition(x, y, tile_id):
+					_draw_tile_transition(rect, tile_id, x, y)
+				if _should_draw_world_map_tile_detail(x, y, tile_id):
+					_draw_tile_detail(rect, tile_id, x, y)
+				if _should_draw_world_building_structure_overlay(tile_id, x, y):
+					_draw_2_5d_tile_overlay(rect, tile_id, x, y)
+				if _should_draw_world_building_wireframe(x, y, tile_id):
+					_draw_world_building_wireframe(rect, tile_id, x, y)
+			if WORLD_USE_TILE_TEXTURES and _is_world_building_tile(tile_id):
+				_draw_world_building_surface_detail(rect, tile_id, x, y)
+
+func _draw_world_painterly_tile_base(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	var base_color := _tile_color(tile_id)
+	var bleed_target := base_color
+	var neighbor_count := 0
+	for offset in [
+		Vector2i(1, 0),
+		Vector2i(-1, 0),
+		Vector2i(0, 1),
+		Vector2i(0, -1),
+	]:
+		var nx: int = x + offset.x
+		var ny: int = y + offset.y
+		if ny >= 0 and ny < tiles.size() and nx >= 0 and nx < max(0, int(tiles[ny].size())):
+			var sample_color := _tile_color(_get_tile(nx, ny))
+			bleed_target = bleed_target.lerp(sample_color, 0.10)
+			neighbor_count += 1
+	if neighbor_count > 0:
+		bleed_target = bleed_target.lerp(base_color, 0.60)
+	var soft_rect := rect.grow(tile_size * WORLD_PAINTERLY_TILE_OVERDRAW)
+	draw_rect(soft_rect, bleed_target, true)
+	var jitter_x := StageVisualProfile.tile_offset(x, y, 401, tile_size * WORLD_PAINTERLY_TILE_VARIATION)
+	var jitter_y := StageVisualProfile.tile_offset(y, x, 402, tile_size * WORLD_PAINTERLY_TILE_VARIATION)
+	var warped := PackedVector2Array([
+		rect.position + Vector2(tile_size * 0.10 + jitter_x, tile_size * 0.10 + jitter_y),
+		rect.position + Vector2(rect.size.x - tile_size * 0.06 + jitter_x * 0.8, tile_size * 0.04 - jitter_y * 0.2),
+		rect.position + Vector2(rect.size.x - tile_size * 0.04 + jitter_x * 0.6, rect.size.y - tile_size * 0.04 + jitter_y),
+		rect.position + Vector2(tile_size * 0.04 - jitter_x * 0.2, rect.size.y - tile_size * 0.08 - jitter_y)
+	])
+	var wash := Color(base_color.r * 0.90, base_color.g * 0.90, base_color.b * 0.90, WORLD_PAINTERLY_TILE_GRAIN_ALPHA * 0.35)
+	draw_polygon(warped, PackedColorArray([wash, wash, wash, wash]))
+	var grain_tint := Color(base_color.r, base_color.g, base_color.b, WORLD_PAINTERLY_TILE_GRAIN_ALPHA * 0.45).lightened(0.06)
+	for i in range(WORLD_PAINTERLY_TILE_BLOB_COUNT + 1):
+		var seed_x := StageVisualProfile.tile_random(x * 13 + i, y * 17 + i, 503)
+		var seed_y := StageVisualProfile.tile_random(y * 17 + i, x * 13 + i, 507)
+		var blob_center := rect.position + Vector2(
+			float(seed_x % int(tile_size * 1.5)),
+			float(seed_y % int(tile_size * 1.5))
+		)
+		var blob_radius := tile_size * (0.06 + StageVisualProfile.tile_noise(seed_x, seed_y, 509) * 0.12)
+		draw_circle(blob_center, blob_radius, grain_tint)
+		if i == WORLD_PAINTERLY_TILE_BLOB_COUNT:
+			var ribbon_len := tile_size * (2.0 + StageVisualProfile.tile_noise(seed_y, seed_x, 517) * 2.2)
+			var ribbon_angle := TAU * StageVisualProfile.tile_noise(seed_x, seed_y, 519)
+			var dir := Vector2(cos(ribbon_angle), sin(ribbon_angle))
+			var side := Vector2(-dir.y, dir.x)
+			var ribbon_color := Color(base_color.r, base_color.g, base_color.b, WORLD_PAINTERLY_TILE_GRAIN_ALPHA * 0.55)
+			var p0 := blob_center + dir * ribbon_len + side * (tile_size * 0.06)
+			var p1 := blob_center + dir * ribbon_len * 0.6 + side * (tile_size * 0.02)
+			var p2 := blob_center - dir * ribbon_len + side * -(tile_size * 0.06)
+			var p3 := blob_center - dir * ribbon_len * 0.45 + side * -(tile_size * 0.03)
+			draw_polygon(PackedVector2Array([p0, p1, p2, p3]), PackedColorArray([ribbon_color, ribbon_color, ribbon_color, ribbon_color]))
+
+func _draw_world_painterly_building_block(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if _get_tile(x - 1, y) == tile_id and _get_tile(x + 1, y) == tile_id and _get_tile(x, y - 1) == tile_id and _get_tile(x, y + 1) == tile_id:
+		return
+	var base_color := _world_building_wire_color(tile_id)
+	var roof := Color(base_color.r * 1.22, base_color.g * 1.16, base_color.b * 1.14, WORLD_PAINTERLY_BUILDING_BLOCK_ALPHA)
+	var wall := Color(base_color.r * 0.84, base_color.g * 0.82, base_color.b * 0.76, WORLD_PAINTERLY_BUILDING_BLOCK_ALPHA * 0.88)
+	var roof_sway := StageVisualProfile.tile_noise(x, y, 901) * tile_size * 0.14
+	var wall_jitter := StageVisualProfile.tile_noise(y, x, 902) * tile_size * 0.18
+	if _get_tile(x, y - 1) != tile_id:
+		var roof_rect := Rect2(
+			rect.position + Vector2(tile_size * 0.12 + roof_sway * 0.15, tile_size * 0.04),
+			Vector2(tile_size * 0.72 + roof_sway * 0.18, tile_size * 0.17)
+		)
+		draw_rect(roof_rect, roof, true)
+	if _get_tile(x, y + 1) != tile_id:
+		var foot := rect.position.y + tile_size - tile_size * 0.22
+		var foundation_rect := Rect2(
+			Vector2(rect.position.x + wall_jitter * 0.6, foot),
+			Vector2(rect.size.x - wall_jitter * 0.8, tile_size * 0.20)
+		)
+		draw_rect(foundation_rect, wall, true)
+	if _get_tile(x - 1, y) != tile_id:
+		draw_line(rect.position + Vector2(1.0, tile_size * 0.18), rect.position + Vector2(1.0, tile_size - 1.0), roof, 1.0)
+	if _get_tile(x + 1, y) != tile_id:
+		draw_line(rect.position + Vector2(rect.size.x - 1.0, tile_size * 0.18), rect.position + Vector2(rect.size.x - 1.0, tile_size - 1.0), roof, 1.0)
+
+func _draw_world_painterly_cohesion_pass() -> void:
+	if map_width <= 0 or map_height <= 0:
+		return
+	var stroke_phase := int(floor(stage_visual_phase * 7.0))
+	for i in range(WORLD_PAINTERLY_MELT_STROKE_COUNT):
+		var seed_x := _tile_seed(i + 211, stroke_phase + 17)
+		var seed_y := _tile_seed(i * 13 + 3, stroke_phase + 19)
+		var width_span: int = max(1, map_width)
+		var height_span: int = max(1, map_height)
+		var tx := seed_x % width_span
+		var ty := seed_y % height_span
+		var base_color := _tile_color(_get_tile(tx, ty))
+		var center := Vector2(float(tx), float(ty)) * tile_size + Vector2(
+			tile_size * StageVisualProfile.tile_noise(seed_y, seed_x, 731),
+			tile_size * StageVisualProfile.tile_noise(seed_x, seed_y, 741)
+		)
+		var angle := TAU * StageVisualProfile.tile_noise(seed_x * 3, seed_y * 5, 751)
+		var dir := Vector2(cos(angle), sin(angle))
+		var side := Vector2(-dir.y, dir.x)
+		var len := tile_size * (2.0 + StageVisualProfile.tile_noise(seed_x + 2, seed_y + 4, 761) * 3.7)
+		var width := tile_size * (0.34 + StageVisualProfile.tile_noise(seed_x + 6, seed_y + 8, 771) * 0.36)
+		var p0 := center + dir * len * 0.58 + side * width
+		var p1 := center + dir * len * 0.20 + side * (width * 0.38)
+		var p2 := center - dir * len * 0.20 - side * (width * 0.30)
+		var p3 := center - dir * len * 0.58 - side * width
+		var wash := Color(base_color.r, base_color.g, base_color.b, WORLD_PAINTERLY_MELT_STROKE_ALPHA)
+		draw_polygon(PackedVector2Array([p0, p1, p2, p3]), PackedColorArray([wash, wash, wash, wash]))
+
+	for i in range(WORLD_PAINTERLY_MELT_BLOB_COUNT):
+		var seed_x := _tile_seed(i + 301, stroke_phase + 21)
+		var seed_y := _tile_seed(i * 9 + 5, stroke_phase + 23)
+		var width_span: int = max(1, map_width)
+		var height_span: int = max(1, map_height)
+		var tx := seed_x % width_span
+		var ty := seed_y % height_span
+		var center := Vector2(float(tx), float(ty)) * tile_size + Vector2(
+			tile_size * 0.15 + tile_size * StageVisualProfile.tile_noise(seed_x, seed_y, 819),
+			tile_size * 0.15 + tile_size * StageVisualProfile.tile_noise(seed_y, seed_x, 820)
+		)
+		var base_color := _tile_color(_get_tile(tx, ty))
+		var radius := tile_size * (0.55 + StageVisualProfile.tile_noise(seed_x + 1, seed_y + 1, 825) * 1.1)
+		draw_circle(center, radius, Color(base_color.r, base_color.g, base_color.b, WORLD_PAINTERLY_MELT_BLOB_ALPHA))
+
+func _draw_world_painterly_boundary_soften_pass() -> void:
+	if map_width <= 0 or map_height <= 0:
+		return
+	var phase := int(floor(stage_visual_phase * 4.0))
+	for i in range(WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_COUNT):
+		var seed_x := _tile_seed(i + 1801, phase + 11)
+		var seed_y := _tile_seed(i * 9 + 13, phase + 17)
+		var width_span: int = max(1, map_width)
+		var height_span: int = max(1, map_height)
+		var tx := seed_x % width_span
+		var ty := seed_y % height_span
+		var nx := tx
+		var ny := ty
+		var step := StageVisualProfile.tile_random(seed_x, seed_y, 191) % 4
+		if step == 0:
+			nx = mini(tx + 1, map_width - 1)
+		elif step == 1:
+			nx = maxi(tx - 1, 0)
+		elif step == 2:
+			ny = mini(ty + 1, map_height - 1)
+		else:
+			ny = maxi(ty - 1, 0)
+		var base_color := _tile_color(_get_tile(tx, ty))
+		var near_color := _tile_color(_get_tile(nx, ny))
+		var blend := base_color.lerp(near_color, 0.42 + StageVisualProfile.tile_noise(seed_y, seed_x, 201) * 0.36)
+		var base_x := (float(tx) + StageVisualProfile.tile_noise(seed_x + 3, seed_y + 7, 211)) * tile_size
+		var base_y := (float(ty) + StageVisualProfile.tile_noise(seed_y + 5, seed_x + 9, 223)) * tile_size
+		var center := Vector2(base_x, base_y)
+		var radius := tile_size * (WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_RADIUS_MIN + StageVisualProfile.tile_noise(seed_x + 5, seed_y + 11, 233) * (WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_RADIUS_MAX - WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_RADIUS_MIN))
+		var alpha := WORLD_PAINTERLY_TILE_BOUNDARY_SOFTEN_ALPHA * (0.55 + StageVisualProfile.tile_noise(seed_x + 9, seed_y + 13, 241) * 0.55)
+		draw_circle(center, radius, Color(blend.r, blend.g, blend.b, alpha))
+
+func _draw_world_surface_brush_layers() -> void:
+	var rect := get_world_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		return
+	var phase := int(floor(stage_visual_phase * 7.0))
+	for i in range(WORLD_PAINTERLY_STROKE_COUNT):
+		var seed_x := StageVisualProfile.tile_random(i + phase * 19, phase + 7, 111)
+		var seed_y := StageVisualProfile.tile_random(phase + 13, i * 23, 222)
+		var x := float(seed_x % max(1, map_width)) * tile_size + tile_size * 0.35
+		var y := float(seed_y % max(1, map_height)) * tile_size + tile_size * 0.35
+		var origin := Vector2(x, y)
+		var angle := TAU * StageVisualProfile.tile_wave(seed_x, seed_y, 333)
+		var len := tile_size * (1.4 + StageVisualProfile.tile_noise(seed_y, seed_x, 444) * 3.1)
+		var jitter := Vector2(cos(angle), sin(angle)) * len
+		var color := Color(0.10, 0.08, 0.05, WORLD_PAINTERLY_STROKE_ALPHA * (0.35 + StageVisualProfile.tile_noise(seed_x, seed_y, 555) * 0.55))
+		draw_line(origin, origin + jitter, color, 1.1 + float(i % 5) * 0.2)
+
+	for i in range(WORLD_PAINTERLY_BLOB_COUNT):
+		var seed_x := StageVisualProfile.tile_random(i * 31 + phase, phase + 1, 666)
+		var seed_y := StageVisualProfile.tile_random(phase + 11, i * 17, 777)
+		var x := float(seed_x % max(1, map_width)) * tile_size
+		var y := float(seed_y % max(1, map_height)) * tile_size
+		var offset := Vector2(
+			tile_size * StageVisualProfile.tile_noise(seed_x, seed_y, 888),
+			tile_size * StageVisualProfile.tile_noise(seed_y, seed_x, 999)
+		)
+		var center := Vector2(x, y) + offset
+		var radius := tile_size * (0.28 + StageVisualProfile.tile_noise(seed_x + 7, seed_y + 9, 123) * 0.42)
+		var alpha := WORLD_PAINTERLY_BLOB_ALPHA * (0.5 + StageVisualProfile.tile_noise(seed_x + 15, seed_y + 25, 321) * 0.5)
+		draw_circle(center, radius, Color(0.09, 0.06, 0.03, alpha))
+
+func _should_draw_world_map_tile_transition(x: int, y: int, tile_id: int) -> bool:
+	if not WORLD_USE_TILE_TEXTURES:
+		return false
+	var step := WORLD_MAP_TILE_TRANSITION_DECIMATION
+	if _is_world_building_tile(tile_id):
+		step = maxi(1, WORLD_MAP_BUILDING_OVERLAY_DECIMATION - 2)
+	return ((x * 11 + y * 17 + tile_id) % step) == 0
+
+func _should_draw_world_map_tile_detail(x: int, y: int, tile_id: int) -> bool:
+	if not WORLD_USE_TILE_TEXTURES:
+		return false
+	var step := WORLD_MAP_TILE_DETAIL_DECIMATION
+	if _is_world_building_tile(tile_id):
+		step = 1
+	return ((x * 13 + y * 19 + tile_id) % step) == 0
+
+func _should_draw_world_building_structure_overlay(tile_id: int, x: int, y: int) -> bool:
+	if not WORLD_USE_TILE_TEXTURES:
+		return false
+	if not _is_world_building_tile(tile_id):
+		return false
+	return ((x * 7 + y * 9 + tile_id) % WORLD_MAP_BUILDING_OVERLAY_DECIMATION) == 0
+
+func _should_draw_world_building_wireframe(x: int, y: int, tile_id: int) -> bool:
+	if not WORLD_USE_TILE_TEXTURES:
+		return false
+	if not _is_world_building_tile(tile_id):
+		return false
+	return ((x * 17 + y * 11 + tile_id) % WORLD_BUILDING_EDGE_DECIMATION) == 0
+
+func _is_world_building_tile(tile_id: int) -> bool:
+	match tile_id:
+		Tile.BUILDING, Tile.SHOP, Tile.CITY, Tile.TOWN, Tile.VILLAGE, Tile.TEMPLE, Tile.SECT:
+			return true
+		_:
+			return false
+
+func _world_building_wire_color(tile_id: int) -> Color:
+	match tile_id:
+		Tile.SECT:
+			return Color(0.56, 0.42, 0.18, WORLD_BUILDING_EDGE_ALPHA)
+		Tile.CITY, Tile.TOWN, Tile.VILLAGE:
+			return Color(0.34, 0.18, 0.07, WORLD_BUILDING_EDGE_ALPHA)
+		Tile.SHOP:
+			return Color(0.76, 0.36, 0.16, WORLD_BUILDING_EDGE_ALPHA)
+		_:
+			return Color(0.26, 0.14, 0.08, WORLD_BUILDING_EDGE_ALPHA)
+
+func _world_building_wireframe_jitter(x: int, y: int) -> float:
+	return StageVisualProfile.tile_offset(x, y, 888, tile_size * StageVisualProfile.WORLD_BUILDING_EDGE_NOISE)
+
+func _draw_world_building_wireframe(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if not _is_world_building_tile(tile_id):
+		return
+	var base := _world_building_wire_color(tile_id)
+	var width := maxf(0.8, WORLD_BUILDING_EDGE_WIDTH)
+	var jitter := _world_building_wireframe_jitter(x, y)
+	var top := Vector2(rect.position.x + 2.0, rect.position.y + 1.0 + jitter)
+	var bottom := Vector2(rect.position.x + tile_size - 2.0, rect.position.y + tile_size - 1.0 + jitter * 0.4)
+	if _get_tile(x, y - 1) != tile_id:
+		draw_line(top + Vector2(2.0, 0.0), bottom - Vector2(2.0, 0.0), base, width)
+	if _get_tile(x, y + 1) != tile_id:
+		draw_line(rect.position + Vector2(2.0, tile_size - 1.2), rect.position + Vector2(tile_size - 2.0, tile_size - 1.2), base, width)
+	if _get_tile(x - 1, y) != tile_id:
+		draw_line(rect.position + Vector2(1.2, 2.0), rect.position + Vector2(1.2, tile_size - 2.0), base, width)
+	if _get_tile(x + 1, y) != tile_id:
+		draw_line(rect.position + Vector2(tile_size - 1.2, 1.8 + jitter * 0.12), rect.position + Vector2(tile_size - 1.2, tile_size - 2.0), base, width)
+
+func _draw_region_backdrops() -> void:
+	if WORLD_PAINTERLY_SKIP_SCENE_TEXTURES and not WORLD_USE_TILE_TEXTURES:
+		return
+	for region in GameData.get_regions():
+		var region_type := str(region.get("type", "wild"))
+		if not _is_world_region_backdrop(region_type):
+			continue
+		var rect := _region_pixel_rect(region)
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		var region_id := str(region.get("id", ""))
+		var texture := _region_backdrop_texture(region_id)
+		if texture != null:
+			var alpha := minf(_world_region_backdrop_alpha(region_type) + WORLD_REGION_BACKDROP_ALPHA_BOOST, 1.0)
+			draw_texture_rect(texture, rect, false, Color(1.0, 1.0, 1.0, alpha))
+			draw_rect(rect, Color(_world_region_backdrop_tint(region_type).r, _world_region_backdrop_tint(region_type).g, _world_region_backdrop_tint(region_type).b, WORLD_REGION_BACKDROP_TINT_ALPHA), true)
+		else:
+			draw_rect(rect, Color(_world_region_backdrop_tint(region_type).r, _world_region_backdrop_tint(region_type).g, _world_region_backdrop_tint(region_type).b, WORLD_REGION_BACKDROP_FALLBACK_ALPHA), true)
+
+func _world_region_backdrop_alpha(region_type: String) -> float:
+	return float(WORLD_REGION_BACKDROP_ALPHA_BY_TYPE.get(region_type, WORLD_REGION_BACKDROP_BASE_ALPHA))
+
+func _world_region_backdrop_tint(region_type: String) -> Color:
+	return WORLD_REGION_BACKDROP_TINT_BY_TYPE.get(region_type, Color(0.24, 0.24, 0.24, 1.0))
+
+func _is_world_region_backdrop(region_type: String) -> bool:
+	return WORLD_REGION_BACKDROP_TYPES.has(region_type)
+
+func _region_pixel_rect(region: Dictionary) -> Rect2:
+	var rect_data: Array = region.get("rect", [])
+	if rect_data.size() < 4:
+		return Rect2()
+	return Rect2(
+		Vector2(float(rect_data[0]) * tile_size, float(rect_data[1]) * tile_size),
+		Vector2(float(rect_data[2]) * tile_size, float(rect_data[3]) * tile_size)
+	)
 
 func _tile_texture(tile_id: int, x: int, y: int) -> Texture2D:
 	var variants: Array = tile_textures.get(tile_id, [])
@@ -739,6 +1651,39 @@ func _draw_tile_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
 				draw_line(rect.position + Vector2(8 + i * 8, 7), rect.position + Vector2(8 + i * 8, 41), Color(0.25, 0.14, 0.07, 0.55), 1.4)
 			draw_line(rect.position + Vector2(5, 18), rect.position + Vector2(43, 18), Color(0.70, 0.48, 0.24, 0.55), 2.0)
 			draw_line(rect.position + Vector2(5, 29), rect.position + Vector2(43, 29), Color(0.70, 0.48, 0.24, 0.55), 2.0)
+
+func _draw_world_building_surface_detail(rect: Rect2, tile_id: int, x: int, y: int) -> void:
+	if not _is_world_building_tile(tile_id):
+		return
+	var base := _world_building_wire_color(tile_id)
+	STAGE_SURFACE_DETAIL_RENDERER.draw_building_surface_detail(
+		self,
+		rect,
+		base,
+		x,
+		y,
+		WORLD_BUILDING_SURFACE_STROKE_COUNT,
+		WORLD_BUILDING_SURFACE_DOT_COUNT,
+		WORLD_BUILDING_SURFACE_ALPHA,
+		WORLD_BUILDING_SURFACE_SEED_BASE,
+		WORLD_BUILDING_SURFACE_LINE_JITTER,
+		StageVisualProfile.WORLD_BUILDING_SURFACE_NOISE_SCALE
+	)
+	STAGE_SURFACE_DETAIL_RENDERER.draw_building_facade_detail(
+		self,
+		rect,
+		base,
+		x,
+		y,
+		WORLD_BUILDING_FACADE_PILLAR_COUNT,
+		WORLD_BUILDING_FACADE_WINDOW_ROWS,
+		WORLD_BUILDING_FACADE_WINDOW_COLUMNS,
+		WORLD_BUILDING_FACADE_WINDOW_ALPHA,
+		WORLD_BUILDING_FACADE_SHADOW_ALPHA,
+		WORLD_BUILDING_FACADE_SEED_BASE,
+		WORLD_BUILDING_FACADE_LINE_JITTER,
+		StageVisualProfile.WORLD_BUILDING_FACADE_NOISE_SCALE
+	)
 
 func _draw_world_decoration_layer() -> void:
 	for y in range(map_height):
@@ -926,18 +1871,47 @@ func _draw_region_overlays() -> void:
 		var region_type := str(region.get("type", "wild"))
 		if region_type != "city" and region_type != "town" and region_type != "sect":
 			continue
-		var data: Array = region.get("rect", [])
-		if data.size() < 4:
+		var rect := _region_pixel_rect(region)
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 			continue
-		var rect := Rect2(float(data[0]) * tile_size, float(data[1]) * tile_size, float(data[2]) * tile_size, float(data[3]) * tile_size)
 		var color := Color(0.82, 0.68, 0.36, 0.28)
 		if region_type == "sect":
 			color = Color(0.72, 0.84, 0.52, 0.28)
 		elif region_type == "town":
 			color = Color(0.72, 0.60, 0.40, 0.20)
+		if is_painted_world_backdrop_active() and WORLD_PAINTED_BACKDROP_REPLACES_TILE_BASE:
+			_draw_painted_region_marker(rect, color, region_type)
+			continue
 		draw_rect(rect.grow(-3.0), color, false, 2.0)
 		if region_type == "city":
 			draw_rect(rect.grow(-6.0), Color(0.15, 0.10, 0.06, 0.20), false, 1.2)
+
+func _draw_painted_region_marker(rect: Rect2, color: Color, region_type: String) -> void:
+	var center := rect.get_center()
+	var radius := maxf(minf(rect.size.x, rect.size.y) * 0.42, tile_size * 0.62)
+	var x_radius := minf(rect.size.x * 0.42, tile_size * (2.6 if region_type == "city" else 1.45))
+	var y_radius := minf(rect.size.y * 0.34, tile_size * (1.5 if region_type == "city" else 0.92))
+	var marker_color := Color(color.r, color.g, color.b, WORLD_PAINTED_REGION_MARKER_ALPHA)
+	_draw_soft_ellipse(center, Vector2(x_radius, y_radius), marker_color)
+	_draw_soft_ellipse(center + Vector2(0.0, y_radius * 0.12), Vector2(x_radius * 0.70, y_radius * 0.52), Color(0.04, 0.03, 0.02, WORLD_PAINTED_REGION_MARKER_ALPHA * 0.34))
+	draw_arc(center, radius, 0.15, TAU - 0.15, 40, Color(1.0, 0.82, 0.36, WORLD_PAINTED_REGION_MARKER_ALPHA * 0.78), 1.4)
+	if region_type == "city":
+		draw_arc(center, radius * 0.72, 0.0, TAU, 38, Color(0.20, 0.10, 0.04, WORLD_PAINTED_REGION_MARKER_ALPHA * 0.54), 1.0)
+	elif region_type == "sect":
+		draw_line(center + Vector2(-radius * 0.54, 0.0), center + Vector2(radius * 0.54, 0.0), Color(0.94, 0.86, 0.50, WORLD_PAINTED_REGION_MARKER_ALPHA * 0.54), 1.2)
+		draw_line(center + Vector2(0.0, -radius * 0.50), center + Vector2(0.0, radius * 0.50), Color(0.94, 0.86, 0.50, WORLD_PAINTED_REGION_MARKER_ALPHA * 0.44), 1.0)
+
+func _draw_soft_ellipse(center: Vector2, radius: Vector2, color: Color) -> void:
+	if radius.x <= 0.0 or radius.y <= 0.0:
+		return
+	var points := PackedVector2Array()
+	var colors := PackedColorArray()
+	var segments := 48
+	for i in range(segments):
+		var angle := TAU * float(i) / float(segments)
+		points.append(center + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
+		colors.append(color)
+	draw_polygon(points, colors)
 
 func _draw_target_region_overlay() -> void:
 	if target_region_id.is_empty():
@@ -945,11 +1919,18 @@ func _draw_target_region_overlay() -> void:
 	var region := GameData.get_region(target_region_id)
 	if region.is_empty():
 		return
-	var rect_data: Array = region.get("rect", [])
-	if rect_data.size() < 4:
+	var rect := _region_pixel_rect(region)
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 		return
-	var rect := Rect2(float(rect_data[0]) * tile_size, float(rect_data[1]) * tile_size, float(rect_data[2]) * tile_size, float(rect_data[3]) * tile_size)
 	var center := rect.get_center()
+	if is_painted_world_backdrop_active() and WORLD_PAINTED_BACKDROP_REPLACES_TILE_BASE:
+		var radius := maxf(minf(rect.size.x, rect.size.y) * 0.44, tile_size * 0.74)
+		_draw_soft_ellipse(center, Vector2(radius * 1.46, radius * 0.64), Color(1.0, 0.72, 0.22, 0.22))
+		draw_arc(center, radius, 0.0, TAU, 48, Color(1.0, 0.82, 0.28, 0.95), 3.2)
+		draw_arc(center, radius * 1.28, 0.0, TAU, 48, Color(1.0, 0.92, 0.56, 0.34), 1.4)
+		draw_line(center + Vector2(-radius * 1.18, 0.0), center + Vector2(radius * 1.18, 0.0), Color(1.0, 0.92, 0.56, 0.70), 1.8)
+		draw_line(center + Vector2(0.0, -radius * 0.96), center + Vector2(0.0, radius * 0.96), Color(1.0, 0.92, 0.56, 0.70), 1.8)
+		return
 	draw_rect(rect.grow(5.0), Color(1.0, 0.78, 0.28, 0.95), false, 4.0)
 	draw_rect(rect.grow(9.0), Color(1.0, 0.92, 0.56, 0.32), false, 1.5)
 	draw_arc(center, 19.0, 0.0, TAU, 32, Color(1.0, 0.86, 0.42, 0.92), 2.5)

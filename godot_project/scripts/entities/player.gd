@@ -1,11 +1,15 @@
 extends CharacterBody2D
 class_name PlayerActor
 
+const StageVisualProfile = preload("res://scripts/shared/stage_visual_profile.gd")
+
 const SPEED := 190.0
 const DRAW_SCALE := 1.0
-const SPRITE_TARGET_HEIGHT := 126.0
-const SPRITE_TARGET_WIDTH := 100.0
-const LOCAL_STAGE_PRESENCE_SCALE := 1.28
+const SPRITE_TARGET_HEIGHT := StageVisualProfile.STAGE_SIDE_VIEW_ENTITY_HEIGHT
+const SPRITE_TARGET_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_PLAYER_WIDTH
+const STAGE_PRESENCE_SCALE := StageVisualProfile.STAGE_ACTOR_SCALE
+const STAGE_ACTOR_SCALE_BIAS := StageVisualProfile.PLAYER_STAGE_SCALE_BIAS
+const LOCAL_STAGE_PRESENCE_SCALE := STAGE_PRESENCE_SCALE
 const STEP_DUST_RADIUS := Vector2(10.0, 3.2)
 const PLAYER_CONTACT_GLOW_ALPHA := 0.13
 const PLAYER_FACTION_MOTES := 10
@@ -36,6 +40,10 @@ const PLAYER_STAGE_LANE_LOCK_ALPHA := 0.20
 const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const PLAYER_STAGE_HEAD_TURN_ALPHA := 0.20
 const PLAYER_STAGE_WEIGHT_SHIFT_ALPHA := 0.22
+const PLAYER_STAGE_SIDE_INPUT_DEADZONE := 0.20
+const PLAYER_STAGE_TURN_ACCENT_ALPHA := 0.24
+const PLAYER_STAGE_TURN_ACCENT_DURATION := 0.18
+const PLAYER_SPRITE_SOURCE_FACES_LEFT := true
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 const PLAYER_SPRITE_OVERRIDES := {
@@ -51,6 +59,10 @@ var sprite_key := ""
 var stage_depth_scale := 1.0
 var stage_lane_offset_y := 0.0
 var stage_lane_lock_strength := 0.0
+var lateral_facing_side := 1.0
+var has_lateral_facing_side := false
+var turn_accent_timer := 0.0
+var turn_accent_side := 1.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -66,6 +78,8 @@ func _process(delta: float) -> void:
 	_refresh_stage_lane_anchor()
 	var moving := movement_enabled and velocity.length() > 1.0
 	walk_phase += delta * (10.5 if moving else 1.45)
+	if turn_accent_timer > 0.0:
+		turn_accent_timer = maxf(0.0, turn_accent_timer - delta)
 	queue_redraw()
 
 func _physics_process(_delta: float) -> void:
@@ -89,6 +103,7 @@ func _physics_process(_delta: float) -> void:
 	if input_vector != Vector2.ZERO:
 		input_vector = input_vector.normalized()
 		facing = input_vector
+		_update_lateral_facing(input_vector)
 		queue_redraw()
 
 	var previous_position := position
@@ -136,18 +151,18 @@ func _draw() -> void:
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
 		var facing_side := _facing_side()
 		var outline_rect := Rect2(top_left - Vector2(2.5, 1.5), draw_size + Vector2(5.0, 5.0))
-		draw_texture_rect(sprite_texture, outline_rect, false, Color(0.02, 0.018, 0.014, 0.58))
+		_draw_oriented_sprite_texture(sprite_texture, outline_rect, facing_side, Color(0.02, 0.018, 0.014, 0.58))
 		if stage_actor:
 			_draw_stage_player_run_ribbons(top_left, draw_size, trim, moving, facing_side)
-			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving)
+			_draw_stage_motion_afterimage(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_footwork(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_weight_shift(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_back_layers(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, false)
-			_draw_stage_actor_sash(top_left, draw_size, trim, moving)
+			_draw_stage_actor_sash(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_faction_sigil(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_breath_aura(top_left, draw_size, trim, moving, facing_side)
-		draw_texture_rect(sprite_texture, Rect2(top_left, draw_size), false)
+		_draw_oriented_sprite_texture(sprite_texture, Rect2(top_left, draw_size), facing_side)
 		if stage_actor:
 			_draw_stage_player_pose_rig(top_left, draw_size, trim, moving, facing_side, true)
 			_draw_stage_player_step_arcs(top_left, draw_size, trim, moving, facing_side)
@@ -159,7 +174,8 @@ func _draw() -> void:
 			_draw_stage_player_stance_lines(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_head_focus(top_left, draw_size, trim, moving, facing_side)
 			_draw_stage_player_head_turn(top_left, draw_size, trim, moving, facing_side)
-		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor)
+			_draw_stage_player_turn_accent(top_left, draw_size, trim, facing_side)
+		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor, facing_side)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
 		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
@@ -251,7 +267,7 @@ func set_stage_depth_scale(value: float) -> void:
 	queue_redraw()
 
 func get_map_actor_visual_scale() -> float:
-	return stage_depth_scale * (LOCAL_STAGE_PRESENCE_SCALE if _is_side_view_stage() else 1.0)
+	return stage_depth_scale * (LOCAL_STAGE_PRESENCE_SCALE * STAGE_ACTOR_SCALE_BIAS if _is_side_view_stage() else 1.0)
 
 func get_stage_lane_visual_offset() -> float:
 	if not _is_side_view_stage():
@@ -285,11 +301,38 @@ func _is_side_view_stage() -> bool:
 	return false
 
 func _facing_side() -> float:
-	if absf(facing.x) > 0.20:
+	if absf(facing.x) > PLAYER_STAGE_SIDE_INPUT_DEADZONE:
 		return -1.0 if facing.x < 0.0 else 1.0
+	if has_lateral_facing_side:
+		return lateral_facing_side
 	if _is_side_view_stage() and world_map != null and world_map.has_method("get_stage_actor_facing_side"):
 		return float(world_map.call("get_stage_actor_facing_side", position))
 	return 1.0
+
+func _update_lateral_facing(input_vector: Vector2) -> void:
+	if absf(input_vector.x) <= PLAYER_STAGE_SIDE_INPUT_DEADZONE:
+		return
+	var next_side := -1.0 if input_vector.x < 0.0 else 1.0
+	if not has_lateral_facing_side or absf(next_side - lateral_facing_side) > 0.01:
+		turn_accent_timer = PLAYER_STAGE_TURN_ACCENT_DURATION
+		turn_accent_side = next_side
+	lateral_facing_side = next_side
+	has_lateral_facing_side = true
+
+func _should_mirror_sprite_for_side(side: float) -> bool:
+	var desired_side := -1.0 if side < 0.0 else 1.0
+	var source_side := -1.0 if PLAYER_SPRITE_SOURCE_FACES_LEFT else 1.0
+	return absf(desired_side - source_side) > 0.01
+
+func _draw_oriented_sprite_texture(texture: Texture2D, rect: Rect2, side: float, modulate: Color = Color(1.0, 1.0, 1.0, 1.0)) -> void:
+	if texture == null:
+		return
+	if not _should_mirror_sprite_for_side(side):
+		draw_texture_rect(texture, rect, false, modulate)
+		return
+	draw_set_transform(rect.position + Vector2(rect.size.x, 0.0), 0.0, Vector2(-1.0, 1.0))
+	draw_texture_rect(texture, Rect2(Vector2.ZERO, rect.size), false, modulate)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _refresh_sprite_texture(force: bool = false) -> void:
 	var gender := str(GameState.player.get("gender", "male"))
@@ -336,7 +379,7 @@ func _draw_step_dust(moving: bool, depth_scale: float) -> void:
 	_draw_shadow(base + side * 7.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.8 + step * 0.45), Color(0.74, 0.64, 0.42, alpha))
 	_draw_shadow(base - side * 6.0 * depth_scale + dir * 5.0 * depth_scale, STEP_DUST_RADIUS * depth_scale * (0.58 + (1.0 - step) * 0.35), Color(0.68, 0.58, 0.38, alpha * 0.72))
 
-func _draw_stage_motion_afterimage(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool) -> void:
+func _draw_stage_motion_afterimage(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	if not moving or sprite_texture == null:
 		return
 	var dir := facing.normalized()
@@ -344,8 +387,9 @@ func _draw_stage_motion_afterimage(top_left: Vector2, draw_size: Vector2, accent
 		dir = Vector2.DOWN
 	var step := absf(sin(walk_phase))
 	var offset := -dir * clampf(draw_size.y * 0.055, 4.0, 9.0)
+	offset.x -= side * clampf(draw_size.x * 0.026, 2.0, 5.5)
 	var alpha := PLAYER_MOTION_AFTERIMAGE_ALPHA * (0.45 + step * 0.55)
-	draw_texture_rect(sprite_texture, Rect2(top_left + offset, draw_size), false, Color(accent.r, accent.g, accent.b, alpha))
+	_draw_oriented_sprite_texture(sprite_texture, Rect2(top_left + offset, draw_size), side, Color(accent.r, accent.g, accent.b, alpha))
 
 func _draw_stage_player_back_layers(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var flutter := sin(walk_phase * (1.45 if moving else 0.78))
@@ -554,6 +598,22 @@ func _draw_stage_player_head_turn(top_left: Vector2, draw_size: Vector2, accent:
 	var chin := head + Vector2(side * draw_size.x * 0.040, draw_size.y * 0.050)
 	draw_line(chin, chin + Vector2(side * draw_size.x * 0.050, draw_size.y * 0.020), Color(0.05, 0.04, 0.034, alpha * 0.58), 0.9)
 
+func _draw_stage_player_turn_accent(top_left: Vector2, draw_size: Vector2, accent: Color, side: float) -> void:
+	if turn_accent_timer <= 0.0:
+		return
+	var progress := 1.0 - clampf(turn_accent_timer / PLAYER_STAGE_TURN_ACCENT_DURATION, 0.0, 1.0)
+	var pulse := sin(progress * PI)
+	var active_side := turn_accent_side if absf(turn_accent_side) > 0.01 else side
+	var alpha := PLAYER_STAGE_TURN_ACCENT_ALPHA * pulse
+	var shoulder := top_left + Vector2(draw_size.x * (0.50 + active_side * 0.18), draw_size.y * 0.34)
+	var hip := top_left + Vector2(draw_size.x * (0.50 - active_side * 0.08), draw_size.y * 0.62)
+	var foot := top_left + Vector2(draw_size.x * (0.50 + active_side * 0.24), draw_size.y * 0.955)
+	var weapon_tip := shoulder + Vector2(active_side * draw_size.x * (0.26 + progress * 0.08), -draw_size.y * (0.15 + progress * 0.04))
+	draw_arc(shoulder, draw_size.x * (0.13 + progress * 0.035), -PI * 0.34, PI * 0.60, 18, Color(1.0, 0.92, 0.58, alpha * 0.78), 1.5)
+	draw_line(hip, shoulder, Color(accent.r, accent.g, accent.b, alpha * 0.72), clampf(draw_size.x * 0.013, 1.0, 2.2))
+	draw_line(shoulder, weapon_tip, Color(0.96, 0.92, 0.76, alpha), clampf(draw_size.x * 0.012, 1.0, 2.0))
+	draw_line(foot - Vector2(active_side * draw_size.x * 0.10, draw_size.y * 0.006), foot + Vector2(active_side * draw_size.x * 0.12, -draw_size.y * 0.012), Color(1.0, 0.82, 0.38, alpha * 0.62), 1.1)
+
 func _draw_stage_player_idle_cloth_sway(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var phase := sin(walk_phase * (1.28 if moving else 0.68))
 	var alpha := PLAYER_STAGE_IDLE_CLOTH_SWAY_ALPHA * (0.54 + absf(phase) * 0.34)
@@ -732,15 +792,15 @@ func _draw_sprite_motion_accents(lean: float, foot_y: float, draw_size: Vector2,
 		var guard_y := foot_y - draw_size.y * 0.18
 		draw_line(Vector2(-draw_size.x * 0.18 + lean, guard_y), Vector2(draw_size.x * 0.18 + lean, guard_y + flutter * 1.2), Color(1.0, 0.90, 0.58, 0.13), 1.6)
 
-func _draw_stage_actor_sash(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool) -> void:
+func _draw_stage_actor_sash(top_left: Vector2, draw_size: Vector2, accent: Color, moving: bool, side: float) -> void:
 	var flutter := sin(walk_phase * (1.15 if moving else 0.72))
-	var waist := top_left + Vector2(draw_size.x * 0.43, draw_size.y * 0.52)
-	var tail_a := waist + Vector2(-draw_size.x * (0.30 + flutter * 0.025), draw_size.y * (0.10 + flutter * 0.012))
-	var tail_b := waist + Vector2(-draw_size.x * (0.22 - flutter * 0.018), draw_size.y * (0.18 - flutter * 0.010))
+	var waist := top_left + Vector2(draw_size.x * (0.50 - 0.10 * side), draw_size.y * 0.52)
+	var tail_a := waist + Vector2(-side * draw_size.x * (0.30 + flutter * 0.025), draw_size.y * (0.10 + flutter * 0.012))
+	var tail_b := waist + Vector2(-side * draw_size.x * (0.22 - flutter * 0.018), draw_size.y * (0.18 - flutter * 0.010))
 	var sash_width := clampf(draw_size.x * 0.030, 2.4, 4.2)
 	var shadow_accent := accent.darkened(0.16)
 	draw_line(waist, tail_a, Color(accent.r, accent.g, accent.b, 0.24), sash_width)
-	draw_line(waist + Vector2(draw_size.x * 0.04, draw_size.y * 0.035), tail_b, Color(shadow_accent.r, shadow_accent.g, shadow_accent.b, 0.18), sash_width * 0.75)
+	draw_line(waist + Vector2(side * draw_size.x * 0.04, draw_size.y * 0.035), tail_b, Color(shadow_accent.r, shadow_accent.g, shadow_accent.b, 0.18), sash_width * 0.75)
 
 func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool, lane_offset_y: float = 0.0) -> void:
 	var pulse := 0.5 + sin(walk_phase * (1.7 if moving else 0.9)) * 0.5
@@ -759,9 +819,14 @@ func _draw_player_idle_motes(accent: Color, depth_scale: float) -> void:
 		var alpha := 0.045 + float(i % 3) * 0.012
 		draw_circle(pos, (1.2 + float(i % 2) * 0.35) * depth_scale, Color(accent.r, accent.g, accent.b, alpha))
 
-func _draw_sprite_rim_light(top_left: Vector2, draw_size: Vector2, accent: Color, stage_actor: bool = false) -> void:
+func _draw_sprite_rim_light(top_left: Vector2, draw_size: Vector2, accent: Color, stage_actor: bool = false, side: float = 1.0) -> void:
 	var rim_alpha := PLAYER_STAGE_RIM_ALPHA if stage_actor else PLAYER_STAGE_RIM_ALPHA * 0.80
-	var left := top_left + Vector2(draw_size.x * 0.20, draw_size.y * 0.18)
-	var right := top_left + Vector2(draw_size.x * 0.80, draw_size.y * 0.72)
-	draw_line(left, right, Color(accent.r, accent.g, accent.b, rim_alpha), 1.8)
-	draw_line(top_left + Vector2(draw_size.x * 0.22, draw_size.y * 0.05), top_left + Vector2(draw_size.x * 0.72, draw_size.y * 0.14), Color(1.0, 0.96, 0.78, rim_alpha * 0.62), 1.2)
+	var back := top_left + Vector2(draw_size.x * (0.50 - side * 0.28), draw_size.y * 0.18)
+	var front := top_left + Vector2(draw_size.x * (0.50 + side * 0.30), draw_size.y * 0.72)
+	draw_line(back, front, Color(accent.r, accent.g, accent.b, rim_alpha), 1.8)
+	draw_line(
+		top_left + Vector2(draw_size.x * (0.50 - side * 0.26), draw_size.y * 0.05),
+		top_left + Vector2(draw_size.x * (0.50 + side * 0.22), draw_size.y * 0.14),
+		Color(1.0, 0.96, 0.78, rim_alpha * 0.62),
+		1.2
+	)

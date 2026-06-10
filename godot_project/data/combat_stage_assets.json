@@ -1,0 +1,8 @@
+{
+  "qinghe": {
+    "backdrop": "res://assets/world/combat_stages/qinghe/qinghe_combat_backdrop_v1.png",
+    "midground": "res://assets/world/combat_stages/qinghe/qinghe_combat_midground_v1.png",
+    "floor": "res://assets/world/combat_stages/qinghe/qinghe_combat_floor_v1.png",
+    "foreground": "res://assets/world/combat_stages/qinghe/qinghe_combat_foreground_v1.png"
+  }
+}

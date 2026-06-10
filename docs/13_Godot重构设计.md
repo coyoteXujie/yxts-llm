@@ -134,7 +134,7 @@ godot_project/
 - `AtmosphereLayer` 已加入地域主题动态氛围：临安/江陵水系有雾带与水光，城池/镇子有灯晕和市集微光，山地有云带，花间/花田有花瓣，荒漠有风沙，雪山有寒光，各门派有对应气场。
 - `LocalAreaMap` 在瓦片之上叠加局部环境层：区域场景水墨氛围图、水岸/道路边缘、连续屋檐、城墙轮廓、灯笼点缀、商铺招牌、商铺内景陈设和可遮挡树冠/屋檐层，避免局部城镇继续呈现纯色方格块。
 - `godot_project/assets/world/scenes/` 保存 73 个区域的 640x360 场景背景占位图，当前已接入世界地图区域详情，并作为局部地图低透明度氛围层用于强化地域差异。
-- `godot_project/assets/world/stage_layers/` 保存横版局部舞台的生成地面/中景/前景 PNG 分层，当前清河镇已接入透视地面层、店铺中景层和前景遮挡层。
+- `godot_project/assets/world/stage_layers/` 保存横版局部舞台的生成地面/中景/前景 PNG 分层，当前清河镇已接入 DNF 城镇式同源分层：连续店铺中景、透视砖街地面和近景遮挡层。
 - `godot_project/assets/characters/reference_map_sprites/` 保存当前大地图优先使用的 41 个高精度水墨 Q 版 NPC archetype，由参考图抠图后转为透明 PNG。
 - `godot_project/assets/characters/generated_map_sprites/` 保存组件化生成的 99 个 NPC sprite，作为参考级资源未覆盖时的回退资源。
 - `godot_project/assets/characters/npc/portraits/` 保存当前对话面板实际使用的 99 个 NPC 头像。

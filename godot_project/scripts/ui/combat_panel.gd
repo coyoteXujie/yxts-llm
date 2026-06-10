@@ -3,11 +3,19 @@ class_name CombatPanel
 
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 
+const IMMERSIVE_STAGE_ENABLED := true
+const COMBAT_STAGE_MARGIN := 0.0
+const COMBAT_TOP_HUD_HEIGHT := 94.0
+const COMBAT_BOTTOM_HUD_HEIGHT := 156.0
+const COMBAT_ACTION_COLUMNS := 4
+const COMBAT_ACTION_BUTTON_SIZE := Vector2(132, 44)
+
 var combat_system
 var stage
 var title_label: Label
 var enemy_portrait: TextureRect
 var enemy_bar: ProgressBar
+var player_bar: ProgressBar
 var status_label: Label
 var body_label: Label
 var action_grid: GridContainer
@@ -40,68 +48,118 @@ func set_combat_system(system) -> void:
 
 func _build() -> void:
 	stage = COMBAT_STAGE_SCRIPT.new()
-	stage.position = Vector2(24, 342)
-	stage.size = Vector2(682, 334)
+	stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	stage.offset_left = COMBAT_STAGE_MARGIN
+	stage.offset_top = COMBAT_STAGE_MARGIN
+	stage.offset_right = -COMBAT_STAGE_MARGIN
+	stage.offset_bottom = -COMBAT_STAGE_MARGIN
 	add_child(stage)
 
-	var panel := PanelContainer.new()
-	panel.position = Vector2(730, 342)
-	panel.size = Vector2(512, 334)
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	add_child(panel)
+	var top_panel := PanelContainer.new()
+	top_panel.anchor_left = 0.0
+	top_panel.anchor_top = 0.0
+	top_panel.anchor_right = 1.0
+	top_panel.anchor_bottom = 0.0
+	top_panel.offset_left = 28.0
+	top_panel.offset_top = 18.0
+	top_panel.offset_right = -28.0
+	top_panel.offset_bottom = 18.0 + COMBAT_TOP_HUD_HEIGHT
+	top_panel.add_theme_stylebox_override("panel", _panel_style(0.78))
+	add_child(top_panel)
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
+	var top_row := HBoxContainer.new()
+	top_row.add_theme_constant_override("separation", 14)
+	top_panel.add_child(top_row)
 
 	var enemy_row := HBoxContainer.new()
 	enemy_row.add_theme_constant_override("separation", 12)
-	box.add_child(enemy_row)
+	enemy_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_child(enemy_row)
 
 	var portrait_frame := PanelContainer.new()
-	portrait_frame.custom_minimum_size = Vector2(86, 86)
+	portrait_frame.custom_minimum_size = Vector2(72, 72)
 	portrait_frame.add_theme_stylebox_override("panel", _portrait_style())
 	enemy_row.add_child(portrait_frame)
 
 	enemy_portrait = TextureRect.new()
-	enemy_portrait.custom_minimum_size = Vector2(72, 72)
+	enemy_portrait.custom_minimum_size = Vector2(58, 58)
 	enemy_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	enemy_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait_frame.add_child(enemy_portrait)
 
 	var enemy_info := VBoxContainer.new()
-	enemy_info.custom_minimum_size = Vector2(356, 86)
-	enemy_info.add_theme_constant_override("separation", 7)
+	enemy_info.custom_minimum_size = Vector2(520, 72)
+	enemy_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_info.add_theme_constant_override("separation", 6)
 	enemy_row.add_child(enemy_info)
 
 	title_label = Label.new()
-	title_label.add_theme_font_size_override("font_size", 23)
+	title_label.add_theme_font_size_override("font_size", 24)
 	title_label.add_theme_color_override("font_color", Color(0.98, 0.70, 0.45))
+	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	enemy_info.add_child(title_label)
 
 	enemy_bar = ProgressBar.new()
 	enemy_bar.show_percentage = false
-	enemy_bar.custom_minimum_size = Vector2(350, 18)
+	enemy_bar.custom_minimum_size = Vector2(520, 18)
+	enemy_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	enemy_info.add_child(enemy_bar)
 
 	status_label = Label.new()
 	status_label.add_theme_font_size_override("font_size", 14)
 	status_label.add_theme_color_override("font_color", Color(0.80, 0.76, 0.66))
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	enemy_info.add_child(status_label)
 
+	var player_box := VBoxContainer.new()
+	player_box.custom_minimum_size = Vector2(238, 72)
+	player_box.add_theme_constant_override("separation", 8)
+	top_row.add_child(player_box)
+
+	var player_title := Label.new()
+	player_title.text = "我方状态"
+	player_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	player_title.add_theme_font_size_override("font_size", 16)
+	player_title.add_theme_color_override("font_color", Color(0.86, 0.82, 0.72))
+	player_box.add_child(player_title)
+
+	player_bar = ProgressBar.new()
+	player_bar.show_percentage = false
+	player_bar.custom_minimum_size = Vector2(238, 18)
+	player_box.add_child(player_bar)
+
+	var bottom_panel := PanelContainer.new()
+	bottom_panel.anchor_left = 0.0
+	bottom_panel.anchor_top = 1.0
+	bottom_panel.anchor_right = 1.0
+	bottom_panel.anchor_bottom = 1.0
+	bottom_panel.offset_left = 28.0
+	bottom_panel.offset_top = -COMBAT_BOTTOM_HUD_HEIGHT - 24.0
+	bottom_panel.offset_right = -28.0
+	bottom_panel.offset_bottom = -24.0
+	bottom_panel.add_theme_stylebox_override("panel", _panel_style(0.82))
+	add_child(bottom_panel)
+
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 16)
+	bottom_panel.add_child(bottom_row)
+
 	body_label = Label.new()
-	body_label.custom_minimum_size = Vector2(450, 84)
+	body_label.custom_minimum_size = Vector2(580, 108)
+	body_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.add_theme_font_size_override("font_size", 16)
+	body_label.add_theme_font_size_override("font_size", 15)
 	body_label.add_theme_color_override("font_color", Color(0.91, 0.86, 0.76))
-	box.add_child(body_label)
+	bottom_row.add_child(body_label)
 
 	action_grid = GridContainer.new()
-	action_grid.columns = 2
+	action_grid.columns = COMBAT_ACTION_COLUMNS
+	action_grid.custom_minimum_size = Vector2(560, 108)
 	action_grid.add_theme_constant_override("h_separation", 8)
 	action_grid.add_theme_constant_override("v_separation", 8)
-	box.add_child(action_grid)
+	bottom_row.add_child(action_grid)
 
 	effect_label = Label.new()
 	effect_label.hide()
@@ -110,7 +168,7 @@ func _build() -> void:
 	effect_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.015, 0.01, 0.86))
 	effect_label.add_theme_constant_override("shadow_offset_x", 2)
 	effect_label.add_theme_constant_override("shadow_offset_y", 2)
-	effect_label.custom_minimum_size = Vector2(260, 40)
+	effect_label.custom_minimum_size = Vector2(340, 44)
 	add_child(effect_label)
 
 func _on_combat_started(enemy: Dictionary) -> void:
@@ -130,6 +188,9 @@ func _on_combat_changed(snapshot: Dictionary) -> void:
 	var enemy: Dictionary = snapshot.get("enemy", {})
 	enemy_bar.max_value = max(1, int(enemy.get("max_hp", 1)))
 	enemy_bar.value = max(0, int(enemy.get("hp", 0)))
+	if player_bar != null:
+		player_bar.max_value = max(1, int(GameState.player.get("max_hp", 1)))
+		player_bar.value = max(0, int(GameState.player.get("hp", player_bar.max_value)))
 	status_label.text = "敌方：%s    你：%s" % [
 		str(snapshot.get("enemy_status_text", "无")),
 		str(snapshot.get("player_status_text", "无"))
@@ -152,10 +213,10 @@ func _on_combat_finished(result: Dictionary) -> void:
 		stage.clear()
 	hide()
 
-func _panel_style() -> StyleBoxFlat:
+func _panel_style(alpha: float = 0.94) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.052, 0.045, 0.94)
-	style.border_color = Color(0.70, 0.32, 0.20, 0.88)
+	style.bg_color = Color(0.055, 0.040, 0.034, alpha)
+	style.border_color = Color(0.86, 0.50, 0.25, 0.62)
 	style.border_width_left = 2
 	style.border_width_right = 2
 	style.border_width_top = 2
@@ -172,8 +233,8 @@ func _panel_style() -> StyleBoxFlat:
 
 func _portrait_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.10, 0.07, 0.055, 0.94)
-	style.border_color = Color(0.70, 0.32, 0.20, 0.82)
+	style.bg_color = Color(0.08, 0.052, 0.040, 0.86)
+	style.border_color = Color(0.86, 0.50, 0.25, 0.66)
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -229,8 +290,9 @@ func _add_action_button(label: String, action_id: String, icon_skill_id: String)
 		button.disabled = true
 	else:
 		button.text = label
-	button.custom_minimum_size = Vector2(218, 38)
+	button.custom_minimum_size = COMBAT_ACTION_BUTTON_SIZE
 	button.clip_text = true
+	button.add_theme_font_size_override("font_size", 15)
 	var icon_path := GameData.get_skill_icon_path(icon_skill_id)
 	if not icon_path.is_empty():
 		button.icon = GameData.load_texture(icon_path)
@@ -250,7 +312,8 @@ func _cooldown_for_action(action_id: String) -> int:
 func _add_flee_button() -> void:
 	var button := Button.new()
 	button.text = "脱身"
-	button.custom_minimum_size = Vector2(218, 38)
+	button.custom_minimum_size = COMBAT_ACTION_BUTTON_SIZE
+	button.add_theme_font_size_override("font_size", 15)
 	var icon_path := GameData.get_skill_icon_path("kf_basic_dodge")
 	if not icon_path.is_empty():
 		button.icon = GameData.load_texture(icon_path)
@@ -322,6 +385,9 @@ func _effect_color(kind: String, target: String) -> Color:
 			return Color(0.92, 0.86, 0.70)
 
 func _effect_position(target: String) -> Vector2:
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = Vector2(1280, 720)
 	if target == "player":
-		return Vector2(146, 488)
-	return Vector2(458, 462)
+		return Vector2(viewport_size.x * 0.22, viewport_size.y * 0.46)
+	return Vector2(viewport_size.x * 0.62, viewport_size.y * 0.42)
