@@ -9,6 +9,7 @@ const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
+const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
 
 const WORLD_TILE_WATER := 2
 const WORLD_TILE_BUILDING := 3
@@ -35,6 +36,33 @@ func _run() -> void:
 
 	var test_root := Node2D.new()
 	add_child(test_root)
+
+	var base_attack := int(GameState.player.get("attack", 0))
+	var base_defense := int(GameState.player.get("defense", 0))
+	GameState.add_item("item_sword", 1)
+	GameState.add_item("item_blade", 1)
+	GameState.add_item("item_cloth", 1)
+	_check(GameState.equip_item("item_sword"), "应能装备背包中的青钢剑")
+	_check(str(GameState.equipment.get("weapon", "")) == "item_sword" and int(GameState.player.get("attack", 0)) == base_attack + 10, "装备青钢剑应增加攻击")
+	_check(GameState.equip_item("item_blade"), "应能把青钢剑替换为雁翎刀")
+	_check(str(GameState.equipment.get("weapon", "")) == "item_blade" and int(GameState.player.get("attack", 0)) == base_attack + 12, "替换雁翎刀应先移除旧武器再应用新武器攻击")
+	_check(GameState.equip_item("item_cloth"), "应能装备布衣")
+	_check(str(GameState.equipment.get("armor", "")) == "item_cloth" and int(GameState.player.get("defense", 0)) == base_defense + 4, "装备布衣应增加防御")
+
+	var inventory_panel = INVENTORY_PANEL_SCRIPT.new()
+	test_root.add_child(inventory_panel)
+	await get_tree().process_frame
+	inventory_panel.show_panel()
+	var blade_index: int = inventory_panel.item_ids.find("item_blade")
+	_check(blade_index >= 0 and inventory_panel.item_list.get_item_text(blade_index).contains("已装备"), "背包列表应标识当前已装备武器")
+	if blade_index >= 0:
+		inventory_panel._select_item(blade_index)
+		_check(inventory_panel.details.text.contains("已装备：武器") and inventory_panel.details.text.contains("当前武器：雁翎刀") and inventory_panel.details.text.contains("当前加成：攻击 +12"), "背包装备详情应显示当前武器槽和加成")
+	var sword_index: int = inventory_panel.item_ids.find("item_sword")
+	if sword_index >= 0:
+		inventory_panel._select_item(sword_index)
+		_check(inventory_panel.details.text.contains("当前武器：雁翎刀") and inventory_panel.details.text.contains("攻击 -2"), "背包详情应显示换装前后攻击差值")
+	inventory_panel.close_panel()
 
 	var world_map = WORLD_MAP_SCRIPT.new()
 	test_root.add_child(world_map)

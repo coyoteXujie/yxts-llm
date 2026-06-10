@@ -94,7 +94,7 @@ func _refresh() -> void:
 		var count := int(GameState.inventory[item_id])
 		var item := GameData.get_item(str(item_id))
 		item_ids.append(str(item_id))
-		item_list.add_item("%s x%d" % [str(item.get("name", item_id)), count], _load_item_icon(str(item_id)))
+		item_list.add_item(_item_list_label(str(item_id), item, count), _load_item_icon(str(item_id)))
 	details.text = "选择物品查看详情。"
 	if item_preview != null:
 		item_preview.texture = null
@@ -104,16 +104,13 @@ func _select_item(index: int) -> void:
 		return
 	var item_id := item_ids[index]
 	var item := GameData.get_item(item_id)
-	var equipped := ""
-	if GameState.equipment.values().has(item_id):
-		equipped = "\n已装备"
 	details.text = "%s\n%s\n类型：%s    价格：%d\n%s%s" % [
 		str(item.get("name", item_id)),
 		str(item.get("description", "")),
 		_type_name(str(item.get("type", ""))),
 		int(item.get("price", 0)),
 		_format_effects(item),
-		equipped
+		_format_equipment_detail(item_id, item)
 	]
 	if item_preview != null:
 		item_preview.texture = _load_item_icon(item_id)
@@ -173,6 +170,13 @@ func _load_item_icon(item_id: String) -> Texture2D:
 		return null
 	return GameData.load_texture(path)
 
+func _item_list_label(item_id: String, item: Dictionary, count: int) -> String:
+	var label := "%s x%d" % [str(item.get("name", item_id)), count]
+	var slot := _equipment_slot_for_item(item)
+	if not slot.is_empty() and str(GameState.equipment.get(slot, "")) == item_id:
+		label = "%s  已装备" % label
+	return label
+
 func _format_effects(item: Dictionary) -> String:
 	var effects: Dictionary = item.get("effects", {})
 	var parts: Array[String] = []
@@ -189,6 +193,71 @@ func _format_effects(item: Dictionary) -> String:
 	if parts.is_empty():
 		return "效果：无"
 	return "效果：%s" % "，".join(parts)
+
+func _format_equipment_detail(item_id: String, item: Dictionary) -> String:
+	var slot := _equipment_slot_for_item(item)
+	if slot.is_empty():
+		return ""
+	var slot_name := _equipment_slot_name(slot)
+	var current_id := str(GameState.equipment.get(slot, ""))
+	var current_name := "无"
+	if not current_id.is_empty():
+		var current_item := GameData.get_item(current_id)
+		current_name = str(current_item.get("name", current_id))
+	var status := "已装备：%s" % slot_name if current_id == item_id else "可装备到：%s" % slot_name
+	var stat_line := _format_equipment_bonus(item) if current_id == item_id else _format_equipment_delta(item, GameData.get_item(current_id) if not current_id.is_empty() else {})
+	return "\n%s\n当前%s：%s\n%s" % [
+		status,
+		slot_name,
+		current_name,
+		stat_line
+	]
+
+func _equipment_slot_for_item(item: Dictionary) -> String:
+	match str(item.get("type", "")):
+		"weapon":
+			return "weapon"
+		"armor":
+			return "armor"
+	return ""
+
+func _equipment_slot_name(slot: String) -> String:
+	match slot:
+		"weapon":
+			return "武器"
+		"armor":
+			return "防具"
+	return "装备"
+
+func _format_equipment_delta(next_item: Dictionary, current_item: Dictionary) -> String:
+	var next_effects: Dictionary = next_item.get("effects", {})
+	var current_effects: Dictionary = current_item.get("effects", {})
+	var parts: Array[String] = []
+	for stat in ["attack", "defense"]:
+		var next_value := int(next_effects.get(stat, 0))
+		var current_value := int(current_effects.get(stat, 0))
+		var delta := next_value - current_value
+		if delta == 0 and next_value == 0:
+			continue
+		var stat_name := "攻击" if stat == "attack" else "防御"
+		if current_item.is_empty():
+			parts.append("%s %+d" % [stat_name, next_value])
+		else:
+			parts.append("%s %+d" % [stat_name, delta])
+	if parts.is_empty():
+		return "更换变化：无"
+	return "更换变化：%s" % "，".join(parts)
+
+func _format_equipment_bonus(item: Dictionary) -> String:
+	var effects: Dictionary = item.get("effects", {})
+	var parts: Array[String] = []
+	if effects.has("attack"):
+		parts.append("攻击 %+d" % int(effects["attack"]))
+	if effects.has("defense"):
+		parts.append("防御 %+d" % int(effects["defense"]))
+	if parts.is_empty():
+		return "当前加成：无"
+	return "当前加成：%s" % "，".join(parts)
 
 func _type_name(item_type: String) -> String:
 	match item_type:
