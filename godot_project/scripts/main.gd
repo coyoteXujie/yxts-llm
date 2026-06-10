@@ -429,12 +429,25 @@ func _region_enter_prompt(region: Dictionary) -> String:
 	return "E 进入%s" % str(region.get("name", "区域"))
 
 func _portal_prompt(portal: Dictionary) -> String:
-	if str(portal.get("type", "")) == "travel_region":
+	var portal_type := str(portal.get("type", ""))
+	if portal_type == "travel_region":
 		var direction := str(portal.get("direction_label", "路"))
 		var hours := float(portal.get("travel_hours", 0.0))
 		var risk := str(portal.get("risk_label", ""))
 		if hours > 0.0 and not risk.is_empty():
 			return "%s（%s路 %.1f时辰，%s）" % [str(portal.get("label", "入口")), direction, hours, risk]
+	if portal_type == "shop":
+		return "%s%s（%s）" % [
+			str(portal.get("action_label", "进入")),
+			str(portal.get("shop_name", portal.get("label", "商铺"))),
+			str(portal.get("interaction_hint", "商铺"))
+		]
+	if portal_type == "landmark" or portal_type == "resource":
+		var action := str(portal.get("action_label", "查看"))
+		var hint := str(portal.get("interaction_hint", ""))
+		if not hint.is_empty():
+			return "%s%s（%s）" % [action, str(portal.get("label", "入口")), hint]
+		return "%s%s" % [action, str(portal.get("label", "入口"))]
 	return str(portal.get("label", "入口"))
 
 func _handle_enter_area() -> void:

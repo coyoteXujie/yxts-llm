@@ -445,6 +445,18 @@ func _run() -> void:
 	_check(travel_region_label != null and travel_region_label.text.contains("时辰") and travel_region_label.text.contains("路"), "相邻区域入口标签应展示方向、耗时和风险")
 	_check(_portal_count(local_area, "landmark") >= 3, "平安镇应生成可互动地标")
 	_check(_portal_count(local_area, "resource") >= 2, "平安镇应生成每日资源点")
+	var landmark_portal := _first_portal(local_area, "landmark")
+	_check(not landmark_portal.is_empty() and str(landmark_portal.get("action_label", "")) == "探索" and not str(landmark_portal.get("interaction_hint", "")).is_empty(), "可互动地标应带探索动作和地标类型提示")
+	if not landmark_portal.is_empty():
+		var landmark_label := _portal_label(local_area, str(landmark_portal.get("id", "")))
+		_check(landmark_label != null and landmark_label.text.contains("探索") and landmark_label.text.contains(str(landmark_portal.get("label", ""))), "可互动地标标签应展示探索动作和地标名")
+	var resource_portal := _first_portal(local_area, "resource")
+	_check(not resource_portal.is_empty() and str(resource_portal.get("action_label", "")) == "采集" and not str(resource_portal.get("interaction_hint", "")).is_empty(), "每日资源点应带采集动作和资源类型提示")
+	if not resource_portal.is_empty():
+		var resource_label := _portal_label(local_area, str(resource_portal.get("id", "")))
+		_check(resource_label != null and resource_label.text.contains("采集") and resource_label.text.contains(str(resource_portal.get("label", ""))), "每日资源点标签应展示采集动作和资源名")
+	_check(LOCAL_AREA_SCRIPT.LOCAL_INTERACTION_MARKER_ALPHA >= 0.78 and LOCAL_AREA_SCRIPT.LOCAL_RESOURCE_MARKER_ALPHA >= 0.74, "局部交互入口应有足够可见的舞台标记")
+	_check(LOCAL_AREA_SCRIPT.LOCAL_INTERACTION_BOARD_HEIGHT >= 28.0, "局部交互标签应为双行语义留出高度")
 	_check(LOCAL_AREA_SCRIPT.RICH_SHOP_INTERIOR_ENABLED, "商铺内景应启用高完成度室内 overlay")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO > 0.38 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO < 0.56, "商铺内景应保留横版后墙和透视地面比例")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ALPHA >= 0.86, "商铺内景柜台应作为主视觉层")

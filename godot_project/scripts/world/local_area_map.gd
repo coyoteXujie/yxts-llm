@@ -230,6 +230,12 @@ const LOCAL_TOWN_SHOP_ENTRANCE_ALPHA := 0.82
 const LOCAL_TOWN_SHOP_DOOR_GLOW_ALPHA := 0.34
 const LOCAL_TOWN_SHOP_SIGN_WIDTH := 104.0
 const LOCAL_TOWN_SHOP_SIGN_HEIGHT := 24.0
+const LOCAL_INTERACTION_MARKER_ALPHA := 0.82
+const LOCAL_INTERACTION_MARKER_GLOW_ALPHA := 0.24
+const LOCAL_INTERACTION_BOARD_WIDTH := 142.0
+const LOCAL_INTERACTION_BOARD_HEIGHT := 28.0
+const LOCAL_RESOURCE_MARKER_ALPHA := 0.78
+const LOCAL_RESOURCE_GLOW_ALPHA := 0.22
 const LOCAL_TRAVEL_GATE_ALPHA := 0.78
 const LOCAL_TRAVEL_GATE_GLOW_ALPHA := 0.24
 const LOCAL_TRAVEL_BOARD_WIDTH := 178.0
@@ -976,7 +982,20 @@ func _add_shop(shop_id: String, door_tile: Vector2i) -> void:
 	_fill_rect(Rect2i(door_tile.x - 4, door_tile.y - 5, 8, 5), Tile.SHOP)
 	_fill_rect(Rect2i(door_tile.x - 2, door_tile.y - 1, 4, 2), Tile.ROAD)
 	var shop: Dictionary = SHOP_DEFINITIONS[shop_id]
-	_add_portal("shop_%s_%d_%d" % [shop_id, door_tile.x, door_tile.y], "进入%s" % str(shop.get("name", "商铺")), "shop", door_tile, shop_id)
+	_add_portal(
+		"shop_%s_%d_%d" % [shop_id, door_tile.x, door_tile.y],
+		"进入%s" % str(shop.get("name", "商铺")),
+		"shop",
+		door_tile,
+		shop_id,
+		"",
+		"",
+		{
+			"action_label": "进入",
+			"interaction_hint": "商铺",
+			"shop_name": str(shop.get("name", "商铺"))
+		}
+	)
 
 func _add_exit_portal() -> void:
 	_paint_line([Vector2i(map_width / 2, map_height - 8), Vector2i(map_width / 2, map_height - 2)], Tile.ROAD, 2)
@@ -995,6 +1014,8 @@ func _add_landmark_portals() -> void:
 			"type": "landmark",
 			"tile": [tile.x, tile.y],
 			"shop_id": "",
+			"action_label": "探索",
+			"interaction_hint": _landmark_kind_label(str(landmark.get("kind", "notice"))),
 			"description": str(landmark.get("description", "")),
 			"reward_item": str(landmark.get("reward_item", "")),
 			"reward_money": int(landmark.get("reward_money", 0)),
@@ -1016,6 +1037,8 @@ func _add_resource_portals() -> void:
 			"type": "resource",
 			"tile": [tile.x, tile.y],
 			"shop_id": "",
+			"action_label": "采集",
+			"interaction_hint": _resource_kind_label(str(resource.get("kind", "cache"))),
 			"description": str(resource.get("description", "这里有一点可用的物资。")),
 			"depleted_description": str(resource.get("depleted_description", "这里今日已经搜寻过，明日再来或许会有新的收获。")),
 			"reward_item": str(resource.get("reward_item", "")),
@@ -1298,6 +1321,8 @@ func _travel_portal_metadata(target: Dictionary, direction: String) -> Dictionar
 	var risk_level := clampi(maxi(int(current_region.get("danger", 1)), int(target.get("danger", 1))), 1, 5)
 	var hours := roundf(clampf(distance / 7.5 + float(risk_level) * 0.42, 0.5, 8.0) * 2.0) / 2.0
 	return {
+		"action_label": "前往",
+		"interaction_hint": "驿路",
 		"direction": direction,
 		"direction_label": _travel_direction_label(direction),
 		"travel_distance": distance,
@@ -1333,6 +1358,46 @@ func _local_route_risk_label(risk_level: int) -> String:
 	if risk_level >= 2:
 		return "谨慎"
 	return "平稳"
+
+func _landmark_kind_label(kind: String) -> String:
+	match kind:
+		"notice":
+			return "告示"
+		"well":
+			return "井台"
+		"market":
+			return "市井"
+		"training":
+			return "演武"
+		"shrine":
+			return "碑龛"
+		"dock":
+			return "渡口"
+		"water":
+			return "水边"
+		"bridge":
+			return "桥头"
+		"ruin":
+			return "遗迹"
+		"cave":
+			return "山洞"
+		"herb":
+			return "药坡"
+	return "地标"
+
+func _resource_kind_label(kind: String) -> String:
+	match kind:
+		"herb", "flower":
+			return "药草"
+		"cache":
+			return "食盒"
+		"coin":
+			return "散钱"
+		"fish":
+			return "鱼获"
+		"ore":
+			return "矿石"
+	return "物资"
 
 func _add_portal(id: String, label: String, kind: String, tile: Vector2i, shop_id: String, target_region_id: String = "", entry_kind: String = "", metadata: Dictionary = {}) -> void:
 	var portal := {
@@ -1607,6 +1672,8 @@ func _build_portal_labels() -> void:
 		var label_size := Vector2(136, 24)
 		if portal_type == "travel_region":
 			label_size = Vector2(LOCAL_TRAVEL_BOARD_WIDTH, LOCAL_TRAVEL_BOARD_HEIGHT)
+		elif portal_type == "landmark" or portal_type == "resource":
+			label_size = Vector2(LOCAL_INTERACTION_BOARD_WIDTH, LOCAL_INTERACTION_BOARD_HEIGHT)
 		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) - label_size * 0.5 + Vector2(0, -46)
 		label.size = label_size
 		label.z_index = 3900
@@ -1638,7 +1705,17 @@ func _build_portal_labels() -> void:
 		portal_labels.append(label)
 
 func _portal_label_text(portal: Dictionary) -> String:
-	if str(portal.get("type", "")) != "travel_region":
+	var portal_type := str(portal.get("type", ""))
+	if portal_type == "shop":
+		return "%s · %s" % [str(portal.get("action_label", "进入")), str(portal.get("shop_name", portal.get("label", "商铺")))]
+	if portal_type == "landmark" or portal_type == "resource":
+		var action := str(portal.get("action_label", "查看"))
+		var hint := str(portal.get("interaction_hint", ""))
+		var label_text := str(portal.get("label", "入口"))
+		if not hint.is_empty():
+			return "%s · %s\n%s" % [action, hint, label_text]
+		return "%s · %s" % [action, label_text]
+	if portal_type != "travel_region":
 		return str(portal.get("label", "入口"))
 	var label := str(portal.get("label", "入口"))
 	var direction := str(portal.get("direction_label", "路"))
@@ -4161,6 +4238,10 @@ func _draw_portal_signs() -> void:
 			_draw_stage_shop_entrance(pos, accent, highlighted)
 		elif portal_type == "travel_region":
 			_draw_stage_travel_gate(pos, portal, highlighted)
+		elif portal_type == "landmark":
+			_draw_stage_landmark_marker(pos, portal, highlighted)
+		elif portal_type == "resource":
+			_draw_stage_resource_marker(pos, portal, highlighted)
 
 func _draw_stage_travel_gate(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
 	var direction := str(portal.get("direction", "south"))
@@ -4270,6 +4351,137 @@ func _draw_stage_shop_lantern(pos: Vector2, accent: Color, alpha: float) -> void
 	draw_circle(pos, 7.2, Color(0.80, 0.18, 0.10, alpha * 0.82))
 	draw_circle(pos + Vector2(1.4, -0.8), 3.4, Color(accent.r, accent.g, accent.b, alpha * 0.56))
 	draw_line(pos + Vector2(0, 7.0), pos + Vector2(0, 14.0), Color(0.92, 0.56, 0.24, alpha * 0.54), 1.0)
+
+func _draw_stage_landmark_marker(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
+	var kind := str(portal.get("landmark_kind", "notice"))
+	var accent := _landmark_marker_color(kind, 1.0)
+	var alpha := LOCAL_INTERACTION_MARKER_ALPHA * (1.18 if highlighted else 1.0)
+	var glow_alpha := LOCAL_INTERACTION_MARKER_GLOW_ALPHA * (1.45 if highlighted else 1.0)
+	var base := pos + Vector2(0.0, -10.0)
+	_draw_ellipse_poly(pos + Vector2(0, 4), Vector2(34, 8), Color(0.0, 0.0, 0.0, alpha * 0.20))
+	draw_circle(pos + Vector2(0, -16), 23.0 if highlighted else 17.0, Color(accent.r, accent.g, accent.b, glow_alpha))
+	match kind:
+		"well":
+			draw_arc(base + Vector2(0, -4), 24.0, PI, TAU, 24, Color(0.18, 0.13, 0.08, alpha), 5.0)
+			draw_rect(Rect2(base + Vector2(-22, -2), Vector2(44, 18)), Color(0.18, 0.12, 0.07, alpha * 0.72), true)
+			draw_line(base + Vector2(-18, 4), base + Vector2(18, 0), Color(accent.r, accent.g, accent.b, alpha * 0.48), 1.4)
+		"shrine", "ruin":
+			draw_rect(Rect2(base + Vector2(-22, -40), Vector2(44, 58)), Color(0.15, 0.12, 0.08, alpha * 0.78), true)
+			draw_rect(Rect2(base + Vector2(-16, -34), Vector2(32, 44)), Color(0.09, 0.075, 0.052, alpha * 0.72), true)
+			draw_line(base + Vector2(-11, -22), base + Vector2(12, -28), Color(accent.r, accent.g, accent.b, alpha * 0.52), 1.3)
+			draw_line(base + Vector2(-10, -10), base + Vector2(9, -14), Color(0.94, 0.82, 0.48, alpha * 0.38), 1.1)
+		"training":
+			draw_line(base + Vector2(-28, 8), base + Vector2(24, -24), Color(0.20, 0.12, 0.07, alpha), 5.0)
+			draw_line(base + Vector2(-12, -24), base + Vector2(28, 10), Color(0.20, 0.12, 0.07, alpha * 0.88), 4.0)
+			draw_arc(base + Vector2(0, -6), 28.0, PI * 0.08, PI * 0.88, 24, Color(accent.r, accent.g, accent.b, alpha * 0.52), 1.4)
+		"market":
+			draw_rect(Rect2(base + Vector2(-30, -18), Vector2(60, 28)), Color(0.20, 0.11, 0.055, alpha * 0.86), true)
+			draw_polygon(PackedVector2Array([base + Vector2(-36, -18), base + Vector2(0, -42), base + Vector2(36, -18), base + Vector2(26, -8), base + Vector2(-26, -8)]), PackedColorArray([
+				Color(accent.r, accent.g, accent.b, alpha * 0.76),
+				Color(0.92, 0.58, 0.28, alpha * 0.68),
+				Color(accent.r, accent.g, accent.b, alpha * 0.76),
+				Color(0.12, 0.07, 0.035, alpha * 0.82),
+				Color(0.14, 0.08, 0.04, alpha * 0.82)
+			]))
+			for i in range(4):
+				draw_circle(base + Vector2(-18 + i * 12, -2), 3.2, Color(0.95, 0.70, 0.32, alpha * 0.72))
+		"dock", "water", "bridge":
+			draw_line(base + Vector2(-32, 8), base + Vector2(32, 2), Color(0.16, 0.09, 0.05, alpha), 6.0)
+			draw_line(base + Vector2(-24, -10), base + Vector2(20, -16), Color(0.20, 0.13, 0.07, alpha * 0.82), 4.0)
+			draw_arc(base + Vector2(0, 6), 31.0, PI * 1.04, PI * 1.88, 22, Color(0.70, 0.90, 0.94, alpha * 0.42), 1.5)
+		"cave":
+			draw_polygon(PackedVector2Array([base + Vector2(-34, 14), base + Vector2(-18, -34), base + Vector2(12, -44), base + Vector2(34, 14)]), PackedColorArray([
+				Color(0.10, 0.085, 0.060, alpha),
+				Color(0.18, 0.15, 0.10, alpha * 0.88),
+				Color(0.13, 0.11, 0.08, alpha),
+				Color(0.07, 0.055, 0.040, alpha)
+			]))
+			draw_arc(base + Vector2(1, 12), 18.0, PI, TAU, 18, Color(accent.r, accent.g, accent.b, alpha * 0.40), 2.0)
+		_:
+			draw_line(base + Vector2(-24, 10), base + Vector2(-24, -36), Color(0.16, 0.09, 0.05, alpha), 3.6)
+			draw_line(base + Vector2(24, 10), base + Vector2(24, -36), Color(0.16, 0.09, 0.05, alpha * 0.90), 3.6)
+			var board := Rect2(base + Vector2(-34, -40), Vector2(68, 30))
+			draw_rect(board, Color(0.18, 0.09, 0.04, alpha * 0.90), true)
+			draw_rect(board.grow(-3.0), Color(accent.r * 0.46, accent.g * 0.36, accent.b * 0.24, alpha * 0.72), true)
+			draw_line(board.position + Vector2(10, 10), board.position + Vector2(board.size.x - 10, 7), Color(0.96, 0.82, 0.42, alpha * 0.45), 1.2)
+			draw_line(board.position + Vector2(12, 20), board.position + Vector2(board.size.x - 13, 16), Color(0.96, 0.82, 0.42, alpha * 0.32), 1.0)
+
+func _draw_stage_resource_marker(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
+	var kind := str(portal.get("resource_kind", "cache"))
+	var accent := _resource_marker_color(kind, 1.0)
+	var alpha := LOCAL_RESOURCE_MARKER_ALPHA * (1.18 if highlighted else 1.0)
+	var glow_alpha := LOCAL_RESOURCE_GLOW_ALPHA * (1.45 if highlighted else 1.0)
+	var base := pos + Vector2(0.0, -6.0)
+	_draw_ellipse_poly(pos + Vector2(0, 4), Vector2(28, 7), Color(0.0, 0.0, 0.0, alpha * 0.20))
+	draw_circle(pos + Vector2(0, -8), 20.0 if highlighted else 15.0, Color(accent.r, accent.g, accent.b, glow_alpha))
+	match kind:
+		"herb", "flower":
+			for i in range(5):
+				var x := -16.0 + float(i) * 8.0
+				var top := base + Vector2(x + sin(float(i) * 1.7) * 2.0, -18.0 - float(i % 2) * 5.0)
+				draw_line(base + Vector2(x * 0.35, 6), top, Color(0.18, 0.38, 0.16, alpha), 1.8)
+				draw_circle(top, 4.0, Color(accent.r, accent.g, accent.b, alpha * 0.78))
+			draw_arc(base + Vector2(0, 4), 24.0, PI * 1.05, PI * 1.90, 18, Color(0.92, 0.78, 0.42, alpha * 0.32), 1.0)
+		"fish":
+			draw_arc(base + Vector2(0, 0), 26.0, PI * 1.04, PI * 1.88, 22, Color(0.68, 0.90, 0.96, alpha * 0.55), 1.8)
+			draw_polygon(PackedVector2Array([base + Vector2(-18, -8), base + Vector2(8, -16), base + Vector2(24, -4), base + Vector2(8, 6)]), PackedColorArray([
+				Color(0.62, 0.80, 0.76, alpha * 0.74),
+				Color(accent.r, accent.g, accent.b, alpha * 0.80),
+				Color(0.55, 0.70, 0.66, alpha * 0.70),
+				Color(0.42, 0.52, 0.48, alpha * 0.70)
+			]))
+		"ore":
+			draw_polygon(PackedVector2Array([base + Vector2(-24, 8), base + Vector2(-12, -22), base + Vector2(10, -28), base + Vector2(26, 6), base + Vector2(4, 16)]), PackedColorArray([
+				Color(0.16, 0.14, 0.12, alpha),
+				Color(accent.r, accent.g, accent.b, alpha * 0.62),
+				Color(0.24, 0.22, 0.19, alpha),
+				Color(0.09, 0.08, 0.07, alpha),
+				Color(0.13, 0.11, 0.09, alpha)
+			]))
+			draw_line(base + Vector2(-8, -12), base + Vector2(10, -20), Color(0.92, 0.82, 0.54, alpha * 0.34), 1.0)
+		"coin":
+			draw_rect(Rect2(base + Vector2(-24, -18), Vector2(48, 26)), Color(0.16, 0.08, 0.04, alpha * 0.86), true)
+			for i in range(5):
+				draw_circle(base + Vector2(-14 + i * 7, -10 + float(i % 2) * 5), 3.4, Color(0.96, 0.76, 0.34, alpha * 0.76))
+			draw_line(base + Vector2(-18, -2), base + Vector2(18, -5), Color(accent.r, accent.g, accent.b, alpha * 0.38), 1.0)
+		_:
+			draw_rect(Rect2(base + Vector2(-25, -22), Vector2(50, 32)), Color(0.20, 0.11, 0.055, alpha * 0.86), true)
+			draw_polygon(PackedVector2Array([base + Vector2(-30, -22), base + Vector2(0, -42), base + Vector2(30, -22), base + Vector2(22, -12), base + Vector2(-22, -12)]), PackedColorArray([
+				Color(accent.r, accent.g, accent.b, alpha * 0.76),
+				Color(0.92, 0.62, 0.30, alpha * 0.68),
+				Color(accent.r, accent.g, accent.b, alpha * 0.76),
+				Color(0.10, 0.06, 0.035, alpha * 0.80),
+				Color(0.12, 0.07, 0.035, alpha * 0.80)
+			]))
+			draw_line(base + Vector2(-16, -4), base + Vector2(18, -9), Color(0.96, 0.82, 0.42, alpha * 0.38), 1.0)
+
+func _landmark_marker_color(kind: String, alpha: float) -> Color:
+	match kind:
+		"well", "dock", "water", "bridge":
+			return Color(0.46, 0.74, 0.88, alpha)
+		"market":
+			return Color(0.92, 0.56, 0.26, alpha)
+		"training":
+			return Color(0.86, 0.46, 0.25, alpha)
+		"shrine", "ruin":
+			return Color(0.84, 0.72, 0.42, alpha)
+		"cave":
+			return Color(0.62, 0.58, 0.46, alpha)
+		"herb":
+			return Color(0.58, 0.82, 0.42, alpha)
+	return Color(0.92, 0.70, 0.32, alpha)
+
+func _resource_marker_color(kind: String, alpha: float) -> Color:
+	match kind:
+		"herb", "flower":
+			return Color(0.56, 0.86, 0.40, alpha)
+		"fish":
+			return Color(0.54, 0.82, 0.90, alpha)
+		"ore":
+			return Color(0.72, 0.68, 0.56, alpha)
+		"coin":
+			return Color(0.94, 0.72, 0.30, alpha)
+	return Color(0.88, 0.62, 0.28, alpha)
 
 func _draw_scene_overlay() -> void:
 	if current_mode == "shop":

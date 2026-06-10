@@ -37,6 +37,7 @@ func _run() -> void:
 		var landmark_portal := _first_reward_landmark(main.local_area)
 		_check(not landmark_portal.is_empty(), "平安镇应有带奖励的探索地标")
 		if not landmark_portal.is_empty():
+			_check(main._portal_prompt(landmark_portal).contains("探索") and main._portal_prompt(landmark_portal).contains("（"), "地标靠近提示应展示探索动作和类型")
 			var reward_item := str(landmark_portal.get("reward_item", ""))
 			var before_landmark_item_count := int(GameState.inventory.get(reward_item, 0))
 			main._inspect_landmark(landmark_portal)
@@ -56,6 +57,7 @@ func _run() -> void:
 		var resource_portal := _first_reward_resource(main.local_area)
 		_check(not resource_portal.is_empty(), "平安镇应有每日资源点")
 		if not resource_portal.is_empty():
+			_check(main._portal_prompt(resource_portal).contains("采集") and main._portal_prompt(resource_portal).contains("（"), "资源点靠近提示应展示采集动作和类型")
 			var resource_item := str(resource_portal.get("reward_item", ""))
 			var before_resource_item_count := int(GameState.inventory.get(resource_item, 0))
 			main._inspect_resource(resource_portal)
@@ -74,6 +76,7 @@ func _run() -> void:
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
 		if not shop_portal.is_empty():
+			_check(main._portal_prompt(shop_portal).contains("进入") and main._portal_prompt(shop_portal).contains("商铺"), "商铺靠近提示应展示进入动作和商铺类型")
 			main._enter_shop(shop_portal)
 			await _frames(3)
 			_check(main.local_area.current_mode == "shop", "应能进入商铺内景")
