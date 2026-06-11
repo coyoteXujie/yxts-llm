@@ -185,6 +185,7 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_IDLE_REDRAW_INTERVAL >= 1.0 / 15.0, "玩家静止状态不应每帧重绘整套自绘层")
 	_check(PLAYER_SCRIPT.PLAYER_MOVING_REDRAW_INTERVAL >= 1.0 / 35.0 and PLAYER_SCRIPT.PLAYER_MOVING_REDRAW_INTERVAL <= 1.0 / 24.0, "玩家移动状态应节流自绘动画，位置移动不应被每帧手绘层拖慢")
 	_check(PLAYER_SCRIPT.PLAYER_TURN_REDRAW_INTERVAL <= 1.0 / 40.0, "玩家转身过渡应比普通移动保留更高的动画刷新")
+	_check(bool(ProjectSettings.get_setting("physics/common/physics_interpolation", false)), "项目应启用 Godot 物理插值以减少 CharacterBody2D 移动抖动")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS > 0.35 and PLAYER_SCRIPT.PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS < 0.70, "玩家转身不应一开始就镜像底图，应先保留旧侧身压缩帧")
 	_check(not PLAYER_SCRIPT.PLAYER_SPRITE_SOURCE_FACES_LEFT, "当前默认玩家源图按朝右资源处理，向右时不应镜像底图")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
@@ -205,6 +206,19 @@ func _run() -> void:
 	_check(player.has_lateral_facing_side and player.lateral_facing_side > 0.0, "玩家向右输入应锁定横版朝右状态")
 	_check(not player._should_mirror_sprite_for_side(1.0), "源图朝右时，向右不应镜像底图")
 	_check(player.turn_accent_timer > 0.0 and player.turn_accent_side > 0.0, "玩家左右切向应触发短暂转身提示")
+	_release_movement_actions()
+	player.velocity = Vector2.ZERO
+	player.facing = Vector2.DOWN
+	player.has_lateral_facing_side = false
+	Input.action_press("move_left")
+	player._physics_process(1.0 / 60.0)
+	Input.action_release("move_left")
+	_check(player.facing.x < 0.0 and player._facing_side() < 0.0 and player.has_lateral_facing_side, "真实左移输入应在物理帧内更新玩家朝左状态")
+	Input.action_press("move_right")
+	player._physics_process(1.0 / 60.0)
+	Input.action_release("move_right")
+	_check(player.facing.x > 0.0 and player._facing_side() > 0.0 and player.turn_accent_side > 0.0, "真实右移输入应在物理帧内更新玩家朝右状态")
+	_release_movement_actions()
 	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 124.0, "NPC 地图贴图基础高度不应继续偏小")
 	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.42, "NPC 局部横版舞台应叠加额外角色存在感缩放")
 	_check(NPC_SCRIPT.STAGE_MASTER_SCALE_BIAS >= 1.08 and NPC_SCRIPT.STAGE_ENEMY_SCALE_BIAS >= 1.10, "掌门/敌人应在局部横版舞台获得额外体量")
@@ -1107,6 +1121,10 @@ func _ensure_input_actions() -> void:
 	for action_name in ["move_right", "move_left", "move_down", "move_up"]:
 		if not InputMap.has_action(action_name):
 			InputMap.add_action(action_name)
+
+func _release_movement_actions() -> void:
+	for action_name in ["move_right", "move_left", "move_down", "move_up"]:
+		Input.action_release(action_name)
 
 func _first_tile_with_id(map_node, tile_id: int) -> Vector2i:
 	for y in range(map_node.map_height):

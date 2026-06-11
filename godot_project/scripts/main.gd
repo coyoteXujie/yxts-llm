@@ -81,6 +81,7 @@ func _ready() -> void:
 	add_child(player_actor)
 
 	camera = Camera2D.new()
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = WORLD_CAMERA_SMOOTHING_SPEED
 	camera.zoom = WORLD_CAMERA_ZOOM
@@ -995,6 +996,7 @@ func _transition_player_to_map(target_map: Node, position: Vector2, update_playe
 	player_actor.world_map = target_map
 	player_actor.position = position
 	player_actor.velocity = Vector2.ZERO
+	player_actor.reset_physics_interpolation()
 	if update_player_position:
 		GameState.player_position = position
 	focused_portal = {}
