@@ -746,6 +746,10 @@ func _run() -> void:
 	_check(blacksmith_interior_path.ends_with("shop_blacksmith_dnf_interior_v2.png"), "铁匠铺内景应使用带炉火/铁砧/兵器架/火星的 v2 整屏背景")
 	var blacksmith_interior_texture := GameData.load_texture(blacksmith_interior_path, true)
 	_check(blacksmith_interior_texture != null and blacksmith_interior_texture.get_size().x >= 1600.0 and blacksmith_interior_texture.get_size().y >= 900.0, "铁匠铺 v2 内景应具备 1600x900 横版整屏分辨率")
+	var tailor_interior_path := GameData.get_shop_interior_background_path("tailor")
+	_check(tailor_interior_path.ends_with("shop_tailor_dnf_interior_v2.png"), "布庄内景应使用带布匹货架/裁剪台/染缸/衣架的 v2 整屏背景")
+	var tailor_interior_texture := GameData.load_texture(tailor_interior_path, true)
+	_check(tailor_interior_texture != null and tailor_interior_texture.get_size().x >= 1600.0 and tailor_interior_texture.get_size().y >= 900.0, "布庄 v2 内景应具备 1600x900 横版整屏分辨率")
 	for shop_id in LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS.keys():
 		var shop_interior_path := GameData.get_shop_interior_background_path(str(shop_id))
 		var expected_shop_suffix := "shop_%s_dnf_interior_v1.png" % [str(shop_id)]
@@ -755,6 +759,8 @@ func _run() -> void:
 			expected_shop_suffix = "shop_medicine_dnf_interior_v2.png"
 		elif str(shop_id) == "blacksmith":
 			expected_shop_suffix = "shop_blacksmith_dnf_interior_v2.png"
+		elif str(shop_id) == "tailor":
+			expected_shop_suffix = "shop_tailor_dnf_interior_v2.png"
 		_check(shop_interior_path.ends_with(expected_shop_suffix), "六类商铺都应映射专属 DNF 式室内背景：%s" % [str(shop_id)])
 
 	var shop_portal := _first_portal(local_area, "shop")
