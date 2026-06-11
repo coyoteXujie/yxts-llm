@@ -662,6 +662,10 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 	if GameState.is_adventure_clue_resolved(clue_id):
 		_show_landmark_discovery(portal, description, [], true)
 		return
+	var is_market_portal := str(portal.get("clue_source", "")) == "market"
+	if is_market_portal and not _can_deliver_market_clue(portal, clue_id):
+		_show_landmark_discovery(portal, _market_delivery_missing_description(portal, clue_id), [], true)
+		return
 	var resolved_clue := GameState.resolve_adventure_clue(clue_id)
 	if resolved_clue.is_empty():
 		EventBus.emit_toast("这条奇遇线索已经散了")
@@ -684,7 +688,7 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 	reward_parts.append("探索度 +%d%%" % ADVENTURE_CLUE_EXPLORATION_GAIN)
 	if GameState.map_target_region_id == region_id:
 		GameState.set_map_target_region("")
-	var is_market_clue := str(resolved_clue.get("source", "")) == "market" or str(portal.get("clue_source", "")) == "market"
+	var is_market_clue := str(resolved_clue.get("source", "")) == "market" or is_market_portal
 	var aftermath: Dictionary = {}
 	if is_market_clue:
 		aftermath = _resolve_market_clue_aftermath(local_area.current_region, resolved_clue, portal)
@@ -737,26 +741,38 @@ func _resolve_market_clue_aftermath(region: Dictionary, clue: Dictionary, portal
 		item_id = str(portal.get("market_item_id", ""))
 	var item := GameData.get_item(item_id)
 	var item_name := str(item.get("name", item_id if not item_id.is_empty() else "这批货"))
-	var description := "跑商回响：%s的脚行确认了%s传来的%s行情，后续可以在这里扩展为交割、倒卖或黑市压价事件。" % [
+	var delivery_count := _market_delivery_count(portal)
+	var delivery_bonus := int(portal.get("delivery_bonus_money", 0))
+	if not item_id.is_empty() and delivery_count > 0 and GameState.remove_item(item_id, delivery_count):
+		if delivery_bonus > 0:
+			GameState.add_money(delivery_bonus)
+	var count_text := " x%d" % delivery_count if delivery_count > 1 else ""
+	var description := "跑商回响：%s的脚行收下了%s%s，确认%s传来的行情不虚；后续可以在这里扩展为交割、倒卖或黑市压价事件。" % [
 		region_name,
-		source_region_name,
-		item_name
+		item_name,
+		count_text,
+		source_region_name
 	]
 	GameState.append_world_event(
 		"market",
 		"%s货价落定" % region_name,
-		"你把%s的%s行情追到%s，确认两地价差可做文章。" % [
+		"你把%s的%s行情追到%s，并交割%s%s，确认两地价差可做文章。" % [
 			source_region_name,
 			item_name,
-			region_name
+			region_name,
+			item_name,
+			count_text
 		],
 		region_id,
 		2
 	)
+	var delivery_label := "交割%s%s" % [item_name, count_text]
+	if delivery_bonus > 0:
+		delivery_label = "%s，赚%d两" % [delivery_label, delivery_bonus]
 	return {
 		"kind": "market",
 		"description": description,
-		"reward_label": "货价单已记"
+		"reward_label": delivery_label
 	}
 
 func _market_clue_item_id_from_clue(clue_id: String) -> String:
@@ -764,6 +780,37 @@ func _market_clue_item_id_from_clue(clue_id: String) -> String:
 	if item_pos < 0:
 		return ""
 	return clue_id.substr(item_pos)
+
+func _can_deliver_market_clue(portal: Dictionary, clue_id: String) -> bool:
+	var item_id := _market_delivery_item_id(portal, clue_id)
+	var count := _market_delivery_count(portal)
+	if item_id.is_empty() or count <= 0:
+		return true
+	return int(GameState.inventory.get(item_id, 0)) >= count
+
+func _market_delivery_missing_description(portal: Dictionary, clue_id: String) -> String:
+	var item_id := _market_delivery_item_id(portal, clue_id)
+	var count := _market_delivery_count(portal)
+	var item := GameData.get_item(item_id)
+	var item_name := str(item.get("name", item_id if not item_id.is_empty() else "货物"))
+	var target_region_name := str(local_area.current_region.get("name", "此地"))
+	var count_text := " x%d" % count if count > 1 else ""
+	return "%s的脚行说，光问价还不算交割；带来%s%s，才能把这条货价线索落成一笔跑商买卖。" % [
+		target_region_name,
+		item_name,
+		count_text
+	]
+
+func _market_delivery_item_id(portal: Dictionary, clue_id: String) -> String:
+	var item_id := str(portal.get("delivery_item_id", ""))
+	if item_id.is_empty():
+		item_id = str(portal.get("market_item_id", ""))
+	if item_id.is_empty():
+		item_id = _market_clue_item_id_from_clue(clue_id)
+	return item_id
+
+func _market_delivery_count(portal: Dictionary) -> int:
+	return maxi(0, int(portal.get("delivery_count", 1)))
 
 func _resolve_adventure_aftermath(region: Dictionary, clue: Dictionary, portal: Dictionary) -> Dictionary:
 	var region_id := str(region.get("id", "region"))
