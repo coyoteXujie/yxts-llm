@@ -29,6 +29,11 @@
     "midground": "res://assets/world/stage_layers/linan_dnf_waterfront_v1.png",
     "foreground": "res://assets/world/stage_layers/linan_dnf_water_foreground_v1.png"
   },
+  "jiangling": {
+    "floor": "res://assets/world/stage_layers/jiangling_dnf_river_city_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/jiangling_dnf_river_city_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/jiangling_dnf_river_city_foreground_v1.png"
+  },
   "luoshui_river": {
     "floor": "res://assets/world/stage_layers/luoshui_river_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/luoshui_river_dnf_midground_v1.png",

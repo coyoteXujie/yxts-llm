@@ -330,6 +330,7 @@ func _run() -> void:
 	_check(qinghe_midground_layer != null and qinghe_floor_layer != null and qinghe_midground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇中景和地面层应同尺寸对齐")
 	_check(qinghe_foreground_layer != null and qinghe_floor_layer != null and qinghe_foreground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇前景和地面层应同尺寸对齐")
 	_check(GameData.get_stage_layer_source_region_id("changan") == "changan", "长安应使用专属西市三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("jiangling") == "jiangling", "江陵应使用专属江防码头三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("luoshui_river") == "luoshui_river", "洛水河畔应使用专属水岸桥景三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("shaoxing_water") == "linan", "水巷/运河区域应复用水城三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("wuyi_for") == "bashu_bamboo", "林地区域应复用竹林三层舞台资产")
@@ -621,6 +622,19 @@ func _run() -> void:
 	_check(changan_floor_layer != null and changan_floor_layer.get_size().x >= 1600.0 and changan_floor_layer.get_size().y >= 900.0, "长安西市地面层应具备横版舞台分辨率")
 	_check(changan_midground_layer != null and changan_floor_layer != null and changan_midground_layer.get_size() == changan_floor_layer.get_size(), "长安西市中景层应与地面层同尺寸对齐")
 	_check(changan_foreground_layer != null and changan_floor_layer != null and changan_foreground_layer.get_size() == changan_floor_layer.get_size(), "长安西市前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("jiangling"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("jiangling").ends_with("scene_jiangling_dnf_river_city_v1.png"), "江陵应接入 DNF 式江防码头横版整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "江陵局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "江陵应加载江防码头中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("jiangling", "floor").ends_with("jiangling_dnf_river_city_floor_v1.png"), "江陵应映射江防码头地面贴图层")
+	var jiangling_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("jiangling", "floor"), true)
+	var jiangling_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("jiangling", "midground"), true)
+	var jiangling_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("jiangling", "foreground"), true)
+	_check(jiangling_floor_layer != null and jiangling_floor_layer.get_size().x >= 1600.0 and jiangling_floor_layer.get_size().y >= 900.0, "江陵地面层应具备横版舞台分辨率")
+	_check(jiangling_midground_layer != null and jiangling_floor_layer != null and jiangling_midground_layer.get_size() == jiangling_floor_layer.get_size(), "江陵中景层应与地面层同尺寸对齐")
+	_check(jiangling_foreground_layer != null and jiangling_floor_layer != null and jiangling_foreground_layer.get_size() == jiangling_floor_layer.get_size(), "江陵前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("linan"))
 	await get_tree().process_frame
