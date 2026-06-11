@@ -26,10 +26,13 @@ MIN_DETAILED_SHOP_INTERIOR_BYTES = {
     "market": 230_000,
     "teahouse": 230_000,
 }
+MIN_DETAILED_SCENE_BACKGROUND_BYTES = {
+    "qinghe": 1_500_000,
+}
 MIN_DETAILED_STAGE_LAYER_BYTES = {
-    ("qinghe", "floor"): 70_000,
-    ("qinghe", "midground"): 120_000,
-    ("qinghe", "foreground"): 78_000,
+    ("qinghe", "floor"): 90_000,
+    ("qinghe", "midground"): 1_200_000,
+    ("qinghe", "foreground"): 1_000_000,
     ("chengdu", "floor"): 70_000,
     ("chengdu", "midground"): 120_000,
     ("chengdu", "foreground"): 120_000,
@@ -317,6 +320,13 @@ def main() -> int:
         asset_path = ROOT / "godot_project" / background_path.removeprefix("res://")
         if not asset_path.exists():
             errors.append(f"scene background path missing for {region_id}: {background_path}")
+            continue
+        minimum_bytes = MIN_DETAILED_SCENE_BACKGROUND_BYTES.get(str(region_id))
+        if minimum_bytes is not None and asset_path.stat().st_size < minimum_bytes:
+            errors.append(
+                f"scene background {region_id} is too small for the detailed DNF scene asset: "
+                f"{asset_path.stat().st_size} bytes, expected at least {minimum_bytes}"
+            )
 
     if not isinstance(shop_interior_assets, dict):
         errors.append("shop_interior_assets.json must be an object")
