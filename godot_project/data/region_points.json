@@ -104,6 +104,18 @@
       {"label": "花篮食盒", "description": "花农把点心放在花篮旁，见你赶路辛苦便让你取走。", "kind": "cache", "tile": [48, 33], "reward_item": "item_baozi"}
     ]
   },
+  "western_plateau": {
+    "landmarks": [
+      {"label": "高原古寺", "description": "风雪把旧寺檐角磨白，钟声不响了，石阶上仍有香灰痕。", "kind": "shrine", "tile": [34, 18], "reward_exp": 9},
+      {"label": "冰川洞穴", "description": "冰洞口泛着冷蓝光，风从洞里吹出，像有人在雪下低语。", "kind": "cave", "tile": [14, 22], "reward_item": "item_yao"},
+      {"label": "山顶神坛", "description": "石坛立在雪线之上，残旗被高原风拉得笔直。", "kind": "ruin", "tile": [54, 26], "reward_exp": 10}
+    ],
+    "resources": [
+      {"label": "高原草药", "description": "冻土边缘长着耐寒药草，根须扎进薄雪下的黑土。", "kind": "herb", "tile": [24, 31], "reward_item": "item_yao"},
+      {"label": "雪线寒石", "description": "雪线旁露出一块冷硬矿石，带着细碎冰纹。", "kind": "ore", "tile": [48, 30], "reward_money": 7},
+      {"label": "雪莲旧株", "description": "岩缝里残着一株雪莲，花瓣被风雪压得发亮。", "kind": "flower", "tile": [60, 34], "reward_item": "item_red_flower"}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
