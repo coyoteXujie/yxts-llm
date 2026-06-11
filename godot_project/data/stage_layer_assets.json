@@ -69,6 +69,11 @@
     "midground": "res://assets/world/stage_layers/three_gorges_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/three_gorges_dnf_foreground_v1.png"
   },
+  "hanjiang_river": {
+    "floor": "res://assets/world/stage_layers/hanjiang_river_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/hanjiang_river_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/hanjiang_river_dnf_foreground_v1.png"
+  },
   "shennongjia": {
     "floor": "res://assets/world/stage_layers/shennongjia_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/shennongjia_dnf_midground_v1.png",

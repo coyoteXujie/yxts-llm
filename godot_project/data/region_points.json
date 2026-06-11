@@ -152,6 +152,18 @@
       {"label": "古滩遗物", "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。", "kind": "cache", "tile": [34, 34], "reward_money": 6}
     ]
   },
+  "hanjiang_river": {
+    "landmarks": [
+      {"label": "汉江古渡", "description": "废弃渡口还留着旧缆痕，船夫说这里能听到武当和云梦两头的消息。", "kind": "dock", "tile": [22, 29], "reward_item": "item_fish"},
+      {"label": "沙洲密室", "description": "最大沙洲中央露出半截暗门，潮水退去时才能看清石缝。", "kind": "ruin", "tile": [46, 25], "reward_exp": 8},
+      {"label": "江底洞穴", "description": "清水深处隐约有黑色洞口，水流到这里忽然变得沉静。", "kind": "cave", "tile": [62, 31], "reward_money": 7}
+    ],
+    "resources": [
+      {"label": "汉江鲤鱼", "description": "鱼篓压在缓流回湾，几尾汉江鲤鱼正撞着竹篾。", "kind": "fish", "tile": [58, 32], "reward_item": "item_fish"},
+      {"label": "江畔草药", "description": "江畔湿土里长着清凉草药，叶片沾着水雾。", "kind": "herb", "tile": [28, 34], "reward_item": "item_yao"},
+      {"label": "汉江古物", "description": "江滩卵石间露出一枚旧物，像是楚地旧船货仓里冲出的器片。", "kind": "cache", "tile": [40, 33], "reward_money": 6}
+    ]
+  },
   "shennongjia": {
     "landmarks": [
       {"label": "神农百草谷", "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。", "kind": "flower", "tile": [40, 25], "reward_exp": 9},
