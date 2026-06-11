@@ -326,6 +326,7 @@ func _run() -> void:
 	_check(qinghe_midground_layer != null and qinghe_floor_layer != null and qinghe_midground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇中景和地面层应同尺寸对齐")
 	_check(qinghe_foreground_layer != null and qinghe_floor_layer != null and qinghe_foreground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇前景和地面层应同尺寸对齐")
 	_check(GameData.get_stage_layer_source_region_id("changan") == "changan", "长安应使用专属西市三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("luoshui_river") == "luoshui_river", "洛水河畔应使用专属水岸桥景三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("shaoxing_water") == "linan", "水巷/运河区域应复用水城三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("wuyi_for") == "bashu_bamboo", "林地区域应复用竹林三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("xueshan_sect") == "beiling_mtn", "雪山门派应复用山道三层舞台资产")
@@ -632,6 +633,19 @@ func _run() -> void:
 	_check(linan_midground_layer != null and linan_floor_layer != null and linan_midground_layer.get_size() == linan_floor_layer.get_size(), "临安水城中景层应与地面层同尺寸对齐")
 	_check(linan_foreground_layer != null and linan_floor_layer != null and linan_foreground_layer.get_size() == linan_floor_layer.get_size(), "临安水城前景层应与地面层同尺寸对齐")
 	_check(not local_area.is_tile_walkable(_first_tile_with_id(local_area, LOCAL_TILE_WATER)), "临安局部水面应不可通行")
+
+	local_area.setup_region(GameData.get_region("luoshui_river"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("luoshui_river").ends_with("scene_luoshui_river_dnf_bridge_v1.png"), "洛水河畔应接入 DNF 式野外水岸桥景整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "洛水河畔局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "洛水河畔应加载水岸中景和河岸地面贴图层")
+	_check(GameData.get_stage_layer_path("luoshui_river", "floor").ends_with("luoshui_river_dnf_floor_v1.png"), "洛水河畔应映射水岸河面地面贴图层")
+	var luoshui_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("luoshui_river", "floor"), true)
+	var luoshui_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("luoshui_river", "midground"), true)
+	var luoshui_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("luoshui_river", "foreground"), true)
+	_check(luoshui_floor_layer != null and luoshui_floor_layer.get_size().x >= 1600.0 and luoshui_floor_layer.get_size().y >= 900.0, "洛水河畔地面/河面层应具备横版舞台分辨率")
+	_check(luoshui_midground_layer != null and luoshui_floor_layer != null and luoshui_midground_layer.get_size() == luoshui_floor_layer.get_size(), "洛水河畔中景层应与地面层同尺寸对齐")
+	_check(luoshui_foreground_layer != null and luoshui_floor_layer != null and luoshui_foreground_layer.get_size() == luoshui_floor_layer.get_size(), "洛水河畔前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("beiling_mtn"))
 	await get_tree().process_frame
