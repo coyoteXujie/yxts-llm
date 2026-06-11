@@ -128,6 +128,18 @@
       {"label": "香客平安钱", "description": "石栏边压着几枚平安钱，知客道士让你收作路资。", "kind": "coin", "tile": [54, 32], "reward_money": 5}
     ]
   },
+  "three_gorges": {
+    "landmarks": [
+      {"label": "瞿塘古栈道", "description": "古栈道贴着江壁悬在急流上方，木桩被江雾和岁月磨得发黑。", "kind": "bridge", "tile": [26, 22], "reward_exp": 8},
+      {"label": "巫峡云渡", "description": "渡口木板常年湿滑，船夫只在云雾散开时才敢摆渡。", "kind": "dock", "tile": [52, 28], "reward_item": "item_fish"},
+      {"label": "西陵险滩", "description": "白浪在暗礁间翻卷，水声像万马挤过峡口。", "kind": "water", "tile": [42, 31], "reward_exp": 9}
+    ],
+    "resources": [
+      {"label": "江滩鱼篓", "description": "鱼篓压在回水湾边，急流带来的江鱼正撞在竹篾上。", "kind": "fish", "tile": [58, 32], "reward_item": "item_fish"},
+      {"label": "峡畔草药", "description": "湿润江雾滋养着草药，叶片贴着岩壁生长。", "kind": "herb", "tile": [18, 30], "reward_item": "item_yao"},
+      {"label": "古滩遗物", "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。", "kind": "cache", "tile": [34, 34], "reward_money": 6}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
