@@ -11,6 +11,7 @@ const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
 const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
+const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
 
 const WORLD_TILE_WATER := 2
 const WORLD_TILE_BUILDING := 3
@@ -848,6 +849,11 @@ func _run() -> void:
 				var latest_market_clue: Dictionary = market_clues[market_clues.size() - 1] as Dictionary
 				_check(str(latest_market_clue.get("id", "")) == "market_linan_item_fish" and not str(latest_market_clue.get("target_region_id", "")).is_empty(), "临安货价线索应记录鲜鱼特产并给出后续询价目标")
 				market_target_region_id = str(latest_market_clue.get("target_region_id", ""))
+				var quest_panel := QUEST_PANEL_SCRIPT.new()
+				var market_journal_lines: Array = quest_panel.call("_world_event_lines")
+				var market_journal_text := "\n".join(market_journal_lines)
+				_check(market_journal_text.contains("需带：鲜鱼") and market_journal_text.contains(str(latest_market_clue.get("target_region_name", ""))), "任务江湖页应显示货价线索需携带的特产和交割目的地")
+				quest_panel.free()
 			_check(GameState.world_events.size() == events_before_market + 1 and GameState.get_world_event_summary(1).contains("临安"), "进入有特产价差的商铺应写入江湖传闻")
 			GameState.set_mode(GameState.Mode.EXPLORE)
 			if not market_target_region_id.is_empty():

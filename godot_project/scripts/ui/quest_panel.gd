@@ -106,6 +106,9 @@ func _world_event_lines() -> Array[String]:
 			var clue_description := str(clue_entry.get("description", ""))
 			if not clue_description.is_empty():
 				lines.append("  %s" % clue_description)
+			var delivery_hint := _clue_delivery_hint(clue_entry)
+			if not delivery_hint.is_empty():
+				lines.append("  %s" % delivery_hint)
 		lines.append("")
 	lines.append("【江湖风声】")
 	var events := GameState.get_recent_world_events(12)
@@ -122,6 +125,26 @@ func _world_event_lines() -> Array[String]:
 		if not description.is_empty():
 			lines.append("  %s" % description)
 	return lines
+
+func _clue_delivery_hint(clue: Dictionary) -> String:
+	if str(clue.get("source", "")) != "market":
+		return ""
+	var item_id := _market_item_id_from_clue(str(clue.get("id", "")))
+	if item_id.is_empty():
+		return ""
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return ""
+	var target_region := str(clue.get("target_region_name", ""))
+	var target_text := "，前往%s交割" % target_region if not target_region.is_empty() else ""
+	var resolved_text := "已交割" if bool(clue.get("resolved", false)) else "待交割"
+	return "需带：%s%s（%s）" % [str(item.get("name", item_id)), target_text, resolved_text]
+
+func _market_item_id_from_clue(clue_id: String) -> String:
+	var item_pos := clue_id.find("item_")
+	if item_pos < 0:
+		return ""
+	return clue_id.substr(item_pos)
 
 func _latest_adventure_clue_with_target() -> Dictionary:
 	var clues := GameState.get_adventure_clues(0)
