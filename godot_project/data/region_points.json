@@ -68,6 +68,18 @@
       {"label": "码头散钱", "description": "木箱旁散着几枚铜钱，像是装船时从钱袋里漏下的。", "kind": "coin", "tile": [50, 32], "reward_money": 5}
     ]
   },
+  "shudao_mtn": {
+    "landmarks": [
+      {"label": "蜀道栈关", "description": "木关卡嵌在崖壁之间，过关人把兵荒马乱和入蜀难路都写在脸上。", "kind": "bridge", "tile": [36, 21], "reward_exp": 9},
+      {"label": "绝壁栈道", "description": "栈道贴着峭壁横过深谷，脚下木板会随山风轻轻发响。", "kind": "bridge", "tile": [52, 27], "reward_exp": 8},
+      {"label": "入蜀驿亭", "description": "驿亭灯笼未灭，亭中行脚客谈着西岭风雪和成都近况。", "kind": "well", "tile": [22, 20], "reward_item": "item_baozi"}
+    ],
+    "resources": [
+      {"label": "崖缝药草", "description": "峭壁裂缝里长着耐寒药草，采摘时要用脚尖扣住石缝。", "kind": "herb", "tile": [18, 29], "reward_item": "item_yao"},
+      {"label": "栈道补给箱", "description": "关卡旁的木箱里有行脚客留下的干粮，用粗布包着。", "kind": "cache", "tile": [44, 31], "reward_item": "item_baozi"},
+      {"label": "崖边散钱", "description": "栏杆旁压着几枚铜钱，许是山风吹落的钱袋余响。", "kind": "coin", "tile": [58, 32], "reward_money": 6}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
