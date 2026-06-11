@@ -4,6 +4,11 @@
     "midground": "res://assets/world/stage_layers/luoyang_dnf_capital_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/luoyang_dnf_capital_foreground_v1.png"
   },
+  "changan": {
+    "floor": "res://assets/world/stage_layers/changan_dnf_west_market_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/changan_dnf_west_market_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/changan_dnf_west_market_foreground_v1.png"
+  },
   "beiling_mtn": {
     "floor": "res://assets/world/stage_layers/beiling_mtn_dnf_mountain_floor_v1.png",
     "midground": "res://assets/world/stage_layers/beiling_mtn_dnf_mountain_midground_v1.png",

@@ -325,7 +325,7 @@ func _run() -> void:
 	_check(qinghe_foreground_layer != null and qinghe_foreground_layer.get_size().x >= 1600.0 and qinghe_foreground_layer.get_size().y >= 900.0, "清河镇前景遮挡层应具备横版舞台分辨率")
 	_check(qinghe_midground_layer != null and qinghe_floor_layer != null and qinghe_midground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇中景和地面层应同尺寸对齐")
 	_check(qinghe_foreground_layer != null and qinghe_floor_layer != null and qinghe_foreground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇前景和地面层应同尺寸对齐")
-	_check(GameData.get_stage_layer_source_region_id("changan") == "luoyang", "没有专属舞台层的都城应复用都城三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("changan") == "changan", "长安应使用专属西市三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("shaoxing_water") == "linan", "水巷/运河区域应复用水城三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("wuyi_for") == "bashu_bamboo", "林地区域应复用竹林三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("xueshan_sect") == "beiling_mtn", "雪山门派应复用山道三层舞台资产")
@@ -597,9 +597,16 @@ func _run() -> void:
 
 	local_area.setup_region(GameData.get_region("changan"))
 	await get_tree().process_frame
-	_check(local_area.is_painted_stage_stack_active(), "长安没有专属舞台层时也应走都城贴图栈分支")
-	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "长安应通过同类复用加载都城中景和地面贴图层")
-	_check(GameData.get_stage_layer_path("changan", "floor").ends_with("luoyang_dnf_capital_floor_v1.png"), "长安应复用都城地面贴图层")
+	_check(GameData.get_scene_background_path("changan").ends_with("scene_changan_dnf_west_market_v1.png"), "长安应接入 DNF 式西市横版整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "长安局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "长安应加载西市中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("changan", "floor").ends_with("changan_dnf_west_market_floor_v1.png"), "长安应映射西市地面贴图层")
+	var changan_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("changan", "floor"), true)
+	var changan_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("changan", "midground"), true)
+	var changan_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("changan", "foreground"), true)
+	_check(changan_floor_layer != null and changan_floor_layer.get_size().x >= 1600.0 and changan_floor_layer.get_size().y >= 900.0, "长安西市地面层应具备横版舞台分辨率")
+	_check(changan_midground_layer != null and changan_floor_layer != null and changan_midground_layer.get_size() == changan_floor_layer.get_size(), "长安西市中景层应与地面层同尺寸对齐")
+	_check(changan_foreground_layer != null and changan_floor_layer != null and changan_foreground_layer.get_size() == changan_floor_layer.get_size(), "长安西市前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("linan"))
 	await get_tree().process_frame
