@@ -738,6 +738,10 @@ func _run() -> void:
 	_check(inn_interior_path.ends_with("shop_inn_dnf_interior_v2.png"), "客栈内景应使用带二楼栏杆/楼梯/客桌/伙计剪影的 v2 整屏背景")
 	var inn_interior_texture := GameData.load_texture(inn_interior_path, true)
 	_check(inn_interior_texture != null and inn_interior_texture.get_size().x >= 1600.0 and inn_interior_texture.get_size().y >= 900.0, "客栈 v2 内景应具备 1600x900 横版整屏分辨率")
+	var medicine_interior_path := GameData.get_shop_interior_background_path("medicine")
+	_check(medicine_interior_path.ends_with("shop_medicine_dnf_interior_v2.png"), "药铺内景应使用带药斗柜/药秤/捣药台/药草挂束的 v2 整屏背景")
+	var medicine_interior_texture := GameData.load_texture(medicine_interior_path, true)
+	_check(medicine_interior_texture != null and medicine_interior_texture.get_size().x >= 1600.0 and medicine_interior_texture.get_size().y >= 900.0, "药铺 v2 内景应具备 1600x900 横版整屏分辨率")
 	var blacksmith_interior_path := GameData.get_shop_interior_background_path("blacksmith")
 	_check(blacksmith_interior_path.ends_with("shop_blacksmith_dnf_interior_v2.png"), "铁匠铺内景应使用带炉火/铁砧/兵器架/火星的 v2 整屏背景")
 	var blacksmith_interior_texture := GameData.load_texture(blacksmith_interior_path, true)
@@ -747,6 +751,8 @@ func _run() -> void:
 		var expected_shop_suffix := "shop_%s_dnf_interior_v1.png" % [str(shop_id)]
 		if str(shop_id) == "inn":
 			expected_shop_suffix = "shop_inn_dnf_interior_v2.png"
+		elif str(shop_id) == "medicine":
+			expected_shop_suffix = "shop_medicine_dnf_interior_v2.png"
 		elif str(shop_id) == "blacksmith":
 			expected_shop_suffix = "shop_blacksmith_dnf_interior_v2.png"
 		_check(shop_interior_path.ends_with(expected_shop_suffix), "六类商铺都应映射专属 DNF 式室内背景：%s" % [str(shop_id)])
