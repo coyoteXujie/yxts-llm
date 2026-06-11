@@ -241,6 +241,10 @@ const LOCAL_TRAVEL_GATE_GLOW_ALPHA := 0.24
 const LOCAL_TRAVEL_BOARD_WIDTH := 178.0
 const LOCAL_TRAVEL_BOARD_HEIGHT := 42.0
 const RICH_SHOP_INTERIOR_ENABLED := true
+const SHOP_INTERIOR_TEXTURE_PRIORITY := true
+const SHOP_INTERIOR_TEXTURE_ALPHA := 1.0
+const SHOP_INTERIOR_TEXTURE_MIN_WIDTH := 1280.0
+const SHOP_INTERIOR_TEXTURE_MIN_HEIGHT := 800.0
 const SHOP_INTERIOR_BACK_WALL_RATIO := 0.48
 const SHOP_INTERIOR_COUNTER_ALPHA := 0.92
 const SHOP_INTERIOR_SHELF_ALPHA := 0.82
@@ -281,6 +285,7 @@ var tile_textures: Dictionary = {}
 var scene_background_texture: Texture2D
 var scene_midground_layer_texture: Texture2D
 var scene_floor_layer_texture: Texture2D
+var shop_interior_texture: Texture2D
 var occupied_npc_tiles: Array[Vector2i] = []
 var side_view_stage_enabled := true
 var stage_visual_phase := 0.0
@@ -330,6 +335,7 @@ func _load_region_scene_background() -> void:
 	scene_background_texture = null
 	scene_midground_layer_texture = null
 	scene_floor_layer_texture = null
+	shop_interior_texture = null
 	if LOCAL_PAINTERLY_FORCE_TEXTURELESS_STAGE:
 		return
 	var region_id := str(current_region.get("id", ""))
@@ -378,6 +384,9 @@ func enter_shop(portal: Dictionary) -> void:
 	current_mode = "shop"
 	side_view_stage_enabled = false
 	scene_background_texture = null
+	scene_midground_layer_texture = null
+	scene_floor_layer_texture = null
+	_load_shop_interior_background(shop_id)
 	var tile_data: Array = portal.get("tile", [map_width / 2, map_height / 2])
 	shop_return_tile = Vector2i(int(tile_data[0]), int(tile_data[1]))
 	highlighted_portal_id = ""
@@ -395,6 +404,15 @@ func enter_shop(portal: Dictionary) -> void:
 	_build_portal_labels()
 	_update_title_label()
 	queue_redraw()
+
+func _load_shop_interior_background(shop_id: String) -> void:
+	shop_interior_texture = null
+	if not SHOP_INTERIOR_TEXTURE_PRIORITY:
+		return
+	var path := GameData.get_shop_interior_background_path(shop_id)
+	if path.is_empty():
+		return
+	shop_interior_texture = GameData.load_texture(path, true)
 
 func exit_shop() -> Vector2:
 	var return_tile := shop_return_tile
@@ -4754,10 +4772,22 @@ func _draw_shop_overlay() -> void:
 	var size := get_world_rect().size
 	var shop: Dictionary = SHOP_DEFINITIONS.get(active_shop_id, {})
 	var accent: Color = shop.get("accent", Color(0.80, 0.54, 0.28))
+	if SHOP_INTERIOR_TEXTURE_PRIORITY and shop_interior_texture != null:
+		_draw_cover_texture(shop_interior_texture, Rect2(Vector2.ZERO, size), Color(1.0, 1.0, 1.0, SHOP_INTERIOR_TEXTURE_ALPHA))
+		if RICH_SHOP_INTERIOR_ENABLED:
+			_draw_shop_texture_overlay(size, active_shop_id, accent)
+		return
 	if RICH_SHOP_INTERIOR_ENABLED:
 		_draw_rich_shop_interior(size, active_shop_id, accent)
 		return
 	_draw_legacy_shop_overlay(size, accent)
+
+func _draw_shop_texture_overlay(size: Vector2, shop_id: String, accent: Color) -> void:
+	var wall_bottom := size.y * SHOP_INTERIOR_BACK_WALL_RATIO
+	_draw_shop_service_lanes(size, wall_bottom, accent)
+	_draw_shop_counter_goods(size, wall_bottom, shop_id, accent)
+	_draw_shop_lighting(size, wall_bottom, accent)
+	_draw_shop_foreground_frame(size, accent)
 
 func _draw_legacy_shop_overlay(size: Vector2, accent: Color) -> void:
 	draw_rect(Rect2(0, 0, size.x, tile_size * 2.0), Color(0.18, 0.10, 0.06, 0.48), true)

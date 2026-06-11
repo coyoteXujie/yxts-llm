@@ -644,6 +644,7 @@ var item_icon_assets: Dictionary = {}
 var skill_icon_assets: Dictionary = {}
 var scene_background_assets: Dictionary = {}
 var stage_layer_assets: Dictionary = {}
+var shop_interior_assets: Dictionary = {}
 var combat_stage_assets: Dictionary = {}
 var combat_actor_frames: Dictionary = {}
 var region_shop_assets: Dictionary = {}
@@ -718,6 +719,7 @@ func load_database() -> void:
 	_load_skill_icon_assets()
 	_load_scene_background_assets()
 	_load_stage_layer_assets()
+	_load_shop_interior_assets()
 	_load_combat_stage_assets()
 	_load_combat_actor_frames()
 	_load_region_shop_assets()
@@ -787,6 +789,10 @@ func _load_stage_layer_assets() -> void:
 		for layer_name in entry.keys():
 			layers[str(layer_name)] = str(entry[layer_name])
 		stage_layer_assets[str(region_id)] = layers
+
+func _load_shop_interior_assets() -> void:
+	shop_interior_assets.clear()
+	_load_asset_mapping("res://data/shop_interior_assets.json", shop_interior_assets)
 
 func _load_combat_stage_assets() -> void:
 	combat_stage_assets.clear()
@@ -1105,6 +1111,9 @@ func get_stage_layer_path(region_id: String, layer_name: String) -> String:
 	var source_id := get_stage_layer_source_region_id(region_id)
 	var layers: Dictionary = stage_layer_assets.get(source_id, {})
 	return str(layers.get(layer_name, ""))
+
+func get_shop_interior_background_path(shop_id: String) -> String:
+	return str(shop_interior_assets.get(shop_id, ""))
 
 func get_stage_layer_source_region_id(region_id: String) -> String:
 	if stage_layer_assets.has(region_id):

@@ -549,6 +549,9 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.LOCAL_INTERACTION_MARKER_ALPHA >= 0.78 and LOCAL_AREA_SCRIPT.LOCAL_RESOURCE_MARKER_ALPHA >= 0.74, "局部交互入口应有足够可见的舞台标记")
 	_check(LOCAL_AREA_SCRIPT.LOCAL_INTERACTION_BOARD_HEIGHT >= 28.0, "局部交互标签应为双行语义留出高度")
 	_check(LOCAL_AREA_SCRIPT.RICH_SHOP_INTERIOR_ENABLED, "商铺内景应启用高完成度室内 overlay")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_PRIORITY, "商铺内景应优先使用 DNF 式整屏室内背景 PNG")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_ALPHA >= 0.98, "商铺内景整屏背景应作为主视觉层")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_WIDTH >= 1280.0 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_HEIGHT >= 800.0, "商铺内景整屏背景应具备横版舞台分辨率下限")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO > 0.38 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACK_WALL_RATIO < 0.56, "商铺内景应保留横版后墙和透视地面比例")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ALPHA >= 0.86, "商铺内景柜台应作为主视觉层")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_SHELF_ALPHA >= 0.76, "商铺内景应有可见货架层")
@@ -565,6 +568,9 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ITEM_COUNT >= 6, "商铺内景柜台应摆放按店铺类型变化的商品")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FOREGROUND_PROP_COUNT >= 8, "商铺内景应有前景货物遮挡层增强店面深度")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACKGROUND_NPC_COUNT >= 4 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACKGROUND_NPC_ALPHA >= 0.36, "商铺内景应有背景伙计/顾客剪影增强生活感")
+	for shop_id in LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS.keys():
+		var shop_interior_path := GameData.get_shop_interior_background_path(str(shop_id))
+		_check(shop_interior_path.ends_with("shop_%s_dnf_interior_v1.png" % [str(shop_id)]), "六类商铺都应映射专属 DNF 式室内背景：%s" % [str(shop_id)])
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")
@@ -575,6 +581,9 @@ func _run() -> void:
 		_check(not local_area.active_shop_id.is_empty() and LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS.has(local_area.active_shop_id), "商铺内景应保留当前店铺类型用于主题绘制")
 		_check(local_area.npc_nodes.size() == 1, "商铺内应生成 1 名掌柜")
 		_check(local_area.scene_background_texture == null, "商铺内景不应继续叠加区域背景")
+		_check(local_area.shop_interior_texture != null, "商铺内景应加载店铺类型专属整屏背景")
+		if local_area.shop_interior_texture != null:
+			_check(local_area.shop_interior_texture.get_size().x >= LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_WIDTH and local_area.shop_interior_texture.get_size().y >= LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_HEIGHT, "商铺内景整屏背景应达到横版舞台分辨率")
 		_check(local_area.stage_postfx_overlay == null or not local_area.stage_postfx_overlay.visible, "商铺内景不应显示局部横版后期光影层")
 		_check(local_area.stage_foreground_overlay == null or not local_area.stage_foreground_overlay.visible, "商铺内景不应显示局部横版前景遮挡层")
 		_check(not _first_portal(local_area, "exit_area").is_empty(), "商铺内应有出门入口")

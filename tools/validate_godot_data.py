@@ -15,6 +15,8 @@ MAP_WIDTH = 96
 MAP_HEIGHT = 72
 MIN_STAGE_LAYER_WIDTH = 1280
 MIN_STAGE_LAYER_HEIGHT = 720
+MIN_SHOP_INTERIOR_WIDTH = 1280
+MIN_SHOP_INTERIOR_HEIGHT = 800
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qinghe", "floor"): 70_000,
@@ -129,6 +131,7 @@ def main() -> int:
     skill_icon_assets = load_json("skill_icon_assets.json")
     scene_background_assets = load_json("scene_background_assets.json")
     stage_layer_assets = load_json("stage_layer_assets.json")
+    shop_interior_assets = load_json("shop_interior_assets.json")
     combat_stage_assets = load_json("combat_stage_assets.json")
     combat_actor_frames = load_json("combat_actor_frames.json")
     region_shop_assets = load_json("region_shops.json")
@@ -252,6 +255,30 @@ def main() -> int:
         asset_path = ROOT / "godot_project" / background_path.removeprefix("res://")
         if not asset_path.exists():
             errors.append(f"scene background path missing for {region_id}: {background_path}")
+
+    if not isinstance(shop_interior_assets, dict):
+        errors.append("shop_interior_assets.json must be an object")
+    else:
+        missing_shop_interiors = allowed_shop_ids - set(shop_interior_assets.keys())
+        if missing_shop_interiors:
+            errors.append(f"shop interior assets missing shops: {', '.join(sorted(missing_shop_interiors))}")
+        for shop_id, asset_path_text in shop_interior_assets.items():
+            if shop_id not in allowed_shop_ids:
+                errors.append(f"shop interior mapping references unknown shop {shop_id}")
+            resolved_path = resolve_asset_path(str(asset_path_text))
+            if not resolved_path.exists():
+                errors.append(f"shop interior path missing for {shop_id}: {asset_path_text}")
+                continue
+            png_info = read_png_info(resolved_path)
+            if png_info is None:
+                errors.append(f"shop interior path for {shop_id} is not a valid PNG: {asset_path_text}")
+                continue
+            width, height, _color_type = png_info
+            if width < MIN_SHOP_INTERIOR_WIDTH or height < MIN_SHOP_INTERIOR_HEIGHT:
+                errors.append(
+                    f"shop interior {shop_id} resolution {width}x{height}, "
+                    f"expected at least {MIN_SHOP_INTERIOR_WIDTH}x{MIN_SHOP_INTERIOR_HEIGHT}"
+                )
 
     if not isinstance(region_shop_assets, dict):
         errors.append("region_shops.json must be an object")
@@ -400,7 +427,7 @@ def main() -> int:
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
         f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
         f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} region_shops={len(region_shop_assets)} region_points={len(region_point_assets)} "
-        f"combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
+        f"shop_interiors={len(shop_interior_assets)} combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
     )
     return 0
 
