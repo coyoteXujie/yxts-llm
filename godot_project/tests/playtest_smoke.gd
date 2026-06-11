@@ -498,6 +498,9 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FOREGROUND_VIGNETTE_ALPHA >= 0.42, "商铺内景应有近景梁柱压场")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_PERSPECTIVE_GUIDE_COUNT >= 8, "商铺内景应绘制足够地面透视线")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_DISPLAY_CLUSTER_COUNT >= 5, "商铺内景应按店铺类型补充陈列物")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_HANGING_DECOR_COUNT >= 5, "商铺内景应有悬挂式店铺道具和招幌层")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ITEM_COUNT >= 6, "商铺内景柜台应摆放按店铺类型变化的商品")
+	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FOREGROUND_PROP_COUNT >= 8, "商铺内景应有前景货物遮挡层增强店面深度")
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")

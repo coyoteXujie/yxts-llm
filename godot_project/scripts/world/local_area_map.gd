@@ -253,6 +253,9 @@ const SHOP_INTERIOR_FLOOR_LANE_ALPHA := 0.24
 const SHOP_INTERIOR_FOREGROUND_VIGNETTE_ALPHA := 0.48
 const SHOP_INTERIOR_PERSPECTIVE_GUIDE_COUNT := 10
 const SHOP_INTERIOR_DISPLAY_CLUSTER_COUNT := 6
+const SHOP_INTERIOR_HANGING_DECOR_COUNT := 5
+const SHOP_INTERIOR_COUNTER_ITEM_COUNT := 7
+const SHOP_INTERIOR_FOREGROUND_PROP_COUNT := 8
 const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.86
@@ -4563,12 +4566,15 @@ func _draw_rich_shop_interior(size: Vector2, shop_id: String, accent: Color) -> 
 	var floor_rect := Rect2(Vector2(0.0, wall_bottom), Vector2(size.x, size.y - wall_bottom))
 	_draw_shop_wall(size, wall_bottom, accent)
 	_draw_shop_back_sign(size, wall_bottom, shop_id, accent)
+	_draw_shop_hanging_decor(size, wall_bottom, shop_id, accent)
 	_draw_shop_floor(size, floor_rect, accent)
 	_draw_shop_service_lanes(size, wall_bottom, accent)
 	_draw_shop_counter(size, wall_bottom, accent)
+	_draw_shop_counter_goods(size, wall_bottom, shop_id, accent)
 	_draw_shop_shelves(size, wall_bottom, accent)
 	_draw_shop_theme_props(size, wall_bottom, shop_id, accent)
 	_draw_shop_display_clusters(size, wall_bottom, shop_id, accent)
+	_draw_shop_foreground_merchandise(size, wall_bottom, shop_id, accent)
 	_draw_shop_lighting(size, wall_bottom, accent)
 	_draw_shop_foreground_frame(size, accent)
 
@@ -4633,6 +4639,30 @@ func _shop_sign_stroke_count(shop_id: String) -> int:
 		_:
 			return 6
 
+func _draw_shop_hanging_decor(size: Vector2, wall_bottom: float, shop_id: String, accent: Color) -> void:
+	for i in range(SHOP_INTERIOR_HANGING_DECOR_COUNT):
+		var t := (float(i) + 0.5) / float(SHOP_INTERIOR_HANGING_DECOR_COUNT)
+		var x := lerpf(size.x * 0.16, size.x * 0.84, t)
+		var y := wall_bottom - tile_size * (1.92 + float(i % 2) * 0.18)
+		draw_line(Vector2(x, tile_size * 0.72), Vector2(x, y - tile_size * 0.20), Color(0.82, 0.60, 0.34, 0.24), 1.0)
+		match shop_id:
+			"blacksmith":
+				draw_line(Vector2(x - tile_size * 0.18, y - tile_size * 0.10), Vector2(x + tile_size * 0.22, y + tile_size * 0.28), Color(0.76, 0.76, 0.70, 0.50), 2.0)
+				draw_line(Vector2(x + tile_size * 0.14, y - tile_size * 0.20), Vector2(x - tile_size * 0.12, y + tile_size * 0.26), Color(accent.r, accent.g, accent.b, 0.36), 1.4)
+			"medicine":
+				draw_line(Vector2(x, y - tile_size * 0.28), Vector2(x + tile_size * 0.06, y + tile_size * 0.30), Color(0.22, 0.44, 0.20, 0.52), 1.4)
+				for leaf in range(3):
+					draw_circle(Vector2(x + tile_size * (0.06 + leaf * 0.055), y - tile_size * (0.10 - leaf * 0.10)), 3.2, Color(accent.r, accent.g, accent.b, 0.42))
+			"tailor":
+				draw_rect(Rect2(Vector2(x - tile_size * 0.16, y - tile_size * 0.30), Vector2(tile_size * 0.32, tile_size * 0.58)), Color(accent.r, accent.g, accent.b, 0.40), true)
+				draw_line(Vector2(x - tile_size * 0.14, y), Vector2(x + tile_size * 0.16, y - tile_size * 0.18), Color(0.98, 0.82, 0.94, 0.36), 1.2)
+			"inn", "teahouse":
+				draw_circle(Vector2(x, y), tile_size * 0.13, Color(accent.r, accent.g, accent.b, 0.50))
+				draw_rect(Rect2(Vector2(x - tile_size * 0.11, y - tile_size * 0.04), Vector2(tile_size * 0.22, tile_size * 0.26)), Color(0.44, 0.20, 0.08, 0.58), true)
+			_:
+				draw_rect(Rect2(Vector2(x - tile_size * 0.18, y - tile_size * 0.18), Vector2(tile_size * 0.36, tile_size * 0.28)), Color(0.20, 0.10, 0.05, 0.58), true)
+				draw_circle(Vector2(x + tile_size * 0.12, y - tile_size * 0.24), 4.5, Color(accent.r, accent.g, accent.b, 0.44))
+
 func _draw_shop_floor(size: Vector2, floor_rect: Rect2, accent: Color) -> void:
 	_draw_stage_vertical_gradient(
 		floor_rect,
@@ -4689,6 +4719,29 @@ func _draw_shop_counter(size: Vector2, wall_bottom: float, accent: Color) -> voi
 		draw_line(Vector2(x, counter_rect.position.y + tile_size * 0.18), Vector2(x - tile_size * 0.06, counter_rect.end.y - tile_size * 0.08), Color(0.08, 0.045, 0.026, 0.34), 1.2)
 	draw_line(counter_rect.position + Vector2(tile_size * 0.28, tile_size * 0.44), counter_rect.position + Vector2(counter_rect.size.x - tile_size * 0.28, tile_size * 0.34), Color(accent.r, accent.g, accent.b, 0.30), 1.5)
 
+func _draw_shop_counter_goods(size: Vector2, wall_bottom: float, shop_id: String, accent: Color) -> void:
+	var top_y := wall_bottom - tile_size * 1.08
+	for i in range(SHOP_INTERIOR_COUNTER_ITEM_COUNT):
+		var t := (float(i) + 0.5) / float(SHOP_INTERIOR_COUNTER_ITEM_COUNT)
+		var x := lerpf(size.x * 0.22, size.x * 0.78, t)
+		var y := top_y - tile_size * (0.03 + float(i % 2) * 0.04)
+		match shop_id:
+			"blacksmith":
+				draw_line(Vector2(x - tile_size * 0.20, y + tile_size * 0.10), Vector2(x + tile_size * 0.24, y - tile_size * 0.10), Color(0.78, 0.78, 0.72, 0.56), 2.0)
+				draw_circle(Vector2(x - tile_size * 0.24, y + tile_size * 0.12), 2.6, Color(accent.r, accent.g, accent.b, 0.42))
+			"medicine":
+				draw_rect(Rect2(Vector2(x - tile_size * 0.07, y - tile_size * 0.16), Vector2(tile_size * 0.14, tile_size * 0.22)), Color(0.30, 0.17, 0.08, 0.64), true)
+				draw_circle(Vector2(x, y - tile_size * 0.18), 3.2, Color(accent.r, accent.g, accent.b, 0.44))
+			"tailor":
+				draw_line(Vector2(x - tile_size * 0.14, y + tile_size * 0.08), Vector2(x + tile_size * 0.17, y - tile_size * 0.10), Color(accent.r, accent.g, accent.b, 0.58), 3.0)
+				draw_line(Vector2(x - tile_size * 0.12, y - tile_size * 0.02), Vector2(x + tile_size * 0.15, y + tile_size * 0.06), Color(0.96, 0.78, 0.90, 0.36), 1.2)
+			"inn", "teahouse":
+				draw_circle(Vector2(x, y), tile_size * 0.075, Color(0.42, 0.18, 0.08, 0.70))
+				draw_circle(Vector2(x + tile_size * 0.08, y - tile_size * 0.05), tile_size * 0.040, Color(accent.r, accent.g, accent.b, 0.48))
+			_:
+				draw_rect(Rect2(Vector2(x - tile_size * 0.12, y - tile_size * 0.12), Vector2(tile_size * 0.24, tile_size * 0.18)), Color(0.28, 0.14, 0.06, 0.66), true)
+				draw_circle(Vector2(x + tile_size * 0.06, y - tile_size * 0.16), 3.8, Color(accent.r, accent.g, accent.b, 0.46))
+
 func _draw_shop_shelves(size: Vector2, wall_bottom: float, accent: Color) -> void:
 	for side in [-1.0, 1.0]:
 		var x := size.x * (0.16 if side < 0.0 else 0.84)
@@ -4744,6 +4797,33 @@ func _draw_shop_display_clusters(size: Vector2, wall_bottom: float, shop_id: Str
 			_:
 				draw_rect(Rect2(base + Vector2(-tile_size * 0.26, -tile_size * 0.30), Vector2(tile_size * 0.52, tile_size * 0.34)), Color(0.30, 0.16, 0.07, 0.62), true)
 				draw_circle(base + Vector2(tile_size * 0.04, -tile_size * 0.38), tile_size * 0.12, Color(accent.r, accent.g, accent.b, 0.46))
+
+func _draw_shop_foreground_merchandise(size: Vector2, wall_bottom: float, shop_id: String, accent: Color) -> void:
+	var base_y := size.y - tile_size * 0.92
+	for i in range(SHOP_INTERIOR_FOREGROUND_PROP_COUNT):
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var row := float(i / 2)
+		var x := size.x * (0.13 if side < 0.0 else 0.87) + side * row * tile_size * 0.42
+		var y := base_y - tile_size * (0.16 * float(i % 3))
+		var base := Vector2(x, y)
+		_draw_ellipse_poly(base + Vector2(0.0, tile_size * 0.18), Vector2(tile_size * 0.48, tile_size * 0.12), Color(0.0, 0.0, 0.0, 0.24))
+		match shop_id:
+			"blacksmith":
+				draw_rect(Rect2(base + Vector2(-tile_size * 0.25, -tile_size * 0.34), Vector2(tile_size * 0.50, tile_size * 0.34)), Color(0.13, 0.08, 0.05, 0.70), true)
+				draw_line(base + Vector2(-tile_size * 0.18, -tile_size * 0.42), base + Vector2(tile_size * 0.26, -tile_size * 0.08), Color(0.74, 0.74, 0.68, 0.52), 2.0)
+			"medicine":
+				draw_circle(base + Vector2(0.0, -tile_size * 0.12), tile_size * 0.18, Color(0.23, 0.38, 0.16, 0.60))
+				draw_line(base + Vector2(-tile_size * 0.10, -tile_size * 0.22), base + Vector2(tile_size * 0.12, -tile_size * 0.50), Color(accent.r, accent.g, accent.b, 0.42), 1.2)
+			"tailor":
+				draw_rect(Rect2(base + Vector2(-tile_size * 0.24, -tile_size * 0.40), Vector2(tile_size * 0.48, tile_size * 0.44)), Color(accent.r, accent.g, accent.b, 0.42), true)
+				draw_line(base + Vector2(-tile_size * 0.20, -tile_size * 0.15), base + Vector2(tile_size * 0.20, -tile_size * 0.28), Color(0.96, 0.78, 0.90, 0.34), 1.1)
+			"inn", "teahouse":
+				draw_rect(Rect2(base + Vector2(-tile_size * 0.30, -tile_size * 0.18), Vector2(tile_size * 0.60, tile_size * 0.18)), Color(0.24, 0.12, 0.06, 0.66), true)
+				draw_circle(base + Vector2(-tile_size * 0.12, -tile_size * 0.24), tile_size * 0.10, Color(0.42, 0.18, 0.08, 0.66))
+				draw_circle(base + Vector2(tile_size * 0.14, -tile_size * 0.25), tile_size * 0.08, Color(accent.r, accent.g, accent.b, 0.46))
+			_:
+				draw_rect(Rect2(base + Vector2(-tile_size * 0.28, -tile_size * 0.26), Vector2(tile_size * 0.56, tile_size * 0.28)), Color(0.25, 0.13, 0.06, 0.68), true)
+				draw_circle(base + Vector2(tile_size * 0.02, -tile_size * 0.34), tile_size * 0.11, Color(accent.r, accent.g, accent.b, 0.46))
 
 func _draw_shop_blacksmith_props(size: Vector2, wall_bottom: float, accent: Color) -> void:
 	var forge := Vector2(size.x * 0.76, wall_bottom + tile_size * 1.10)
