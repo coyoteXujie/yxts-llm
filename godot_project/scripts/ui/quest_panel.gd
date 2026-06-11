@@ -110,6 +110,25 @@ func _world_event_lines() -> Array[String]:
 			if not delivery_hint.is_empty():
 				lines.append("  %s" % delivery_hint)
 		lines.append("")
+	var trade_records := GameState.get_trade_records(5)
+	if not trade_records.is_empty():
+		lines.append("【跑商履历】")
+		lines.append("商誉：%s（%d）" % [GameState.get_trade_reputation_title(), GameState.trade_reputation])
+		for trade_record in trade_records:
+			var record: Dictionary = trade_record
+			var source_name := str(record.get("source_region_name", "来路"))
+			var target_name := str(record.get("target_region_name", "目的地"))
+			var item_name := str(record.get("item_name", "货物"))
+			lines.append("第%d日  %s -> %s  %s x%d  利%d两  商誉+%d" % [
+				int(record.get("day", GameState.day)),
+				source_name,
+				target_name,
+				item_name,
+				int(record.get("count", 1)),
+				int(record.get("profit", 0)),
+				int(record.get("reputation_gain", 0))
+			])
+		lines.append("")
 	lines.append("【江湖风声】")
 	var events := GameState.get_recent_world_events(12)
 	if events.is_empty():

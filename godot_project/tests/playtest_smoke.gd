@@ -883,6 +883,17 @@ func _run() -> void:
 					_check(int(GameState.player.get("money", 0)) == market_money_before_resolve + expected_market_money, "带货交割应发放询价基础奖励和交割收益")
 					_check(int(GameState.inventory.get("item_fish", 0)) == 0, "带货交割应消耗对应特产")
 					_check(GameState.world_events.size() >= market_events_before_resolve + 2 and GameState.get_world_event_summary(2).contains("交割"), "带货交割应写入市场类落点传闻")
+					var trade_records := GameState.get_trade_records(0)
+					_check(trade_records.size() == 1 and GameState.trade_reputation > 0, "带货交割应记录跑商履历并提升商誉")
+					if not trade_records.is_empty():
+						var latest_trade_record: Dictionary = trade_records[trade_records.size() - 1] as Dictionary
+						_check(str(latest_trade_record.get("item_id", "")) == "item_fish" and int(latest_trade_record.get("profit", 0)) == int(market_clue_portal.get("delivery_bonus_money", 0)), "跑商履历应记录交割物品和收益")
+					var trade_snapshot := GameState.build_save_snapshot(GameState.player_position)
+					_check((trade_snapshot.get("trade_records", []) as Array).size() == trade_records.size() and int(trade_snapshot.get("trade_reputation", 0)) == GameState.trade_reputation, "跑商履历和商誉应进入存档快照")
+					var trade_quest_panel := QUEST_PANEL_SCRIPT.new()
+					var trade_journal_text := "\n".join(trade_quest_panel.call("_world_event_lines"))
+					_check(trade_journal_text.contains("【跑商履历】") and trade_journal_text.contains("商誉") and trade_journal_text.contains("鲜鱼"), "任务江湖页应展示跑商履历和商誉")
+					trade_quest_panel.free()
 					GameState.inventory = inventory_before_market_delivery
 					main_controller.free()
 			var money_before_region_sell := int(GameState.player.get("money", 0))

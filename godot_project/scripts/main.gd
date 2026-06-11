@@ -743,9 +743,20 @@ func _resolve_market_clue_aftermath(region: Dictionary, clue: Dictionary, portal
 	var item_name := str(item.get("name", item_id if not item_id.is_empty() else "这批货"))
 	var delivery_count := _market_delivery_count(portal)
 	var delivery_bonus := int(portal.get("delivery_bonus_money", 0))
+	var delivered := false
 	if not item_id.is_empty() and delivery_count > 0 and GameState.remove_item(item_id, delivery_count):
+		delivered = true
 		if delivery_bonus > 0:
 			GameState.add_money(delivery_bonus)
+	if delivered:
+		GameState.record_trade_delivery(
+			str(clue.get("region_id", "")),
+			region_id,
+			item_id,
+			delivery_count,
+			delivery_bonus,
+			str(clue.get("id", ""))
+		)
 	var count_text := " x%d" % delivery_count if delivery_count > 1 else ""
 	var description := "跑商回响：%s的脚行收下了%s%s，确认%s传来的行情不虚；后续可以在这里扩展为交割、倒卖或黑市压价事件。" % [
 		region_name,

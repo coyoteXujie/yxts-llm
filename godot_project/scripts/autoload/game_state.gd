@@ -27,6 +27,8 @@ var npc_memory: Dictionary = {}
 var region_state: Dictionary = {}
 var world_events: Array = []
 var adventure_clues: Array = []
+var trade_records: Array = []
+var trade_reputation := 0
 var active_quest: String = "初入平安镇"
 var day := 1
 var hour := 8.0
@@ -38,6 +40,7 @@ var current_tile := Vector2i.ZERO
 var map_target_region_id := ""
 
 const SAVE_PATH := "user://savegame.json"
+const TRADE_RECORD_LIMIT := 30
 const FAST_TRAVEL_MIN_EXPLORATION := 25
 const FAST_TRAVEL_FAMILIAR_EXPLORATION := 50
 const FAST_TRAVEL_EXPERT_EXPLORATION := 75
@@ -207,6 +210,8 @@ func new_game(config: Dictionary = {}) -> void:
 	region_state = {}
 	world_events = []
 	adventure_clues = []
+	trade_records = []
+	trade_reputation = 0
 	active_quest = "初入平安镇"
 	_start_quest_silently("q_intro_town")
 	day = 1
@@ -531,6 +536,64 @@ func get_unresolved_adventure_clues_for_region(region_id: String, max_count: int
 		if max_count > 0 and result.size() >= max_count:
 			break
 	return result
+
+func record_trade_delivery(source_region_id: String, target_region_id: String, item_id: String, count: int, profit: int, clue_id: String = "") -> Dictionary:
+	count = maxi(0, count)
+	profit = maxi(0, profit)
+	if item_id.is_empty() or count <= 0:
+		return {}
+	var source_region := GameData.get_region(source_region_id)
+	var target_region := GameData.get_region(target_region_id)
+	var item := GameData.get_item(item_id)
+	var source_name := str(source_region.get("name", source_region_id if not source_region_id.is_empty() else "来路"))
+	var target_name := str(target_region.get("name", target_region_id if not target_region_id.is_empty() else "目的地"))
+	var item_name := str(item.get("name", item_id))
+	var reputation_gain := maxi(1, int(roundf(float(maxi(1, profit)) / 12.0)))
+	trade_reputation += reputation_gain
+	var record := {
+		"id": "%d_%d_%d" % [day, int(hour * 100.0), abs(hash("%s:%s:%s:%s" % [source_region_id, target_region_id, item_id, clue_id]))],
+		"source_region_id": source_region_id,
+		"source_region_name": source_name,
+		"target_region_id": target_region_id,
+		"target_region_name": target_name,
+		"item_id": item_id,
+		"item_name": item_name,
+		"count": count,
+		"profit": profit,
+		"reputation_gain": reputation_gain,
+		"reputation_total": trade_reputation,
+		"clue_id": clue_id,
+		"day": day,
+		"hour": hour
+	}
+	trade_records.append(record)
+	while trade_records.size() > TRADE_RECORD_LIMIT:
+		trade_records.remove_at(0)
+	EventBus.quests_changed.emit()
+	EventBus.world_events_changed.emit(get_recent_world_events(30))
+	return record.duplicate(true)
+
+func get_trade_records(max_count: int = 6) -> Array:
+	var count: int = trade_records.size()
+	if max_count > 0:
+		count = clampi(max_count, 0, trade_records.size())
+	var start: int = max(0, trade_records.size() - count)
+	var result: Array = []
+	for index in range(start, trade_records.size()):
+		if typeof(trade_records[index]) == TYPE_DICTIONARY:
+			result.append((trade_records[index] as Dictionary).duplicate(true))
+	return result
+
+func get_trade_reputation_title() -> String:
+	if trade_reputation >= 80:
+		return "商路名家"
+	if trade_reputation >= 40:
+		return "行脚老手"
+	if trade_reputation >= 15:
+		return "熟路货郎"
+	if trade_reputation > 0:
+		return "初涉行商"
+	return "未开商路"
 
 func _record_region_discovery(region: Dictionary) -> void:
 	var region_id := str(region.get("id", ""))
@@ -1984,6 +2047,8 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 			"region_state": region_state,
 			"world_events": world_events,
 			"adventure_clues": adventure_clues,
+			"trade_records": trade_records,
+			"trade_reputation": trade_reputation,
 			"active_quest": active_quest,
 		"day": day,
 		"hour": hour,
@@ -2034,6 +2099,8 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	region_state = snapshot.get("region_state", {})
 	world_events = snapshot.get("world_events", [])
 	adventure_clues = snapshot.get("adventure_clues", [])
+	trade_records = snapshot.get("trade_records", [])
+	trade_reputation = int(snapshot.get("trade_reputation", 0))
 	active_quest = str(snapshot.get("active_quest", "自由探索江湖"))
 	day = int(snapshot.get("day", 1))
 	hour = float(snapshot.get("hour", 8.0))
