@@ -152,6 +152,18 @@
       {"label": "古滩遗物", "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。", "kind": "cache", "tile": [34, 34], "reward_money": 6}
     ]
   },
+  "yiling_gap": {
+    "landmarks": [
+      {"label": "峡谷密室", "description": "峭壁暗处有一扇半掩石门，落石把门缝遮住了大半。", "kind": "ruin", "tile": [20, 26], "reward_exp": 8},
+      {"label": "隐蔽山谷", "description": "古道尽头忽然开出一线山谷，竹影和水雾把入口藏得极深。", "kind": "cave", "tile": [42, 24], "reward_exp": 9},
+      {"label": "瀑布水帘", "description": "最大瀑布后有一片水帘，水声遮住了石后空洞的回响。", "kind": "water", "tile": [58, 27], "reward_item": "item_yao"}
+    ],
+    "resources": [
+      {"label": "峡谷草药", "description": "湿润石缝里长着几株草药，叶片被江雾洗得发亮。", "kind": "herb", "tile": [26, 33], "reward_item": "item_yao"},
+      {"label": "崖壁铁矿", "description": "峭壁裂缝里露出暗色矿脉，敲下碎石能换些银两。", "kind": "ore", "tile": [60, 24], "reward_money": 8},
+      {"label": "峡谷山参", "description": "山阴潮土里露出参须，附近落石痕迹还很新。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+    ]
+  },
   "hanjiang_river": {
     "landmarks": [
       {"label": "汉江古渡", "description": "废弃渡口还留着旧缆痕，船夫说这里能听到武当和云梦两头的消息。", "kind": "dock", "tile": [22, 29], "reward_item": "item_fish"},
