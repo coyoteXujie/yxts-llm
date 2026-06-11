@@ -116,6 +116,18 @@
       {"label": "雪莲旧株", "description": "岩缝里残着一株雪莲，花瓣被风雪压得发亮。", "kind": "flower", "tile": [60, 34], "reward_item": "item_red_flower"}
     ]
   },
+  "funiu_mtn": {
+    "landmarks": [
+      {"label": "伏牛古矿洞", "description": "废弃矿洞口还压着旧木梁，洞里隐约能听见滴水和碎石声。", "kind": "cave", "tile": [18, 24], "reward_money": 6},
+      {"label": "那迦密林入口", "description": "密林深处立着蛇纹旧门，藤蔓遮住大半门额，外人难辨去路。", "kind": "ruin", "tile": [56, 25], "reward_exp": 9},
+      {"label": "山顶神坛", "description": "石坛立在高处，残旗被山风吹得猎猎作响，像在警告后来人。", "kind": "shrine", "tile": [44, 18], "reward_exp": 8}
+    ],
+    "resources": [
+      {"label": "伏牛草药", "description": "山路湿处长着耐寒草药，叶片边缘带着淡淡苦香。", "kind": "herb", "tile": [24, 32], "reward_item": "item_yao"},
+      {"label": "寒铁矿脉", "description": "矿洞旁露出暗色矿脉，石面带着冷硬金属光。", "kind": "ore", "tile": [20, 27], "reward_money": 8},
+      {"label": "山阴老参", "description": "山阴潮土里藏着老参细须，采挖时要避开松动石块。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+    ]
+  },
   "wudang_peak": {
     "landmarks": [
       {"label": "武当金顶", "description": "金顶立在云海之上，日光照上殿脊时，连山风都像慢了半拍。", "kind": "shrine", "tile": [36, 18], "reward_exp": 9},

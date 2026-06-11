@@ -54,6 +54,11 @@
     "midground": "res://assets/world/stage_layers/western_plateau_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/western_plateau_dnf_foreground_v1.png"
   },
+  "funiu_mtn": {
+    "floor": "res://assets/world/stage_layers/funiu_mtn_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/funiu_mtn_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/funiu_mtn_dnf_foreground_v1.png"
+  },
   "wudang_peak": {
     "floor": "res://assets/world/stage_layers/wudang_peak_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/wudang_peak_dnf_midground_v1.png",
