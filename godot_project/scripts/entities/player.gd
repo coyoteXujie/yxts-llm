@@ -55,6 +55,9 @@ const PLAYER_STAGE_RUN_STRIDE_ALPHA := 0.36
 const PLAYER_SPRITE_SOURCE_FACES_LEFT := false
 const PLAYER_AXIS_FALLBACK_ENABLED := true
 const PLAYER_IDLE_REDRAW_INTERVAL := 1.0 / 12.0
+const PLAYER_MOVING_REDRAW_INTERVAL := 1.0 / 30.0
+const PLAYER_TURN_REDRAW_INTERVAL := 1.0 / 45.0
+const PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS := 0.52
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 const PLAYER_SPRITE_OVERRIDES := {
@@ -81,6 +84,7 @@ var stage_turn_from_side := 1.0
 var stage_turn_to_side := 1.0
 var last_axis_fallback := Vector2.ZERO
 var idle_redraw_accumulator := 0.0
+var active_redraw_accumulator := PLAYER_MOVING_REDRAW_INTERVAL
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -99,10 +103,16 @@ func _process(delta: float) -> void:
 	walk_phase += delta * (10.5 if moving else 1.45)
 	if turn_accent_timer > 0.0:
 		turn_accent_timer = maxf(0.0, turn_accent_timer - delta)
-	if moving or turn_accent_timer > 0.0 or stage_turn_progress > 0.0:
+	var turn_active := turn_accent_timer > 0.0 or stage_turn_progress > 0.0
+	if moving or turn_active:
 		idle_redraw_accumulator = 0.0
-		queue_redraw()
+		var redraw_interval := PLAYER_TURN_REDRAW_INTERVAL if turn_active else PLAYER_MOVING_REDRAW_INTERVAL
+		active_redraw_accumulator += delta
+		if active_redraw_accumulator >= redraw_interval:
+			active_redraw_accumulator = fposmod(active_redraw_accumulator, redraw_interval)
+			queue_redraw()
 		return
+	active_redraw_accumulator = PLAYER_MOVING_REDRAW_INTERVAL
 	idle_redraw_accumulator += delta
 	if idle_redraw_accumulator >= PLAYER_IDLE_REDRAW_INTERVAL:
 		idle_redraw_accumulator = fposmod(idle_redraw_accumulator, PLAYER_IDLE_REDRAW_INTERVAL)
@@ -393,9 +403,8 @@ func _begin_stage_turn(previous_side: float, next_side: float) -> void:
 	stage_turn_from_side = from_side
 	stage_turn_to_side = to_side
 	stage_turn_progress = 1.0
-	if not visual_facing_initialized:
-		visual_facing_side = from_side
-		visual_facing_initialized = true
+	visual_facing_side = from_side
+	visual_facing_initialized = true
 
 func _update_stage_visual_facing(delta: float) -> void:
 	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
@@ -418,6 +427,8 @@ func _stage_draw_facing_side() -> float:
 	if not PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
 		return _facing_side()
 	if stage_turn_progress > 0.01:
+		if stage_turn_progress > PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS:
+			return stage_turn_from_side
 		return stage_turn_to_side
 	if not visual_facing_initialized:
 		return _facing_side()
