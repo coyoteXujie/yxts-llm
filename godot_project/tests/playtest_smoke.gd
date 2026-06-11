@@ -734,9 +734,14 @@ func _run() -> void:
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_COUNTER_ITEM_COUNT >= 6, "商铺内景柜台应摆放按店铺类型变化的商品")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_FOREGROUND_PROP_COUNT >= 8, "商铺内景应有前景货物遮挡层增强店面深度")
 	_check(LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACKGROUND_NPC_COUNT >= 4 and LOCAL_AREA_SCRIPT.SHOP_INTERIOR_BACKGROUND_NPC_ALPHA >= 0.36, "商铺内景应有背景伙计/顾客剪影增强生活感")
+	var inn_interior_path := GameData.get_shop_interior_background_path("inn")
+	_check(inn_interior_path.ends_with("shop_inn_dnf_interior_v2.png"), "客栈内景应使用带二楼栏杆/楼梯/客桌/伙计剪影的 v2 整屏背景")
+	var inn_interior_texture := GameData.load_texture(inn_interior_path, true)
+	_check(inn_interior_texture != null and inn_interior_texture.get_size().x >= 1600.0 and inn_interior_texture.get_size().y >= 900.0, "客栈 v2 内景应具备 1600x900 横版整屏分辨率")
 	for shop_id in LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS.keys():
 		var shop_interior_path := GameData.get_shop_interior_background_path(str(shop_id))
-		_check(shop_interior_path.ends_with("shop_%s_dnf_interior_v1.png" % [str(shop_id)]), "六类商铺都应映射专属 DNF 式室内背景：%s" % [str(shop_id)])
+		var expected_shop_suffix := "shop_inn_dnf_interior_v2.png" if str(shop_id) == "inn" else "shop_%s_dnf_interior_v1.png" % [str(shop_id)]
+		_check(shop_interior_path.ends_with(expected_shop_suffix), "六类商铺都应映射专属 DNF 式室内背景：%s" % [str(shop_id)])
 
 	var shop_portal := _first_portal(local_area, "shop")
 	_check(not shop_portal.is_empty(), "平安镇应存在可进入商铺")

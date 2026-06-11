@@ -18,6 +18,9 @@ MIN_STAGE_LAYER_HEIGHT = 720
 MIN_SHOP_INTERIOR_WIDTH = 1280
 MIN_SHOP_INTERIOR_HEIGHT = 800
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+MIN_DETAILED_SHOP_INTERIOR_BYTES = {
+    "inn": 180_000,
+}
 MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qinghe", "floor"): 70_000,
     ("qinghe", "midground"): 120_000,
@@ -332,6 +335,12 @@ def main() -> int:
                 errors.append(
                     f"shop interior {shop_id} resolution {width}x{height}, "
                     f"expected at least {MIN_SHOP_INTERIOR_WIDTH}x{MIN_SHOP_INTERIOR_HEIGHT}"
+                )
+            min_size = MIN_DETAILED_SHOP_INTERIOR_BYTES.get(shop_id, 0)
+            if min_size > 0 and resolved_path.stat().st_size < min_size:
+                errors.append(
+                    f"shop interior {shop_id} detail file too small: {resolved_path.stat().st_size} bytes, "
+                    f"expected at least {min_size}"
                 )
 
     if not isinstance(region_shop_assets, dict):
