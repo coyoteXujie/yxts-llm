@@ -74,6 +74,11 @@
     "midground": "res://assets/world/stage_layers/yiling_gap_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/yiling_gap_dnf_foreground_v1.png"
   },
+  "dangyang_plain": {
+    "floor": "res://assets/world/stage_layers/dangyang_plain_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/dangyang_plain_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/dangyang_plain_dnf_foreground_v1.png"
+  },
   "hanjiang_river": {
     "floor": "res://assets/world/stage_layers/hanjiang_river_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/hanjiang_river_dnf_midground_v1.png",

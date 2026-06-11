@@ -164,6 +164,18 @@
       {"label": "峡谷山参", "description": "山阴潮土里露出参须，附近落石痕迹还很新。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
     ]
   },
+  "dangyang_plain": {
+    "landmarks": [
+      {"label": "三国古战场", "description": "旧旗插在官道旁，残碑上还能摸到刀斧留下的浅痕。", "kind": "ruin", "tile": [42, 25], "reward_exp": 8},
+      {"label": "地下古墓", "description": "平原土丘下露出石门，墓道口被稻草和尘土遮住。", "kind": "cave", "tile": [58, 28], "reward_money": 6},
+      {"label": "古道驿站遗址", "description": "废驿站还挂着旧木牌，来往脚夫偶尔在这里避风。", "kind": "market", "tile": [24, 26], "reward_exp": 6}
+    ],
+    "resources": [
+      {"label": "田埂稻米", "description": "稻田边晒着新收稻米，村人分你一小袋作路粮。", "kind": "cache", "tile": [30, 34], "reward_item": "item_baozi"},
+      {"label": "林间草药", "description": "小树林旁长着几株止血草，叶背还沾着晨雾。", "kind": "herb", "tile": [22, 31], "reward_item": "item_yao"},
+      {"label": "古战场遗物", "description": "官道碎石间压着一枚旧铁片，像是古战场遗落的兵器残件。", "kind": "cache", "tile": [46, 32], "reward_money": 6}
+    ]
+  },
   "hanjiang_river": {
     "landmarks": [
       {"label": "汉江古渡", "description": "废弃渡口还留着旧缆痕，船夫说这里能听到武当和云梦两头的消息。", "kind": "dock", "tile": [22, 29], "reward_item": "item_fish"},
