@@ -32,6 +32,18 @@
       {"label": "桥下铜钱", "description": "桥洞阴影里露出几枚旧钱，像是行商匆忙落下的。", "kind": "coin", "tile": [40, 27], "reward_money": 4}
     ]
   },
+  "jiangling": {
+    "landmarks": [
+      {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
+      {"label": "旧战鼓台", "description": "鼓面龟裂，仍能想见当年兵家重镇的声势。", "kind": "training", "tile": [18, 19], "reward_exp": 8},
+      {"label": "楚商货栈", "description": "货栈门前混着镖客、船夫和外地客商，最容易听见边地风声。", "kind": "market", "tile": [41, 31], "reward_money": 4}
+    ],
+    "resources": [
+      {"label": "码头鱼篓", "description": "船夫把鱼篓压在木桩边，里面还有一尾江鱼。", "kind": "fish", "tile": [66, 35], "reward_item": "item_fish"},
+      {"label": "军需药箱", "description": "旧军需箱里还剩几包跌打药，边角写着江防二字。", "kind": "cache", "tile": [22, 20], "reward_item": "item_yao"},
+      {"label": "货栈散钱", "description": "货栈台阶缝里卡着几枚散钱，像是装卸时掉下的。", "kind": "coin", "tile": [44, 32], "reward_money": 5}
+    ]
+  },
   "linan": {
     "landmarks": [
       {"label": "画舫码头", "description": "水雾贴着河面，船娘唱词里夹着花间旧事。", "kind": "dock", "tile": [24, 33], "reward_item": "item_fish"},
