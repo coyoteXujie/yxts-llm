@@ -56,6 +56,18 @@
       {"label": "堰边散钱", "description": "石缝里卡着几枚铜钱，像是商旅过桥时匆忙落下的。", "kind": "coin", "tile": [48, 29], "reward_money": 5}
     ]
   },
+  "qingcheng_mtn": {
+    "landmarks": [
+      {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
+      {"label": "问道石台", "description": "石台临风，老道人常在此讲动静之理，也观察来客脚步。", "kind": "training", "tile": [50, 25], "reward_exp": 8},
+      {"label": "清溪小桥", "description": "小桥压着山溪水声，桥边竹影摇动，适合听风辨路。", "kind": "bridge", "tile": [58, 31], "reward_item": "item_baozi"}
+    ],
+    "resources": [
+      {"label": "松根药草", "description": "松根旁长着几株清凉药草，采下可缓解山路疲乏。", "kind": "herb", "tile": [18, 28], "reward_item": "item_red_flower"},
+      {"label": "道童香囊", "description": "道童落下的小香囊里装着醒神药末，可作外伤药引。", "kind": "cache", "tile": [39, 20], "reward_item": "item_yao"},
+      {"label": "桥边散钱", "description": "桥边石缝里压着几枚旧钱，像是香客投下的平安钱。", "kind": "coin", "tile": [55, 32], "reward_money": 4}
+    ]
+  },
   "jiangling": {
     "landmarks": [
       {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
