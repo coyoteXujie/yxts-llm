@@ -32,6 +32,18 @@
       {"label": "桥下铜钱", "description": "桥洞阴影里露出几枚旧钱，像是行商匆忙落下的。", "kind": "coin", "tile": [40, 27], "reward_money": 4}
     ]
   },
+  "chengdu": {
+    "landmarks": [
+      {"label": "天府药市", "description": "药香从竹棚和木匣之间漫出来，蜀中药农在这里分拣草药、交换山路消息。", "kind": "market", "tile": [18, 24], "reward_money": 4},
+      {"label": "都江渠眼", "description": "清水从石渠分流入城，老工匠说这道水脉护住了天府平原的气运。", "kind": "water", "tile": [55, 30], "reward_exp": 7},
+      {"label": "竹廊茶肆", "description": "竹帘半卷，茶客谈着蜀道、盐帮和西岭来信，话里常藏着下一段路。", "kind": "well", "tile": [40, 18], "reward_item": "item_wine"}
+    ],
+    "resources": [
+      {"label": "药摊药罐", "description": "摊主把跌打药罐留在案边，见你行路辛苦，分你一小包金创药。", "kind": "herb", "tile": [21, 25], "reward_item": "item_yao"},
+      {"label": "竹篮酒食", "description": "茶肆竹篮里还有一壶温米酒，正适合压一压潮湿山气。", "kind": "cache", "tile": [38, 19], "reward_item": "item_wine"},
+      {"label": "水渠鱼篓", "description": "鱼篓挂在水渠边，渠水清浅，里面还有一尾活鱼。", "kind": "fish", "tile": [58, 31], "reward_item": "item_fish"}
+    ]
+  },
   "jiangling": {
     "landmarks": [
       {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
