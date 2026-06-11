@@ -200,6 +200,18 @@
       {"label": "河蚌珠壳", "description": "水草间压着几枚河蚌，壳缝里泛着细白珠光。", "kind": "fish", "tile": [56, 32], "reward_money": 6}
     ]
   },
+  "daba_mtn": {
+    "landmarks": [
+      {"label": "大巴古矿洞", "description": "废弃矿洞口压着旧木梁，洞壁露出冷硬矿纹。", "kind": "cave", "tile": [20, 25], "reward_money": 8},
+      {"label": "山顶神坛", "description": "神坛立在云雾高处，残旗被山风吹得猎猎作响。", "kind": "shrine", "tile": [52, 18], "reward_exp": 10},
+      {"label": "山间暗道", "description": "两块巨石之间藏着狭窄暗道，像是通往巴蜀的旧路。", "kind": "ruin", "tile": [60, 30], "reward_exp": 9}
+    ],
+    "resources": [
+      {"label": "大巴草药", "description": "山雾湿处长着耐寒草药，叶片带着淡淡苦香。", "kind": "herb", "tile": [26, 32], "reward_item": "item_yao"},
+      {"label": "深山铜矿", "description": "矿洞深处露出带赤色光泽的矿脉，敲下碎矿能换不少银钱。", "kind": "ore", "tile": [34, 28], "reward_money": 9},
+      {"label": "大巴山参", "description": "山阴潮土里露出粗壮参须，附近落石痕迹很新。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+    ]
+  },
   "shennongjia": {
     "landmarks": [
       {"label": "神农百草谷", "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。", "kind": "flower", "tile": [40, 25], "reward_exp": 9},

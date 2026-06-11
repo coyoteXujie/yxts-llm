@@ -89,6 +89,11 @@
     "midground": "res://assets/world/stage_layers/yunmeng_marsh_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/yunmeng_marsh_dnf_foreground_v1.png"
   },
+  "daba_mtn": {
+    "floor": "res://assets/world/stage_layers/daba_mtn_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/daba_mtn_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/daba_mtn_dnf_foreground_v1.png"
+  },
   "shennongjia": {
     "floor": "res://assets/world/stage_layers/shennongjia_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/shennongjia_dnf_midground_v1.png",
