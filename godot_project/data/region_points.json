@@ -140,6 +140,18 @@
       {"label": "古滩遗物", "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。", "kind": "cache", "tile": [34, 34], "reward_money": 6}
     ]
   },
+  "shennongjia": {
+    "landmarks": [
+      {"label": "神农百草谷", "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。", "kind": "flower", "tile": [40, 25], "reward_exp": 9},
+      {"label": "神农洞穴", "description": "洞口被古藤半遮，洞壁留着旧火痕，像是有人曾在此避雨煎药。", "kind": "cave", "tile": [16, 22], "reward_item": "item_yao"},
+      {"label": "原始林心", "description": "巨木根系盘成天然小径，走进去后连鸟鸣都被树冠吞掉。", "kind": "ruin", "tile": [58, 30], "reward_exp": 8}
+    ],
+    "resources": [
+      {"label": "神农草药", "description": "溪边草药带着清苦香气，叶背还有细小水珠。", "kind": "herb", "tile": [24, 32], "reward_item": "item_yao"},
+      {"label": "神农山参", "description": "山阴湿土里露出一截参须，周围藤蔓像在替它遮风。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"},
+      {"label": "林间野果", "description": "灌木丛里藏着几枚酸甜野果，能稍解山路疲乏。", "kind": "cache", "tile": [62, 36], "reward_item": "item_baozi"}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
