@@ -20,6 +20,18 @@
       {"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": [56, 19], "reward_item": "item_yao"}
     ]
   },
+  "luoshui_river": {
+    "landmarks": [
+      {"label": "洛水拱桥", "description": "拱桥横跨浅水，桥栏上有新旧刀痕，像是有人在此截过镖。", "kind": "bridge", "tile": [36, 22], "reward_exp": 7},
+      {"label": "旧渡口木桩", "description": "木桩缆痕很深，河风里夹着船夫和脚夫的闲话。", "kind": "dock", "tile": [24, 26], "reward_item": "item_fish"},
+      {"label": "河畔茶棚", "description": "茶棚半开，过路人把洛阳城里的消息留在竹帘背后。", "kind": "well", "tile": [13, 30], "reward_item": "item_baozi"}
+    ],
+    "resources": [
+      {"label": "浅滩鱼篓", "description": "鱼篓压在浅水边，水草晃动时还能看见鱼影。", "kind": "fish", "tile": [54, 23], "reward_item": "item_fish"},
+      {"label": "水边药草", "description": "潮湿河岸边长着止血药草，采摘时要避开滑石。", "kind": "herb", "tile": [16, 34], "reward_item": "item_yao"},
+      {"label": "桥下铜钱", "description": "桥洞阴影里露出几枚旧钱，像是行商匆忙落下的。", "kind": "coin", "tile": [40, 27], "reward_money": 4}
+    ]
+  },
   "linan": {
     "landmarks": [
       {"label": "画舫码头", "description": "水雾贴着河面，船娘唱词里夹着花间旧事。", "kind": "dock", "tile": [24, 33], "reward_item": "item_fish"},
