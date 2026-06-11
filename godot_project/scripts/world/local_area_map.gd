@@ -1132,9 +1132,11 @@ func _add_adventure_clue_portals() -> void:
 		var reward_exp := 16
 		var landmark_kind := "adventure"
 		var market_item_id := _market_clue_item_id(clue)
+		var delivery_count := 0
 		if is_market_clue:
+			delivery_count = _market_delivery_count(clue)
 			portal_label = _market_clue_label(title)
-			action_label = "交货" if not market_item_id.is_empty() and int(GameState.inventory.get(market_item_id, 0)) > 0 else "询价"
+			action_label = "交货" if not market_item_id.is_empty() and delivery_count > 0 and int(GameState.inventory.get(market_item_id, 0)) >= delivery_count else "询价"
 			interaction_hint = "行情"
 			reward_money = _market_clue_reward_money(clue)
 			reward_exp = 8
@@ -1152,7 +1154,7 @@ func _add_adventure_clue_portals() -> void:
 			"clue_source": clue_source,
 			"market_item_id": market_item_id,
 			"delivery_item_id": market_item_id,
-			"delivery_count": 1 if is_market_clue and not market_item_id.is_empty() else 0,
+			"delivery_count": delivery_count,
 			"delivery_bonus_money": _market_delivery_bonus_money(clue) if is_market_clue else 0,
 			"source_region_id": str(clue.get("region_id", "")),
 			"source_region_name": source_region,
@@ -1455,9 +1457,29 @@ func _market_clue_reward_money(clue: Dictionary) -> int:
 
 func _market_delivery_bonus_money(clue: Dictionary) -> int:
 	var item_id := _market_clue_item_id(clue)
+	if item_id.is_empty():
+		return 0
 	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return 0
 	var base_price := int(item.get("price", 18))
-	return clampi(int(roundf(float(base_price) * 1.20)), 10, 60)
+	return clampi(int(roundf(float(base_price) * 0.72 * float(_market_delivery_count(clue)))), 10, 90)
+
+func _market_delivery_count(clue: Dictionary) -> int:
+	var item_id := _market_clue_item_id(clue)
+	if item_id.is_empty():
+		return 0
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return 0
+	var base_price := int(item.get("price", 18))
+	if base_price <= 10:
+		return 4
+	if base_price <= 20:
+		return 3
+	if base_price <= 60:
+		return 2
+	return 1
 
 func _market_clue_item_id(clue: Dictionary) -> String:
 	var clue_id := str(clue.get("id", ""))

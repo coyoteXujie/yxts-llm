@@ -160,13 +160,30 @@ func _clue_delivery_hint(clue: Dictionary) -> String:
 	var target_region := str(clue.get("target_region_name", ""))
 	var target_text := "，前往%s交割" % target_region if not target_region.is_empty() else ""
 	var resolved_text := "已交割" if bool(clue.get("resolved", false)) else "待交割"
-	return "需带：%s%s（%s）" % [str(item.get("name", item_id)), target_text, resolved_text]
+	var count := _market_delivery_count_for_item(item_id)
+	var count_text := " x%d" % count if count > 1 else ""
+	return "需带：%s%s%s（%s）" % [str(item.get("name", item_id)), count_text, target_text, resolved_text]
 
 func _market_item_id_from_clue(clue_id: String) -> String:
 	var item_pos := clue_id.find("item_")
 	if item_pos < 0:
 		return ""
 	return clue_id.substr(item_pos)
+
+func _market_delivery_count_for_item(item_id: String) -> int:
+	if item_id.is_empty():
+		return 0
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return 0
+	var base_price := int(item.get("price", 18))
+	if base_price <= 10:
+		return 4
+	if base_price <= 20:
+		return 3
+	if base_price <= 60:
+		return 2
+	return 1
 
 func _latest_adventure_clue_with_target() -> Dictionary:
 	var clues := GameState.get_adventure_clues(0)
