@@ -79,6 +79,18 @@ func _on_world_events_changed(_events: Array) -> void:
 
 func _world_event_lines() -> Array[String]:
 	var lines: Array[String] = []
+	var clues := GameState.get_adventure_clues(8)
+	if not clues.is_empty():
+		lines.append("【奇遇线索】")
+		for clue in clues:
+			var clue_entry: Dictionary = clue
+			var clue_region := str(clue_entry.get("region_name", ""))
+			var clue_region_prefix := "%s · " % clue_region if not clue_region.is_empty() else ""
+			lines.append("第%d日  %s%s" % [int(clue_entry.get("day", GameState.day)), clue_region_prefix, str(clue_entry.get("title", "未名线索"))])
+			var clue_description := str(clue_entry.get("description", ""))
+			if not clue_description.is_empty():
+				lines.append("  %s" % clue_description)
+		lines.append("")
 	lines.append("【江湖风声】")
 	var events := GameState.get_recent_world_events(12)
 	if events.is_empty():

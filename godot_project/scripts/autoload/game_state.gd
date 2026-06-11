@@ -26,6 +26,7 @@ var game_flags: Dictionary = {}
 var npc_memory: Dictionary = {}
 var region_state: Dictionary = {}
 var world_events: Array = []
+var adventure_clues: Array = []
 var active_quest: String = "初入平安镇"
 var day := 1
 var hour := 8.0
@@ -205,6 +206,7 @@ func new_game(config: Dictionary = {}) -> void:
 	npc_memory = {}
 	region_state = {}
 	world_events = []
+	adventure_clues = []
 	active_quest = "初入平安镇"
 	_start_quest_silently("q_intro_town")
 	day = 1
@@ -425,6 +427,52 @@ func get_world_event_summary(max_count: int = 3) -> String:
 	if parts.is_empty():
 		return "暂无新的江湖传闻"
 	return "；".join(parts)
+
+func record_adventure_clue(clue_id: String, title: String, description: String, region_id: String = "", source: String = "") -> Dictionary:
+	clue_id = clue_id.strip_edges()
+	title = title.strip_edges()
+	description = description.strip_edges()
+	if clue_id.is_empty():
+		clue_id = "%s_%d_%d" % [region_id if not region_id.is_empty() else "clue", day, abs(hash(title + description))]
+	if title.is_empty() and description.is_empty():
+		return {}
+	for existing in adventure_clues:
+		if typeof(existing) != TYPE_DICTIONARY:
+			continue
+		if str(existing.get("id", "")) == clue_id:
+			return (existing as Dictionary).duplicate(true)
+	var region_name := current_region_name
+	if not region_id.is_empty():
+		var region := GameData.get_region(region_id)
+		if not region.is_empty():
+			region_name = str(region.get("name", region_id))
+	var clue: Dictionary = {
+		"id": clue_id,
+		"title": title,
+		"description": description,
+		"region_id": region_id,
+		"region_name": region_name,
+		"source": source,
+		"day": day,
+		"hour": hour
+	}
+	adventure_clues.append(clue)
+	while adventure_clues.size() > 20:
+		adventure_clues.remove_at(0)
+	EventBus.quests_changed.emit()
+	EventBus.world_events_changed.emit(get_recent_world_events(30))
+	return clue.duplicate(true)
+
+func get_adventure_clues(max_count: int = 8) -> Array:
+	var count: int = adventure_clues.size()
+	if max_count > 0:
+		count = clampi(max_count, 0, adventure_clues.size())
+	var start: int = max(0, adventure_clues.size() - count)
+	var result: Array = []
+	for index in range(start, adventure_clues.size()):
+		if typeof(adventure_clues[index]) == TYPE_DICTIONARY:
+			result.append((adventure_clues[index] as Dictionary).duplicate(true))
+	return result
 
 func _record_region_discovery(region: Dictionary) -> void:
 	var region_id := str(region.get("id", ""))
@@ -1714,6 +1762,19 @@ func get_quest_status_lines() -> Array[String]:
 			var current := int(progress.get(key, 0))
 			var required := int(objective.get("count", 1))
 			lines.append("  - %s %d/%d" % [str(objective.get("label", key)), min(current, required), required])
+	var clues := get_adventure_clues(4)
+	if not clues.is_empty():
+		lines.append("")
+		lines.append("奇遇线索：")
+		for clue in clues:
+			var entry: Dictionary = clue
+			var region := str(entry.get("region_name", ""))
+			var region_prefix := "%s · " % region if not region.is_empty() else ""
+			lines.append("  - %s%s：%s" % [
+				region_prefix,
+				str(entry.get("title", "未名线索")),
+				str(entry.get("description", ""))
+			])
 	if not completed_quests.is_empty():
 		lines.append("")
 		lines.append("已完成：")
@@ -1859,6 +1920,7 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 			"npc_memory": npc_memory,
 			"region_state": region_state,
 			"world_events": world_events,
+			"adventure_clues": adventure_clues,
 			"active_quest": active_quest,
 		"day": day,
 		"hour": hour,
@@ -1908,6 +1970,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	npc_memory = snapshot.get("npc_memory", {})
 	region_state = snapshot.get("region_state", {})
 	world_events = snapshot.get("world_events", [])
+	adventure_clues = snapshot.get("adventure_clues", [])
 	active_quest = str(snapshot.get("active_quest", "自由探索江湖"))
 	day = int(snapshot.get("day", 1))
 	hour = float(snapshot.get("hour", 8.0))

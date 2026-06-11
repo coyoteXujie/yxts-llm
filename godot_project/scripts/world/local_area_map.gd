@@ -1074,6 +1074,7 @@ func _add_hidden_clue_portals() -> void:
 		"action_label": "追查",
 		"interaction_hint": _landmark_kind_label(kind),
 		"description": str(clue.get("description", "你发现了一条被人刻意藏住的线索。")),
+		"clue_hook": str(clue.get("clue_hook", "")),
 		"reward_item": str(clue.get("reward_item", "")),
 		"reward_money": int(clue.get("reward_money", 0)),
 		"reward_exp": int(clue.get("reward_exp", 0)),
@@ -1090,6 +1091,7 @@ func _hidden_clue_for_region() -> Dictionary:
 			return {
 				"label": "暗巷旧印",
 				"description": "%s背街墙角有一枚旧印，像是许多年前暗桩留下的联络记号。" % region_name,
+				"clue_hook": "旧印指向城中旧衙档案与夜市黑账，后续可扩展为暗巷接头或黑市追踪。",
 				"kind": "secret",
 				"tile": tile + Vector2i(-8, 2),
 				"reward_exp": 12,
@@ -1099,6 +1101,7 @@ func _hidden_clue_for_region() -> Dictionary:
 			return {
 				"label": "井底暗号",
 				"description": "你从%s旧井边的苔痕里辨出暗号，线索指向一段被人刻意压下的旧事。" % region_name,
+				"clue_hook": "井底暗号提到镇外旧路和失踪脚夫，后续可扩展为夜路奇遇或镇东余党线。",
 				"kind": "secret",
 				"tile": tile + Vector2i(-10, 5),
 				"reward_item": "item_baozi",
@@ -1108,6 +1111,7 @@ func _hidden_clue_for_region() -> Dictionary:
 			return {
 				"label": "后山碑影",
 				"description": "%s后山石碑背面有浅浅刀痕，似是门中前辈给后来人留下的提醒。" % region_name,
+				"clue_hook": "碑影暗合门内旧招式与失传规矩，后续可扩展为门派试炼或旧人托付。",
 				"kind": "secret",
 				"tile": tile + Vector2i(7, -5),
 				"reward_exp": 14
@@ -1116,6 +1120,7 @@ func _hidden_clue_for_region() -> Dictionary:
 		return {
 			"label": "水边暗桩",
 			"description": "%s水岸木桩下压着一枚旧铜钱，背面刻着难以公开的会面时辰。" % region_name,
+			"clue_hook": "暗桩约定在夜潮回落后重查渡口，后续可扩展为水路接头或船帮伏线。",
 			"kind": "secret",
 			"tile": tile + Vector2i(8, -5),
 			"reward_money": 12,
@@ -1125,6 +1130,7 @@ func _hidden_clue_for_region() -> Dictionary:
 		return {
 			"label": "崖壁刻痕",
 			"description": "%s崖壁上有被风雨磨浅的剑痕，走势像一条通往隐路的标记。" % region_name,
+			"clue_hook": "刻痕指向半山废道和旧日剑客，后续可扩展为山中秘径或崖上挑战。",
 			"kind": "secret",
 			"tile": tile + Vector2i(10, -6),
 			"reward_exp": 12
@@ -1133,6 +1139,7 @@ func _hidden_clue_for_region() -> Dictionary:
 		return {
 			"label": "林中暗记",
 			"description": "%s树皮上连着三处极轻的刀刻，只有熟路人才看得出它们在指向何处。" % region_name,
+			"clue_hook": "暗记绕向林深处的药坡和临时营火，后续可扩展为采药奇遇或林中救援。",
 			"kind": "secret",
 			"tile": tile + Vector2i(-7, -6),
 			"reward_item": "item_red_flower",
@@ -1142,6 +1149,7 @@ func _hidden_clue_for_region() -> Dictionary:
 		return {
 			"label": "沙下残符",
 			"description": "%s风沙下露出半截残符，符纸边缘仍有暗影司常用的灰蜡。" % region_name,
+			"clue_hook": "残符提到风停后的古驿地窖，后续可扩展为荒漠遗迹或暗影司残点。",
 			"kind": "secret",
 			"tile": tile + Vector2i(9, 4),
 			"reward_money": 10,
@@ -1150,6 +1158,7 @@ func _hidden_clue_for_region() -> Dictionary:
 	return {
 		"label": "路边暗记",
 		"description": "%s路旁石缝里藏着一枚折起的短笺，像是在等真正走熟这片地方的人。" % region_name,
+		"clue_hook": "短笺指向旧茶棚后的无名岔路，后续可扩展为路边奇遇或隐士相逢。",
 		"kind": "secret",
 		"tile": tile,
 		"reward_exp": 8
