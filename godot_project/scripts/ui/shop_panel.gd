@@ -7,6 +7,8 @@ const MODE_BUYBACK := "buyback"
 const SHOP_BUY_PRICE_MIN_FACTOR := 0.80
 const MARKET_PRICE_MIN_FACTOR := 0.70
 const MARKET_PRICE_MAX_FACTOR := 1.30
+const TRADE_REPUTATION_BUY_DISCOUNT_PER_POINT := 0.001
+const TRADE_REPUTATION_BUY_DISCOUNT_MAX := 0.04
 const SHOP_BUY_PRICE_FACTORS := {
 	"inn": 0.94,
 	"medicine": 0.92,
@@ -666,7 +668,7 @@ func _shop_buy_price_factor() -> float:
 	return clampf(factor, SHOP_BUY_PRICE_MIN_FACTOR, 1.0)
 
 func _combined_buy_price_factor(item_id: String) -> float:
-	return clampf(_shop_buy_price_factor() * _region_buy_price_factor(item_id), MARKET_PRICE_MIN_FACTOR, MARKET_PRICE_MAX_FACTOR)
+	return clampf(_shop_buy_price_factor() * _region_buy_price_factor(item_id) * _trade_reputation_buy_factor(), MARKET_PRICE_MIN_FACTOR, MARKET_PRICE_MAX_FACTOR)
 
 func _region_buy_price_factor(item_id: String) -> float:
 	return _region_price_factor(item_id, "buy_factor")
@@ -697,9 +699,22 @@ func _shop_market_summary() -> String:
 	var market := _region_market()
 	var label := str(market.get("label", ""))
 	var shop_label := _shop_discount_label()
+	var reputation_label := _trade_reputation_market_label()
 	if label.is_empty():
-		return shop_label
-	return "%s · 本店%s" % [label, shop_label]
+		return "%s%s" % [shop_label, reputation_label]
+	return "%s · 本店%s%s" % [label, shop_label, reputation_label]
+
+func _trade_reputation_buy_factor() -> float:
+	var discount := minf(TRADE_REPUTATION_BUY_DISCOUNT_MAX, float(maxi(0, GameState.trade_reputation)) * TRADE_REPUTATION_BUY_DISCOUNT_PER_POINT)
+	return 1.0 - discount
+
+func _trade_reputation_market_label() -> String:
+	if GameState.trade_reputation <= 0:
+		return ""
+	var discount := 1.0 - _trade_reputation_buy_factor()
+	if discount <= 0.0:
+		return " · 商誉%s" % GameState.get_trade_reputation_title()
+	return " · 商誉%s再减%.0f%%" % [GameState.get_trade_reputation_title(), discount * 100.0]
 
 func _item_buy_market_label(item_id: String) -> String:
 	var market := _region_market()

@@ -814,6 +814,13 @@ func _run() -> void:
 			var tanghulu_base := int(GameData.get_item("item_tang_hulu").get("price", 0))
 			var tanghulu_price := int(market_panel.call("_buy_price", "item_tang_hulu"))
 			_check(tanghulu_base > 0 and tanghulu_price == maxi(1, int(roundf(float(tanghulu_base) * 0.90))), "市集买入单价应按店铺行情折后计算")
+			var meat_price_without_reputation := int(market_panel.call("_buy_price", "item_meat"))
+			var trade_reputation_before_price_check := GameState.trade_reputation
+			GameState.trade_reputation = 40
+			var meat_price_with_reputation := int(market_panel.call("_buy_price", "item_meat"))
+			var reputation_market_summary := str(market_panel.call("_shop_market_summary"))
+			_check(SHOP_PANEL_SCRIPT.TRADE_REPUTATION_BUY_DISCOUNT_MAX >= 0.04 and meat_price_with_reputation < meat_price_without_reputation and reputation_market_summary.contains("商誉"), "商誉应给商店买入价提供轻量折扣并显示在行情摘要")
+			GameState.trade_reputation = trade_reputation_before_price_check
 			var tanghulu_detail := str(market_panel.call("_buy_item_detail", "item_tang_hulu", GameData.get_item("item_tang_hulu")))
 			_check(tanghulu_detail.contains("本店行情") and tanghulu_detail.contains("原"), "买入详情应显示折扣行情和原价")
 			var sorted_market_ids: Array = market_panel.call("_sorted_buy_item_ids", LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["market"].get("sell_items", []))
