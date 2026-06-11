@@ -708,7 +708,7 @@ func focus_portal(portal: Dictionary) -> void:
 	for label in portal_labels:
 		if not is_instance_valid(label):
 			continue
-		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_") or str(label.name).begins_with("landmark_") or str(label.name).begins_with("resource_")
+		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_") or str(label.name).begins_with("landmark_") or str(label.name).begins_with("resource_") or str(label.name).begins_with("hidden_")
 	queue_redraw()
 
 func clear_highlights() -> void:
@@ -769,6 +769,7 @@ func _generate_region_map() -> void:
 	_add_region_travel_portals()
 	_add_landmark_portals()
 	_add_resource_portals()
+	_add_hidden_clue_portals()
 
 func _generate_city_region() -> void:
 	_reset_tiles(Tile.GRASS)
@@ -1051,6 +1052,107 @@ func _add_resource_portals() -> void:
 			"resource_kind": str(resource.get("kind", "cache"))
 		})
 
+func _add_hidden_clue_portals() -> void:
+	var region_id := str(current_region.get("id", ""))
+	if region_id.is_empty():
+		return
+	if GameState.get_region_exploration(region_id) < GameState.FAST_TRAVEL_EXPERT_EXPLORATION:
+		return
+	var clue := _hidden_clue_for_region()
+	var tile: Vector2i = clue.get("tile", _hidden_clue_tile())
+	tile = _find_nearest_walkable_tile(tile)
+	var kind := str(clue.get("kind", "secret"))
+	_paint_landmark_site(tile, kind)
+	portals.append({
+		"id": "hidden_clue_%s" % region_id,
+		"label": str(clue.get("label", "隐秘线索")),
+		"type": "hidden_clue",
+		"tile": [tile.x, tile.y],
+		"shop_id": "",
+		"action_label": "追查",
+		"interaction_hint": _landmark_kind_label(kind),
+		"description": str(clue.get("description", "你发现了一条被人刻意藏住的线索。")),
+		"reward_item": str(clue.get("reward_item", "")),
+		"reward_money": int(clue.get("reward_money", 0)),
+		"reward_exp": int(clue.get("reward_exp", 0)),
+		"landmark_kind": kind
+	})
+
+func _hidden_clue_for_region() -> Dictionary:
+	var region_type := str(current_region.get("type", "wild"))
+	var terrain := str(current_region.get("terrain", ""))
+	var region_name := str(current_region.get("name", "此地"))
+	var tile := _hidden_clue_tile()
+	match region_type:
+		"city":
+			return {
+				"label": "暗巷旧印",
+				"description": "%s背街墙角有一枚旧印，像是许多年前暗桩留下的联络记号。" % region_name,
+				"kind": "secret",
+				"tile": tile + Vector2i(-8, 2),
+				"reward_exp": 12,
+				"reward_money": 8
+			}
+		"town":
+			return {
+				"label": "井底暗号",
+				"description": "你从%s旧井边的苔痕里辨出暗号，线索指向一段被人刻意压下的旧事。" % region_name,
+				"kind": "secret",
+				"tile": tile + Vector2i(-10, 5),
+				"reward_item": "item_baozi",
+				"reward_exp": 8
+			}
+		"sect":
+			return {
+				"label": "后山碑影",
+				"description": "%s后山石碑背面有浅浅刀痕，似是门中前辈给后来人留下的提醒。" % region_name,
+				"kind": "secret",
+				"tile": tile + Vector2i(7, -5),
+				"reward_exp": 14
+			}
+	if _terrain_has_water(terrain):
+		return {
+			"label": "水边暗桩",
+			"description": "%s水岸木桩下压着一枚旧铜钱，背面刻着难以公开的会面时辰。" % region_name,
+			"kind": "secret",
+			"tile": tile + Vector2i(8, -5),
+			"reward_money": 12,
+			"reward_exp": 8
+		}
+	if _terrain_has_mountain(terrain):
+		return {
+			"label": "崖壁刻痕",
+			"description": "%s崖壁上有被风雨磨浅的剑痕，走势像一条通往隐路的标记。" % region_name,
+			"kind": "secret",
+			"tile": tile + Vector2i(10, -6),
+			"reward_exp": 12
+		}
+	if _terrain_has_forest(terrain):
+		return {
+			"label": "林中暗记",
+			"description": "%s树皮上连着三处极轻的刀刻，只有熟路人才看得出它们在指向何处。" % region_name,
+			"kind": "secret",
+			"tile": tile + Vector2i(-7, -6),
+			"reward_item": "item_red_flower",
+			"reward_exp": 8
+		}
+	if terrain.contains("desert"):
+		return {
+			"label": "沙下残符",
+			"description": "%s风沙下露出半截残符，符纸边缘仍有暗影司常用的灰蜡。" % region_name,
+			"kind": "secret",
+			"tile": tile + Vector2i(9, 4),
+			"reward_money": 10,
+			"reward_exp": 10
+		}
+	return {
+		"label": "路边暗记",
+		"description": "%s路旁石缝里藏着一枚折起的短笺，像是在等真正走熟这片地方的人。" % region_name,
+		"kind": "secret",
+		"tile": tile,
+		"reward_exp": 8
+	}
+
 func _resources_for_region() -> Array:
 	var configured := _configured_region_points("resources")
 	if not configured.is_empty():
@@ -1210,6 +1312,9 @@ func _resource_tile(index: int) -> Vector2i:
 	]
 	return anchors[index % anchors.size()]
 
+func _hidden_clue_tile() -> Vector2i:
+	return Vector2i(map_width / 2 + 18, map_height / 2 - 9)
+
 func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 	_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.ROAD)
 	match kind:
@@ -1222,6 +1327,10 @@ func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 			_set_bridge_patch(tile)
 		"ruin", "cave", "shrine":
 			_fill_rect(Rect2i(tile.x - 3, tile.y - 2, 6, 4), Tile.MOUNTAIN if kind == "cave" else Tile.ROAD)
+			_set_tile(tile.x, tile.y, Tile.ROAD)
+		"secret":
+			_fill_rect(Rect2i(tile.x - 3, tile.y - 2, 6, 4), Tile.ROAD)
+			_fill_rect(Rect2i(tile.x - 1, tile.y - 1, 3, 2), Tile.MOUNTAIN)
 			_set_tile(tile.x, tile.y, Tile.ROAD)
 		"market":
 			_fill_rect(Rect2i(tile.x - 3, tile.y - 2, 6, 4), Tile.SHOP)
@@ -1406,6 +1515,8 @@ func _landmark_kind_label(kind: String) -> String:
 			return "山洞"
 		"herb":
 			return "药坡"
+		"secret":
+			return "隐线"
 	return "地标"
 
 func _resource_kind_label(kind: String) -> String:
@@ -1695,7 +1806,7 @@ func _build_portal_labels() -> void:
 		var label_size := Vector2(136, 24)
 		if portal_type == "travel_region":
 			label_size = Vector2(LOCAL_TRAVEL_BOARD_WIDTH, LOCAL_TRAVEL_BOARD_HEIGHT)
-		elif portal_type == "landmark" or portal_type == "resource":
+		elif portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
 			label_size = Vector2(LOCAL_INTERACTION_BOARD_WIDTH, LOCAL_INTERACTION_BOARD_HEIGHT)
 		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) - label_size * 0.5 + Vector2(0, -46)
 		label.size = label_size
@@ -1706,7 +1817,7 @@ func _build_portal_labels() -> void:
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
 		label.add_theme_constant_override("line_spacing", -2)
-		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource":
+		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
 			var board := StyleBoxFlat.new()
 			if portal_type == "travel_region":
 				board.bg_color = Color(0.06, 0.12, 0.10, 0.82)
@@ -1717,13 +1828,16 @@ func _build_portal_labels() -> void:
 			elif portal_type == "resource":
 				board.bg_color = Color(0.08, 0.14, 0.08, 0.70)
 				board.border_color = Color(0.58, 0.76, 0.38, 0.52)
+			elif portal_type == "hidden_clue":
+				board.bg_color = Color(0.10, 0.08, 0.15, 0.74)
+				board.border_color = Color(0.76, 0.60, 0.96, 0.62)
 			else:
 				board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
 				board.border_color = Color(0.86, 0.58, 0.25, 0.55)
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource"
+		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -1731,7 +1845,7 @@ func _portal_label_text(portal: Dictionary) -> String:
 	var portal_type := str(portal.get("type", ""))
 	if portal_type == "shop":
 		return "%s · %s" % [str(portal.get("action_label", "进入")), str(portal.get("shop_name", portal.get("label", "商铺")))]
-	if portal_type == "landmark" or portal_type == "resource":
+	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
 		var action := str(portal.get("action_label", "查看"))
 		var hint := str(portal.get("interaction_hint", ""))
 		var label_text := str(portal.get("label", "入口"))
@@ -4247,6 +4361,8 @@ func _draw_portals() -> void:
 			color = Color(0.98, 0.76, 0.32, 0.84)
 		elif portal_type == "resource":
 			color = Color(0.58, 0.86, 0.40, 0.82)
+		elif portal_type == "hidden_clue":
+			color = Color(0.78, 0.58, 1.00, 0.86)
 		elif portal_type == "exit_world" or portal_type == "exit_area":
 			color = Color(0.56, 0.78, 0.98, 0.75)
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
@@ -4268,6 +4384,8 @@ func _draw_portal_signs() -> void:
 			_draw_stage_landmark_marker(pos, portal, highlighted)
 		elif portal_type == "resource":
 			_draw_stage_resource_marker(pos, portal, highlighted)
+		elif portal_type == "hidden_clue":
+			_draw_stage_landmark_marker(pos, portal, highlighted)
 
 func _draw_stage_travel_gate(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
 	var direction := str(portal.get("direction", "south"))
@@ -4495,6 +4613,8 @@ func _landmark_marker_color(kind: String, alpha: float) -> Color:
 			return Color(0.62, 0.58, 0.46, alpha)
 		"herb":
 			return Color(0.58, 0.82, 0.42, alpha)
+		"secret":
+			return Color(0.78, 0.62, 0.96, alpha)
 	return Color(0.92, 0.70, 0.32, alpha)
 
 func _resource_marker_color(kind: String, alpha: float) -> Color:

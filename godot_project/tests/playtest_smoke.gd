@@ -257,6 +257,21 @@ func _run() -> void:
 	_check(local_area.npc_nodes.size() >= 8, "平安镇局部地图应生成镇民 NPC，当前=%d" % local_area.npc_nodes.size())
 	_check(_portal_count(local_area, "shop") == qinghe_shops.size(), "平安镇应按数据商铺清单生成商铺入口")
 	_check(_portal_count(local_area, "landmark") == qinghe_landmarks.size() and _portal_count(local_area, "resource") == qinghe_resources.size(), "平安镇应按数据兴趣点生成地标和资源入口")
+	_check(_portal_count(local_area, "hidden_clue") == 0, "探索度不足时平安镇不应提前生成隐藏线索入口")
+	GameState.region_state["qinghe"] = {"discovered": true, "exploration": 75, "visited": [], "exploration_milestones": [25, 50, 75]}
+	local_area.setup_region(GameData.get_region("qinghe"))
+	await get_tree().process_frame
+	_check(_portal_count(local_area, "shop") == qinghe_shops.size(), "高探索重建区域后商铺入口数量应保持稳定")
+	_check(_portal_count(local_area, "landmark") == qinghe_landmarks.size() and _portal_count(local_area, "resource") == qinghe_resources.size(), "高探索隐藏入口不应混入地标或资源计数")
+	_check(_portal_count(local_area, "hidden_clue") == 1, "探索达到寻幽探隐后应生成隐藏线索入口")
+	var hidden_clue_portal := _first_portal(local_area, "hidden_clue")
+	_check(not hidden_clue_portal.is_empty() and str(hidden_clue_portal.get("action_label", "")) == "追查" and str(hidden_clue_portal.get("interaction_hint", "")) == "隐线", "隐藏线索入口应带追查动作和隐线类型提示")
+	if not hidden_clue_portal.is_empty():
+		var hidden_clue_label := _portal_label(local_area, str(hidden_clue_portal.get("id", "")))
+		_check(hidden_clue_label != null and hidden_clue_label.text.contains("追查") and hidden_clue_label.text.contains(str(hidden_clue_portal.get("label", ""))), "隐藏线索标签应展示追查动作和线索名")
+	GameState.region_state.erase("qinghe")
+	local_area.setup_region(GameData.get_region("qinghe"))
+	await get_tree().process_frame
 	_check(local_area.scene_background_texture != null, "局部地图应加载区域水墨氛围背景")
 	_check(GameData.get_scene_background_path("qinghe").ends_with("scene_qinghe_dnf_town_v1.png"), "清河镇应接入 DNF 式横版城镇整屏背景")
 	_check(local_area.side_view_stage_enabled and LOCAL_AREA_SCRIPT.SIDE_VIEW_STAGE_LANE_ALPHA >= 0.40, "局部地图应启用横版舞台式视觉层")

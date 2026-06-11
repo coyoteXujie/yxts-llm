@@ -96,6 +96,31 @@ func _run() -> void:
 			main.discovery_panel.close_panel()
 			await _frames(1)
 
+		GameState.region_state["qinghe"] = {"discovered": true, "exploration": 75, "visited": [], "exploration_milestones": [25, 50, 75]}
+		main.local_area.setup_region(qinghe)
+		await _frames(2)
+		var hidden_clue_portal := _first_portal(main.local_area, "hidden_clue")
+		_check(not hidden_clue_portal.is_empty(), "探索达到寻幽探隐后平安镇应出现隐藏线索入口")
+		if not hidden_clue_portal.is_empty():
+			_check(main._portal_prompt(hidden_clue_portal).contains("追查") and main._portal_prompt(hidden_clue_portal).contains("隐线"), "隐藏线索靠近提示应展示追查动作和隐线类型")
+			var before_hidden_exploration := GameState.get_region_exploration("qinghe")
+			var before_hidden_event_count := GameState.world_events.size()
+			main._inspect_hidden_clue(hidden_clue_portal)
+			await _frames(1)
+			_check(main.discovery_panel.visible, "追查隐藏线索应打开发现面板")
+			_check(GameState.mode == GameState.Mode.DISCOVERY, "隐藏线索面板应切换到发现模式")
+			_check(GameState.get_region_exploration("qinghe") >= before_hidden_exploration + 5, "首次追查隐藏线索应推进区域探索度")
+			_check(GameState.world_events.size() > before_hidden_event_count and GameState.get_world_event_summary(1).contains(str(hidden_clue_portal.get("label", ""))), "首次追查隐藏线索应写入江湖传闻")
+			main.discovery_panel.close_panel()
+			await _frames(1)
+			var after_hidden_exploration := GameState.get_region_exploration("qinghe")
+			var after_hidden_event_count := GameState.world_events.size()
+			main._inspect_hidden_clue(hidden_clue_portal)
+			await _frames(1)
+			_check(GameState.get_region_exploration("qinghe") == after_hidden_exploration and GameState.world_events.size() == after_hidden_event_count, "重复追查隐藏线索不应重复推进探索度或传闻")
+			main.discovery_panel.close_panel()
+			await _frames(1)
+
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
 		if not shop_portal.is_empty():
