@@ -4,6 +4,20 @@ class_name ShopPanel
 const MODE_BUY := "buy"
 const MODE_SELL := "sell"
 const MODE_BUYBACK := "buyback"
+const SHOP_BUY_PRICE_MIN_FACTOR := 0.80
+const SHOP_BUY_PRICE_FACTORS := {
+	"inn": 0.94,
+	"medicine": 0.92,
+	"blacksmith": 0.96,
+	"tailor": 0.95,
+	"market": 0.90,
+	"teahouse": 0.93
+}
+const ITEM_TYPE_ORDER := {
+	"consumable": 0,
+	"weapon": 1,
+	"armor": 2
+}
 
 var npc_data: Dictionary = {}
 var title_label: Label
@@ -262,16 +276,15 @@ func _refresh() -> void:
 
 func _refresh_buy_items() -> void:
 	var sell_items: Array = npc_data.get("sell_items", [])
-	for item_id in sell_items:
-		var item := GameData.get_item(str(item_id))
-		item_ids.append(str(item_id))
-		item_list.add_item("%s  %d两" % [str(item.get("name", item_id)), int(item.get("price", 0))], _load_item_icon(str(item_id)))
+	for item_id in _sorted_buy_item_ids(sell_items):
+		var item := GameData.get_item(item_id)
+		var price := _buy_price(item_id)
+		var base_price := _base_item_price(item_id)
+		item_ids.append(item_id)
+		item_list.add_item("%s  %s" % [str(item.get("name", item_id)), _buy_price_label(price, base_price)], _load_item_icon(item_id))
 
 func _refresh_sell_items() -> void:
-	var ids := GameState.inventory.keys()
-	ids.sort()
-	for item_id_value in ids:
-		var item_id := str(item_id_value)
+	for item_id in _sorted_trade_item_ids(GameState.inventory.keys(), MODE_SELL):
 		var count := int(GameState.inventory.get(item_id, 0))
 		if count <= 0:
 			continue
@@ -280,10 +293,7 @@ func _refresh_sell_items() -> void:
 		item_list.add_item(_sell_item_label(item_id, item, count), _load_item_icon(item_id))
 
 func _refresh_buyback_items() -> void:
-	var ids := buyback_stock.keys()
-	ids.sort()
-	for item_id_value in ids:
-		var item_id := str(item_id_value)
+	for item_id in _sorted_trade_item_ids(buyback_stock.keys(), MODE_BUYBACK):
 		var count := int(buyback_stock.get(item_id, 0))
 		if count <= 0:
 			continue
@@ -304,13 +314,7 @@ func _select_item(index: int) -> void:
 	elif shop_mode == MODE_BUYBACK:
 		details.text = _buyback_item_detail(item_id, item)
 	else:
-		details.text = "%s\n%s\n类型：%s    价格：%d 两\n%s" % [
-			str(item.get("name", item_id)),
-			str(item.get("description", "")),
-			_type_name(str(item.get("type", ""))),
-			int(item.get("price", 0)),
-			_format_effects(item)
-	]
+		details.text = _buy_item_detail(item_id, item)
 	if item_preview != null:
 		item_preview.texture = _load_item_icon(item_id)
 	_update_transaction_controls()
@@ -365,7 +369,7 @@ func _shop_title() -> String:
 func _update_money_label() -> void:
 	if money_label == null:
 		return
-	money_label.text = "银两：%d" % int(GameState.player.get("money", 0))
+	money_label.text = "银两：%d    行情：%s" % [int(GameState.player.get("money", 0)), _shop_discount_label()]
 
 func _update_mode_buttons() -> void:
 	if buy_mode_button != null:
@@ -451,7 +455,7 @@ func _unit_price_for_mode(item_id: String) -> int:
 	return _buy_price(item_id)
 
 func _execute_buy(item_id: String, count: int) -> void:
-	if GameState.buy_item(item_id, count):
+	if GameState.buy_item(item_id, count, _buy_price(item_id)):
 		_refresh()
 
 func _execute_sell(item_id: String, count: int) -> void:
@@ -528,6 +532,12 @@ func _hide_transaction_confirmation() -> void:
 		confirm_overlay.hide()
 
 func _buy_price(item_id: String) -> int:
+	var base_price := _base_item_price(item_id)
+	if base_price <= 0:
+		return 0
+	return maxi(1, int(roundf(float(base_price) * _shop_buy_price_factor())))
+
+func _base_item_price(item_id: String) -> int:
 	var item := GameData.get_item(item_id)
 	if item.is_empty():
 		return 0
@@ -554,6 +564,91 @@ func _remove_buyback_stock(item_id: String, count: int) -> void:
 	if int(buyback_stock.get(item_id, 0)) <= 0:
 		buyback_stock.erase(item_id)
 		buyback_prices.erase(item_id)
+
+func _sorted_buy_item_ids(raw_ids: Array) -> Array[String]:
+	return _sorted_trade_item_ids(raw_ids, MODE_BUY)
+
+func _sorted_trade_item_ids(raw_ids: Array, mode: String) -> Array[String]:
+	var entries: Array[Dictionary] = []
+	for raw_id in raw_ids:
+		var item_id := str(raw_id)
+		var entry := _item_sort_entry(item_id, mode)
+		if entry.is_empty():
+			continue
+		entries.append(entry)
+	entries.sort_custom(Callable(self, "_compare_item_sort_entries"))
+	var sorted_ids: Array[String] = []
+	for entry in entries:
+		sorted_ids.append(str(entry.get("item_id", "")))
+	return sorted_ids
+
+func _item_sort_entry(item_id: String, mode: String) -> Dictionary:
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return {}
+	return {
+		"item_id": item_id,
+		"name": str(item.get("name", item_id)),
+		"type_rank": _item_type_rank(str(item.get("type", ""))),
+		"unit_price": _sort_price_for_mode(item_id, mode),
+		"equipped_rank": 1 if mode == MODE_SELL and _is_item_equipped(item_id) else 0
+	}
+
+func _compare_item_sort_entries(a: Dictionary, b: Dictionary) -> bool:
+	var equipped_a := int(a.get("equipped_rank", 0))
+	var equipped_b := int(b.get("equipped_rank", 0))
+	if equipped_a != equipped_b:
+		return equipped_a < equipped_b
+	var type_a := int(a.get("type_rank", 99))
+	var type_b := int(b.get("type_rank", 99))
+	if type_a != type_b:
+		return type_a < type_b
+	var price_a := int(a.get("unit_price", 0))
+	var price_b := int(b.get("unit_price", 0))
+	if price_a != price_b:
+		return price_a < price_b
+	var name_a := str(a.get("name", ""))
+	var name_b := str(b.get("name", ""))
+	if name_a != name_b:
+		return name_a < name_b
+	return str(a.get("item_id", "")) < str(b.get("item_id", ""))
+
+func _item_type_rank(item_type: String) -> int:
+	return int(ITEM_TYPE_ORDER.get(item_type, 99))
+
+func _sort_price_for_mode(item_id: String, mode: String) -> int:
+	if mode == MODE_SELL:
+		return _sell_price(item_id)
+	if mode == MODE_BUYBACK:
+		return _buyback_price(item_id)
+	return _buy_price(item_id)
+
+func _shop_type() -> String:
+	var direct_id := str(npc_data.get("shop_id", ""))
+	if not direct_id.is_empty():
+		return direct_id
+	return str(npc_data.get("shop_type", ""))
+
+func _shop_buy_price_factor() -> float:
+	var factor := float(SHOP_BUY_PRICE_FACTORS.get(_shop_type(), 1.0))
+	return clampf(factor, SHOP_BUY_PRICE_MIN_FACTOR, 1.0)
+
+func _shop_discount_label() -> String:
+	var factor := _shop_buy_price_factor()
+	if factor >= 0.999:
+		return "原价"
+	return _format_discount_factor(factor)
+
+func _format_discount_factor(factor: float) -> String:
+	var zhe := factor * 10.0
+	if absf(zhe - roundf(zhe)) < 0.01:
+		return "%d折" % int(roundf(zhe))
+	return "%.1f折" % zhe
+
+func _buy_price_label(price: int, base_price: int) -> String:
+	if base_price > 0 and price < base_price:
+		return "%d两（原%d）" % [price, base_price]
+	return "%d两" % price
 
 func _on_player_changed(_player: Dictionary) -> void:
 	if visible:
@@ -628,7 +723,7 @@ func _format_effects(item: Dictionary) -> String:
 
 func _sell_item_label(item_id: String, item: Dictionary, count: int) -> String:
 	var equipped := "  已装备" if _is_item_equipped(item_id) else ""
-	return "%s x%d  卖%d两%s" % [str(item.get("name", item_id)), count, GameState.get_item_sell_price(item_id), equipped]
+	return "%s x%d  卖%d两%s" % [str(item.get("name", item_id)), count, _sell_price(item_id), equipped]
 
 func _buyback_item_label(item_id: String, item: Dictionary, count: int) -> String:
 	return "%s x%d  回购%d两" % [str(item.get("name", item_id)), count, _buyback_price(item_id)]
@@ -639,9 +734,24 @@ func _sell_item_detail(item_id: String, item: Dictionary) -> String:
 		str(item.get("name", item_id)),
 		str(item.get("description", "")),
 		_type_name(str(item.get("type", ""))),
-		GameState.get_item_sell_price(item_id),
+		_sell_price(item_id),
 		_format_effects(item),
 		blocked
+	]
+
+func _buy_item_detail(item_id: String, item: Dictionary) -> String:
+	var price := _buy_price(item_id)
+	var base_price := _base_item_price(item_id)
+	var market_line := ""
+	if base_price > 0 and price < base_price:
+		market_line = "\n本店行情：%s，已少收 %d 两。" % [_shop_discount_label(), base_price - price]
+	return "%s\n%s\n类型：%s    价格：%s\n%s%s" % [
+		str(item.get("name", item_id)),
+		str(item.get("description", "")),
+		_type_name(str(item.get("type", ""))),
+		_buy_price_label(price, base_price),
+		_format_effects(item),
+		market_line
 	]
 
 func _buyback_item_detail(item_id: String, item: Dictionary) -> String:

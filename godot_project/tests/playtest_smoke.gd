@@ -10,6 +10,7 @@ const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
+const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
 
 const WORLD_TILE_WATER := 2
 const WORLD_TILE_BUILDING := 3
@@ -796,6 +797,29 @@ func _run() -> void:
 		if local_area.npc_nodes.size() > 0:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data
 			_check((keeper_data.get("sell_items", []) as Array).size() > 0, "商铺掌柜应带商品列表")
+			_check(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_MIN_FACTOR <= 0.80, "商店买入折扣应有明确下限，避免价格体系失控")
+			_check(float(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_FACTORS.get("market", 1.0)) <= 0.90, "市集应有可见九折行情，形成不同店铺价格感")
+			var market_panel := SHOP_PANEL_SCRIPT.new()
+			market_panel.npc_data = {
+				"shop_type": "market",
+				"sell_items": LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["market"].get("sell_items", [])
+			}
+			var tanghulu_base := int(GameData.get_item("item_tang_hulu").get("price", 0))
+			var tanghulu_price := int(market_panel.call("_buy_price", "item_tang_hulu"))
+			_check(tanghulu_base > 0 and tanghulu_price == maxi(1, int(roundf(float(tanghulu_base) * 0.90))), "市集买入单价应按店铺行情折后计算")
+			var tanghulu_detail := str(market_panel.call("_buy_item_detail", "item_tang_hulu", GameData.get_item("item_tang_hulu")))
+			_check(tanghulu_detail.contains("本店行情") and tanghulu_detail.contains("原"), "买入详情应显示折扣行情和原价")
+			var sorted_market_ids: Array = market_panel.call("_sorted_buy_item_ids", LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["market"].get("sell_items", []))
+			_check(sorted_market_ids.size() >= 3 and str(sorted_market_ids[0]) == "item_tang_hulu", "市集商品应按品类与折后价格排序，低价吃食靠前")
+			var sorted_mixed_ids: Array = market_panel.call("_sorted_buy_item_ids", ["item_sword", "item_baozi", "item_cloth"])
+			_check(sorted_mixed_ids.size() == 3 and str(sorted_mixed_ids[0]) == "item_baozi" and str(sorted_mixed_ids[1]) == "item_sword" and str(sorted_mixed_ids[2]) == "item_cloth", "商店混合商品应按消耗品、武器、防具分层排序")
+			var money_before_shop_buy := int(GameState.player.get("money", 0))
+			var inventory_before_shop_buy: Dictionary = GameState.inventory.duplicate(true)
+			market_panel.call("_execute_buy", "item_tang_hulu", 2)
+			_check(int(GameState.player.get("money", 0)) == money_before_shop_buy - tanghulu_price * 2, "商店真实购买扣款应使用折后单价")
+			GameState.player["money"] = money_before_shop_buy
+			GameState.inventory = inventory_before_shop_buy
+			market_panel.free()
 
 	local_area.setup_region(GameData.get_region("luoyang"))
 	await get_tree().process_frame
