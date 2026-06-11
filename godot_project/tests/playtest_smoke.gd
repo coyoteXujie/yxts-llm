@@ -336,6 +336,7 @@ func _run() -> void:
 	_check(qinghe_midground_layer != null and qinghe_floor_layer != null and qinghe_midground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇中景和地面层应同尺寸对齐")
 	_check(qinghe_foreground_layer != null and qinghe_floor_layer != null and qinghe_foreground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇前景和地面层应同尺寸对齐")
 	_check(GameData.get_stage_layer_source_region_id("changan") == "changan", "长安应使用专属西市三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("chengdu") == "chengdu", "成都应使用专属天府药市三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("jiangling") == "jiangling", "江陵应使用专属江防码头三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("luoshui_river") == "luoshui_river", "洛水河畔应使用专属水岸桥景三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("shaoxing_water") == "linan", "水巷/运河区域应复用水城三层舞台资产")
@@ -628,6 +629,19 @@ func _run() -> void:
 	_check(changan_floor_layer != null and changan_floor_layer.get_size().x >= 1600.0 and changan_floor_layer.get_size().y >= 900.0, "长安西市地面层应具备横版舞台分辨率")
 	_check(changan_midground_layer != null and changan_floor_layer != null and changan_midground_layer.get_size() == changan_floor_layer.get_size(), "长安西市中景层应与地面层同尺寸对齐")
 	_check(changan_foreground_layer != null and changan_floor_layer != null and changan_foreground_layer.get_size() == changan_floor_layer.get_size(), "长安西市前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("chengdu"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("chengdu").ends_with("scene_chengdu_dnf_tianfu_market_v1.png"), "成都应接入 DNF 式天府药市横版整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "成都局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "成都应加载天府药市中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("chengdu", "floor").ends_with("chengdu_dnf_tianfu_floor_v1.png"), "成都应映射天府药市地面贴图层")
+	var chengdu_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("chengdu", "floor"), true)
+	var chengdu_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("chengdu", "midground"), true)
+	var chengdu_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("chengdu", "foreground"), true)
+	_check(chengdu_floor_layer != null and chengdu_floor_layer.get_size().x >= 1600.0 and chengdu_floor_layer.get_size().y >= 900.0, "成都天府药市地面层应具备横版舞台分辨率")
+	_check(chengdu_midground_layer != null and chengdu_floor_layer != null and chengdu_midground_layer.get_size() == chengdu_floor_layer.get_size(), "成都天府药市中景层应与地面层同尺寸对齐")
+	_check(chengdu_foreground_layer != null and chengdu_floor_layer != null and chengdu_foreground_layer.get_size() == chengdu_floor_layer.get_size(), "成都天府药市前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("jiangling"))
 	await get_tree().process_frame

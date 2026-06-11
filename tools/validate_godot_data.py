@@ -22,6 +22,9 @@ MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qinghe", "floor"): 70_000,
     ("qinghe", "midground"): 120_000,
     ("qinghe", "foreground"): 78_000,
+    ("chengdu", "floor"): 70_000,
+    ("chengdu", "midground"): 120_000,
+    ("chengdu", "foreground"): 120_000,
 }
 
 
@@ -347,7 +350,7 @@ def main() -> int:
             minimum_bytes = MIN_DETAILED_STAGE_LAYER_BYTES.get((str(region_id), str(layer_name)))
             if minimum_bytes is not None and resolved_path.stat().st_size < minimum_bytes:
                 errors.append(
-                    f"stage layer {region_id}.{layer_name} is too small for the detailed Qinghe DNF street asset: "
+                    f"stage layer {region_id}.{layer_name} is too small for the detailed DNF stage asset: "
                     f"{resolved_path.stat().st_size} bytes, expected at least {minimum_bytes}"
                 )
             png_info = read_png_info(resolved_path)
