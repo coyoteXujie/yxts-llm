@@ -44,6 +44,18 @@
       {"label": "水渠鱼篓", "description": "鱼篓挂在水渠边，渠水清浅，里面还有一尾活鱼。", "kind": "fish", "tile": [58, 31], "reward_item": "item_fish"}
     ]
   },
+  "dujiang_weir": {
+    "landmarks": [
+      {"label": "飞沙分水堰", "description": "石堰斜分江水，水声轰鸣处能看出老水工留下的巧思。", "kind": "water", "tile": [38, 24], "reward_exp": 8},
+      {"label": "鱼嘴石堤", "description": "石堤像鱼嘴探入江心，分出内外两道水势，也分出入蜀商路。", "kind": "bridge", "tile": [52, 28], "reward_money": 4},
+      {"label": "古堰水工棚", "description": "棚里挂着旧尺和竹简图样，水工们谈起山雨涨水时格外慎重。", "kind": "market", "tile": [20, 20], "reward_item": "item_yao"}
+    ],
+    "resources": [
+      {"label": "渠边鱼篓", "description": "鱼篓压在回水湾里，水势缓处常有肥鱼误入。", "kind": "fish", "tile": [58, 31], "reward_item": "item_fish"},
+      {"label": "水工药箱", "description": "木箱里备着跌打药，修堰人常在湿滑石面上摔伤。", "kind": "cache", "tile": [24, 21], "reward_item": "item_yao"},
+      {"label": "堰边散钱", "description": "石缝里卡着几枚铜钱，像是商旅过桥时匆忙落下的。", "kind": "coin", "tile": [48, 29], "reward_money": 5}
+    ]
+  },
   "jiangling": {
     "landmarks": [
       {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
