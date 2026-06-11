@@ -18,6 +18,7 @@ var mode: Mode = Mode.EXPLORE
 var player: Dictionary = {}
 var inventory: Dictionary = {}
 var equipment: Dictionary = {}
+var equipment_durability: Dictionary = {}
 var learned_skills: Dictionary = {}
 var active_quests: Dictionary = {}
 var completed_quests: Array = []
@@ -40,6 +41,8 @@ var current_tile := Vector2i.ZERO
 var map_target_region_id := ""
 
 const SAVE_PATH := "user://savegame.json"
+const EQUIPMENT_DURABILITY_MAX := 100
+const EQUIPMENT_REPAIR_PRICE_PER_MISSING_RATE := 0.004
 const TRADE_RECORD_LIMIT := 30
 const FAST_TRAVEL_MIN_EXPLORATION := 25
 const FAST_TRAVEL_FAMILIAR_EXPLORATION := 50
@@ -191,6 +194,7 @@ func new_game(config: Dictionary = {}) -> void:
 		"weapon": "",
 		"armor": ""
 	}
+	equipment_durability = {}
 	learned_skills = {
 		"kf_basic_bare": 1,
 		"kf_basic_dodge": 1,
@@ -1578,6 +1582,7 @@ func add_item(item_id: String, count: int = 1) -> void:
 	if count <= 0:
 		return
 	inventory[item_id] = int(inventory.get(item_id, 0)) + count
+	ensure_equipment_durability(item_id)
 	progress_quest("collect", item_id, count)
 	EventBus.inventory_changed.emit(inventory)
 
@@ -1587,6 +1592,8 @@ func remove_item(item_id: String, count: int = 1) -> bool:
 	inventory[item_id] = int(inventory[item_id]) - count
 	if int(inventory[item_id]) <= 0:
 		inventory.erase(item_id)
+		if is_equipment_item(item_id) and not equipment.values().has(item_id):
+			equipment_durability.erase(item_id)
 	EventBus.inventory_changed.emit(inventory)
 	return true
 
@@ -1635,6 +1642,7 @@ func equip_item(item_id: String) -> bool:
 	if old_item_id == item_id:
 		EventBus.emit_toast("已经装备%s" % str(item.get("name", item_id)))
 		return true
+	ensure_equipment_durability(item_id)
 	if not old_item_id.is_empty():
 		_apply_equipment_stats(old_item_id, -1)
 	equipment[slot] = item_id
@@ -1650,6 +1658,70 @@ func _apply_equipment_stats(item_id: String, direction: int) -> void:
 		player["attack"] = int(player.get("attack", 0)) + int(effects["attack"]) * direction
 	if effects.has("defense"):
 		player["defense"] = int(player.get("defense", 0)) + int(effects["defense"]) * direction
+
+func is_equipment_item(item_id: String) -> bool:
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return false
+	var item_type := str(item.get("type", ""))
+	return item_type == "weapon" or item_type == "armor"
+
+func ensure_equipment_durability(item_id: String) -> void:
+	if item_id.is_empty() or not is_equipment_item(item_id):
+		return
+	var durability := int(equipment_durability.get(item_id, EQUIPMENT_DURABILITY_MAX))
+	equipment_durability[item_id] = clampi(durability, 0, EQUIPMENT_DURABILITY_MAX)
+
+func get_equipment_durability(item_id: String) -> int:
+	if item_id.is_empty() or not is_equipment_item(item_id):
+		return 0
+	ensure_equipment_durability(item_id)
+	return int(equipment_durability.get(item_id, EQUIPMENT_DURABILITY_MAX))
+
+func set_equipment_durability(item_id: String, value: int) -> void:
+	if item_id.is_empty() or not is_equipment_item(item_id):
+		return
+	equipment_durability[item_id] = clampi(value, 0, EQUIPMENT_DURABILITY_MAX)
+	EventBus.inventory_changed.emit(inventory)
+
+func damage_equipment(slot: String, amount: int) -> int:
+	var item_id := str(equipment.get(slot, ""))
+	if item_id.is_empty() or amount <= 0:
+		return get_equipment_durability(item_id)
+	set_equipment_durability(item_id, get_equipment_durability(item_id) - amount)
+	return get_equipment_durability(item_id)
+
+func get_equipment_repair_cost(item_id: String) -> int:
+	if item_id.is_empty() or not is_equipment_item(item_id):
+		return 0
+	var missing := EQUIPMENT_DURABILITY_MAX - get_equipment_durability(item_id)
+	if missing <= 0:
+		return 0
+	var item := GameData.get_item(item_id)
+	var base_price := int(item.get("price", 0))
+	return maxi(1, int(ceil(float(base_price) * EQUIPMENT_REPAIR_PRICE_PER_MISSING_RATE * float(missing))))
+
+func repair_equipment(item_id: String, cost_override: int = -1) -> bool:
+	if item_id.is_empty() or not is_equipment_item(item_id):
+		return false
+	if int(inventory.get(item_id, 0)) <= 0 and not equipment.values().has(item_id):
+		return false
+	var missing := EQUIPMENT_DURABILITY_MAX - get_equipment_durability(item_id)
+	if missing <= 0:
+		EventBus.emit_toast("无需修理")
+		return false
+	var cost := get_equipment_repair_cost(item_id)
+	if cost_override >= 0:
+		cost = cost_override
+	if cost <= 0:
+		return false
+	if not spend_money(cost):
+		return false
+	equipment_durability[item_id] = EQUIPMENT_DURABILITY_MAX
+	EventBus.inventory_changed.emit(inventory)
+	var item := GameData.get_item(item_id)
+	EventBus.emit_toast("修理%s，花费%d两" % [str(item.get("name", item_id)), cost])
+	return true
 
 func buy_item(item_id: String, count: int = 1, price_override: int = -1) -> bool:
 	var item := GameData.get_item(item_id)
@@ -2068,6 +2140,7 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 		"player": player,
 		"inventory": inventory,
 		"equipment": equipment,
+		"equipment_durability": equipment_durability,
 		"learned_skills": learned_skills,
 		"active_quests": active_quests,
 		"completed_quests": completed_quests,
@@ -2120,6 +2193,13 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	player = snapshot.get("player", {})
 	inventory = snapshot.get("inventory", {})
 	equipment = snapshot.get("equipment", {"weapon": "", "armor": ""})
+	if not equipment.has("weapon"):
+		equipment["weapon"] = ""
+	if not equipment.has("armor"):
+		equipment["armor"] = ""
+	var loaded_equipment_durability = snapshot.get("equipment_durability", {})
+	equipment_durability = loaded_equipment_durability if typeof(loaded_equipment_durability) == TYPE_DICTIONARY else {}
+	_normalize_equipment_durability()
 	learned_skills = snapshot.get("learned_skills", {})
 	active_quests = snapshot.get("active_quests", {})
 	completed_quests = snapshot.get("completed_quests", [])
@@ -2146,3 +2226,18 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	EventBus.world_events_changed.emit(get_recent_world_events(30))
 	EventBus.time_changed.emit(day, hour, weather)
 	EventBus.map_target_changed.emit(map_target_region_id)
+
+func _normalize_equipment_durability() -> void:
+	var normalized: Dictionary = {}
+	for raw_item_id in equipment_durability.keys():
+		var item_id := str(raw_item_id)
+		if not is_equipment_item(item_id):
+			continue
+		normalized[item_id] = clampi(int(equipment_durability.get(raw_item_id, EQUIPMENT_DURABILITY_MAX)), 0, EQUIPMENT_DURABILITY_MAX)
+	equipment_durability = normalized
+	for raw_item_id in inventory.keys():
+		var item_id := str(raw_item_id)
+		if int(inventory.get(raw_item_id, 0)) > 0:
+			ensure_equipment_durability(item_id)
+	for raw_item_id in equipment.values():
+		ensure_equipment_durability(str(raw_item_id))

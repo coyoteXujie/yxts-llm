@@ -80,21 +80,54 @@ func _run() -> void:
 	_check(str(GameState.equipment.get("weapon", "")) == "item_blade" and int(GameState.player.get("attack", 0)) == base_attack + 12, "替换雁翎刀应先移除旧武器再应用新武器攻击")
 	_check(GameState.equip_item("item_cloth"), "应能装备布衣")
 	_check(str(GameState.equipment.get("armor", "")) == "item_cloth" and int(GameState.player.get("defense", 0)) == base_defense + 4, "装备布衣应增加防御")
+	_check(GameState.get_equipment_durability("item_blade") == GameState.EQUIPMENT_DURABILITY_MAX, "新增装备应初始化满耐久")
+	GameState.set_equipment_durability("item_blade", 72)
+	var blade_repair_cost := GameState.get_equipment_repair_cost("item_blade")
+	_check(blade_repair_cost > 0 and blade_repair_cost <= int(GameState.player.get("money", 0)), "受损装备应产生可负担的铁匠修理费")
+	var equipment_snapshot := GameState.build_save_snapshot(GameState.player_position)
+	var saved_equipment_durability: Dictionary = equipment_snapshot.get("equipment_durability", {})
+	_check(int(saved_equipment_durability.get("item_blade", 0)) == 72, "装备耐久应写入存档快照")
 
 	var inventory_panel = INVENTORY_PANEL_SCRIPT.new()
 	test_root.add_child(inventory_panel)
 	await get_tree().process_frame
 	inventory_panel.show_panel()
 	var blade_index: int = inventory_panel.item_ids.find("item_blade")
-	_check(blade_index >= 0 and inventory_panel.item_list.get_item_text(blade_index).contains("已装备"), "背包列表应标识当前已装备武器")
+	_check(blade_index >= 0 and inventory_panel.item_list.get_item_text(blade_index).contains("已装备") and inventory_panel.item_list.get_item_text(blade_index).contains("耐久72%"), "背包列表应标识当前已装备武器和耐久")
 	if blade_index >= 0:
 		inventory_panel._select_item(blade_index)
-		_check(inventory_panel.details.text.contains("已装备：武器") and inventory_panel.details.text.contains("当前武器：雁翎刀") and inventory_panel.details.text.contains("当前加成：攻击 +12"), "背包装备详情应显示当前武器槽和加成")
+		_check(inventory_panel.details.text.contains("已装备：武器") and inventory_panel.details.text.contains("当前武器：雁翎刀") and inventory_panel.details.text.contains("当前加成：攻击 +12") and inventory_panel.details.text.contains("耐久：72/100") and inventory_panel.details.text.contains("铁匠修理"), "背包装备详情应显示当前武器槽、加成和耐久维护信息")
 	var sword_index: int = inventory_panel.item_ids.find("item_sword")
 	if sword_index >= 0:
 		inventory_panel._select_item(sword_index)
 		_check(inventory_panel.details.text.contains("当前武器：雁翎刀") and inventory_panel.details.text.contains("攻击 -2"), "背包详情应显示换装前后攻击差值")
 	inventory_panel.close_panel()
+
+	var blacksmith_panel = SHOP_PANEL_SCRIPT.new()
+	test_root.add_child(blacksmith_panel)
+	await get_tree().process_frame
+	blacksmith_panel.npc_data = {
+		"shop_type": "blacksmith",
+		"shop_name": "铁匠铺",
+		"name": "铁匠",
+		"region_id": "qinghe",
+		"sell_items": LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["blacksmith"].get("sell_items", [])
+	}
+	blacksmith_panel.call("_set_shop_mode", "repair")
+	_check(blacksmith_panel.repair_mode_button != null and blacksmith_panel.repair_mode_button.visible, "铁匠铺应显示修理模式")
+	var repair_index: int = blacksmith_panel.item_ids.find("item_blade")
+	_check(repair_index >= 0 and blacksmith_panel.item_list.get_item_text(repair_index).contains("修%d两" % blade_repair_cost), "铁匠修理列表应列出受损装备和修理费")
+	if repair_index >= 0:
+		blacksmith_panel._select_item(repair_index)
+		_check(blacksmith_panel.details.text.contains("耐久：72/100") and blacksmith_panel.details.text.contains("修理后恢复满耐久") and blacksmith_panel.total_label.text.contains("%d 两" % blade_repair_cost), "铁匠修理详情应说明当前耐久、修复结果和费用")
+	var money_before_repair := int(GameState.player.get("money", 0))
+	blacksmith_panel.call("_execute_repair", "item_blade")
+	_check(GameState.get_equipment_durability("item_blade") == GameState.EQUIPMENT_DURABILITY_MAX and int(GameState.player.get("money", 0)) == money_before_repair - blade_repair_cost, "执行铁匠修理应扣银两并恢复满耐久")
+	var repaired_snapshot := GameState.build_save_snapshot(GameState.player_position)
+	var repaired_equipment_durability: Dictionary = repaired_snapshot.get("equipment_durability", {})
+	_check(int(repaired_equipment_durability.get("item_blade", 0)) == GameState.EQUIPMENT_DURABILITY_MAX, "修理后的装备耐久应写入存档快照")
+	GameState.player["money"] = money_before_repair
+	blacksmith_panel.close_panel()
 
 	var world_map = WORLD_MAP_SCRIPT.new()
 	test_root.add_child(world_map)

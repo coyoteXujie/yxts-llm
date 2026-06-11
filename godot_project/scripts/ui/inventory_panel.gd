@@ -173,6 +173,8 @@ func _load_item_icon(item_id: String) -> Texture2D:
 func _item_list_label(item_id: String, item: Dictionary, count: int) -> String:
 	var label := "%s x%d" % [str(item.get("name", item_id)), count]
 	var slot := _equipment_slot_for_item(item)
+	if not slot.is_empty():
+		label = "%s  耐久%d%%" % [label, GameState.get_equipment_durability(item_id)]
 	if not slot.is_empty() and str(GameState.equipment.get(slot, "")) == item_id:
 		label = "%s  已装备" % label
 	return label
@@ -206,11 +208,17 @@ func _format_equipment_detail(item_id: String, item: Dictionary) -> String:
 		current_name = str(current_item.get("name", current_id))
 	var status := "已装备：%s" % slot_name if current_id == item_id else "可装备到：%s" % slot_name
 	var stat_line := _format_equipment_bonus(item) if current_id == item_id else _format_equipment_delta(item, GameData.get_item(current_id) if not current_id.is_empty() else {})
-	return "\n%s\n当前%s：%s\n%s" % [
+	var durability := GameState.get_equipment_durability(item_id)
+	var repair_cost := GameState.get_equipment_repair_cost(item_id)
+	var durability_line := "耐久：%d/%d" % [durability, GameState.EQUIPMENT_DURABILITY_MAX]
+	if repair_cost > 0:
+		durability_line = "%s（铁匠修理 %d 两）" % [durability_line, repair_cost]
+	return "\n%s\n当前%s：%s\n%s\n%s" % [
 		status,
 		slot_name,
 		current_name,
-		stat_line
+		stat_line,
+		durability_line
 	]
 
 func _equipment_slot_for_item(item: Dictionary) -> String:

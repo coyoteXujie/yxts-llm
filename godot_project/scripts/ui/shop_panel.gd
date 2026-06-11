@@ -4,6 +4,7 @@ class_name ShopPanel
 const MODE_BUY := "buy"
 const MODE_SELL := "sell"
 const MODE_BUYBACK := "buyback"
+const MODE_REPAIR := "repair"
 const SHOP_BUY_PRICE_MIN_FACTOR := 0.80
 const MARKET_PRICE_MIN_FACTOR := 0.70
 const MARKET_PRICE_MAX_FACTOR := 1.30
@@ -33,6 +34,7 @@ var details: Label
 var buy_mode_button: Button
 var sell_mode_button: Button
 var buyback_mode_button: Button
+var repair_mode_button: Button
 var quantity_label: Label
 var quantity_minus_button: Button
 var quantity_plus_button: Button
@@ -126,6 +128,11 @@ func _build() -> void:
 	buyback_mode_button.text = "回购"
 	buyback_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_BUYBACK))
 	mode_row.add_child(buyback_mode_button)
+
+	repair_mode_button = Button.new()
+	repair_mode_button.text = "修理"
+	repair_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_REPAIR))
+	mode_row.add_child(repair_mode_button)
 
 	item_list = ItemList.new()
 	item_list.custom_minimum_size = Vector2(430, 220)
@@ -276,14 +283,23 @@ func _refresh() -> void:
 		title_label.text = _shop_title()
 	_update_money_label()
 	_update_market_tip_label()
+	if shop_mode == MODE_REPAIR and not _can_repair_shop():
+		shop_mode = MODE_BUY
 	_update_mode_buttons()
 	if shop_mode == MODE_SELL:
 		_refresh_sell_items()
 	elif shop_mode == MODE_BUYBACK:
 		_refresh_buyback_items()
+	elif shop_mode == MODE_REPAIR:
+		_refresh_repair_items()
 	else:
 		_refresh_buy_items()
-	details.text = "暂无可回购物品。" if shop_mode == MODE_BUYBACK and item_ids.is_empty() else "选择物品查看详情。"
+	if shop_mode == MODE_BUYBACK and item_ids.is_empty():
+		details.text = "暂无可回购物品。"
+	elif shop_mode == MODE_REPAIR and item_ids.is_empty():
+		details.text = "没有需要修理的装备。"
+	else:
+		details.text = "选择物品查看详情。"
 	if item_preview != null:
 		item_preview.texture = null
 	_update_transaction_controls()
@@ -315,6 +331,17 @@ func _refresh_buyback_items() -> void:
 		item_ids.append(item_id)
 		item_list.add_item(_buyback_item_label(item_id, item, count), _load_item_icon(item_id))
 
+func _refresh_repair_items() -> void:
+	for item_id in _sorted_trade_item_ids(GameState.inventory.keys(), MODE_REPAIR):
+		if not GameState.is_equipment_item(item_id):
+			continue
+		var repair_cost := _repair_price(item_id)
+		if repair_cost <= 0:
+			continue
+		var item := GameData.get_item(item_id)
+		item_ids.append(item_id)
+		item_list.add_item(_repair_item_label(item_id, item, repair_cost), _load_item_icon(item_id))
+
 func _select_item(index: int) -> void:
 	if index < 0 or index >= item_ids.size():
 		return
@@ -327,6 +354,8 @@ func _select_item(index: int) -> void:
 		details.text = _sell_item_detail(item_id, item)
 	elif shop_mode == MODE_BUYBACK:
 		details.text = _buyback_item_detail(item_id, item)
+	elif shop_mode == MODE_REPAIR:
+		details.text = _repair_item_detail(item_id, item)
 	else:
 		details.text = _buy_item_detail(item_id, item)
 	if item_preview != null:
@@ -367,6 +396,8 @@ func _buyback_selected() -> void:
 		_execute_buyback(item_id, buyback_count)
 
 func _set_shop_mode(next_mode: String) -> void:
+	if next_mode == MODE_REPAIR and not _can_repair_shop():
+		return
 	if shop_mode == next_mode:
 		return
 	_hide_transaction_confirmation()
@@ -399,6 +430,10 @@ func _update_mode_buttons() -> void:
 		sell_mode_button.disabled = shop_mode == MODE_SELL
 	if buyback_mode_button != null:
 		buyback_mode_button.disabled = shop_mode == MODE_BUYBACK
+	if repair_mode_button != null:
+		var can_repair := _can_repair_shop()
+		repair_mode_button.visible = can_repair
+		repair_mode_button.disabled = not can_repair or shop_mode == MODE_REPAIR
 	_update_transaction_controls()
 
 func _set_quantity(next_quantity: int) -> void:
@@ -423,6 +458,11 @@ func _max_quantity_for(item_id: String) -> int:
 		if buyback_price <= 0:
 			return stock
 		return mini(stock, int(GameState.player.get("money", 0)) / buyback_price)
+	if shop_mode == MODE_REPAIR:
+		var repair_price := _repair_price(item_id)
+		if repair_price <= 0:
+			return 0
+		return 1 if int(GameState.player.get("money", 0)) >= repair_price else 0
 	var price := _buy_price(item_id)
 	if price <= 0:
 		return 99
@@ -454,11 +494,15 @@ func _transaction_summary(item_id: String, count: int, max_quantity: int) -> Str
 	if max_quantity <= 0:
 		if shop_mode == MODE_SELL and _is_item_equipped(item_id):
 			return "已装备，不能出售"
+		if shop_mode == MODE_REPAIR:
+			return "无需修理或银两不足"
 		if shop_mode == MODE_BUY or shop_mode == MODE_BUYBACK:
 			return "银两不足"
 		return "暂无可交易数量"
 	var unit_price := _unit_price_for_mode(item_id)
 	var verb := "收入" if shop_mode == MODE_SELL else "合计"
+	if shop_mode == MODE_REPAIR:
+		verb = "修理费"
 	return "%s：%d 两" % [verb, unit_price * count]
 
 func _trade_verb() -> String:
@@ -466,6 +510,8 @@ func _trade_verb() -> String:
 		return "卖出"
 	if shop_mode == MODE_BUYBACK:
 		return "回购"
+	if shop_mode == MODE_REPAIR:
+		return "修理"
 	return "购买"
 
 func _unit_price_for_mode(item_id: String) -> int:
@@ -473,6 +519,8 @@ func _unit_price_for_mode(item_id: String) -> int:
 		return _sell_price(item_id)
 	if shop_mode == MODE_BUYBACK:
 		return _buyback_price(item_id)
+	if shop_mode == MODE_REPAIR:
+		return _repair_price(item_id)
 	return _buy_price(item_id)
 
 func _execute_buy(item_id: String, count: int) -> void:
@@ -489,6 +537,11 @@ func _execute_buyback(item_id: String, count: int) -> void:
 	var price := _buyback_price(item_id)
 	if GameState.buy_item(item_id, count, price):
 		_remove_buyback_stock(item_id, count)
+		_refresh()
+
+func _execute_repair(item_id: String) -> void:
+	var price := _repair_price(item_id)
+	if GameState.repair_equipment(item_id, price):
 		_refresh()
 
 func _open_transaction_confirmation() -> void:
@@ -513,18 +566,31 @@ func _open_transaction_confirmation() -> void:
 	var item := GameData.get_item(item_id)
 	var verb := _trade_verb()
 	var total_word := "收入" if shop_mode == MODE_SELL else "合计"
+	if shop_mode == MODE_REPAIR:
+		total_word = "修理费"
 	if confirm_title_label != null:
 		confirm_title_label.text = "确认%s" % verb
 	if confirm_body_label != null:
-		confirm_body_label.text = "%s %s x%d\n单价：%d 两\n%s：%d 两\n当前银两：%d" % [
-			verb,
-			str(item.get("name", item_id)),
-			tx_count,
-			unit_price,
-			total_word,
-			unit_price * tx_count,
-			int(GameState.player.get("money", 0))
-		]
+		if shop_mode == MODE_REPAIR:
+			confirm_body_label.text = "%s %s\n当前耐久：%d/%d\n%s：%d 两\n当前银两：%d" % [
+				verb,
+				str(item.get("name", item_id)),
+				GameState.get_equipment_durability(item_id),
+				GameState.EQUIPMENT_DURABILITY_MAX,
+				total_word,
+				unit_price,
+				int(GameState.player.get("money", 0))
+			]
+		else:
+			confirm_body_label.text = "%s %s x%d\n单价：%d 两\n%s：%d 两\n当前银两：%d" % [
+				verb,
+				str(item.get("name", item_id)),
+				tx_count,
+				unit_price,
+				total_word,
+				unit_price * tx_count,
+				int(GameState.player.get("money", 0))
+			]
 	if confirm_accept_button != null:
 		confirm_accept_button.text = "确认%s" % verb
 	if confirm_overlay != null:
@@ -545,6 +611,8 @@ func _confirm_pending_transaction() -> void:
 			_execute_sell(item_id, tx_count)
 		MODE_BUYBACK:
 			_execute_buyback(item_id, tx_count)
+		MODE_REPAIR:
+			_execute_repair(item_id)
 		_:
 			_execute_buy(item_id, tx_count)
 
@@ -575,6 +643,9 @@ func _buyback_price(item_id: String) -> int:
 	if buyback_prices.has(item_id):
 		return int(buyback_prices.get(item_id, 0))
 	return _sell_price(item_id)
+
+func _repair_price(item_id: String) -> int:
+	return GameState.get_equipment_repair_cost(item_id)
 
 func _add_buyback_stock(item_id: String, count: int, price: int) -> void:
 	if item_id.is_empty() or count <= 0:
@@ -646,6 +717,8 @@ func _sort_price_for_mode(item_id: String, mode: String) -> int:
 		return _sell_price(item_id)
 	if mode == MODE_BUYBACK:
 		return _buyback_price(item_id)
+	if mode == MODE_REPAIR:
+		return _repair_price(item_id)
 	return _buy_price(item_id)
 
 func _shop_type() -> String:
@@ -653,6 +726,9 @@ func _shop_type() -> String:
 	if not direct_id.is_empty():
 		return direct_id
 	return str(npc_data.get("shop_type", ""))
+
+func _can_repair_shop() -> bool:
+	return _shop_type() == "blacksmith"
 
 func _region_id() -> String:
 	return str(npc_data.get("region_id", ""))
@@ -914,6 +990,16 @@ func _sell_item_label(item_id: String, item: Dictionary, count: int) -> String:
 func _buyback_item_label(item_id: String, item: Dictionary, count: int) -> String:
 	return "%s x%d  回购%d两" % [str(item.get("name", item_id)), count, _buyback_price(item_id)]
 
+func _repair_item_label(item_id: String, item: Dictionary, repair_cost: int) -> String:
+	var equipped := "  已装备" if _is_item_equipped(item_id) else ""
+	return "%s  耐久%d/%d  修%d两%s" % [
+		str(item.get("name", item_id)),
+		GameState.get_equipment_durability(item_id),
+		GameState.EQUIPMENT_DURABILITY_MAX,
+		repair_cost,
+		equipped
+	]
+
 func _sell_item_detail(item_id: String, item: Dictionary) -> String:
 	var blocked := "\n已装备，不能出售" if _is_item_equipped(item_id) else ""
 	var base_price := GameState.get_item_sell_price(item_id)
@@ -953,6 +1039,19 @@ func _buyback_item_detail(item_id: String, item: Dictionary) -> String:
 		str(item.get("name", item_id)),
 		_type_name(str(item.get("type", ""))),
 		_buyback_price(item_id),
+		_format_effects(item)
+	]
+
+func _repair_item_detail(item_id: String, item: Dictionary) -> String:
+	var equipped := "\n当前已装备" if _is_item_equipped(item_id) else ""
+	return "%s\n%s\n类型：%s    修理费：%d 两\n耐久：%d/%d，修理后恢复满耐久%s\n%s" % [
+		str(item.get("name", item_id)),
+		str(item.get("description", "")),
+		_type_name(str(item.get("type", ""))),
+		_repair_price(item_id),
+		GameState.get_equipment_durability(item_id),
+		GameState.EQUIPMENT_DURABILITY_MAX,
+		equipped,
 		_format_effects(item)
 	]
 
