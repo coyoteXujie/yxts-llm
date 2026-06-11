@@ -836,6 +836,8 @@ func _run() -> void:
 			_check(fish_base > 0 and linan_fish_price < int(roundf(float(fish_base) * 0.80)), "临安水市鲜鱼买入价应明显低于基础价")
 			var fish_detail := str(linan_market_panel.call("_buy_item_detail", "item_fish", GameData.get_item("item_fish")))
 			_check(fish_detail.contains("临安水市行情") and fish_detail.contains("已少收"), "临安鱼价详情应解释地区特产行情")
+			var linan_market_tip := str(linan_market_panel.call("_shop_market_tip_text"))
+			_check(linan_market_tip.contains("临安水市行情") and linan_market_tip.contains("鲜鱼") and linan_market_tip.contains("询价"), "商店面板应显示本地特产行情和后续询价方向")
 			var clues_before_market := GameState.get_adventure_clues(0).size()
 			var events_before_market := GameState.world_events.size()
 			linan_market_panel.show_shop(linan_market_panel.npc_data)

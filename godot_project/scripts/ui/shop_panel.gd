@@ -24,6 +24,7 @@ const ITEM_TYPE_ORDER := {
 var npc_data: Dictionary = {}
 var title_label: Label
 var money_label: Label
+var market_tip_label: Label
 var item_list: ItemList
 var item_preview: TextureRect
 var details: Label
@@ -79,7 +80,7 @@ func close_panel() -> void:
 func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(742, 88)
-	panel.size = Vector2(492, 542)
+	panel.size = Vector2(492, 584)
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(panel)
 
@@ -97,6 +98,13 @@ func _build() -> void:
 	money_label.add_theme_font_size_override("font_size", 15)
 	money_label.add_theme_color_override("font_color", Color(0.72, 0.68, 0.56))
 	box.add_child(money_label)
+
+	market_tip_label = Label.new()
+	market_tip_label.custom_minimum_size = Vector2(430, 34)
+	market_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	market_tip_label.add_theme_font_size_override("font_size", 14)
+	market_tip_label.add_theme_color_override("font_color", Color(0.86, 0.76, 0.56))
+	box.add_child(market_tip_label)
 
 	var mode_row := HBoxContainer.new()
 	mode_row.add_theme_constant_override("separation", 8)
@@ -118,7 +126,7 @@ func _build() -> void:
 	mode_row.add_child(buyback_mode_button)
 
 	item_list = ItemList.new()
-	item_list.custom_minimum_size = Vector2(430, 232)
+	item_list.custom_minimum_size = Vector2(430, 220)
 	item_list.fixed_icon_size = Vector2i(36, 36)
 	item_list.icon_mode = ItemList.ICON_MODE_LEFT
 	item_list.item_selected.connect(_select_item)
@@ -265,6 +273,7 @@ func _refresh() -> void:
 	if title_label != null:
 		title_label.text = _shop_title()
 	_update_money_label()
+	_update_market_tip_label()
 	_update_mode_buttons()
 	if shop_mode == MODE_SELL:
 		_refresh_sell_items()
@@ -373,6 +382,13 @@ func _update_money_label() -> void:
 	if money_label == null:
 		return
 	money_label.text = "银两：%d    行情：%s" % [int(GameState.player.get("money", 0)), _shop_market_summary()]
+
+func _update_market_tip_label() -> void:
+	if market_tip_label == null:
+		return
+	var tip := _shop_market_tip_text()
+	market_tip_label.text = tip
+	market_tip_label.visible = not tip.is_empty()
 
 func _update_mode_buttons() -> void:
 	if buy_mode_button != null:
@@ -692,6 +708,36 @@ func _item_buy_market_label(item_id: String) -> String:
 	if label.is_empty():
 		return factor_label
 	return "%s · %s" % [label, factor_label]
+
+func _shop_market_tip_text() -> String:
+	var region_id := _region_id()
+	var market := _region_market()
+	if region_id.is_empty() or market.is_empty():
+		return ""
+	var market_label := str(market.get("label", "本地行情"))
+	var feature := _market_feature_item(market)
+	if feature.is_empty():
+		return "%s：本地价格平稳。" % market_label
+	var item_id := str(feature.get("item_id", ""))
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return "%s：本地价格平稳。" % market_label
+	var item_name := str(item.get("name", item_id))
+	var factor := float(feature.get("factor", 1.0))
+	var trend := "低于常价" if factor < 1.0 else "高于常价"
+	var target_text := ""
+	var target_region_id := _market_clue_target_region(region_id)
+	if not target_region_id.is_empty():
+		var target_region := GameData.get_region(target_region_id)
+		if not target_region.is_empty():
+			target_text = "，可去%s询价" % str(target_region.get("name", target_region_id))
+	return "%s：%s%s（%s）%s。" % [
+		market_label,
+		item_name,
+		trend,
+		_format_discount_factor(factor),
+		target_text
+	]
 
 func _record_shop_market_clue() -> void:
 	var region_id := _region_id()
