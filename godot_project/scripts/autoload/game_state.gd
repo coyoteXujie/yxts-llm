@@ -460,6 +460,7 @@ func record_adventure_clue(clue_id: String, title: String, description: String, 
 		"target_region_id": target_region_id,
 		"target_region_name": target_region_name,
 		"source": source,
+		"resolved": false,
 		"day": day,
 		"hour": hour
 	}
@@ -479,6 +480,56 @@ func get_adventure_clues(max_count: int = 8) -> Array:
 	for index in range(start, adventure_clues.size()):
 		if typeof(adventure_clues[index]) == TYPE_DICTIONARY:
 			result.append((adventure_clues[index] as Dictionary).duplicate(true))
+	return result
+
+func is_adventure_clue_resolved(clue_id: String) -> bool:
+	clue_id = clue_id.strip_edges()
+	if clue_id.is_empty():
+		return false
+	for existing in adventure_clues:
+		if typeof(existing) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = existing
+		if str(entry.get("id", "")) == clue_id:
+			return bool(entry.get("resolved", false))
+	return false
+
+func resolve_adventure_clue(clue_id: String) -> Dictionary:
+	clue_id = clue_id.strip_edges()
+	if clue_id.is_empty():
+		return {}
+	for index in range(adventure_clues.size()):
+		if typeof(adventure_clues[index]) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = adventure_clues[index]
+		if str(entry.get("id", "")) != clue_id:
+			continue
+		if bool(entry.get("resolved", false)):
+			return entry.duplicate(true)
+		entry["resolved"] = true
+		entry["resolved_day"] = day
+		entry["resolved_hour"] = hour
+		adventure_clues[index] = entry
+		EventBus.quests_changed.emit()
+		EventBus.world_events_changed.emit(get_recent_world_events(30))
+		return entry.duplicate(true)
+	return {}
+
+func get_unresolved_adventure_clues_for_region(region_id: String, max_count: int = 4) -> Array:
+	region_id = region_id.strip_edges()
+	var result: Array = []
+	if region_id.is_empty():
+		return result
+	var clues := get_adventure_clues(0)
+	for index in range(clues.size() - 1, -1, -1):
+		var clue: Dictionary = clues[index]
+		if bool(clue.get("resolved", false)):
+			continue
+		if str(clue.get("target_region_id", "")) != region_id:
+			continue
+		result.append(clue)
+		if max_count > 0 and result.size() >= max_count:
+			break
 	return result
 
 func _record_region_discovery(region: Dictionary) -> void:
@@ -1779,10 +1830,12 @@ func get_quest_status_lines() -> Array[String]:
 			var region_prefix := "%s · " % region if not region.is_empty() else ""
 			var target := str(entry.get("target_region_name", ""))
 			var target_suffix := "（指向：%s）" % target if not target.is_empty() else ""
-			lines.append("  - %s%s%s：%s" % [
+			var resolved_suffix := "（已追到）" if bool(entry.get("resolved", false)) else ""
+			lines.append("  - %s%s%s%s：%s" % [
 				region_prefix,
 				str(entry.get("title", "未名线索")),
 				target_suffix,
+				resolved_suffix,
 				str(entry.get("description", ""))
 			])
 	if not completed_quests.is_empty():

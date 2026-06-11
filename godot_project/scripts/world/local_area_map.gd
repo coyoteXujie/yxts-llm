@@ -772,6 +772,7 @@ func _generate_region_map() -> void:
 	_add_landmark_portals()
 	_add_resource_portals()
 	_add_hidden_clue_portals()
+	_add_adventure_clue_portals()
 
 func _generate_city_region() -> void:
 	_reset_tiles(Tile.GRASS)
@@ -1081,6 +1082,45 @@ func _add_hidden_clue_portals() -> void:
 		"landmark_kind": kind
 	})
 
+func _add_adventure_clue_portals() -> void:
+	var region_id := str(current_region.get("id", ""))
+	if region_id.is_empty():
+		return
+	var clues := GameState.get_unresolved_adventure_clues_for_region(region_id, 2)
+	for index in range(clues.size()):
+		var clue: Dictionary = clues[index]
+		var clue_id := str(clue.get("id", ""))
+		if clue_id.is_empty():
+			continue
+		var tile := _adventure_clue_tile(index)
+		tile = _find_nearest_walkable_tile(tile)
+		_paint_landmark_site(tile, "adventure")
+		var title := str(clue.get("title", "奇遇线索"))
+		var source_region := str(clue.get("region_name", ""))
+		var source_text := "，旧线索从%s一路牵来" % source_region if not source_region.is_empty() else ""
+		var description := "你在%s追到%s%s。痕迹没有散，反而指向了更深的人事。" % [
+			str(current_region.get("name", region_id)),
+			title,
+			source_text
+		]
+		portals.append({
+			"id": "adventure_clue_%s" % clue_id,
+			"label": _adventure_clue_label(title),
+			"type": "adventure_clue",
+			"tile": [tile.x, tile.y],
+			"shop_id": "",
+			"action_label": "追踪",
+			"interaction_hint": "奇遇",
+			"description": description,
+			"clue_id": clue_id,
+			"source_region_id": str(clue.get("region_id", "")),
+			"source_region_name": source_region,
+			"target_region_id": region_id,
+			"reward_money": 12,
+			"reward_exp": 16,
+			"landmark_kind": "adventure"
+		})
+
 func _hidden_clue_for_region() -> Dictionary:
 	var region_type := str(current_region.get("type", "wild"))
 	var terrain := str(current_region.get("terrain", ""))
@@ -1326,6 +1366,22 @@ func _resource_tile(index: int) -> Vector2i:
 func _hidden_clue_tile() -> Vector2i:
 	return Vector2i(map_width / 2 + 18, map_height / 2 - 9)
 
+func _adventure_clue_tile(index: int) -> Vector2i:
+	var anchors := [
+		Vector2i(map_width / 2 - 20, map_height / 2 - 8),
+		Vector2i(map_width / 2 + 20, map_height / 2 + 6)
+	]
+	return anchors[index % anchors.size()]
+
+func _adventure_clue_label(title: String) -> String:
+	title = title.strip_edges()
+	if title.is_empty():
+		return "奇遇踪迹"
+	title = title.replace("追查", "").strip_edges()
+	if title.length() > 8:
+		title = "%s..." % title.substr(0, 8)
+	return title
+
 func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 	_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.ROAD)
 	match kind:
@@ -1342,6 +1398,10 @@ func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 		"secret":
 			_fill_rect(Rect2i(tile.x - 3, tile.y - 2, 6, 4), Tile.ROAD)
 			_fill_rect(Rect2i(tile.x - 1, tile.y - 1, 3, 2), Tile.MOUNTAIN)
+			_set_tile(tile.x, tile.y, Tile.ROAD)
+		"adventure":
+			_fill_rect(Rect2i(tile.x - 4, tile.y - 2, 8, 4), Tile.ROAD)
+			_fill_rect(Rect2i(tile.x - 1, tile.y - 1, 3, 2), Tile.GARDEN)
 			_set_tile(tile.x, tile.y, Tile.ROAD)
 		"market":
 			_fill_rect(Rect2i(tile.x - 3, tile.y - 2, 6, 4), Tile.SHOP)
@@ -1528,6 +1588,8 @@ func _landmark_kind_label(kind: String) -> String:
 			return "药坡"
 		"secret":
 			return "隐线"
+		"adventure":
+			return "奇遇"
 	return "地标"
 
 func _resource_kind_label(kind: String) -> String:
@@ -1817,7 +1879,7 @@ func _build_portal_labels() -> void:
 		var label_size := Vector2(136, 24)
 		if portal_type == "travel_region":
 			label_size = Vector2(LOCAL_TRAVEL_BOARD_WIDTH, LOCAL_TRAVEL_BOARD_HEIGHT)
-		elif portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
+		elif portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 			label_size = Vector2(LOCAL_INTERACTION_BOARD_WIDTH, LOCAL_INTERACTION_BOARD_HEIGHT)
 		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) - label_size * 0.5 + Vector2(0, -46)
 		label.size = label_size
@@ -1828,7 +1890,7 @@ func _build_portal_labels() -> void:
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
 		label.add_theme_constant_override("line_spacing", -2)
-		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
+		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 			var board := StyleBoxFlat.new()
 			if portal_type == "travel_region":
 				board.bg_color = Color(0.06, 0.12, 0.10, 0.82)
@@ -1842,13 +1904,16 @@ func _build_portal_labels() -> void:
 			elif portal_type == "hidden_clue":
 				board.bg_color = Color(0.10, 0.08, 0.15, 0.74)
 				board.border_color = Color(0.76, 0.60, 0.96, 0.62)
+			elif portal_type == "adventure_clue":
+				board.bg_color = Color(0.06, 0.12, 0.14, 0.76)
+				board.border_color = Color(0.50, 0.82, 0.96, 0.64)
 			else:
 				board.bg_color = Color(0.24, 0.12, 0.06, 0.72)
 				board.border_color = Color(0.86, 0.58, 0.25, 0.55)
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue"
+		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -1856,7 +1921,7 @@ func _portal_label_text(portal: Dictionary) -> String:
 	var portal_type := str(portal.get("type", ""))
 	if portal_type == "shop":
 		return "%s · %s" % [str(portal.get("action_label", "进入")), str(portal.get("shop_name", portal.get("label", "商铺")))]
-	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
+	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 		var action := str(portal.get("action_label", "查看"))
 		var hint := str(portal.get("interaction_hint", ""))
 		var label_text := str(portal.get("label", "入口"))
@@ -4374,6 +4439,8 @@ func _draw_portals() -> void:
 			color = Color(0.58, 0.86, 0.40, 0.82)
 		elif portal_type == "hidden_clue":
 			color = Color(0.78, 0.58, 1.00, 0.86)
+		elif portal_type == "adventure_clue":
+			color = Color(0.46, 0.78, 1.00, 0.88)
 		elif portal_type == "exit_world" or portal_type == "exit_area":
 			color = Color(0.56, 0.78, 0.98, 0.75)
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
@@ -4396,6 +4463,8 @@ func _draw_portal_signs() -> void:
 		elif portal_type == "resource":
 			_draw_stage_resource_marker(pos, portal, highlighted)
 		elif portal_type == "hidden_clue":
+			_draw_stage_landmark_marker(pos, portal, highlighted)
+		elif portal_type == "adventure_clue":
 			_draw_stage_landmark_marker(pos, portal, highlighted)
 
 func _draw_stage_travel_gate(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
@@ -4552,6 +4621,12 @@ func _draw_stage_landmark_marker(pos: Vector2, portal: Dictionary, highlighted: 
 				Color(0.07, 0.055, 0.040, alpha)
 			]))
 			draw_arc(base + Vector2(1, 12), 18.0, PI, TAU, 18, Color(accent.r, accent.g, accent.b, alpha * 0.40), 2.0)
+		"adventure":
+			draw_line(base + Vector2(-28, 4), base + Vector2(-6, -30), Color(0.14, 0.10, 0.06, alpha * 0.92), 3.0)
+			draw_line(base + Vector2(24, 8), base + Vector2(5, -28), Color(0.14, 0.10, 0.06, alpha * 0.86), 2.6)
+			draw_arc(base + Vector2(0, -6), 30.0, PI * 1.08, PI * 1.92, 24, Color(accent.r, accent.g, accent.b, alpha * 0.62), 2.0)
+			draw_circle(base + Vector2(-7, -27), 4.0, Color(0.98, 0.84, 0.48, alpha * 0.78))
+			draw_circle(base + Vector2(6, -26), 3.2, Color(0.92, 0.98, 1.0, alpha * 0.62))
 		_:
 			draw_line(base + Vector2(-24, 10), base + Vector2(-24, -36), Color(0.16, 0.09, 0.05, alpha), 3.6)
 			draw_line(base + Vector2(24, 10), base + Vector2(24, -36), Color(0.16, 0.09, 0.05, alpha * 0.90), 3.6)
@@ -4626,6 +4701,8 @@ func _landmark_marker_color(kind: String, alpha: float) -> Color:
 			return Color(0.58, 0.82, 0.42, alpha)
 		"secret":
 			return Color(0.78, 0.62, 0.96, alpha)
+		"adventure":
+			return Color(0.50, 0.82, 0.98, alpha)
 	return Color(0.92, 0.70, 0.32, alpha)
 
 func _resource_marker_color(kind: String, alpha: float) -> Color:

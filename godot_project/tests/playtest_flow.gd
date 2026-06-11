@@ -142,6 +142,36 @@ func _run() -> void:
 			_check(GameState.get_adventure_clues(0).size() == after_hidden_clue_count, "重复追查隐藏线索不应重复记录奇遇线索")
 			main.discovery_panel.close_panel()
 			await _frames(1)
+			var hidden_target_region := GameData.get_region(hidden_target_region_id)
+			_check(not hidden_target_region.is_empty(), "隐藏奇遇线索指向的区域应存在")
+			if not hidden_target_region.is_empty():
+				main.local_area.setup_region(hidden_target_region)
+				await _frames(2)
+				var adventure_clue_portal := _first_portal(main.local_area, "adventure_clue")
+				_check(not adventure_clue_portal.is_empty(), "抵达奇遇目标区域应生成追踪线索入口")
+				if not adventure_clue_portal.is_empty():
+					_check(main._portal_prompt(adventure_clue_portal).contains("追踪") and main._portal_prompt(adventure_clue_portal).contains("奇遇"), "奇遇目标入口靠近提示应展示追踪动作和奇遇类型")
+					var before_adventure_exploration := GameState.get_region_exploration(hidden_target_region_id)
+					var before_adventure_event_count := GameState.world_events.size()
+					main._inspect_adventure_clue(adventure_clue_portal)
+					await _frames(1)
+					_check(main.discovery_panel.visible, "追踪奇遇目标应打开发现面板")
+					_check(GameState.get_region_exploration(hidden_target_region_id) >= before_adventure_exploration + 6, "首次追踪奇遇目标应推进目标区域探索度")
+					_check(GameState.world_events.size() > before_adventure_event_count and GameState.get_world_event_summary(1).contains("奇遇落点"), "首次追踪奇遇目标应写入江湖传闻")
+					_check(GameState.is_adventure_clue_resolved(str(adventure_clue_portal.get("clue_id", ""))), "追踪奇遇目标后应标记线索已追到")
+					_check(GameState.map_target_region_id.is_empty(), "追踪完已标记目标后应清空世界地图目的地")
+					main.discovery_panel.close_panel()
+					await _frames(1)
+					main.quest_panel.show_panel()
+					await _frames(1)
+					_check(main.quest_panel.rumor_text.text.contains("已追到") and main.quest_panel.clue_focus_button.disabled, "任务日志应显示奇遇已追到并不再标记旧目标")
+					main.quest_panel.close_panel()
+					await _frames(1)
+					main.local_area.setup_region(hidden_target_region)
+					await _frames(2)
+					_check(_portal_count(main.local_area, "adventure_clue") == 0, "已追到的奇遇线索不应继续生成目标入口")
+			main.local_area.setup_region(qinghe)
+			await _frames(2)
 
 		var shop_portal := _first_portal(main.local_area, "shop")
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
@@ -276,6 +306,13 @@ func _first_portal(local_area, portal_type: String) -> Dictionary:
 		if str(portal.get("type", "")) == portal_type:
 			return portal
 	return {}
+
+func _portal_count(local_area, portal_type: String) -> int:
+	var count := 0
+	for portal in local_area.portals:
+		if str(portal.get("type", "")) == portal_type:
+			count += 1
+	return count
 
 func _first_reward_landmark(local_area) -> Dictionary:
 	for portal in local_area.portals:

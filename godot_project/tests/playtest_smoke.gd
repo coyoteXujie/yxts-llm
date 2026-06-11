@@ -53,8 +53,16 @@ func _run() -> void:
 	_check(str(adventure_clue.get("target_region_id", "")) == "luoyang" and str(adventure_clue.get("target_region_name", "")) == "洛阳城", "奇遇线索应记录指向区域")
 	GameState.record_adventure_clue("smoke_hidden_path", "烟测试秘径", "重复记录不应增加线索。", "qinghe", "smoke")
 	_check(GameState.get_adventure_clues(0).size() == before_adventure_clues + 1, "重复奇遇线索不应膨胀列表")
+	_check(not GameState.is_adventure_clue_resolved("smoke_hidden_path"), "新记录的奇遇线索默认不应标记完成")
+	var resolved_adventure_clue := GameState.resolve_adventure_clue("smoke_hidden_path")
+	_check(bool(resolved_adventure_clue.get("resolved", false)) and GameState.is_adventure_clue_resolved("smoke_hidden_path"), "奇遇线索应可标记为已追到")
 	var save_snapshot := GameState.build_save_snapshot(GameState.player_position)
 	_check((save_snapshot.get("adventure_clues", []) as Array).size() == GameState.get_adventure_clues(0).size(), "奇遇线索应写入存档快照")
+	var saved_smoke_clue: Dictionary = {}
+	for saved_clue in (save_snapshot.get("adventure_clues", []) as Array):
+		if typeof(saved_clue) == TYPE_DICTIONARY and str((saved_clue as Dictionary).get("id", "")) == "smoke_hidden_path":
+			saved_smoke_clue = saved_clue
+	_check(bool(saved_smoke_clue.get("resolved", false)), "奇遇线索完成状态应写入存档快照")
 
 	var test_root := Node2D.new()
 	add_child(test_root)

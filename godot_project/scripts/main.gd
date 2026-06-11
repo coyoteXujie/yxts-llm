@@ -30,6 +30,7 @@ const POST_TRANSITION_RESET_DELAY := 1.2
 const LANDMARK_EXPLORATION_GAIN := 8
 const RESOURCE_EXPLORATION_GAIN := 3
 const HIDDEN_CLUE_EXPLORATION_GAIN := 5
+const ADVENTURE_CLUE_EXPLORATION_GAIN := 6
 const ENTERABLE_REGION_TYPES := {
 	"city": true,
 	"town": true,
@@ -445,7 +446,7 @@ func _portal_prompt(portal: Dictionary) -> String:
 			str(portal.get("shop_name", portal.get("label", "商铺"))),
 			str(portal.get("interaction_hint", "商铺"))
 		]
-	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue":
+	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 		var action := str(portal.get("action_label", "查看"))
 		var hint := str(portal.get("interaction_hint", ""))
 		if not hint.is_empty():
@@ -483,6 +484,8 @@ func _handle_enter_area() -> void:
 			_inspect_resource(focused_portal)
 		"hidden_clue":
 			_inspect_hidden_clue(focused_portal)
+		"adventure_clue":
+			_inspect_adventure_clue(focused_portal)
 		"look":
 			_inspect_roadside_event(focused_portal)
 		_:
@@ -646,6 +649,53 @@ func _hidden_clue_target_region_id(region_id: String) -> String:
 		return ""
 	var target: Dictionary = neighbors[0]
 	return str(target.get("id", ""))
+
+func _inspect_adventure_clue(portal: Dictionary) -> void:
+	var region_id := str(local_area.current_region.get("id", "region"))
+	var region_name := str(local_area.current_region.get("name", region_id))
+	var clue_id := str(portal.get("clue_id", "")).strip_edges()
+	var description := str(portal.get("description", "你追到这条线索的落点，事情终于接上了。"))
+	if clue_id.is_empty():
+		EventBus.emit_toast("这条奇遇线索缺少记录")
+		return
+	if GameState.is_adventure_clue_resolved(clue_id):
+		_show_landmark_discovery(portal, description, [], true)
+		return
+	var resolved_clue := GameState.resolve_adventure_clue(clue_id)
+	if resolved_clue.is_empty():
+		EventBus.emit_toast("这条奇遇线索已经散了")
+		return
+	var reward_parts: Array[String] = []
+	var item_id := str(portal.get("reward_item", ""))
+	var reward_money := int(portal.get("reward_money", 0))
+	var reward_exp := int(portal.get("reward_exp", 0))
+	if not item_id.is_empty():
+		GameState.add_item(item_id, 1)
+		var item := GameData.get_item(item_id)
+		reward_parts.append(str(item.get("name", item_id)))
+	if reward_money > 0:
+		GameState.add_money(reward_money)
+		reward_parts.append("%d 两银子" % reward_money)
+	if reward_exp > 0:
+		GameState.reward_player(reward_exp, 0)
+		reward_parts.append("%d 点阅历" % reward_exp)
+	var exploration_after := GameState.add_region_exploration(region_id, ADVENTURE_CLUE_EXPLORATION_GAIN)
+	reward_parts.append("探索度 +%d%%" % ADVENTURE_CLUE_EXPLORATION_GAIN)
+	if GameState.map_target_region_id == region_id:
+		GameState.set_map_target_region("")
+	GameState.append_world_event(
+		"adventure",
+		"奇遇落点：%s" % str(portal.get("label", "奇遇线索")),
+		"你在%s追到%s，区域探索推进到 %d%%。" % [
+			region_name,
+			str(resolved_clue.get("title", portal.get("label", "奇遇线索"))),
+			exploration_after
+		],
+		region_id,
+		3
+	)
+	reward_parts.append("奇遇线索已追到")
+	_show_landmark_discovery(portal, description, reward_parts, false)
 
 func _inspect_resource(portal: Dictionary) -> void:
 	var region_id := str(local_area.current_region.get("id", "region"))
