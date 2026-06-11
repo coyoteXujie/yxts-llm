@@ -130,7 +130,6 @@ func _physics_process(_delta: float) -> void:
 		input_vector = input_vector.normalized()
 		facing = input_vector
 		_update_lateral_facing(input_vector)
-		queue_redraw()
 
 	var previous_position := position
 	velocity = input_vector * SPEED
