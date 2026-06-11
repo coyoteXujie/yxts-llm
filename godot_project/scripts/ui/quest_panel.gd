@@ -86,7 +86,9 @@ func _world_event_lines() -> Array[String]:
 			var clue_entry: Dictionary = clue
 			var clue_region := str(clue_entry.get("region_name", ""))
 			var clue_region_prefix := "%s · " % clue_region if not clue_region.is_empty() else ""
-			lines.append("第%d日  %s%s" % [int(clue_entry.get("day", GameState.day)), clue_region_prefix, str(clue_entry.get("title", "未名线索"))])
+			var target_region := str(clue_entry.get("target_region_name", ""))
+			var target_suffix := "（指向：%s）" % target_region if not target_region.is_empty() else ""
+			lines.append("第%d日  %s%s%s" % [int(clue_entry.get("day", GameState.day)), clue_region_prefix, str(clue_entry.get("title", "未名线索")), target_suffix])
 			var clue_description := str(clue_entry.get("description", ""))
 			if not clue_description.is_empty():
 				lines.append("  %s" % clue_description)

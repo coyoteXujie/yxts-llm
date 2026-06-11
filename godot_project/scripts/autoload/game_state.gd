@@ -428,7 +428,7 @@ func get_world_event_summary(max_count: int = 3) -> String:
 		return "暂无新的江湖传闻"
 	return "；".join(parts)
 
-func record_adventure_clue(clue_id: String, title: String, description: String, region_id: String = "", source: String = "") -> Dictionary:
+func record_adventure_clue(clue_id: String, title: String, description: String, region_id: String = "", source: String = "", target_region_id: String = "") -> Dictionary:
 	clue_id = clue_id.strip_edges()
 	title = title.strip_edges()
 	description = description.strip_edges()
@@ -446,12 +446,19 @@ func record_adventure_clue(clue_id: String, title: String, description: String, 
 		var region := GameData.get_region(region_id)
 		if not region.is_empty():
 			region_name = str(region.get("name", region_id))
+	var target_region_name := ""
+	if not target_region_id.is_empty():
+		var target_region := GameData.get_region(target_region_id)
+		if not target_region.is_empty():
+			target_region_name = str(target_region.get("name", target_region_id))
 	var clue: Dictionary = {
 		"id": clue_id,
 		"title": title,
 		"description": description,
 		"region_id": region_id,
 		"region_name": region_name,
+		"target_region_id": target_region_id,
+		"target_region_name": target_region_name,
 		"source": source,
 		"day": day,
 		"hour": hour
@@ -1770,9 +1777,12 @@ func get_quest_status_lines() -> Array[String]:
 			var entry: Dictionary = clue
 			var region := str(entry.get("region_name", ""))
 			var region_prefix := "%s · " % region if not region.is_empty() else ""
-			lines.append("  - %s%s：%s" % [
+			var target := str(entry.get("target_region_name", ""))
+			var target_suffix := "（指向：%s）" % target if not target.is_empty() else ""
+			lines.append("  - %s%s%s：%s" % [
 				region_prefix,
 				str(entry.get("title", "未名线索")),
+				target_suffix,
 				str(entry.get("description", ""))
 			])
 	if not completed_quests.is_empty():

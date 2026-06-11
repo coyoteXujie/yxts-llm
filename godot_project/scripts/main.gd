@@ -627,16 +627,25 @@ func _inspect_hidden_clue(portal: Dictionary) -> void:
 	var clue_description := str(portal.get("clue_hook", "这条线索还没有展开成正式任务，但已经记入任务日志的江湖页；后续可据此接入隐藏区域、奇遇 NPC 或伏击事件。"))
 	if clue_description.is_empty():
 		clue_description = "这条线索还没有展开成正式任务，但已经记入任务日志的江湖页；后续可据此接入隐藏区域、奇遇 NPC 或伏击事件。"
+	var target_region_id := _hidden_clue_target_region_id(region_id)
 	var clue := GameState.record_adventure_clue(
 		"adventure_%s_%s" % [region_id, portal_id],
 		clue_title,
 		clue_description,
 		region_id,
-		str(portal.get("label", "隐秘线索"))
+		str(portal.get("label", "隐秘线索")),
+		target_region_id
 	)
 	if not clue.is_empty():
 		reward_parts.append("奇遇线索已记录")
 	_show_landmark_discovery(portal, description, reward_parts, false)
+
+func _hidden_clue_target_region_id(region_id: String) -> String:
+	var neighbors := GameData.get_neighbor_regions(region_id, 1)
+	if neighbors.is_empty():
+		return ""
+	var target: Dictionary = neighbors[0]
+	return str(target.get("id", ""))
 
 func _inspect_resource(portal: Dictionary) -> void:
 	var region_id := str(local_area.current_region.get("id", "region"))
