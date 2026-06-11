@@ -245,6 +245,10 @@ const SHOP_INTERIOR_TEXTURE_PRIORITY := true
 const SHOP_INTERIOR_TEXTURE_ALPHA := 1.0
 const SHOP_INTERIOR_TEXTURE_MIN_WIDTH := 1280.0
 const SHOP_INTERIOR_TEXTURE_MIN_HEIGHT := 800.0
+const SHOP_INTERIOR_TEXTURE_PROCEDURAL_GOODS_ENABLED := false
+const SHOP_INTERIOR_TEXTURE_SERVICE_ZONE_ALPHA := 0.18
+const SHOP_INTERIOR_TEXTURE_LIGHT_ALPHA := 0.22
+const SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA := 0.22
 const SHOP_INTERIOR_BACK_WALL_RATIO := 0.48
 const SHOP_INTERIOR_COUNTER_ALPHA := 0.92
 const SHOP_INTERIOR_SHELF_ALPHA := 0.82
@@ -1829,6 +1833,8 @@ func _clear_npcs() -> void:
 
 func _build_depth_props() -> void:
 	_clear_depth_props()
+	if current_mode == "shop" and SHOP_INTERIOR_TEXTURE_PRIORITY and shop_interior_texture != null:
+		return
 	var region_type := str(current_region.get("type", "wild"))
 	var terrain := str(current_region.get("terrain", ""))
 	for y in range(map_height):
@@ -4875,10 +4881,34 @@ func _draw_shop_overlay() -> void:
 
 func _draw_shop_texture_overlay(size: Vector2, shop_id: String, accent: Color) -> void:
 	var wall_bottom := size.y * SHOP_INTERIOR_BACK_WALL_RATIO
-	_draw_shop_service_lanes(size, wall_bottom, accent)
-	_draw_shop_counter_goods(size, wall_bottom, shop_id, accent)
-	_draw_shop_lighting(size, wall_bottom, accent)
-	_draw_shop_foreground_frame(size, accent)
+	_draw_shop_texture_service_lanes(size, wall_bottom, accent)
+	if SHOP_INTERIOR_TEXTURE_PROCEDURAL_GOODS_ENABLED:
+		_draw_shop_counter_goods(size, wall_bottom, shop_id, accent)
+	_draw_shop_texture_lighting(size, wall_bottom, accent)
+	_draw_shop_texture_foreground_frame(size, accent)
+
+func _draw_shop_texture_service_lanes(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	var service_center := Vector2(size.x * 0.50, wall_bottom + tile_size * 0.62)
+	_draw_ellipse_poly(service_center, Vector2(size.x * 0.24, tile_size * 0.26), Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_TEXTURE_SERVICE_ZONE_ALPHA * 0.28))
+	var sides: Array[float] = [-1.0, 1.0]
+	for side in sides:
+		var start := Vector2(size.x * (0.50 + side * 0.16), wall_bottom + tile_size * 0.18)
+		var end := Vector2(size.x * (0.50 + side * 0.36), size.y - tile_size * 0.48)
+		draw_line(start, end, Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_TEXTURE_SERVICE_ZONE_ALPHA * 0.34), 1.2)
+
+func _draw_shop_texture_lighting(size: Vector2, wall_bottom: float, accent: Color) -> void:
+	for i in range(3):
+		var x := size.x * (0.28 + float(i) * 0.22)
+		_draw_ellipse_poly(Vector2(x, wall_bottom + tile_size * 0.05), Vector2(tile_size * 1.18, tile_size * 0.22), Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_TEXTURE_LIGHT_ALPHA * 0.20))
+	_draw_stage_vertical_gradient(Rect2(Vector2(0.0, 0.0), size), Color(0.0, 0.0, 0.0, 0.045), Color(0.0, 0.0, 0.0, SHOP_INTERIOR_TEXTURE_LIGHT_ALPHA))
+
+func _draw_shop_texture_foreground_frame(size: Vector2, accent: Color) -> void:
+	draw_rect(Rect2(Vector2(0.0, tile_size * 0.26), Vector2(tile_size * 0.34, size.y - tile_size * 0.52)), Color(0.010, 0.006, 0.004, SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA), true)
+	draw_rect(Rect2(Vector2(size.x - tile_size * 0.34, tile_size * 0.26), Vector2(tile_size * 0.34, size.y - tile_size * 0.52)), Color(0.010, 0.006, 0.004, SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA), true)
+	var frame_x_positions: Array[float] = [tile_size * 1.10, size.x - tile_size * 1.10]
+	for x in frame_x_positions:
+		draw_line(Vector2(x, tile_size * 0.52), Vector2(x, size.y - tile_size * 0.46), Color(0.08, 0.042, 0.022, SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA * 0.74), 2.2)
+		draw_line(Vector2(x, tile_size * 0.66), Vector2(x, size.y - tile_size * 0.72), Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA * 0.18), 1.0)
 
 func _draw_legacy_shop_overlay(size: Vector2, accent: Color) -> void:
 	draw_rect(Rect2(0, 0, size.x, tile_size * 2.0), Color(0.18, 0.10, 0.06, 0.48), true)
