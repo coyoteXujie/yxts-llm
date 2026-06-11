@@ -840,12 +840,33 @@ func _run() -> void:
 			var events_before_market := GameState.world_events.size()
 			linan_market_panel.show_shop(linan_market_panel.npc_data)
 			var market_clues := GameState.get_adventure_clues(0)
+			var market_target_region_id := ""
 			_check(market_clues.size() == clues_before_market + 1, "进入有特产价差的商铺应记录一条货价线索")
 			if market_clues.size() > 0:
 				var latest_market_clue: Dictionary = market_clues[market_clues.size() - 1] as Dictionary
 				_check(str(latest_market_clue.get("id", "")) == "market_linan_item_fish" and not str(latest_market_clue.get("target_region_id", "")).is_empty(), "临安货价线索应记录鲜鱼特产并给出后续询价目标")
+				market_target_region_id = str(latest_market_clue.get("target_region_id", ""))
 			_check(GameState.world_events.size() == events_before_market + 1 and GameState.get_world_event_summary(1).contains("临安"), "进入有特产价差的商铺应写入江湖传闻")
 			GameState.set_mode(GameState.Mode.EXPLORE)
+			if not market_target_region_id.is_empty():
+				local_area.setup_region(GameData.get_region(market_target_region_id))
+				await get_tree().process_frame
+				var market_clue_portal := _first_portal(local_area, "adventure_clue")
+				_check(not market_clue_portal.is_empty(), "货价线索目标区域应生成可追踪入口")
+				if not market_clue_portal.is_empty():
+					_check(str(market_clue_portal.get("action_label", "")) == "询价" and str(market_clue_portal.get("interaction_hint", "")) == "行情", "货价线索入口应显示为询价/行情，而不是通用奇遇")
+					_check(str(market_clue_portal.get("clue_source", "")) == "market" and str(market_clue_portal.get("market_item_id", "")) == "item_fish", "货价线索入口应保留市场来源和物品 id")
+					_check(int(market_clue_portal.get("reward_money", 0)) >= 8 and int(market_clue_portal.get("reward_exp", 0)) >= 8, "货价线索入口应有银两和阅历奖励")
+					var market_money_before_resolve := int(GameState.player.get("money", 0))
+					var market_events_before_resolve := GameState.world_events.size()
+					var main_controller := MAIN_SCRIPT.new()
+					main_controller.local_area = local_area
+					main_controller.discovery_panel = null
+					main_controller.call("_inspect_adventure_clue", market_clue_portal)
+					_check(GameState.is_adventure_clue_resolved("market_linan_item_fish"), "询价入口交互后应完成货价线索")
+					_check(int(GameState.player.get("money", 0)) == market_money_before_resolve + int(market_clue_portal.get("reward_money", 0)), "询价入口应发放货价银两奖励")
+					_check(GameState.world_events.size() >= market_events_before_resolve + 2 and GameState.get_world_event_summary(2).contains("货价"), "询价入口应写入市场类落点传闻")
+					main_controller.free()
 			var money_before_region_sell := int(GameState.player.get("money", 0))
 			var inventory_before_region_sell: Dictionary = GameState.inventory.duplicate(true)
 			GameState.add_item("item_fish", 1)

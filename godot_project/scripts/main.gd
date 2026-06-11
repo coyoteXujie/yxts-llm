@@ -684,25 +684,39 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 	reward_parts.append("探索度 +%d%%" % ADVENTURE_CLUE_EXPLORATION_GAIN)
 	if GameState.map_target_region_id == region_id:
 		GameState.set_map_target_region("")
-	var aftermath := _resolve_adventure_aftermath(local_area.current_region, resolved_clue, portal)
+	var is_market_clue := str(resolved_clue.get("source", "")) == "market" or str(portal.get("clue_source", "")) == "market"
+	var aftermath: Dictionary = {}
+	if is_market_clue:
+		aftermath = _resolve_market_clue_aftermath(local_area.current_region, resolved_clue, portal)
+	else:
+		aftermath = _resolve_adventure_aftermath(local_area.current_region, resolved_clue, portal)
 	var aftermath_description := str(aftermath.get("description", ""))
 	if not aftermath_description.is_empty():
 		description = "%s\n\n%s" % [description, aftermath_description]
 	var aftermath_reward := str(aftermath.get("reward_label", ""))
 	if not aftermath_reward.is_empty():
 		reward_parts.append(aftermath_reward)
-	GameState.append_world_event(
-		"adventure",
-		"奇遇落点：%s" % str(portal.get("label", "奇遇线索")),
-		"你在%s追到%s，区域探索推进到 %d%%。" % [
+	var event_title := "奇遇落点：%s" % str(portal.get("label", "奇遇线索"))
+	var event_description := "你在%s追到%s，区域探索推进到 %d%%。" % [
+		region_name,
+		str(resolved_clue.get("title", portal.get("label", "奇遇线索"))),
+		exploration_after
+	]
+	if is_market_clue:
+		event_title = "货价落点：%s" % str(portal.get("label", "货价线索"))
+		event_description = "你在%s问实%s，区域探索推进到 %d%%。" % [
 			region_name,
-			str(resolved_clue.get("title", portal.get("label", "奇遇线索"))),
+			str(resolved_clue.get("title", portal.get("label", "货价线索"))),
 			exploration_after
-		],
+		]
+	GameState.append_world_event(
+		"market" if is_market_clue else "adventure",
+		event_title,
+		event_description,
 		region_id,
-		3
+		2 if is_market_clue else 3
 	)
-	reward_parts.append("奇遇线索已追到")
+	reward_parts.append("货价线索已落地" if is_market_clue else "奇遇线索已追到")
 	if bool(aftermath.get("start_combat", false)):
 		var enemy: Dictionary = aftermath.get("enemy", {})
 		if not enemy.is_empty():
@@ -713,6 +727,43 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 			combat_system.start(enemy)
 			return
 	_show_landmark_discovery(portal, description, reward_parts, false)
+
+func _resolve_market_clue_aftermath(region: Dictionary, clue: Dictionary, portal: Dictionary) -> Dictionary:
+	var region_id := str(region.get("id", "region"))
+	var region_name := str(region.get("name", region_id))
+	var source_region_name := str(clue.get("region_name", "来路"))
+	var item_id := _market_clue_item_id_from_clue(str(clue.get("id", "")))
+	if item_id.is_empty():
+		item_id = str(portal.get("market_item_id", ""))
+	var item := GameData.get_item(item_id)
+	var item_name := str(item.get("name", item_id if not item_id.is_empty() else "这批货"))
+	var description := "跑商回响：%s的脚行确认了%s传来的%s行情，后续可以在这里扩展为交割、倒卖或黑市压价事件。" % [
+		region_name,
+		source_region_name,
+		item_name
+	]
+	GameState.append_world_event(
+		"market",
+		"%s货价落定" % region_name,
+		"你把%s的%s行情追到%s，确认两地价差可做文章。" % [
+			source_region_name,
+			item_name,
+			region_name
+		],
+		region_id,
+		2
+	)
+	return {
+		"kind": "market",
+		"description": description,
+		"reward_label": "货价单已记"
+	}
+
+func _market_clue_item_id_from_clue(clue_id: String) -> String:
+	var item_pos := clue_id.find("item_")
+	if item_pos < 0:
+		return ""
+	return clue_id.substr(item_pos)
 
 func _resolve_adventure_aftermath(region: Dictionary, clue: Dictionary, portal: Dictionary) -> Dictionary:
 	var region_id := str(region.get("id", "region"))

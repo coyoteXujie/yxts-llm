@@ -1121,22 +1121,41 @@ func _add_adventure_clue_portals() -> void:
 			title,
 			source_text
 		]
+		var clue_source := str(clue.get("source", ""))
+		var is_market_clue := clue_source == "market"
+		if is_market_clue:
+			description = _market_clue_portal_description(clue, region_id)
+		var portal_label := _adventure_clue_label(title)
+		var action_label := "追踪"
+		var interaction_hint := "奇遇"
+		var reward_money := 12
+		var reward_exp := 16
+		var landmark_kind := "adventure"
+		if is_market_clue:
+			portal_label = _market_clue_label(title)
+			action_label = "询价"
+			interaction_hint = "行情"
+			reward_money = _market_clue_reward_money(clue)
+			reward_exp = 8
+			landmark_kind = "market"
 		portals.append({
 			"id": "adventure_clue_%s" % clue_id,
-			"label": _adventure_clue_label(title),
+			"label": portal_label,
 			"type": "adventure_clue",
 			"tile": [tile.x, tile.y],
 			"shop_id": "",
-			"action_label": "追踪",
-			"interaction_hint": "奇遇",
+			"action_label": action_label,
+			"interaction_hint": interaction_hint,
 			"description": description,
 			"clue_id": clue_id,
+			"clue_source": clue_source,
+			"market_item_id": _market_clue_item_id(clue),
 			"source_region_id": str(clue.get("region_id", "")),
 			"source_region_name": source_region,
 			"target_region_id": region_id,
-			"reward_money": 12,
-			"reward_exp": 16,
-			"landmark_kind": "adventure"
+			"reward_money": reward_money,
+			"reward_exp": reward_exp,
+			"landmark_kind": landmark_kind
 		})
 
 func _hidden_clue_for_region() -> Dictionary:
@@ -1399,6 +1418,43 @@ func _adventure_clue_label(title: String) -> String:
 	if title.length() > 8:
 		title = "%s..." % title.substr(0, 8)
 	return title
+
+func _market_clue_label(title: String) -> String:
+	title = title.strip_edges()
+	if title.is_empty():
+		return "货价问询"
+	title = title.replace("货价风声", "").strip_edges()
+	if title.is_empty():
+		return "货价问询"
+	if title.length() > 6:
+		return "%s..." % title.substr(0, 6)
+	return title
+
+func _market_clue_portal_description(clue: Dictionary, region_id: String) -> String:
+	var target_region := GameData.get_region(region_id)
+	var target_name := str(target_region.get("name", region_id))
+	var source_name := str(clue.get("region_name", "来路"))
+	var item_id := _market_clue_item_id(clue)
+	var item := GameData.get_item(item_id)
+	var item_name := str(item.get("name", item_id if not item_id.is_empty() else "这批货"))
+	return "你在%s的货栈和掌柜对了价，%s传来的%s行情终于落到实处。若以后接入跑商委托，这里可以作为交割点。" % [
+		target_name,
+		source_name,
+		item_name
+	]
+
+func _market_clue_reward_money(clue: Dictionary) -> int:
+	var item_id := _market_clue_item_id(clue)
+	var item := GameData.get_item(item_id)
+	var base_price := int(item.get("price", 18))
+	return clampi(int(roundf(float(base_price) * 0.75)), 8, 36)
+
+func _market_clue_item_id(clue: Dictionary) -> String:
+	var clue_id := str(clue.get("id", ""))
+	var item_pos := clue_id.find("item_")
+	if item_pos < 0:
+		return ""
+	return clue_id.substr(item_pos)
 
 func _paint_landmark_site(tile: Vector2i, kind: String) -> void:
 	_fill_rect(Rect2i(tile.x - 2, tile.y - 1, 5, 3), Tile.ROAD)
