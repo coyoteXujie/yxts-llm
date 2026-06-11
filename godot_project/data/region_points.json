@@ -80,6 +80,18 @@
       {"label": "崖边散钱", "description": "栏杆旁压着几枚铜钱，许是山风吹落的钱袋余响。", "kind": "coin", "tile": [58, 32], "reward_money": 6}
     ]
   },
+  "xindu_field": {
+    "landmarks": [
+      {"label": "连片稻田", "description": "稻田铺到远处村舍边，灌渠水声把成都平原的安稳一点点送来。", "kind": "market", "tile": [28, 28], "reward_money": 3},
+      {"label": "古道驿站遗址", "description": "旧驿站只剩半截地基，石缝里还能看出当年商旅入蜀的车辙。", "kind": "ruin", "tile": [48, 24], "reward_exp": 7},
+      {"label": "竹林小径", "description": "竹影压在田埂尽头，小径绕向新都镇，也绕向更深的山路。", "kind": "shrine", "tile": [60, 32], "reward_exp": 5}
+    ],
+    "resources": [
+      {"label": "田埂稻束", "description": "田埂旁晒着新割稻束，村人分你一小把作路粮。", "kind": "cache", "tile": [22, 34], "reward_item": "item_baozi"},
+      {"label": "林间草药", "description": "小树林边长着止血草，叶脉里还带着清晨露水。", "kind": "herb", "tile": [36, 20], "reward_item": "item_yao"},
+      {"label": "古道散钱", "description": "旧车辙旁压着几枚铜钱，像是赶路人从腰袋里颠落的。", "kind": "coin", "tile": [50, 30], "reward_money": 5}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
