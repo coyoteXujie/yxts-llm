@@ -24,6 +24,11 @@
     "midground": "res://assets/world/stage_layers/bashu_bamboo_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/bashu_bamboo_dnf_foreground_v1.png"
   },
+  "dujiang_weir": {
+    "floor": "res://assets/world/stage_layers/dujiang_weir_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/dujiang_weir_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/dujiang_weir_dnf_foreground_v1.png"
+  },
   "flower_sect": {
     "floor": "res://assets/world/stage_layers/flower_sect_dnf_garden_floor_v1.png",
     "midground": "res://assets/world/stage_layers/flower_sect_dnf_garden_midground_v1.png",

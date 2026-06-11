@@ -349,6 +349,7 @@ func _run() -> void:
 	_check(GameData.get_stage_layer_source_region_id("wuyi_for") == "bashu_bamboo", "林地区域应复用竹林三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("xueshan_sect") == "beiling_mtn", "雪山门派应复用山道三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("taiji_sect") == "flower_sect", "没有专属舞台层的普通门派应复用门派庭院三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("dujiang_weir") == "dujiang_weir", "都江古堰应使用专属水工古堰三层舞台资产")
 	var required_stage_layer_names := ["floor", "midground", "foreground"]
 	for region in GameData.get_regions():
 		var checked_region_id := str(region.get("id", ""))
@@ -721,6 +722,19 @@ func _run() -> void:
 	_check(bamboo_floor_layer != null and bamboo_floor_layer.get_size().x >= 1600.0 and bamboo_floor_layer.get_size().y >= 900.0, "巴蜀竹海地面层应具备横版舞台分辨率")
 	_check(bamboo_midground_layer != null and bamboo_floor_layer != null and bamboo_midground_layer.get_size() == bamboo_floor_layer.get_size(), "巴蜀竹海中景层应与地面层同尺寸对齐")
 	_check(bamboo_foreground_layer != null and bamboo_floor_layer != null and bamboo_foreground_layer.get_size() == bamboo_floor_layer.get_size(), "巴蜀竹海前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("dujiang_weir"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("dujiang_weir").ends_with("scene_dujiang_weir_dnf_waterworks_v1.png"), "都江古堰应接入 DNF 式水工古堰整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "都江古堰局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "都江古堰应加载水工中景和水渠地面贴图层")
+	_check(GameData.get_stage_layer_path("dujiang_weir", "floor").ends_with("dujiang_weir_dnf_floor_v1.png"), "都江古堰应映射水工古堰地面贴图层")
+	var dujiang_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("dujiang_weir", "floor"), true)
+	var dujiang_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("dujiang_weir", "midground"), true)
+	var dujiang_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("dujiang_weir", "foreground"), true)
+	_check(dujiang_floor_layer != null and dujiang_floor_layer.get_size().x >= 1600.0 and dujiang_floor_layer.get_size().y >= 900.0, "都江古堰地面/水渠层应具备横版舞台分辨率")
+	_check(dujiang_midground_layer != null and dujiang_floor_layer != null and dujiang_midground_layer.get_size() == dujiang_floor_layer.get_size(), "都江古堰中景层应与地面层同尺寸对齐")
+	_check(dujiang_foreground_layer != null and dujiang_floor_layer != null and dujiang_foreground_layer.get_size() == dujiang_floor_layer.get_size(), "都江古堰前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("flower_sect"))
 	await get_tree().process_frame

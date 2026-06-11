@@ -25,6 +25,9 @@ MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("chengdu", "floor"): 70_000,
     ("chengdu", "midground"): 120_000,
     ("chengdu", "foreground"): 120_000,
+    ("dujiang_weir", "floor"): 90_000,
+    ("dujiang_weir", "midground"): 75_000,
+    ("dujiang_weir", "foreground"): 180_000,
 }
 
 
