@@ -5,6 +5,7 @@ var tabs: TabContainer
 var quest_text: RichTextLabel
 var rumor_text: RichTextLabel
 var relation_text: RichTextLabel
+var clue_focus_button: Button
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -51,11 +52,22 @@ func _build() -> void:
 	relation_text = _make_text_tab("人物")
 	tabs.add_child(relation_text)
 
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_END
+	actions.add_theme_constant_override("separation", 10)
+	box.add_child(actions)
+
+	clue_focus_button = Button.new()
+	clue_focus_button.text = "标记线索目的地"
+	clue_focus_button.custom_minimum_size = Vector2(168, 38)
+	clue_focus_button.pressed.connect(_mark_latest_adventure_clue_target)
+	actions.add_child(clue_focus_button)
+
 	var close_button := Button.new()
 	close_button.text = "关闭"
 	close_button.custom_minimum_size = Vector2(120, 38)
 	close_button.pressed.connect(close_panel)
-	box.add_child(close_button)
+	actions.add_child(close_button)
 
 func _make_text_tab(tab_name: String) -> RichTextLabel:
 	var text := RichTextLabel.new()
@@ -72,6 +84,7 @@ func _refresh() -> void:
 	quest_text.text = "\n".join(GameState.get_quest_status_lines())
 	rumor_text.text = "\n".join(_world_event_lines())
 	relation_text.text = "\n".join(_relation_lines())
+	_refresh_clue_focus_button()
 
 func _on_world_events_changed(_events: Array) -> void:
 	if visible:
@@ -108,6 +121,45 @@ func _world_event_lines() -> Array[String]:
 		if not description.is_empty():
 			lines.append("  %s" % description)
 	return lines
+
+func _latest_adventure_clue_with_target() -> Dictionary:
+	var clues := GameState.get_adventure_clues(0)
+	for index in range(clues.size() - 1, -1, -1):
+		var clue: Dictionary = clues[index]
+		var target_region_id := str(clue.get("target_region_id", ""))
+		if not target_region_id.is_empty() and not GameData.get_region(target_region_id).is_empty():
+			return clue
+	return {}
+
+func _refresh_clue_focus_button() -> void:
+	if clue_focus_button == null:
+		return
+	var clue := _latest_adventure_clue_with_target()
+	if clue.is_empty():
+		clue_focus_button.text = "标记线索目的地"
+		clue_focus_button.disabled = true
+		clue_focus_button.tooltip_text = "暂无带目标区域的奇遇线索"
+		return
+	var target_region_name := str(clue.get("target_region_name", ""))
+	if target_region_name.is_empty():
+		target_region_name = str(GameData.get_region(str(clue.get("target_region_id", ""))).get("name", "目的地"))
+	clue_focus_button.text = "标记：%s" % target_region_name
+	clue_focus_button.disabled = false
+	clue_focus_button.tooltip_text = "把最近奇遇线索标记到世界地图"
+
+func _mark_latest_adventure_clue_target() -> void:
+	var clue := _latest_adventure_clue_with_target()
+	if clue.is_empty():
+		EventBus.emit_toast("暂无可标记的奇遇线索")
+		_refresh_clue_focus_button()
+		return
+	var target_region_id := str(clue.get("target_region_id", ""))
+	var target_region_name := str(clue.get("target_region_name", ""))
+	if target_region_name.is_empty():
+		target_region_name = str(GameData.get_region(target_region_id).get("name", target_region_id))
+	GameState.set_map_target_region(target_region_id)
+	EventBus.emit_toast("已标记奇遇目的地：%s" % target_region_name)
+	_refresh_clue_focus_button()
 
 func _relation_lines() -> Array[String]:
 	var lines: Array[String] = []
