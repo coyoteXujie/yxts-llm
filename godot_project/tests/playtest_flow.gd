@@ -24,6 +24,7 @@ func _run() -> void:
 	_check(main.active_map == main.local_area, "新游戏应直接进入平安镇横版城镇")
 	_check(main.player_actor != null and main.player_actor.world_map == main.local_area, "玩家新游戏后应绑定局部城镇地图")
 	_check(not main.world_map.visible and main.local_area.visible, "新游戏首屏不应继续显示世界大地图")
+	_check(main.hud.region_label.text.contains("探索") and main.hud.region_label.text.contains("·"), "HUD 所在地区域栏应显示探索阶段")
 	var prompt_segments: Array = main.hud._prompt_segments("E 探索古井（井台）    B 背包  J 任务  K 修炼  M 地图")
 	_check(prompt_segments.size() == 5 and str((prompt_segments[0] as Dictionary).get("key", "")) == "E" and str((prompt_segments[0] as Dictionary).get("label", "")).contains("探索"), "HUD 应把探索提示解析为快捷键分段")
 	main.hud.set_prompt("E 探索古井（井台）    B 背包  J 任务  K 修炼  M 地图")

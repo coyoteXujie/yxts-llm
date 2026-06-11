@@ -38,6 +38,19 @@ var map_target_region_id := ""
 
 const SAVE_PATH := "user://savegame.json"
 const FAST_TRAVEL_MIN_EXPLORATION := 25
+const REGION_EXPLORATION_MILESTONES := [25, 50, 75, 100]
+const REGION_EXPLORATION_MILESTONE_TITLES := {
+	25: "初识此地",
+	50: "路熟半城",
+	75: "寻幽探隐",
+	100: "一域尽览"
+}
+const REGION_EXPLORATION_MILESTONE_SEVERITY := {
+	25: 2,
+	50: 2,
+	75: 3,
+	100: 4
+}
 const FAST_TRAVEL_REGION_TYPES := {
 	"city": true,
 	"town": true,
@@ -250,7 +263,8 @@ func _ensure_region_state(region_id: String) -> Dictionary:
 		region_state[region_id] = {
 			"discovered": true,
 			"exploration": 5,
-			"visited": []
+			"visited": [],
+			"exploration_milestones": []
 		}
 	var state: Dictionary = region_state[region_id]
 	state["discovered"] = true
@@ -258,17 +272,22 @@ func _ensure_region_state(region_id: String) -> Dictionary:
 		state["visited"] = []
 	if not state.has("exploration"):
 		state["exploration"] = 5
+	if not state.has("exploration_milestones") or typeof(state["exploration_milestones"]) != TYPE_ARRAY:
+		state["exploration_milestones"] = []
 	return state
 
 func _update_region_exploration(region: Dictionary, state: Dictionary) -> void:
+	var region_id := str(region.get("id", ""))
 	var rect: Array = region.get("rect", [])
 	var area := 64
 	if rect.size() >= 4:
 		area = max(1, int(rect[2]) * int(rect[3]))
 	var target_tiles: int = max(8, int(area * 0.35))
 	var visited_count := int((state.get("visited", []) as Array).size())
+	var before := int(state.get("exploration", 0))
 	var exploration: int = int(min(100, max(int(state.get("exploration", 0)), 5 + int(visited_count * 95 / target_tiles))))
 	state["exploration"] = exploration
+	_apply_region_exploration_milestones(region_id, region, before, exploration, state)
 
 func get_region_state(region_id: String) -> Dictionary:
 	return region_state.get(region_id, {})
@@ -279,6 +298,17 @@ func is_region_discovered(region_id: String) -> bool:
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
 
+func get_region_exploration_title(region_id: String) -> String:
+	return get_exploration_title_for_value(get_region_exploration(region_id))
+
+func get_exploration_title_for_value(exploration: int) -> String:
+	var result := "初到"
+	for threshold in REGION_EXPLORATION_MILESTONES:
+		var milestone := int(threshold)
+		if exploration >= milestone:
+			result = str(REGION_EXPLORATION_MILESTONE_TITLES.get(milestone, result))
+	return result
+
 func add_region_exploration(region_id: String, amount: int) -> int:
 	if region_id.is_empty() or amount <= 0:
 		return get_region_exploration(region_id)
@@ -286,10 +316,50 @@ func add_region_exploration(region_id: String, amount: int) -> int:
 	var before := int(state.get("exploration", 0))
 	var after := clampi(before + amount, 5, 100)
 	state["exploration"] = after
+	_apply_region_exploration_milestones(region_id, GameData.get_region(region_id), before, after, state)
 	region_state[region_id] = state
 	if after != before and current_region_id == region_id:
 		EventBus.region_changed.emit(GameData.get_region(region_id), state)
 	return after
+
+func _apply_region_exploration_milestones(region_id: String, region: Dictionary, before: int, after: int, state: Dictionary) -> void:
+	if region_id.is_empty() or after <= before:
+		return
+	var achieved: Array = state.get("exploration_milestones", [])
+	var changed := false
+	for threshold in REGION_EXPLORATION_MILESTONES:
+		var milestone := int(threshold)
+		if after < milestone or before >= milestone:
+			continue
+		if achieved.has(milestone):
+			continue
+		achieved.append(milestone)
+		changed = true
+		_append_region_exploration_milestone_event(region_id, region, milestone, after)
+	if changed:
+		state["exploration_milestones"] = achieved
+
+func _append_region_exploration_milestone_event(region_id: String, region: Dictionary, milestone: int, exploration: int) -> void:
+	var region_name := str(region.get("name", region_id))
+	var title := str(REGION_EXPLORATION_MILESTONE_TITLES.get(milestone, "探得新路"))
+	var description := "%s探索度达到 %d%%，江湖人开始把你当作熟路人。" % [
+		region_name,
+		exploration
+	]
+	if milestone >= 75:
+		description = "%s探索度达到 %d%%，隐秘小径和旧闻开始浮出水面。" % [
+			region_name,
+			exploration
+		]
+	if milestone >= 100:
+		description = "%s一带的明路暗径都已记在心中，后续可承接更深层的隐藏事件。" % region_name
+	append_world_event(
+		"exploration",
+		"%s·%s" % [region_name, title],
+		description,
+		region_id,
+		int(REGION_EXPLORATION_MILESTONE_SEVERITY.get(milestone, 2))
+	)
 
 func append_world_event(kind: String, title: String, description: String, region_id: String = "", severity: int = 1) -> Dictionary:
 	title = title.strip_edges()

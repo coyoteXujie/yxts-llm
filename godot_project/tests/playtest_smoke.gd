@@ -33,6 +33,20 @@ func _run() -> void:
 	var story_hint := GameState.get_active_story_quest_hint()
 	_check(not story_hint.is_empty() and story_hint.contains("下一步"), "系统应生成主线/任务下一步指引")
 	_check(story_hint.contains("平阿四") or story_hint.contains("捕快"), "初始任务指引应点出可行动目标")
+	_check(GameState.get_exploration_title_for_value(0) == "初到", "区域探索 0% 应显示初到阶段")
+	_check(GameState.get_exploration_title_for_value(25) == "初识此地", "区域探索 25% 应显示初识阶段")
+	_check(GameState.get_exploration_title_for_value(50) == "路熟半城", "区域探索 50% 应显示熟路阶段")
+	var before_milestone_events := GameState.world_events.size()
+	GameState.region_state["gongyi"] = {"discovered": true, "exploration": 20, "visited": []}
+	_check(GameState.add_region_exploration("gongyi", 6) == 26, "区域探索增量应推进到跨阈值后的数值")
+	var gongyi_state: Dictionary = GameState.get_region_state("gongyi")
+	_check((gongyi_state.get("exploration_milestones", []) as Array).has(25), "首次跨过 25% 应记录区域探索阶段")
+	_check(GameState.world_events.size() == before_milestone_events + 1 and GameState.get_world_event_summary(1).contains("初识此地"), "首次跨过探索阶段应写入江湖传闻")
+	var after_first_milestone_events := GameState.world_events.size()
+	_check(GameState.add_region_exploration("gongyi", 3) == 29, "同一阶段内继续探索仍应推进数值")
+	_check(GameState.world_events.size() == after_first_milestone_events, "未跨过新探索阶段不应重复写入传闻")
+	_check(GameState.add_region_exploration("gongyi", 21) == 50, "跨过下一阶段应推进到 50%")
+	_check(GameState.world_events.size() == after_first_milestone_events + 1 and GameState.get_world_event_summary(1).contains("路熟半城"), "跨过 50% 应写入新的探索阶段传闻")
 
 	var test_root := Node2D.new()
 	add_child(test_root)
@@ -462,6 +476,7 @@ func _run() -> void:
 	map_panel._select_region_by_id("luoyang")
 	await get_tree().process_frame
 	_check((map_panel.map_canvas.route_plan.get("route", []) as Array).size() >= 2, "世界地图面板应把选中区域的驿路线传给地图画布")
+	_check(map_panel.details.text.contains("探索：30%·初识此地"), "世界地图面板区域详情应显示探索阶段名")
 	map_panel.close_panel()
 	map_panel.queue_free()
 	var travel_region_portal := _first_portal(local_area, "travel_region")

@@ -271,9 +271,12 @@ func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 		return
 	var danger := int(region.get("danger", 0))
 	var danger_text := _danger_text(danger)
-	region_label.text = "所在地：%s  探索 %d%%  %s" % [
+	var exploration := int(state.get("exploration", 0))
+	var exploration_title := GameState.get_exploration_title_for_value(exploration)
+	region_label.text = "所在地：%s  探索 %d%%·%s  %s" % [
 		str(region.get("name", region.get("id", ""))),
-		int(state.get("exploration", 0)),
+		exploration,
+		exploration_title,
 		danger_text
 	]
 	var region_id := str(region.get("id", ""))

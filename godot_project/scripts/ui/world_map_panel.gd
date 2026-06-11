@@ -184,11 +184,14 @@ func _select_region_by_id(region_id: String) -> void:
 	var danger := int(region.get("danger", 0))
 	var state := GameState.get_region_state(region_id)
 	var extra := _region_detail_lines(region_id)
-	details.text = "%s\n类型：%s    危险：%s    探索度：%d%%\n%s%s" % [
+	var exploration := int(state.get("exploration", 0))
+	var exploration_title := GameState.get_exploration_title_for_value(exploration)
+	details.text = "%s\n类型：%s    危险：%s    探索：%d%%·%s\n%s%s" % [
 		str(region.get("name", region_id)),
 		_type_name(str(region.get("type", "wild"))),
 		_danger_name(danger),
-		int(state.get("exploration", 0)),
+		exploration,
+		exploration_title,
 		str(region.get("description", "")),
 		extra
 	]
