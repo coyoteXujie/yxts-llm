@@ -20,6 +20,7 @@ MIN_SHOP_INTERIOR_HEIGHT = 800
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 MIN_DETAILED_SHOP_INTERIOR_BYTES = {
     "inn": 180_000,
+    "blacksmith": 230_000,
 }
 MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qinghe", "floor"): 70_000,
