@@ -246,15 +246,18 @@ func _fast_travel_line(region_id: String) -> String:
 	var route_summary := str(plan.get("route_summary", ""))
 	var risk_label := str(plan.get("risk_label", ""))
 	var fare := int(plan.get("fare", 0))
+	var familiarity_note := str(plan.get("familiarity_note", ""))
+	var note_suffix := " %s" % familiarity_note if not familiarity_note.is_empty() else ""
 	if reason.is_empty():
-		return "驿路：可快速前往，约 %.1f 时辰，%d 两，%s。路线：%s。" % [
+		return "驿路：可快速前往，约 %.1f 时辰，%d 两，%s。路线：%s。%s" % [
 			float(plan.get("hours", 0.0)),
 			fare,
 			risk_label,
-			route_summary
+			route_summary,
+			note_suffix
 		]
 	if not route_summary.is_empty() and GameState.is_region_discovered(region_id):
-		return "驿路：%s。路线：%s，约%d两，%s。" % [reason, route_summary, fare, risk_label]
+		return "驿路：%s。路线：%s，约%d两，%s。%s" % [reason, route_summary, fare, risk_label, note_suffix]
 	return "驿路：%s。" % reason
 
 func _update_action_buttons(region_id: String) -> void:
@@ -268,12 +271,15 @@ func _update_action_buttons(region_id: String) -> void:
 	var reason := str(plan.get("blocked_reason", ""))
 	travel_button.disabled = not reason.is_empty()
 	if reason.is_empty():
+		var familiarity_note := str(plan.get("familiarity_note", ""))
 		travel_button.tooltip_text = "约 %.1f 时辰；%d 两；%s；%s" % [
 			float(plan.get("hours", 0.0)),
 			int(plan.get("fare", 0)),
 			str(plan.get("risk_label", "")),
 			str(plan.get("route_summary", ""))
 		]
+		if not familiarity_note.is_empty():
+			travel_button.tooltip_text = "%s；%s" % [travel_button.tooltip_text, familiarity_note]
 	else:
 		travel_button.tooltip_text = reason
 

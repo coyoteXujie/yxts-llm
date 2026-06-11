@@ -418,6 +418,15 @@ func _run() -> void:
 	_check(float(travel_plan.get("hours", 0.0)) >= 1.0, "驿路路线应给出有效耗时")
 	_check(not str(travel_plan.get("risk_label", "")).is_empty(), "驿路路线应给出风险等级")
 	_check(int(travel_plan.get("fare", 0)) >= 3, "驿路路线应给出有效旅费")
+	GameState.region_state["changan"] = {"discovered": true, "exploration": 25, "visited": [], "exploration_milestones": [25]}
+	var changan_base_plan := GameState.build_region_travel_plan("changan")
+	GameState.region_state["changan"] = {"discovered": true, "exploration": 75, "visited": [], "exploration_milestones": [25, 50, 75]}
+	var changan_familiar_plan := GameState.build_region_travel_plan("changan")
+	_check(str(changan_familiar_plan.get("familiarity_note", "")).contains("寻幽探隐"), "高探索区域驿路计划应显示熟路加成")
+	_check(float(changan_familiar_plan.get("hours", 0.0)) <= float(changan_base_plan.get("hours", 0.0)), "高探索区域驿路耗时不应高于低探索基准")
+	_check(int(changan_familiar_plan.get("fare", 0)) <= int(changan_base_plan.get("fare", 0)), "高探索区域驿路费用不应高于低探索基准")
+	_check(int(changan_familiar_plan.get("risk_level", 0)) <= int(changan_base_plan.get("risk_level", 0)), "高探索区域驿路风险不应高于低探索基准")
+	_check(float(changan_familiar_plan.get("hours", 0.0)) < float(changan_base_plan.get("hours", 0.0)) or int(changan_familiar_plan.get("fare", 0)) < int(changan_base_plan.get("fare", 0)), "高探索区域应至少降低驿路耗时或费用")
 	GameState.update_current_region(GameData.get_region("qinghe"), Vector2i(30, 16))
 	GameState.region_state["luoyang"] = {"discovered": true, "exploration": 30, "visited": []}
 	var previous_time := float(GameState.day) * 24.0 + GameState.hour
@@ -477,6 +486,9 @@ func _run() -> void:
 	await get_tree().process_frame
 	_check((map_panel.map_canvas.route_plan.get("route", []) as Array).size() >= 2, "世界地图面板应把选中区域的驿路线传给地图画布")
 	_check(map_panel.details.text.contains("探索：30%·初识此地"), "世界地图面板区域详情应显示探索阶段名")
+	map_panel._select_region_by_id("changan")
+	await get_tree().process_frame
+	_check(map_panel.details.text.contains("熟路加成"), "世界地图面板应显示高探索区域的驿路熟路收益")
 	map_panel.close_panel()
 	map_panel.queue_free()
 	var travel_region_portal := _first_portal(local_area, "travel_region")

@@ -38,6 +38,9 @@ var map_target_region_id := ""
 
 const SAVE_PATH := "user://savegame.json"
 const FAST_TRAVEL_MIN_EXPLORATION := 25
+const FAST_TRAVEL_FAMILIAR_EXPLORATION := 50
+const FAST_TRAVEL_EXPERT_EXPLORATION := 75
+const FAST_TRAVEL_MASTER_EXPLORATION := 100
 const REGION_EXPLORATION_MILESTONES := [25, 50, 75, 100]
 const REGION_EXPLORATION_MILESTONE_TITLES := {
 	25: "初识此地",
@@ -716,9 +719,10 @@ func build_region_travel_plan(region_id: String) -> Dictionary:
 	var route_names := _route_region_names(route)
 	var distance := _route_distance(route)
 	var hours := _estimate_route_hours(route, target_region)
-	var risk_level := _route_risk_level(route)
+	var risk_level := _travel_risk_level(route, target_region)
 	var fare := _estimate_route_fare(route, target_region)
 	var blocked_reason := get_fast_travel_block_reason(region_id)
+	var familiarity_note := _travel_familiarity_note(target_region)
 	return {
 		"source_region_id": source_id,
 		"target_region_id": region_id,
@@ -731,6 +735,9 @@ func build_region_travel_plan(region_id: String) -> Dictionary:
 		"risk_level": risk_level,
 		"risk_label": _route_risk_label(risk_level),
 		"risk_note": _route_risk_note(risk_level),
+		"familiarity_note": familiarity_note,
+		"familiarity_discount": _travel_familiarity_discount(target_region),
+		"familiarity_risk_reduction": _travel_familiarity_risk_reduction(target_region),
 		"blocked_reason": blocked_reason,
 		"can_fast_travel": blocked_reason.is_empty()
 	}
@@ -930,8 +937,12 @@ func _estimate_route_hours(route: Array[String], target_region: Dictionary) -> f
 	var risk_level := _route_risk_level(route)
 	if route.is_empty():
 		risk_level = int(target_region.get("danger", 1))
+	risk_level = _travel_risk_level(route, target_region)
 	var relay_cost: float = maxf(0.0, float(route.size() - 2)) * 0.35
 	var hours := clampf(distance / 7.5 + float(risk_level) * 0.45 + relay_cost, 1.0, 16.0)
+	var familiarity_discount := _travel_familiarity_discount(target_region)
+	if familiarity_discount > 0.0:
+		hours = maxf(1.0, hours * (1.0 - familiarity_discount * 0.45))
 	return roundf(hours * 2.0) / 2.0
 
 func _estimate_route_fare(route: Array[String], target_region: Dictionary) -> int:
@@ -941,9 +952,48 @@ func _estimate_route_fare(route: Array[String], target_region: Dictionary) -> in
 	var risk_level := _route_risk_level(route)
 	if route.is_empty():
 		risk_level = int(target_region.get("danger", 1))
+	risk_level = _travel_risk_level(route, target_region)
 	var relay_count: int = maxi(0, route.size() - 2)
 	var fare := int(round(hours * 1.6 + float(risk_level) * 2.0 + float(relay_count) * 1.5))
+	var familiarity_discount := _travel_familiarity_discount(target_region)
+	if familiarity_discount > 0.0:
+		fare = int(round(float(fare) * (1.0 - familiarity_discount)))
 	return maxi(FAST_TRAVEL_MIN_FARE, fare)
+
+func _travel_familiarity_discount(target_region: Dictionary) -> float:
+	var exploration := _target_region_exploration(target_region)
+	if exploration >= FAST_TRAVEL_MASTER_EXPLORATION:
+		return 0.25
+	if exploration >= FAST_TRAVEL_EXPERT_EXPLORATION:
+		return 0.18
+	if exploration >= FAST_TRAVEL_FAMILIAR_EXPLORATION:
+		return 0.10
+	return 0.0
+
+func _travel_familiarity_risk_reduction(target_region: Dictionary) -> int:
+	var exploration := _target_region_exploration(target_region)
+	if exploration >= FAST_TRAVEL_EXPERT_EXPLORATION:
+		return 1
+	return 0
+
+func _travel_familiarity_note(target_region: Dictionary) -> String:
+	var exploration := _target_region_exploration(target_region)
+	if exploration < FAST_TRAVEL_FAMILIAR_EXPLORATION:
+		return ""
+	return "熟路加成：%s，驿路耗费和路况风险降低。" % get_exploration_title_for_value(exploration)
+
+func _target_region_exploration(target_region: Dictionary) -> int:
+	var region_id := str(target_region.get("id", ""))
+	if region_id.is_empty():
+		return 0
+	return get_region_exploration(region_id)
+
+func _travel_risk_level(route: Array[String], target_region: Dictionary) -> int:
+	var risk_level := _route_risk_level(route)
+	if route.is_empty():
+		risk_level = int(target_region.get("danger", 1))
+	var reduction := _travel_familiarity_risk_reduction(target_region)
+	return clampi(risk_level - reduction, 1, 5)
 
 func _route_risk_level(route: Array[String]) -> int:
 	var risk := 1
