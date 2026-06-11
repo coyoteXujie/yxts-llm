@@ -15,6 +15,10 @@ const STATUS_LABELS := {
 	"vulnerable": "破绽",
 	"guard": "守势"
 }
+const WEAPON_DURABILITY_LOSS_PER_ATTACK := 1
+const ARMOR_DURABILITY_LOSS_PER_HIT := 1
+const ARMOR_HEAVY_HIT_DAMAGE := 18
+const ARMOR_HEAVY_HIT_EXTRA_LOSS := 1
 
 const SKILL_PROFILES := {
 	"kf_basic_bare": {"mp": 4, "bonus": 6, "variance": 7, "accuracy": 0.90, "crit": 0.05, "status": "vulnerable", "status_chance": 0.16, "status_turns": 1},
@@ -49,6 +53,7 @@ var player_statuses: Dictionary = {}
 var enemy_statuses: Dictionary = {}
 var player_cooldowns: Dictionary = {}
 var enemy_flags: Dictionary = {}
+var equipment_wear: Dictionary = {}
 var event_index := 0
 var turn_count := 1
 var active := false
@@ -65,6 +70,7 @@ func start(enemy_data: Dictionary) -> void:
 	enemy_statuses.clear()
 	player_cooldowns.clear()
 	enemy_flags.clear()
+	equipment_wear.clear()
 	event_index = 0
 	turn_count = 1
 	active = true
@@ -109,6 +115,8 @@ func player_attack(skill_id: String = "normal") -> void:
 		return
 
 	var skill_name := str(profile.get("name", "普通攻击"))
+	var hits: int = maxi(1, int(profile.get("hits", 1)))
+	_wear_equipment_slot("weapon", WEAPON_DURABILITY_LOSS_PER_ATTACK * hits)
 	var hit_chance := _player_hit_chance(profile, level)
 	if randf() > hit_chance:
 		_append_log("你使出%s，被%s避开。" % [skill_name, str(enemy.get("name", "敌人"))])
@@ -118,7 +126,6 @@ func player_attack(skill_id: String = "normal") -> void:
 		_enemy_turn()
 		return
 
-	var hits: int = maxi(1, int(profile.get("hits", 1)))
 	var total_damage := 0
 	var crit_count := 0
 	for _hit_index in range(hits):
@@ -168,7 +175,8 @@ func snapshot() -> Dictionary:
 		"enemy_statuses": enemy_statuses.duplicate(true),
 		"player_status_text": _status_text(player_statuses),
 		"enemy_status_text": _status_text(enemy_statuses),
-		"cooldowns": player_cooldowns.duplicate()
+		"cooldowns": player_cooldowns.duplicate(),
+		"equipment_wear": equipment_wear.duplicate(true)
 	}
 
 func _player_focus() -> void:
@@ -240,11 +248,13 @@ func _enemy_attack(action: Dictionary) -> void:
 	var hits: int = maxi(1, int(action.get("hits", 1)))
 	var total_damage := 0
 	var any_hit := false
+	var landed_hits := 0
 	var action_name := str(action.get("name", "反击"))
 	for _index in range(hits):
 		if randf() > _enemy_hit_chance(action):
 			continue
 		any_hit = true
+		landed_hits += 1
 		var damage := _enemy_hit_damage(action)
 		if randf() < float(action.get("crit", 0.05)):
 			damage = int(ceil(float(damage) * 1.45))
@@ -254,6 +264,11 @@ func _enemy_attack(action: Dictionary) -> void:
 		_record_event("player", "miss", 0, "未中", action_name)
 		return
 	var actual := GameState.damage_player(total_damage)
+	if actual > 0:
+		var armor_loss := ARMOR_DURABILITY_LOSS_PER_HIT * maxi(1, landed_hits)
+		if actual >= ARMOR_HEAVY_HIT_DAMAGE:
+			armor_loss += ARMOR_HEAVY_HIT_EXTRA_LOSS
+		_wear_equipment_slot("armor", armor_loss)
 	_append_log("%s使出%s，造成 %d 点伤害。" % [str(enemy.get("name", "敌人")), action_name, actual])
 	_record_event("player", "damage", actual, "-%d" % actual, action_name)
 	_apply_enemy_status(action)
@@ -373,6 +388,25 @@ func _enemy_hit_chance(action: Dictionary) -> float:
 func _player_crit_chance(profile: Dictionary, level: int) -> float:
 	return clampf(float(profile.get("crit", 0.05)) + min(0.18, float(level) * 0.003), 0.02, 0.35)
 
+func _wear_equipment_slot(slot: String, amount: int) -> void:
+	if amount <= 0:
+		return
+	var item_id := str(GameState.equipment.get(slot, ""))
+	if item_id.is_empty():
+		return
+	var before := GameState.get_equipment_durability(item_id)
+	if before <= 0:
+		return
+	var after: int = maxi(0, before - amount)
+	var actual_loss := before - after
+	if actual_loss <= 0:
+		return
+	GameState.set_equipment_durability(item_id, after)
+	equipment_wear[item_id] = int(equipment_wear.get(item_id, 0)) + actual_loss
+	if after == 0:
+		var item := GameData.get_item(item_id)
+		_append_log("%s已经严重损坏，需要尽快找铁匠修理。" % str(item.get("name", item_id)))
+
 func _apply_profile_status(profile: Dictionary, level: int, target_statuses: Dictionary, target_name: String) -> void:
 	var status_id := str(profile.get("status", ""))
 	if status_id.is_empty():
@@ -474,7 +508,8 @@ func _finish(victory: bool, escaped: bool = false) -> void:
 	var result := {
 		"victory": victory,
 		"escaped": escaped,
-		"enemy": enemy
+		"enemy": enemy,
+		"equipment_wear": equipment_wear.duplicate(true)
 	}
 	if victory:
 		var exp_reward := int(enemy.get("exp_reward", 10))
@@ -493,6 +528,9 @@ func _finish(victory: bool, escaped: bool = false) -> void:
 		GameState.heal_player(int(GameState.player.get("max_hp", 120)))
 		GameState.restore_mp(int(GameState.player.get("max_mp", 60)))
 		GameState.advance_hours(4.0)
+	var wear_summary := _equipment_wear_summary()
+	if not wear_summary.is_empty():
+		_append_log(wear_summary)
 
 	active = false
 	player_statuses.clear()
@@ -506,6 +544,26 @@ func _append_log(text: String) -> void:
 	log_lines.append(text)
 	while log_lines.size() > 7:
 		log_lines.pop_front()
+
+func _equipment_wear_summary() -> String:
+	if equipment_wear.is_empty():
+		return ""
+	var parts: Array[String] = []
+	for raw_item_id in equipment_wear.keys():
+		var item_id := str(raw_item_id)
+		var loss := int(equipment_wear.get(raw_item_id, 0))
+		if loss <= 0:
+			continue
+		var item := GameData.get_item(item_id)
+		parts.append("%s -%d（%d/%d）" % [
+			str(item.get("name", item_id)),
+			loss,
+			GameState.get_equipment_durability(item_id),
+			GameState.EQUIPMENT_DURABILITY_MAX
+		])
+	if parts.is_empty():
+		return ""
+	return "装备磨损：%s。" % "，".join(parts)
 
 func _record_event(target: String, kind: String, amount: int, label: String, source: String = "") -> void:
 	event_index += 1

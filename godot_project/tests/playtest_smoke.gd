@@ -9,6 +9,7 @@ const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
+const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
 const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
 const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
@@ -127,6 +128,66 @@ func _run() -> void:
 	var repaired_equipment_durability: Dictionary = repaired_snapshot.get("equipment_durability", {})
 	_check(int(repaired_equipment_durability.get("item_blade", 0)) == GameState.EQUIPMENT_DURABILITY_MAX, "修理后的装备耐久应写入存档快照")
 	GameState.player["money"] = money_before_repair
+	blacksmith_panel.close_panel()
+
+	var combat_system = COMBAT_SYSTEM_SCRIPT.new()
+	test_root.add_child(combat_system)
+	await get_tree().process_frame
+	GameState.set_equipment_durability("item_blade", GameState.EQUIPMENT_DURABILITY_MAX)
+	GameState.set_equipment_durability("item_cloth", GameState.EQUIPMENT_DURABILITY_MAX)
+	var blade_before_combat := GameState.get_equipment_durability("item_blade")
+	combat_system.start({
+		"name": "烟测试木桩",
+		"hp": 1,
+		"max_hp": 1,
+		"level": 1,
+		"attack": 0,
+		"defense": 0,
+		"money": 0,
+		"exp_reward": 0
+	})
+	var player_attack_count := 0
+	while combat_system.active and player_attack_count < 8:
+		combat_system.player_attack("normal")
+		player_attack_count += 1
+	_check(not combat_system.active and player_attack_count > 0, "烟测试木桩应能被普通攻击击败")
+	var blade_after_combat := GameState.get_equipment_durability("item_blade")
+	var combat_snapshot: Dictionary = combat_system.snapshot()
+	var weapon_wear: Dictionary = combat_snapshot.get("equipment_wear", {})
+	_check(blade_after_combat == blade_before_combat - player_attack_count and int(weapon_wear.get("item_blade", 0)) == player_attack_count, "玩家每次有效出手都应磨损已装备武器")
+	_check("\n".join(combat_snapshot.get("log", []) as Array).contains("装备磨损"), "战斗结算日志应提示装备磨损")
+
+	var cloth_before_enemy_hit := GameState.get_equipment_durability("item_cloth")
+	combat_system.start({
+		"name": "烟测试拳手",
+		"hp": 80,
+		"max_hp": 80,
+		"level": 1,
+		"attack": 10,
+		"defense": 0,
+		"money": 0,
+		"exp_reward": 0
+	})
+	var enemy_attack_attempts := 0
+	while GameState.get_equipment_durability("item_cloth") == cloth_before_enemy_hit and enemy_attack_attempts < 12:
+		combat_system.call("_enemy_attack", {"name": "重拳", "bonus": 8, "accuracy": 0.94, "hits": 2})
+		enemy_attack_attempts += 1
+	_check(GameState.get_equipment_durability("item_cloth") < cloth_before_enemy_hit and int(combat_system.equipment_wear.get("item_cloth", 0)) > 0, "敌人命中玩家时应磨损已装备防具")
+	combat_system.call("_finish", false, true)
+	combat_system.queue_free()
+	GameState.heal_player(int(GameState.player.get("max_hp", 100)))
+	GameState.restore_mp(int(GameState.player.get("max_mp", 50)))
+
+	blacksmith_panel.npc_data = {
+		"shop_type": "blacksmith",
+		"shop_name": "铁匠铺",
+		"name": "铁匠",
+		"region_id": "qinghe",
+		"sell_items": LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["blacksmith"].get("sell_items", [])
+	}
+	blacksmith_panel.call("_set_shop_mode", "buy")
+	blacksmith_panel.call("_set_shop_mode", "repair")
+	_check(blacksmith_panel.item_ids.has("item_blade") and blacksmith_panel.item_ids.has("item_cloth"), "战斗磨损后的武器和防具应重新出现在铁匠修理列表")
 	blacksmith_panel.close_panel()
 
 	var world_map = WORLD_MAP_SCRIPT.new()
