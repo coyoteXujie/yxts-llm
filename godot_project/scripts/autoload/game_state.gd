@@ -537,7 +537,7 @@ func get_unresolved_adventure_clues_for_region(region_id: String, max_count: int
 			break
 	return result
 
-func record_trade_delivery(source_region_id: String, target_region_id: String, item_id: String, count: int, profit: int, clue_id: String = "") -> Dictionary:
+func record_trade_delivery(source_region_id: String, target_region_id: String, item_id: String, count: int, profit: int, clue_id: String = "", route_plan: Dictionary = {}) -> Dictionary:
 	count = maxi(0, count)
 	profit = maxi(0, profit)
 	if item_id.is_empty() or count <= 0:
@@ -548,7 +548,10 @@ func record_trade_delivery(source_region_id: String, target_region_id: String, i
 	var source_name := str(source_region.get("name", source_region_id if not source_region_id.is_empty() else "来路"))
 	var target_name := str(target_region.get("name", target_region_id if not target_region_id.is_empty() else "目的地"))
 	var item_name := str(item.get("name", item_id))
-	var reputation_gain := maxi(1, int(roundf(float(maxi(1, profit)) / 12.0)))
+	if route_plan.is_empty():
+		route_plan = build_trade_route_plan(source_region_id, target_region_id)
+	var risk_level := int(route_plan.get("risk_level", 1))
+	var reputation_gain := maxi(1, int(roundf(float(maxi(1, profit)) / 12.0))) + maxi(0, risk_level - 2)
 	trade_reputation += reputation_gain
 	var record := {
 		"id": "%d_%d_%d" % [day, int(hour * 100.0), abs(hash("%s:%s:%s:%s" % [source_region_id, target_region_id, item_id, clue_id]))],
@@ -560,6 +563,11 @@ func record_trade_delivery(source_region_id: String, target_region_id: String, i
 		"item_name": item_name,
 		"count": count,
 		"profit": profit,
+		"risk_level": risk_level,
+		"risk_label": str(route_plan.get("risk_label", "")),
+		"risk_bonus": int(route_plan.get("trade_risk_bonus", 0)),
+		"route_summary": str(route_plan.get("route_summary", "")),
+		"distance": float(route_plan.get("distance", 0.0)),
 		"reputation_gain": reputation_gain,
 		"reputation_total": trade_reputation,
 		"clue_id": clue_id,
@@ -572,6 +580,26 @@ func record_trade_delivery(source_region_id: String, target_region_id: String, i
 	EventBus.quests_changed.emit()
 	EventBus.world_events_changed.emit(get_recent_world_events(30))
 	return record.duplicate(true)
+
+func build_trade_route_plan(source_region_id: String, target_region_id: String) -> Dictionary:
+	var target_region := GameData.get_region(target_region_id)
+	if target_region.is_empty():
+		return {}
+	var plan := _build_region_travel_plan_from_source(source_region_id, target_region_id, target_region, "")
+	var risk_level := int(plan.get("risk_level", 1))
+	var distance := float(plan.get("distance", 0.0))
+	var risk_bonus := int(round(float(maxi(0, risk_level - 1)) * 3.0 + distance * 0.18))
+	plan["trade_risk_bonus"] = maxi(0, risk_bonus)
+	plan["trade_risk_note"] = _trade_route_risk_note(plan)
+	return plan
+
+func _trade_route_risk_note(plan: Dictionary) -> String:
+	var route_summary := str(plan.get("route_summary", ""))
+	var risk_label := str(plan.get("risk_label", "平稳"))
+	var risk_bonus := int(plan.get("trade_risk_bonus", 0))
+	if route_summary.is_empty():
+		return "商路%s，风险补贴%d两。" % [risk_label, risk_bonus]
+	return "商路：%s，%s，风险补贴%d两。" % [route_summary, risk_label, risk_bonus]
 
 func get_trade_records(max_count: int = 6) -> Array:
 	var count: int = trade_records.size()
@@ -884,13 +912,15 @@ func build_region_travel_plan(region_id: String) -> Dictionary:
 	var target_region := GameData.get_region(region_id)
 	var source_region := _current_travel_source_region()
 	var source_id := str(source_region.get("id", ""))
+	return _build_region_travel_plan_from_source(source_id, region_id, target_region, get_fast_travel_block_reason(region_id))
+
+func _build_region_travel_plan_from_source(source_id: String, region_id: String, target_region: Dictionary, blocked_reason: String = "") -> Dictionary:
 	var route := _find_region_route(source_id, region_id)
 	var route_names := _route_region_names(route)
 	var distance := _route_distance(route)
 	var hours := _estimate_route_hours(route, target_region)
 	var risk_level := _travel_risk_level(route, target_region)
 	var fare := _estimate_route_fare(route, target_region)
-	var blocked_reason := get_fast_travel_block_reason(region_id)
 	var familiarity_note := _travel_familiarity_note(target_region)
 	return {
 		"source_region_id": source_id,

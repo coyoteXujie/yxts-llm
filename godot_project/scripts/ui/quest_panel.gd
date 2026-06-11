@@ -119,14 +119,17 @@ func _world_event_lines() -> Array[String]:
 			var source_name := str(record.get("source_region_name", "来路"))
 			var target_name := str(record.get("target_region_name", "目的地"))
 			var item_name := str(record.get("item_name", "货物"))
-			lines.append("第%d日  %s -> %s  %s x%d  利%d两  商誉+%d" % [
+			var risk_label := str(record.get("risk_label", ""))
+			var risk_suffix := "  %s" % risk_label if not risk_label.is_empty() else ""
+			lines.append("第%d日  %s -> %s  %s x%d  利%d两  商誉+%d%s" % [
 				int(record.get("day", GameState.day)),
 				source_name,
 				target_name,
 				item_name,
 				int(record.get("count", 1)),
 				int(record.get("profit", 0)),
-				int(record.get("reputation_gain", 0))
+				int(record.get("reputation_gain", 0)),
+				risk_suffix
 			])
 		lines.append("")
 	lines.append("【江湖风声】")
