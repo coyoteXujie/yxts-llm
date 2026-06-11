@@ -256,6 +256,8 @@ const SHOP_INTERIOR_DISPLAY_CLUSTER_COUNT := 6
 const SHOP_INTERIOR_HANGING_DECOR_COUNT := 5
 const SHOP_INTERIOR_COUNTER_ITEM_COUNT := 7
 const SHOP_INTERIOR_FOREGROUND_PROP_COUNT := 8
+const SHOP_INTERIOR_BACKGROUND_NPC_COUNT := 4
+const SHOP_INTERIOR_BACKGROUND_NPC_ALPHA := 0.42
 const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.86
@@ -4689,6 +4691,7 @@ func _draw_rich_shop_interior(size: Vector2, shop_id: String, accent: Color) -> 
 	_draw_shop_hanging_decor(size, wall_bottom, shop_id, accent)
 	_draw_shop_floor(size, floor_rect, accent)
 	_draw_shop_service_lanes(size, wall_bottom, accent)
+	_draw_shop_background_figures(size, wall_bottom, shop_id, accent)
 	_draw_shop_counter(size, wall_bottom, accent)
 	_draw_shop_counter_goods(size, wall_bottom, shop_id, accent)
 	_draw_shop_shelves(size, wall_bottom, accent)
@@ -4817,6 +4820,72 @@ func _draw_shop_service_lanes(size: Vector2, wall_bottom: float, accent: Color) 
 		var end := Vector2(size.x * 0.50 + side * tile_size * 0.52, wall_bottom + tile_size * 0.54)
 		draw_line(start, end, Color(accent.r, accent.g, accent.b, SHOP_INTERIOR_SERVICE_ZONE_ALPHA * 0.38), 1.8)
 		draw_line(start + Vector2(side * tile_size * 0.18, tile_size * 0.08), end + Vector2(side * tile_size * 0.08, -tile_size * 0.02), Color(0.0, 0.0, 0.0, SHOP_INTERIOR_SERVICE_ZONE_ALPHA * 0.28), 1.2)
+
+func _draw_shop_background_figures(size: Vector2, wall_bottom: float, shop_id: String, accent: Color) -> void:
+	for i in range(SHOP_INTERIOR_BACKGROUND_NPC_COUNT):
+		var t := (float(i) + 0.5) / float(SHOP_INTERIOR_BACKGROUND_NPC_COUNT)
+		var x := lerpf(size.x * 0.22, size.x * 0.78, t) + sin(float(i) * 1.37) * tile_size * 0.18
+		var y := wall_bottom - tile_size * (0.34 + float(i % 2) * 0.11)
+		var scale := 0.70 + float(i % 3) * 0.06
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var alpha := SHOP_INTERIOR_BACKGROUND_NPC_ALPHA * (0.72 + float(i % 2) * 0.18)
+		_draw_shop_background_figure(Vector2(x, y), scale, side, shop_id, accent, alpha, i)
+
+func _draw_shop_background_figure(pos: Vector2, scale: float, side: float, shop_id: String, accent: Color, alpha: float, index: int) -> void:
+	var foot := pos
+	var height := tile_size * 1.08 * scale
+	var body_w := tile_size * 0.28 * scale
+	var head := foot + Vector2(side * tile_size * 0.03 * scale, -height * 0.92)
+	var shoulder := foot + Vector2(0.0, -height * 0.68)
+	var hip := foot + Vector2(-side * tile_size * 0.03 * scale, -height * 0.23)
+	var cloth := Color(accent.r * 0.62, accent.g * 0.58, accent.b * 0.50, alpha)
+	var ink := Color(0.028, 0.018, 0.012, alpha * 0.96)
+	_draw_ellipse_poly(foot + Vector2(0.0, tile_size * 0.06 * scale), Vector2(tile_size * 0.34, tile_size * 0.07) * scale, Color(0.0, 0.0, 0.0, alpha * 0.26))
+	draw_polygon(PackedVector2Array([
+		shoulder + Vector2(-body_w, -tile_size * 0.04 * scale),
+		shoulder + Vector2(body_w * 0.88, -tile_size * 0.02 * scale),
+		hip + Vector2(body_w * 0.74, tile_size * 0.06 * scale),
+		foot + Vector2(body_w * 0.36, 0.0),
+		foot + Vector2(-body_w * 0.72, -tile_size * 0.04 * scale),
+		hip + Vector2(-body_w * 0.82, 0.0)
+	]), PackedColorArray([
+		cloth.lightened(0.12),
+		cloth,
+		ink.lightened(0.18),
+		ink,
+		ink.lightened(0.08),
+		cloth.darkened(0.18)
+	]))
+	draw_circle(head, tile_size * 0.12 * scale, Color(0.12, 0.07, 0.045, alpha))
+	draw_line(head + Vector2(-side * tile_size * 0.05 * scale, -tile_size * 0.08 * scale), head + Vector2(side * tile_size * 0.09 * scale, tile_size * 0.01 * scale), Color(0.02, 0.014, 0.010, alpha), 1.2)
+	var hand := shoulder + Vector2(side * body_w * 1.60, height * 0.20)
+	draw_line(shoulder + Vector2(side * body_w * 0.72, tile_size * 0.06 * scale), hand, Color(0.045, 0.030, 0.020, alpha), maxf(1.0, tile_size * 0.030 * scale))
+	_draw_shop_background_figure_prop(hand, scale, side, shop_id, accent, alpha, index)
+
+func _draw_shop_background_figure_prop(hand: Vector2, scale: float, side: float, shop_id: String, accent: Color, alpha: float, index: int) -> void:
+	match shop_id:
+		"blacksmith":
+			var hammer_tip := hand + Vector2(side * tile_size * 0.24, -tile_size * 0.28) * scale
+			draw_line(hand, hammer_tip, Color(0.78, 0.70, 0.56, alpha * 0.82), maxf(1.0, tile_size * 0.022 * scale))
+			draw_rect(Rect2(hammer_tip - Vector2(tile_size * 0.11, tile_size * 0.04) * scale, Vector2(tile_size * 0.22, tile_size * 0.08) * scale), Color(0.12, 0.10, 0.08, alpha), true)
+		"medicine":
+			draw_rect(Rect2(hand + Vector2(side * tile_size * 0.02, -tile_size * 0.13) * scale, Vector2(tile_size * 0.10, tile_size * 0.18) * scale), Color(0.16, 0.34, 0.18, alpha * 0.84), true)
+			draw_circle(hand + Vector2(side * tile_size * 0.14, -tile_size * 0.01) * scale, tile_size * 0.05 * scale, Color(accent.r, accent.g, accent.b, alpha * 0.58))
+		"inn":
+			draw_line(hand + Vector2(-side * tile_size * 0.18, tile_size * 0.02) * scale, hand + Vector2(side * tile_size * 0.22, -tile_size * 0.02) * scale, Color(0.42, 0.22, 0.10, alpha), maxf(1.0, tile_size * 0.020 * scale))
+			draw_circle(hand + Vector2(side * tile_size * 0.12, -tile_size * 0.09) * scale, tile_size * 0.048 * scale, Color(0.86, 0.62, 0.30, alpha * 0.72))
+		"tailor":
+			var cloth_size := Vector2(tile_size * 0.30, tile_size * 0.22) * scale
+			var cloth_pos := hand + Vector2(side * tile_size * 0.02, -tile_size * 0.16) * scale
+			if side < 0.0:
+				cloth_pos.x -= cloth_size.x
+			draw_rect(Rect2(cloth_pos, cloth_size), Color(accent.r, accent.g, accent.b, alpha * 0.62), true)
+		"teahouse":
+			draw_circle(hand + Vector2(side * tile_size * 0.08, -tile_size * 0.04) * scale, tile_size * 0.075 * scale, Color(0.20, 0.12, 0.06, alpha * 0.88))
+			draw_line(hand + Vector2(side * tile_size * 0.13, -tile_size * 0.06) * scale, hand + Vector2(side * tile_size * 0.24, -tile_size * 0.12) * scale, Color(0.90, 0.68, 0.36, alpha * 0.60), 1.0)
+		_:
+			draw_circle(hand + Vector2(side * tile_size * 0.08, -tile_size * 0.02) * scale, tile_size * 0.09 * scale, Color(0.32, 0.18, 0.08, alpha * 0.76))
+			draw_circle(hand + Vector2(side * tile_size * 0.13, -tile_size * 0.11) * scale, tile_size * 0.034 * scale, Color(accent.r, accent.g, accent.b, alpha * (0.48 + float(index % 2) * 0.14)))
 
 func _draw_shop_counter(size: Vector2, wall_bottom: float, accent: Color) -> void:
 	var counter_rect := Rect2(Vector2(size.x * 0.13, wall_bottom - tile_size * 1.38), Vector2(size.x * 0.74, tile_size * 1.48))
