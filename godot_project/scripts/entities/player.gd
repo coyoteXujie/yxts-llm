@@ -41,19 +41,20 @@ const PLAYER_STAGE_LANE_MAX_VISUAL_OFFSET := 22.0
 const PLAYER_STAGE_HEAD_TURN_ALPHA := 0.20
 const PLAYER_STAGE_WEIGHT_SHIFT_ALPHA := 0.22
 const PLAYER_STAGE_SIDE_INPUT_DEADZONE := 0.20
-const PLAYER_STAGE_TURN_ACCENT_ALPHA := 0.24
+const PLAYER_STAGE_TURN_ACCENT_ALPHA := 0.34
 const PLAYER_STAGE_TURN_ACCENT_DURATION := 0.18
 const PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED := true
 const PLAYER_STAGE_TURN_BLEND_SPEED := 8.5
 const PLAYER_STAGE_TURN_SETTLE_SPEED := 5.2
 const PLAYER_STAGE_TURN_SQUASH_MIN := 0.78
 const PLAYER_STAGE_TURN_BODY_SLIDE := 13.0
-const PLAYER_STAGE_SIDE_PROFILE_ALPHA := 0.24
+const PLAYER_STAGE_SIDE_PROFILE_ALPHA := 0.34
 const PLAYER_STAGE_SIDE_PROFILE_SHADOW_ALPHA := 0.18
-const PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA := 0.32
-const PLAYER_STAGE_RUN_STRIDE_ALPHA := 0.28
+const PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA := 0.42
+const PLAYER_STAGE_RUN_STRIDE_ALPHA := 0.36
 const PLAYER_SPRITE_SOURCE_FACES_LEFT := false
 const PLAYER_AXIS_FALLBACK_ENABLED := true
+const PLAYER_IDLE_REDRAW_INTERVAL := 1.0 / 12.0
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 const PLAYER_SPRITE_OVERRIDES := {
@@ -79,6 +80,7 @@ var stage_turn_progress := 0.0
 var stage_turn_from_side := 1.0
 var stage_turn_to_side := 1.0
 var last_axis_fallback := Vector2.ZERO
+var idle_redraw_accumulator := 0.0
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -97,7 +99,14 @@ func _process(delta: float) -> void:
 	walk_phase += delta * (10.5 if moving else 1.45)
 	if turn_accent_timer > 0.0:
 		turn_accent_timer = maxf(0.0, turn_accent_timer - delta)
-	queue_redraw()
+	if moving or turn_accent_timer > 0.0 or stage_turn_progress > 0.0:
+		idle_redraw_accumulator = 0.0
+		queue_redraw()
+		return
+	idle_redraw_accumulator += delta
+	if idle_redraw_accumulator >= PLAYER_IDLE_REDRAW_INTERVAL:
+		idle_redraw_accumulator = fposmod(idle_redraw_accumulator, PLAYER_IDLE_REDRAW_INTERVAL)
+		queue_redraw()
 
 func _physics_process(_delta: float) -> void:
 	if not movement_enabled:

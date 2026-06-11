@@ -178,7 +178,9 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_HEAD_TURN_ALPHA >= 0.18, "玩家局部横版舞台应保留头肩/视线转向细节")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_WEIGHT_SHIFT_ALPHA >= 0.20, "玩家局部横版舞台应保留脚底重心转移提示")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_SIDE_INPUT_DEADZONE <= 0.24, "玩家横版朝向应由明确左右输入驱动")
-	_check(PLAYER_SCRIPT.PLAYER_STAGE_TURN_ACCENT_ALPHA >= 0.20, "玩家左右切向应有转身动作提示层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_TURN_ACCENT_ALPHA >= 0.30, "玩家左右切向应有足够明显的转身动作提示层")
+	_check(PLAYER_SCRIPT.PLAYER_STAGE_SIDE_PROFILE_ALPHA >= 0.30 and PLAYER_SCRIPT.PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA >= 0.40, "玩家横版左右姿态应有独立侧身轮廓和兵器方向层")
+	_check(PLAYER_SCRIPT.PLAYER_IDLE_REDRAW_INTERVAL >= 1.0 / 15.0, "玩家静止状态不应每帧重绘整套自绘层")
 	_check(not PLAYER_SCRIPT.PLAYER_SPRITE_SOURCE_FACES_LEFT, "当前默认玩家源图按朝右资源处理，向右时不应镜像底图")
 	_check(PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MAX > PLAYER_SCRIPT.STAGE_DEPTH_SCALE_MIN, "玩家应支持局部舞台深度缩放")
 	player.facing = Vector2.LEFT
