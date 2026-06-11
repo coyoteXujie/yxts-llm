@@ -836,6 +836,16 @@ func _run() -> void:
 			_check(fish_base > 0 and linan_fish_price < int(roundf(float(fish_base) * 0.80)), "临安水市鲜鱼买入价应明显低于基础价")
 			var fish_detail := str(linan_market_panel.call("_buy_item_detail", "item_fish", GameData.get_item("item_fish")))
 			_check(fish_detail.contains("临安水市行情") and fish_detail.contains("已少收"), "临安鱼价详情应解释地区特产行情")
+			var clues_before_market := GameState.get_adventure_clues(0).size()
+			var events_before_market := GameState.world_events.size()
+			linan_market_panel.show_shop(linan_market_panel.npc_data)
+			var market_clues := GameState.get_adventure_clues(0)
+			_check(market_clues.size() == clues_before_market + 1, "进入有特产价差的商铺应记录一条货价线索")
+			if market_clues.size() > 0:
+				var latest_market_clue: Dictionary = market_clues[market_clues.size() - 1] as Dictionary
+				_check(str(latest_market_clue.get("id", "")) == "market_linan_item_fish" and not str(latest_market_clue.get("target_region_id", "")).is_empty(), "临安货价线索应记录鲜鱼特产并给出后续询价目标")
+			_check(GameState.world_events.size() == events_before_market + 1 and GameState.get_world_event_summary(1).contains("临安"), "进入有特产价差的商铺应写入江湖传闻")
+			GameState.set_mode(GameState.Mode.EXPLORE)
 			var money_before_region_sell := int(GameState.player.get("money", 0))
 			var inventory_before_region_sell: Dictionary = GameState.inventory.duplicate(true)
 			GameState.add_item("item_fish", 1)

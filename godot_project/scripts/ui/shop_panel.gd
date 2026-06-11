@@ -66,6 +66,7 @@ func show_shop(data: Dictionary) -> void:
 	pending_transaction.clear()
 	if confirm_overlay != null:
 		confirm_overlay.hide()
+	_record_shop_market_clue()
 	_refresh()
 	show()
 	GameState.set_mode(GameState.Mode.SHOP)
@@ -691,6 +692,77 @@ func _item_buy_market_label(item_id: String) -> String:
 	if label.is_empty():
 		return factor_label
 	return "%s · %s" % [label, factor_label]
+
+func _record_shop_market_clue() -> void:
+	var region_id := _region_id()
+	var market := _region_market()
+	if region_id.is_empty() or market.is_empty():
+		return
+	var feature := _market_feature_item(market)
+	if feature.is_empty():
+		return
+	var item_id := str(feature.get("item_id", ""))
+	var item := GameData.get_item(item_id)
+	if item.is_empty():
+		return
+	var region := GameData.get_region(region_id)
+	var region_name := str(region.get("name", npc_data.get("region_name", region_id)))
+	var item_name := str(item.get("name", item_id))
+	var factor := float(feature.get("factor", 1.0))
+	var condition := "货足价低" if factor < 1.0 else "稀缺价高"
+	var target_region_id := _market_clue_target_region(region_id)
+	var target_phrase := ""
+	if not target_region_id.is_empty():
+		var target_region := GameData.get_region(target_region_id)
+		if not target_region.is_empty():
+			target_phrase = "，去%s再问价也许有赚头" % str(target_region.get("name", target_region_id))
+	var title := "%s货价风声" % region_name
+	var description := "%s的掌柜说，%s一带%s%s%s。" % [
+		str(npc_data.get("shop_name", "铺子")),
+		region_name,
+		item_name,
+		condition,
+		target_phrase
+	]
+	var clue_id := "market_%s_%s" % [region_id, item_id]
+	GameState.record_adventure_clue(clue_id, title, description, region_id, "market", target_region_id)
+	GameState.append_world_event("market", title, description, region_id, 2)
+
+func _market_feature_item(market: Dictionary) -> Dictionary:
+	var item_factors = market.get("item_factors", {})
+	if typeof(item_factors) != TYPE_DICTIONARY:
+		return {}
+	var best_item_id := ""
+	var best_factor := 1.0
+	var best_delta := 0.0
+	for raw_item_id in item_factors.keys():
+		var item_id := str(raw_item_id)
+		var factor := float(item_factors[raw_item_id])
+		var delta := absf(1.0 - factor)
+		if delta <= best_delta:
+			continue
+		best_delta = delta
+		best_item_id = item_id
+		best_factor = factor
+	if best_item_id.is_empty() or best_delta < 0.05:
+		return {}
+	return {
+		"item_id": best_item_id,
+		"factor": best_factor
+	}
+
+func _market_clue_target_region(region_id: String) -> String:
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return ""
+	var parent_id := str(region.get("parent", ""))
+	if not parent_id.is_empty() and parent_id != region_id and not GameData.get_region(parent_id).is_empty():
+		return parent_id
+	var neighbors := GameData.get_neighbor_regions(region_id, 1)
+	if neighbors.is_empty():
+		return ""
+	var neighbor: Dictionary = neighbors[0] as Dictionary
+	return str(neighbor.get("id", ""))
 
 func _format_discount_factor(factor: float) -> String:
 	var zhe := factor * 10.0
