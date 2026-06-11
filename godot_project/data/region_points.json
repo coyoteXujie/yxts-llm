@@ -164,6 +164,18 @@
       {"label": "汉江古物", "description": "江滩卵石间露出一枚旧物，像是楚地旧船货仓里冲出的器片。", "kind": "cache", "tile": [40, 33], "reward_money": 6}
     ]
   },
+  "yunmeng_marsh": {
+    "landmarks": [
+      {"label": "云梦古泽", "description": "古泽深处雾气贴着水面，石台半沉半露，像旧楚祭祀留下的遗址。", "kind": "water", "tile": [42, 25], "reward_exp": 9},
+      {"label": "水贼巢穴", "description": "芦苇后藏着架在水上的木屋，黑旗压得很低，怕被远处官船看见。", "kind": "dock", "tile": [62, 27], "reward_money": 7},
+      {"label": "沼泽密室", "description": "芦苇荡里有一块陷下去的木板，下面露出潮湿暗门。", "kind": "ruin", "tile": [28, 31], "reward_exp": 8}
+    ],
+    "resources": [
+      {"label": "浅水莲藕", "description": "浅水处莲叶密布，拨开泥水能摸到几截莲藕。", "kind": "cache", "tile": [34, 34], "reward_item": "item_baozi"},
+      {"label": "云梦草药", "description": "沼泽边缘长着带辛味的草药，采摘时要避开脚下软泥。", "kind": "herb", "tile": [22, 33], "reward_item": "item_yao"},
+      {"label": "河蚌珠壳", "description": "水草间压着几枚河蚌，壳缝里泛着细白珠光。", "kind": "fish", "tile": [56, 32], "reward_money": 6}
+    ]
+  },
   "shennongjia": {
     "landmarks": [
       {"label": "神农百草谷", "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。", "kind": "flower", "tile": [40, 25], "reward_exp": 9},
