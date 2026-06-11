@@ -354,6 +354,7 @@ func _run() -> void:
 	_check(GameData.get_stage_layer_source_region_id("xueshan_sect") == "beiling_mtn", "雪山门派应复用山道三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("taiji_sect") == "flower_sect", "没有专属舞台层的普通门派应复用门派庭院三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("dujiang_weir") == "dujiang_weir", "都江古堰应使用专属水工古堰三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("qingcheng_mtn") == "qingcheng_mtn", "青城山应使用专属道观山门三层舞台资产")
 	var required_stage_layer_names := ["floor", "midground", "foreground"]
 	for region in GameData.get_regions():
 		var checked_region_id := str(region.get("id", ""))
@@ -740,6 +741,19 @@ func _run() -> void:
 	_check(dujiang_floor_layer != null and dujiang_floor_layer.get_size().x >= 1600.0 and dujiang_floor_layer.get_size().y >= 900.0, "都江古堰地面/水渠层应具备横版舞台分辨率")
 	_check(dujiang_midground_layer != null and dujiang_floor_layer != null and dujiang_midground_layer.get_size() == dujiang_floor_layer.get_size(), "都江古堰中景层应与地面层同尺寸对齐")
 	_check(dujiang_foreground_layer != null and dujiang_floor_layer != null and dujiang_foreground_layer.get_size() == dujiang_floor_layer.get_size(), "都江古堰前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("qingcheng_mtn"))
+	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("qingcheng_mtn").ends_with("scene_qingcheng_mtn_dnf_daoist_gate_v1.png"), "青城山应接入 DNF 式道观山门整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "青城山局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "青城山应加载道观山门中景和石阶地面贴图层")
+	_check(GameData.get_stage_layer_path("qingcheng_mtn", "floor").ends_with("qingcheng_mtn_dnf_floor_v1.png"), "青城山应映射道观山门地面贴图层")
+	var qingcheng_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("qingcheng_mtn", "floor"), true)
+	var qingcheng_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("qingcheng_mtn", "midground"), true)
+	var qingcheng_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("qingcheng_mtn", "foreground"), true)
+	_check(qingcheng_floor_layer != null and qingcheng_floor_layer.get_size().x >= 1600.0 and qingcheng_floor_layer.get_size().y >= 900.0, "青城山石阶地面层应具备横版舞台分辨率")
+	_check(qingcheng_midground_layer != null and qingcheng_floor_layer != null and qingcheng_midground_layer.get_size() == qingcheng_floor_layer.get_size(), "青城山中景层应与地面层同尺寸对齐")
+	_check(qingcheng_foreground_layer != null and qingcheng_floor_layer != null and qingcheng_foreground_layer.get_size() == qingcheng_floor_layer.get_size(), "青城山前景层应与地面层同尺寸对齐")
 
 	local_area.setup_region(GameData.get_region("flower_sect"))
 	await get_tree().process_frame

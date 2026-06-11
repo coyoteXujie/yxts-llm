@@ -28,6 +28,9 @@ MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("dujiang_weir", "floor"): 90_000,
     ("dujiang_weir", "midground"): 75_000,
     ("dujiang_weir", "foreground"): 180_000,
+    ("qingcheng_mtn", "floor"): 60_000,
+    ("qingcheng_mtn", "midground"): 80_000,
+    ("qingcheng_mtn", "foreground"): 130_000,
 }
 
 
