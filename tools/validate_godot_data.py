@@ -24,6 +24,7 @@ MIN_DETAILED_SHOP_INTERIOR_BYTES = {
     "blacksmith": 230_000,
     "tailor": 230_000,
     "market": 230_000,
+    "teahouse": 230_000,
 }
 MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qinghe", "floor"): 70_000,
