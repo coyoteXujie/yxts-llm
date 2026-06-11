@@ -92,6 +92,18 @@
       {"label": "古道散钱", "description": "旧车辙旁压着几枚铜钱，像是赶路人从腰袋里颠落的。", "kind": "coin", "tile": [50, 30], "reward_money": 5}
     ]
   },
+  "wenjiang_garden": {
+    "landmarks": [
+      {"label": "四季花田", "description": "花垄从小径两侧铺开，春桃夏荷、秋桂冬梅的香气在这里交叠。", "kind": "flower", "tile": [30, 28], "reward_exp": 6},
+      {"label": "花商小棚", "description": "小棚下摆着花篮和种袋，花商把温江、成都和山门的消息都掺进叫卖声里。", "kind": "market", "tile": [44, 24], "reward_money": 4},
+      {"label": "古花农居所", "description": "旧屋半掩在花树之后，墙根还留着前人培花的陶罐。", "kind": "ruin", "tile": [58, 31], "reward_exp": 7}
+    ],
+    "resources": [
+      {"label": "花田花种", "description": "花垄边落着几枚饱满花种，适合带回城里换些银钱。", "kind": "flower", "tile": [26, 34], "reward_money": 4},
+      {"label": "花田草药", "description": "花田边缘长着一簇药草，香气里带着清苦。", "kind": "herb", "tile": [36, 21], "reward_item": "item_red_flower"},
+      {"label": "花篮食盒", "description": "花农把点心放在花篮旁，见你赶路辛苦便让你取走。", "kind": "cache", "tile": [48, 33], "reward_item": "item_baozi"}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},

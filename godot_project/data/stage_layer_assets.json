@@ -44,6 +44,11 @@
     "midground": "res://assets/world/stage_layers/xindu_field_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/xindu_field_dnf_foreground_v1.png"
   },
+  "wenjiang_garden": {
+    "floor": "res://assets/world/stage_layers/wenjiang_garden_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/wenjiang_garden_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/wenjiang_garden_dnf_foreground_v1.png"
+  },
   "qingcheng_mtn": {
     "floor": "res://assets/world/stage_layers/qingcheng_mtn_dnf_floor_v1.png",
     "midground": "res://assets/world/stage_layers/qingcheng_mtn_dnf_midground_v1.png",
