@@ -127,6 +127,12 @@ func _run() -> void:
 			_check(GameState.map_target_region_id == hidden_target_region_id, "点击任务日志奇遇按钮应把线索目标设为世界地图目的地")
 			main.quest_panel.close_panel()
 			await _frames(1)
+			main.world_map_panel.selected_region_id = ""
+			main.world_map_panel.show_panel()
+			await _frames(1)
+			_check(main.world_map_panel.selected_region_id == hidden_target_region_id, "打开世界地图面板应优先选中已标记的奇遇目标")
+			main.world_map_panel.close_panel()
+			await _frames(1)
 			var after_hidden_exploration := GameState.get_region_exploration("qinghe")
 			var after_hidden_event_count := GameState.world_events.size()
 			var after_hidden_clue_count := GameState.get_adventure_clues(0).size()

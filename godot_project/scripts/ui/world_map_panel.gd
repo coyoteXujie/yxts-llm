@@ -128,6 +128,8 @@ func _refresh() -> void:
 	if region_list == null:
 		return
 	var selected_id := selected_region_id
+	if selected_id.is_empty() and not GameState.map_target_region_id.is_empty():
+		selected_id = GameState.map_target_region_id
 	if selected_id.is_empty() and map_canvas != null:
 		selected_id = str(map_canvas.selected_region_id)
 	if selected_id.is_empty():
