@@ -116,6 +116,18 @@
       {"label": "雪莲旧株", "description": "岩缝里残着一株雪莲，花瓣被风雪压得发亮。", "kind": "flower", "tile": [60, 34], "reward_item": "item_red_flower"}
     ]
   },
+  "wudang_peak": {
+    "landmarks": [
+      {"label": "武当金顶", "description": "金顶立在云海之上，日光照上殿脊时，连山风都像慢了半拍。", "kind": "shrine", "tile": [36, 18], "reward_exp": 9},
+      {"label": "太极演武台", "description": "石台中央刻着阴阳鱼，道士晨练时脚步绕圆，劲力却不散。", "kind": "training", "tile": [48, 25], "reward_exp": 8},
+      {"label": "后山隐径", "description": "侧殿之后有一条隐在松影里的小路，似乎通往更清静的后山。", "kind": "ruin", "tile": [58, 31], "reward_exp": 7}
+    ],
+    "resources": [
+      {"label": "古松松脂", "description": "古松树皮渗出清香松脂，道童说它能入药，也能护弦。", "kind": "herb", "tile": [22, 30], "reward_item": "item_yao"},
+      {"label": "金顶仙草", "description": "石阶尽头有几株耐寒灵草，叶尖沾着云雾凝成的水珠。", "kind": "herb", "tile": [42, 20], "reward_item": "item_red_flower"},
+      {"label": "香客平安钱", "description": "石栏边压着几枚平安钱，知客道士让你收作路资。", "kind": "coin", "tile": [54, 32], "reward_money": 5}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
