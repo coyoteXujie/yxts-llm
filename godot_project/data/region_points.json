@@ -56,6 +56,18 @@
       {"label": "堰边散钱", "description": "石缝里卡着几枚铜钱，像是商旅过桥时匆忙落下的。", "kind": "coin", "tile": [48, 29], "reward_money": 5}
     ]
   },
+  "minjiang_river": {
+    "landmarks": [
+      {"label": "岷江索桥", "description": "索桥晃在河谷水声之上，桥板间能看见翻白的急流。", "kind": "bridge", "tile": [38, 25], "reward_exp": 8},
+      {"label": "河谷渡口", "description": "渡口木桩被江水磨得发黑，船夫们用这里交换成都和西岭的消息。", "kind": "dock", "tile": [58, 30], "reward_item": "item_fish"},
+      {"label": "半崖茶棚", "description": "茶棚倚着山脚，竹帘后常坐着盐帮、药农和避雨的江湖客。", "kind": "well", "tile": [18, 20], "reward_item": "item_baozi"}
+    ],
+    "resources": [
+      {"label": "浅湾鱼篓", "description": "鱼篓压在缓水湾里，江鱼顺着回流钻了进去。", "kind": "fish", "tile": [62, 31], "reward_item": "item_fish"},
+      {"label": "河滩药草", "description": "潮湿河滩旁长着清凉药草，叶片沾着细雾。", "kind": "herb", "tile": [24, 34], "reward_item": "item_yao"},
+      {"label": "码头散钱", "description": "木箱旁散着几枚铜钱，像是装船时从钱袋里漏下的。", "kind": "coin", "tile": [50, 32], "reward_money": 5}
+    ]
+  },
   "qingcheng_mtn": {
     "landmarks": [
       {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
