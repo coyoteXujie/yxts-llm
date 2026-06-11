@@ -156,8 +156,9 @@ func _run() -> void:
 					main._inspect_adventure_clue(adventure_clue_portal)
 					await _frames(1)
 					_check(main.discovery_panel.visible, "追踪奇遇目标应打开发现面板")
+					_check(main.discovery_panel.body_label.text.contains("奇遇余波"), "安全区域奇遇追踪应展示余波描述")
 					_check(GameState.get_region_exploration(hidden_target_region_id) >= before_adventure_exploration + 6, "首次追踪奇遇目标应推进目标区域探索度")
-					_check(GameState.world_events.size() > before_adventure_event_count and GameState.get_world_event_summary(1).contains("奇遇落点"), "首次追踪奇遇目标应写入江湖传闻")
+					_check(GameState.world_events.size() > before_adventure_event_count and GameState.get_world_event_summary(3).contains("奇遇落点"), "首次追踪奇遇目标应写入江湖传闻")
 					_check(GameState.is_adventure_clue_resolved(str(adventure_clue_portal.get("clue_id", ""))), "追踪奇遇目标后应标记线索已追到")
 					_check(GameState.map_target_region_id.is_empty(), "追踪完已标记目标后应清空世界地图目的地")
 					main.discovery_panel.close_panel()
@@ -281,6 +282,27 @@ func _run() -> void:
 		main._return_to_world()
 		await _frames(2)
 		_check(main.active_map == main.world_map, "应能从局部地图返回世界地图")
+		var danger_region := GameData.get_region("beiling_mtn")
+		_check(not danger_region.is_empty(), "测试高危奇遇目标区域应存在")
+		if not danger_region.is_empty():
+			GameState.record_adventure_clue("flow_danger_adventure", "追查北岭伏线", "烟测试用高危奇遇线索。", "qinghe", "flow", "beiling_mtn")
+			main.local_area.setup_region(danger_region)
+			main.local_area.show()
+			main.active_map = main.local_area
+			main.player_actor.world_map = main.local_area
+			await _frames(2)
+			var danger_adventure_portal := _first_portal(main.local_area, "adventure_clue")
+			_check(not danger_adventure_portal.is_empty(), "高危目标区域应生成奇遇追踪入口")
+			if not danger_adventure_portal.is_empty():
+				var before_danger_event_count := GameState.world_events.size()
+				main._inspect_adventure_clue(danger_adventure_portal)
+				await _frames(2)
+				_check(GameState.mode == GameState.Mode.COMBAT and main.combat_system.active, "高危野外奇遇追踪应直接触发伏击战")
+				_check(bool(main.combat_system.enemy.get("adventure_encounter", false)), "奇遇伏击敌人应带 adventure_encounter 标记")
+				_check(GameState.world_events.size() > before_danger_event_count and GameState.get_world_event_summary(3).contains("奇遇伏兵"), "高危奇遇伏击应写入江湖传闻")
+				main.combat_system._finish(false, true)
+				await _frames(1)
+				_check(GameState.mode == GameState.Mode.EXPLORE and not main.combat_system.active, "测试结束奇遇伏击后应回到探索模式")
 
 	await _capture_snapshot()
 	main.queue_free()

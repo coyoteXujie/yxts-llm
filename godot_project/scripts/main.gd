@@ -31,6 +31,7 @@ const LANDMARK_EXPLORATION_GAIN := 8
 const RESOURCE_EXPLORATION_GAIN := 3
 const HIDDEN_CLUE_EXPLORATION_GAIN := 5
 const ADVENTURE_CLUE_EXPLORATION_GAIN := 6
+const ADVENTURE_AMBUSH_MIN_DANGER := 3
 const ENTERABLE_REGION_TYPES := {
 	"city": true,
 	"town": true,
@@ -683,6 +684,13 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 	reward_parts.append("探索度 +%d%%" % ADVENTURE_CLUE_EXPLORATION_GAIN)
 	if GameState.map_target_region_id == region_id:
 		GameState.set_map_target_region("")
+	var aftermath := _resolve_adventure_aftermath(local_area.current_region, resolved_clue, portal)
+	var aftermath_description := str(aftermath.get("description", ""))
+	if not aftermath_description.is_empty():
+		description = "%s\n\n%s" % [description, aftermath_description]
+	var aftermath_reward := str(aftermath.get("reward_label", ""))
+	if not aftermath_reward.is_empty():
+		reward_parts.append(aftermath_reward)
 	GameState.append_world_event(
 		"adventure",
 		"奇遇落点：%s" % str(portal.get("label", "奇遇线索")),
@@ -695,7 +703,82 @@ func _inspect_adventure_clue(portal: Dictionary) -> void:
 		3
 	)
 	reward_parts.append("奇遇线索已追到")
+	if bool(aftermath.get("start_combat", false)):
+		var enemy: Dictionary = aftermath.get("enemy", {})
+		if not enemy.is_empty():
+			active_enemy_actor = null
+			var toast := str(aftermath.get("toast", "奇遇线索惊动了伏兵"))
+			if not toast.is_empty():
+				EventBus.emit_toast(toast)
+			combat_system.start(enemy)
+			return
 	_show_landmark_discovery(portal, description, reward_parts, false)
+
+func _resolve_adventure_aftermath(region: Dictionary, clue: Dictionary, portal: Dictionary) -> Dictionary:
+	var region_id := str(region.get("id", "region"))
+	var region_name := str(region.get("name", region_id))
+	var region_type := str(region.get("type", "wild"))
+	var danger := int(region.get("danger", 1))
+	var clue_title := str(clue.get("title", portal.get("label", "奇遇线索")))
+	if (region_type == "wild" or danger >= 4) and danger >= ADVENTURE_AMBUSH_MIN_DANGER:
+		var enemy: Dictionary = GameData.build_region_encounter_enemy(region)
+		if not enemy.is_empty():
+			enemy["adventure_encounter"] = true
+			GameState.append_world_event(
+				"adventure",
+				"奇遇伏兵：%s" % region_name,
+				"你循着%s追到%s，暗处伏兵被惊动，退路被截住。" % [clue_title, region_name],
+				region_id,
+				4
+			)
+			return {
+				"kind": "ambush",
+				"start_combat": true,
+				"enemy": enemy,
+				"reward_label": "惊动伏兵",
+				"toast": "%s附近有伏兵" % region_name
+			}
+	if region_type == "city" or region_type == "town":
+		var street_description := "奇遇余波：街边茶摊有人补出半句旧话，线索背后还有人情债。"
+		GameState.append_world_event(
+			"adventure",
+			"市井回声：%s" % region_name,
+			"你循着%s追到%s，市井口风松动，露出一段旧日人情。" % [clue_title, region_name],
+			region_id,
+			2
+		)
+		return {
+			"kind": "rumor",
+			"description": street_description,
+			"reward_label": "市井情报已记"
+		}
+	if region_type == "sect":
+		var sect_description := "奇遇余波：山门弟子认出旧暗记，留下一个可供后续门派事件延展的名字。"
+		GameState.append_world_event(
+			"adventure",
+			"山门旧约：%s" % region_name,
+			"你循着%s追到%s，门中旧约被重新提起。" % [clue_title, region_name],
+			region_id,
+			3
+		)
+		return {
+			"kind": "sect",
+			"description": sect_description,
+			"reward_label": "山门线索已记"
+		}
+	var wild_description := "奇遇余波：野路上留有新鲜脚印，像是有人刚刚撤离。"
+	GameState.append_world_event(
+		"adventure",
+		"野路回声：%s" % region_name,
+		"你循着%s追到%s，野路脚印尚新，后续仍可接入救援、伏击或隐士相逢。" % [clue_title, region_name],
+		region_id,
+		2
+	)
+	return {
+		"kind": "wild",
+		"description": wild_description,
+		"reward_label": "野路踪迹已记"
+	}
 
 func _inspect_resource(portal: Dictionary) -> void:
 	var region_id := str(local_area.current_region.get("id", "region"))

@@ -916,7 +916,7 @@ func build_region_encounter_enemy(region: Dictionary) -> Dictionary:
 	var region_id := str(region.get("id", "wild"))
 	var danger := int(region.get("danger", 1))
 	var terrain := str(region.get("terrain", ""))
-	var candidates: Array[String] = []
+	var candidates: Array = []
 	if terrain.contains("snow") or terrain.contains("mountain") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau"):
 		candidates = ["土匪甲", "雪豹"] if danger <= 3 else ["土匪头目", "独角大盗"]
 	elif terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("marsh"):
