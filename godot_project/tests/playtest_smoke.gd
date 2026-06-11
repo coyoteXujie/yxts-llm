@@ -106,6 +106,9 @@ func _run() -> void:
 	await get_tree().process_frame
 	_check(player.z_index == int(player.position.y), "玩家应按脚底 Y 坐标排序")
 	_check(PLAYER_SCRIPT.SPRITE_TARGET_HEIGHT >= 124.0, "玩家地图角色显示不应继续偏小")
+	_check(PLAYER_SCRIPT.PLAYER_AXIS_FALLBACK_ENABLED, "玩家贴边移动应启用轴向滑步回退，避免不可走落点造成整步卡死")
+	var fallback_axes: Array[Vector2] = player._movement_axis_fallback_order(Vector2(1.0, 1.0).normalized())
+	_check(fallback_axes.size() == 2 and fallback_axes[0] == Vector2.RIGHT and fallback_axes[1] == Vector2.DOWN, "玩家对角移动受阻时应横向优先尝试滑步，再尝试纵向")
 	var default_player_sprite_path := str(PLAYER_SCRIPT.PLAYER_SPRITE_OVERRIDES.get("male_none", ""))
 	_check(default_player_sprite_path.ends_with("player_male_none_stage_v2.png"), "默认男主应优先使用高质量生成 sprite")
 	var default_player_sprite := GameData.load_texture(default_player_sprite_path, true)

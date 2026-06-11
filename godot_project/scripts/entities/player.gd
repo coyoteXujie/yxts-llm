@@ -53,6 +53,7 @@ const PLAYER_STAGE_SIDE_PROFILE_SHADOW_ALPHA := 0.18
 const PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA := 0.32
 const PLAYER_STAGE_RUN_STRIDE_ALPHA := 0.28
 const PLAYER_SPRITE_SOURCE_FACES_LEFT := false
+const PLAYER_AXIS_FALLBACK_ENABLED := true
 const STAGE_DEPTH_SCALE_MIN := 0.78
 const STAGE_DEPTH_SCALE_MAX := 1.22
 const PLAYER_SPRITE_OVERRIDES := {
@@ -77,6 +78,7 @@ var visual_facing_initialized := false
 var stage_turn_progress := 0.0
 var stage_turn_from_side := 1.0
 var stage_turn_to_side := 1.0
+var last_axis_fallback := Vector2.ZERO
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
@@ -125,9 +127,9 @@ func _physics_process(_delta: float) -> void:
 	velocity = input_vector * SPEED
 	move_and_slide()
 
-	if world_map != null and not world_map.is_position_walkable(position):
-		position = previous_position
-		velocity = Vector2.ZERO
+	last_axis_fallback = Vector2.ZERO
+	if not _is_position_walkable(position):
+		_recover_axis_slide(previous_position, input_vector)
 	_refresh_stage_depth_scale()
 	_refresh_stage_lane_anchor()
 	z_index = int(position.y)
@@ -313,6 +315,37 @@ func _refresh_stage_lane_anchor() -> void:
 		return
 	stage_lane_offset_y = 0.0
 	stage_lane_lock_strength = 0.0
+
+func _is_position_walkable(target_position: Vector2) -> bool:
+	if world_map == null:
+		return true
+	if not world_map.has_method("is_position_walkable"):
+		return true
+	return bool(world_map.call("is_position_walkable", target_position))
+
+func _recover_axis_slide(previous_position: Vector2, input_vector: Vector2) -> void:
+	if not PLAYER_AXIS_FALLBACK_ENABLED or input_vector == Vector2.ZERO:
+		position = previous_position
+		velocity = Vector2.ZERO
+		return
+	var axes := _movement_axis_fallback_order(input_vector)
+	for axis in axes:
+		position = previous_position
+		velocity = axis * SPEED
+		move_and_slide()
+		if _is_position_walkable(position):
+			last_axis_fallback = axis
+			return
+	position = previous_position
+	velocity = Vector2.ZERO
+
+func _movement_axis_fallback_order(input_vector: Vector2) -> Array[Vector2]:
+	var axes: Array[Vector2] = []
+	if absf(input_vector.x) > PLAYER_STAGE_SIDE_INPUT_DEADZONE:
+		axes.append(Vector2(signf(input_vector.x), 0.0))
+	if absf(input_vector.y) > PLAYER_STAGE_SIDE_INPUT_DEADZONE:
+		axes.append(Vector2(0.0, signf(input_vector.y)))
+	return axes
 
 func _is_side_view_stage() -> bool:
 	if world_map == null:
