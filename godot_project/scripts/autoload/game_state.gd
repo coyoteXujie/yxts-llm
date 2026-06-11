@@ -279,6 +279,18 @@ func is_region_discovered(region_id: String) -> bool:
 func get_region_exploration(region_id: String) -> int:
 	return int(region_state.get(region_id, {}).get("exploration", 0))
 
+func add_region_exploration(region_id: String, amount: int) -> int:
+	if region_id.is_empty() or amount <= 0:
+		return get_region_exploration(region_id)
+	var state := _ensure_region_state(region_id)
+	var before := int(state.get("exploration", 0))
+	var after := clampi(before + amount, 5, 100)
+	state["exploration"] = after
+	region_state[region_id] = state
+	if after != before and current_region_id == region_id:
+		EventBus.region_changed.emit(GameData.get_region(region_id), state)
+	return after
+
 func append_world_event(kind: String, title: String, description: String, region_id: String = "", severity: int = 1) -> Dictionary:
 	title = title.strip_edges()
 	description = description.strip_edges()

@@ -27,6 +27,8 @@ const NEW_GAME_START_REGION_ID := "qinghe"
 const AMBIENT_NPC_INTERVAL := 6.8
 const AMBIENT_NPC_RADIUS := 430.0
 const POST_TRANSITION_RESET_DELAY := 1.2
+const LANDMARK_EXPLORATION_GAIN := 8
+const RESOURCE_EXPLORATION_GAIN := 3
 const ENTERABLE_REGION_TYPES := {
 	"city": true,
 	"town": true,
@@ -566,6 +568,19 @@ func _inspect_landmark(portal: Dictionary) -> void:
 	if reward_exp > 0:
 		GameState.reward_player(reward_exp, 0)
 		reward_parts.append("%d 点阅历" % reward_exp)
+	var exploration_after := GameState.add_region_exploration(region_id, LANDMARK_EXPLORATION_GAIN)
+	reward_parts.append("探索度 +%d%%" % LANDMARK_EXPLORATION_GAIN)
+	GameState.append_world_event(
+		"discovery",
+		"探得%s" % str(portal.get("label", "地标")),
+		"你在%s发现了%s，区域探索推进到 %d%%。" % [
+			str(local_area.current_region.get("name", region_id)),
+			str(portal.get("label", "地标")),
+			exploration_after
+		],
+		region_id,
+		2
+	)
 	_show_landmark_discovery(portal, description, reward_parts, already_seen)
 
 func _inspect_resource(portal: Dictionary) -> void:
@@ -597,6 +612,8 @@ func _inspect_resource(portal: Dictionary) -> void:
 	if reward_exp > 0:
 		GameState.reward_player(reward_exp, 0)
 		reward_parts.append("%d 点阅历" % reward_exp)
+	GameState.add_region_exploration(region_id, RESOURCE_EXPLORATION_GAIN)
+	reward_parts.append("探索度 +%d%%" % RESOURCE_EXPLORATION_GAIN)
 	_show_landmark_discovery(portal, str(portal.get("description", "这里有一点可用的物资。")), reward_parts, false)
 
 func _show_landmark_discovery(portal: Dictionary, description: String, rewards: Array[String], already_seen: bool) -> void:
