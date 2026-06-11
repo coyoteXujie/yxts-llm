@@ -34,6 +34,11 @@
     "midground": "res://assets/world/stage_layers/qingcheng_mtn_dnf_midground_v1.png",
     "foreground": "res://assets/world/stage_layers/qingcheng_mtn_dnf_foreground_v1.png"
   },
+  "emei_sacred": {
+    "floor": "res://assets/world/stage_layers/emei_sacred_dnf_floor_v1.png",
+    "midground": "res://assets/world/stage_layers/emei_sacred_dnf_midground_v1.png",
+    "foreground": "res://assets/world/stage_layers/emei_sacred_dnf_foreground_v1.png"
+  },
   "flower_sect": {
     "floor": "res://assets/world/stage_layers/flower_sect_dnf_garden_floor_v1.png",
     "midground": "res://assets/world/stage_layers/flower_sect_dnf_garden_midground_v1.png",

@@ -31,6 +31,9 @@ MIN_DETAILED_STAGE_LAYER_BYTES = {
     ("qingcheng_mtn", "floor"): 60_000,
     ("qingcheng_mtn", "midground"): 80_000,
     ("qingcheng_mtn", "foreground"): 130_000,
+    ("emei_sacred", "floor"): 120_000,
+    ("emei_sacred", "midground"): 120_000,
+    ("emei_sacred", "foreground"): 190_000,
 }
 
 

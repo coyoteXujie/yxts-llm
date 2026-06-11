@@ -359,6 +359,7 @@ func _run() -> void:
 	_check(GameData.get_stage_layer_source_region_id("taiji_sect") == "flower_sect", "没有专属舞台层的普通门派应复用门派庭院三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("dujiang_weir") == "dujiang_weir", "都江古堰应使用专属水工古堰三层舞台资产")
 	_check(GameData.get_stage_layer_source_region_id("qingcheng_mtn") == "qingcheng_mtn", "青城山应使用专属道观山门三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("emei_sacred") == "emei_sacred", "峨眉圣山应使用专属云海金顶三层舞台资产")
 	var required_stage_layer_names := ["floor", "midground", "foreground"]
 	for region in GameData.get_regions():
 		var checked_region_id := str(region.get("id", ""))
@@ -777,6 +778,16 @@ func _run() -> void:
 
 	local_area.setup_region(GameData.get_region("emei_sacred"))
 	await get_tree().process_frame
+	_check(GameData.get_scene_background_path("emei_sacred").ends_with("scene_emei_sacred_dnf_cloud_temple_v1.png"), "峨眉圣山应接入 DNF 式云海金顶整屏背景")
+	_check(local_area.is_painted_stage_stack_active(), "峨眉圣山局部横版舞台应走整屏贴图优先分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "峨眉圣山应加载云海金顶中景和石阶地面贴图层")
+	_check(GameData.get_stage_layer_path("emei_sacred", "floor").ends_with("emei_sacred_dnf_floor_v1.png"), "峨眉圣山应映射云海金顶地面贴图层")
+	var emei_floor_layer := GameData.load_texture(GameData.get_stage_layer_path("emei_sacred", "floor"), true)
+	var emei_midground_layer := GameData.load_texture(GameData.get_stage_layer_path("emei_sacred", "midground"), true)
+	var emei_foreground_layer := GameData.load_texture(GameData.get_stage_layer_path("emei_sacred", "foreground"), true)
+	_check(emei_floor_layer != null and emei_floor_layer.get_size().x >= 1600.0 and emei_floor_layer.get_size().y >= 900.0, "峨眉圣山石阶地面层应具备横版舞台分辨率")
+	_check(emei_midground_layer != null and emei_floor_layer != null and emei_midground_layer.get_size() == emei_floor_layer.get_size(), "峨眉圣山中景层应与地面层同尺寸对齐")
+	_check(emei_foreground_layer != null and emei_floor_layer != null and emei_foreground_layer.get_size() == emei_floor_layer.get_size(), "峨眉圣山前景层应与地面层同尺寸对齐")
 	_check(_tile_ratio(local_area, LOCAL_TILE_MOUNTAIN) < 0.32, "山地区域不应被山峰瓦片铺满")
 	_check(local_area.is_position_walkable(local_area.get_entry_position("world")), "山地区域入口应可通行")
 
