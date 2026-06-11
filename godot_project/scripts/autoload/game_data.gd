@@ -652,6 +652,51 @@ var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
 
+const STAGE_LAYER_FALLBACK_BY_TYPE := {
+	"city": "luoyang",
+	"town": "qinghe",
+	"sect": "flower_sect",
+	"wild": "beiling_mtn"
+}
+const STAGE_LAYER_FALLBACK_BY_TERRAIN := {
+	"water_city": "linan",
+	"river_city": "linan",
+	"water_town": "linan",
+	"waterway": "linan",
+	"canal": "linan",
+	"river": "linan",
+	"river_valley": "linan",
+	"ford": "linan",
+	"lake": "linan",
+	"tide": "linan",
+	"marsh": "linan",
+	"weir": "linan",
+	"bamboo": "bashu_bamboo",
+	"forest": "bashu_bamboo",
+	"flower_forest": "flower_sect",
+	"garden": "flower_sect",
+	"mountain": "beiling_mtn",
+	"gorge": "beiling_mtn",
+	"cliff": "beiling_mtn",
+	"pass": "beiling_mtn",
+	"valley": "beiling_mtn",
+	"plateau": "beiling_mtn",
+	"snow_sect": "beiling_mtn",
+	"city": "luoyang",
+	"plain_city": "luoyang",
+	"starter_town": "qinghe",
+	"town": "qinghe",
+	"plain": "qinghe",
+	"field": "qinghe",
+	"mound": "qinghe",
+	"bath": "qinghe",
+	"spring": "qinghe",
+	"sect": "flower_sect",
+	"daoist_sect": "flower_sect",
+	"shadow_sect": "flower_sect",
+	"lake_palace": "linan"
+}
+
 func _ready() -> void:
 	load_database()
 
@@ -1052,12 +1097,26 @@ func get_scene_background_path(region_id: String) -> String:
 	return str(scene_background_assets.get(region_id, ""))
 
 func get_stage_layer_assets(region_id: String) -> Dictionary:
-	var layers: Dictionary = stage_layer_assets.get(region_id, {})
+	var source_id := get_stage_layer_source_region_id(region_id)
+	var layers: Dictionary = stage_layer_assets.get(source_id, {})
 	return layers.duplicate(true)
 
 func get_stage_layer_path(region_id: String, layer_name: String) -> String:
-	var layers: Dictionary = stage_layer_assets.get(region_id, {})
+	var source_id := get_stage_layer_source_region_id(region_id)
+	var layers: Dictionary = stage_layer_assets.get(source_id, {})
 	return str(layers.get(layer_name, ""))
+
+func get_stage_layer_source_region_id(region_id: String) -> String:
+	if stage_layer_assets.has(region_id):
+		return region_id
+	var region: Dictionary = get_region(region_id)
+	var terrain := str(region.get("terrain", "")).to_lower()
+	if STAGE_LAYER_FALLBACK_BY_TERRAIN.has(terrain):
+		return str(STAGE_LAYER_FALLBACK_BY_TERRAIN[terrain])
+	var region_type := str(region.get("type", "wild")).to_lower()
+	if STAGE_LAYER_FALLBACK_BY_TYPE.has(region_type):
+		return str(STAGE_LAYER_FALLBACK_BY_TYPE[region_type])
+	return "beiling_mtn"
 
 func get_combat_stage_assets(region_id: String) -> Dictionary:
 	var layers: Dictionary = combat_stage_assets.get(region_id, {})

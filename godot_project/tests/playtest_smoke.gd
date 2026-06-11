@@ -275,6 +275,16 @@ func _run() -> void:
 	_check(qinghe_foreground_layer != null and qinghe_foreground_layer.get_size().x >= 1600.0 and qinghe_foreground_layer.get_size().y >= 900.0, "清河镇前景遮挡层应具备横版舞台分辨率")
 	_check(qinghe_midground_layer != null and qinghe_floor_layer != null and qinghe_midground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇中景和地面层应同尺寸对齐")
 	_check(qinghe_foreground_layer != null and qinghe_floor_layer != null and qinghe_foreground_layer.get_size() == qinghe_floor_layer.get_size(), "清河镇同源城镇前景和地面层应同尺寸对齐")
+	_check(GameData.get_stage_layer_source_region_id("changan") == "luoyang", "没有专属舞台层的都城应复用都城三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("shaoxing_water") == "linan", "水巷/运河区域应复用水城三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("wuyi_for") == "bashu_bamboo", "林地区域应复用竹林三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("xueshan_sect") == "beiling_mtn", "雪山门派应复用山道三层舞台资产")
+	_check(GameData.get_stage_layer_source_region_id("taiji_sect") == "flower_sect", "没有专属舞台层的普通门派应复用门派庭院三层舞台资产")
+	var required_stage_layer_names := ["floor", "midground", "foreground"]
+	for region in GameData.get_regions():
+		var checked_region_id := str(region.get("id", ""))
+		for layer_name in required_stage_layer_names:
+			_check(not GameData.get_stage_layer_path(checked_region_id, str(layer_name)).is_empty(), "所有区域都应通过专属或同类复用拿到横版舞台%s层：%s" % [str(layer_name), checked_region_id])
 	_check(local_area.world_to_tile(local_area.get_entry_position("world")).y <= local_area.map_height / 2 + 8, "平安镇入口应落在主街视窗区而不是地图底边")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PAINTED_MIDGROUND_LAYER_ALPHA >= 0.90, "清河镇店铺中景层应作为主画面而不是弱贴图")
 	_check(LOCAL_AREA_SCRIPT.SIDE_VIEW_PAINTED_FLOOR_LAYER_ALPHA >= 0.90, "清河镇地面层应盖住程序化平台线的瓦片感")
@@ -517,6 +527,12 @@ func _run() -> void:
 	_check(luoyang_floor_layer != null and luoyang_floor_layer.get_size().x >= 1600.0 and luoyang_floor_layer.get_size().y >= 900.0, "洛阳都城地面层应具备横版舞台分辨率")
 	_check(luoyang_midground_layer != null and luoyang_floor_layer != null and luoyang_midground_layer.get_size() == luoyang_floor_layer.get_size(), "洛阳都城中景层应与地面层同尺寸对齐")
 	_check(luoyang_foreground_layer != null and luoyang_floor_layer != null and luoyang_foreground_layer.get_size() == luoyang_floor_layer.get_size(), "洛阳都城前景层应与地面层同尺寸对齐")
+
+	local_area.setup_region(GameData.get_region("changan"))
+	await get_tree().process_frame
+	_check(local_area.is_painted_stage_stack_active(), "长安没有专属舞台层时也应走都城贴图栈分支")
+	_check(local_area.scene_midground_layer_texture != null and local_area.scene_floor_layer_texture != null, "长安应通过同类复用加载都城中景和地面贴图层")
+	_check(GameData.get_stage_layer_path("changan", "floor").ends_with("luoyang_dnf_capital_floor_v1.png"), "长安应复用都城地面贴图层")
 
 	local_area.setup_region(GameData.get_region("linan"))
 	await get_tree().process_frame
