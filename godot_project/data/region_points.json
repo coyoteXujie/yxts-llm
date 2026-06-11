@@ -68,6 +68,18 @@
       {"label": "桥边散钱", "description": "桥边石缝里压着几枚旧钱，像是香客投下的平安钱。", "kind": "coin", "tile": [55, 32], "reward_money": 4}
     ]
   },
+  "emei_sacred": {
+    "landmarks": [
+      {"label": "金顶山寺", "description": "山寺立在云海边，钟声越过石阶，连远处的江湖风声也静了几分。", "kind": "shrine", "tile": [38, 18], "reward_exp": 8},
+      {"label": "云海观台", "description": "观台下云气翻涌，香客说晴雨之间能看见蜀地群山的脉络。", "kind": "ruin", "tile": [51, 25], "reward_money": 4},
+      {"label": "舍身崖栈道", "description": "栈道贴着崖壁，脚下云雾深不可测，胆气不足的人走不远。", "kind": "bridge", "tile": [60, 31], "reward_exp": 7}
+    ],
+    "resources": [
+      {"label": "山寺药箱", "description": "寺中备着跌打药，给被山路磨伤脚的香客取用。", "kind": "cache", "tile": [34, 20], "reward_item": "item_yao"},
+      {"label": "云雾灵草", "description": "云雾湿润处长着清凉药草，叶尖还挂着细小水珠。", "kind": "herb", "tile": [18, 28], "reward_item": "item_red_flower"},
+      {"label": "香客散钱", "description": "石阶旁压着几枚平安钱，知客僧示意你收下作路资。", "kind": "coin", "tile": [46, 32], "reward_money": 5}
+    ]
+  },
   "jiangling": {
     "landmarks": [
       {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
