@@ -649,6 +649,7 @@ var combat_stage_assets: Dictionary = {}
 var combat_actor_frames: Dictionary = {}
 var region_shop_assets: Dictionary = {}
 var region_point_assets: Dictionary = {}
+var region_market_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
@@ -724,6 +725,7 @@ func load_database() -> void:
 	_load_combat_actor_frames()
 	_load_region_shop_assets()
 	_load_region_point_assets()
+	_load_region_market_assets()
 	_load_regions()
 
 func _load_items() -> void:
@@ -869,6 +871,48 @@ func _load_region_point_assets() -> void:
 		for point_type in ["landmarks", "resources"]:
 			normalized[point_type] = _dictionary_array(entry.get(point_type, []))
 		region_point_assets[str(region_id)] = normalized
+
+func _load_region_market_assets() -> void:
+	region_market_assets.clear()
+	var file := FileAccess.open("res://data/region_market_modifiers.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for key in parsed.keys():
+		var entry = parsed[key]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		if str(key) == "_defaults":
+			var defaults := {}
+			for region_type in entry.keys():
+				var default_entry = entry[region_type]
+				if typeof(default_entry) == TYPE_DICTIONARY:
+					defaults[str(region_type)] = _normalize_market_entry(default_entry as Dictionary)
+			region_market_assets["_defaults"] = defaults
+		else:
+			region_market_assets[str(key)] = _normalize_market_entry(entry as Dictionary)
+
+func _normalize_market_entry(entry: Dictionary) -> Dictionary:
+	var normalized := {}
+	if entry.has("label"):
+		normalized["label"] = str(entry.get("label", ""))
+	if entry.has("buy_factor"):
+		normalized["buy_factor"] = float(entry.get("buy_factor", 1.0))
+	if entry.has("sell_factor"):
+		normalized["sell_factor"] = float(entry.get("sell_factor", 1.0))
+	normalized["shop_factors"] = _float_dictionary(entry.get("shop_factors", {}))
+	normalized["item_factors"] = _float_dictionary(entry.get("item_factors", {}))
+	return normalized
+
+func _float_dictionary(value) -> Dictionary:
+	var result := {}
+	if typeof(value) != TYPE_DICTIONARY:
+		return result
+	for key in value.keys():
+		result[str(key)] = float(value[key])
+	return result
 
 func _dictionary_array(value) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -1147,6 +1191,36 @@ func get_region_shop_ids(region: Dictionary) -> Array[String]:
 		var defaults: Dictionary = region_shop_assets.get("_defaults", {})
 		configured = defaults.get(region_type, [])
 	return _string_array(configured)
+
+func get_region_market(region_id: String) -> Dictionary:
+	var region: Dictionary = get_region(region_id)
+	var region_type := str(region.get("type", "wild"))
+	var defaults: Dictionary = region_market_assets.get("_defaults", {})
+	var result := {}
+	var default_entry = defaults.get(region_type, {})
+	if typeof(default_entry) == TYPE_DICTIONARY:
+		result = _merge_market_entries(result, default_entry as Dictionary)
+	var region_entry = region_market_assets.get(region_id, {})
+	if typeof(region_entry) == TYPE_DICTIONARY:
+		result = _merge_market_entries(result, region_entry as Dictionary)
+	return result
+
+func _merge_market_entries(base: Dictionary, override: Dictionary) -> Dictionary:
+	var result := base.duplicate(true)
+	for key in ["label", "buy_factor", "sell_factor"]:
+		if override.has(key):
+			result[key] = override[key]
+	for factor_key in ["shop_factors", "item_factors"]:
+		var merged = result.get(factor_key, {})
+		if typeof(merged) != TYPE_DICTIONARY:
+			merged = {}
+		merged = (merged as Dictionary).duplicate(true)
+		var next_factors = override.get(factor_key, {})
+		if typeof(next_factors) == TYPE_DICTIONARY:
+			for next_key in next_factors.keys():
+				merged[str(next_key)] = float(next_factors[next_key])
+		result[factor_key] = merged
+	return result
 
 func get_region_points(region_id: String, point_type: String) -> Array[Dictionary]:
 	var entry: Dictionary = region_point_assets.get(region_id, {})

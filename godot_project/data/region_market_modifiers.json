@@ -1,0 +1,127 @@
+{
+  "_defaults": {
+    "city": {
+      "label": "城池平稳行情",
+      "buy_factor": 1.0,
+      "sell_factor": 1.0,
+      "shop_factors": {},
+      "item_factors": {}
+    },
+    "town": {
+      "label": "小镇熟客行情",
+      "buy_factor": 0.98,
+      "sell_factor": 0.98,
+      "shop_factors": {
+        "inn": 0.98,
+        "market": 0.97
+      },
+      "item_factors": {}
+    },
+    "sect": {
+      "label": "山门内部行情",
+      "buy_factor": 0.97,
+      "sell_factor": 0.92,
+      "shop_factors": {
+        "medicine": 0.96
+      },
+      "item_factors": {}
+    },
+    "wild": {
+      "label": "野地补给行情",
+      "buy_factor": 1.08,
+      "sell_factor": 0.90,
+      "shop_factors": {
+        "market": 1.04,
+        "medicine": 1.06
+      },
+      "item_factors": {}
+    }
+  },
+  "qinghe": {
+    "label": "平安镇熟客价",
+    "buy_factor": 0.96,
+    "sell_factor": 0.99,
+    "shop_factors": {
+      "inn": 0.96,
+      "market": 0.94
+    },
+    "item_factors": {
+      "item_baozi": 0.90,
+      "item_white_doufu": 0.88,
+      "item_green_doufu": 0.90
+    }
+  },
+  "luoyang": {
+    "label": "洛阳中都行情",
+    "buy_factor": 1.0,
+    "sell_factor": 1.03,
+    "shop_factors": {
+      "blacksmith": 0.97,
+      "tailor": 0.98
+    },
+    "item_factors": {
+      "item_sword": 0.96,
+      "item_blade": 0.96,
+      "item_silk_cloth": 1.06
+    }
+  },
+  "changan": {
+    "label": "长安西市行情",
+    "buy_factor": 1.03,
+    "sell_factor": 1.04,
+    "shop_factors": {
+      "market": 0.95,
+      "tailor": 0.95
+    },
+    "item_factors": {
+      "item_silk_cloth": 0.92,
+      "item_wine": 1.08,
+      "item_hetun_blade": 1.12
+    }
+  },
+  "linan": {
+    "label": "临安水市行情",
+    "buy_factor": 1.0,
+    "sell_factor": 1.05,
+    "shop_factors": {
+      "teahouse": 0.94,
+      "market": 0.96
+    },
+    "item_factors": {
+      "item_fish": 0.82,
+      "item_tea_flower": 0.88,
+      "item_green_doufu": 0.92,
+      "item_silk_cloth": 1.08
+    }
+  },
+  "chengdu": {
+    "label": "天府药市行情",
+    "buy_factor": 0.99,
+    "sell_factor": 1.02,
+    "shop_factors": {
+      "medicine": 0.90,
+      "teahouse": 0.93
+    },
+    "item_factors": {
+      "item_yao": 0.85,
+      "item_shengji": 0.88,
+      "item_dan": 0.92,
+      "item_tea_flower": 0.88
+    }
+  },
+  "jiangling": {
+    "label": "江陵码头行情",
+    "buy_factor": 1.02,
+    "sell_factor": 1.06,
+    "shop_factors": {
+      "blacksmith": 0.94,
+      "market": 0.96
+    },
+    "item_factors": {
+      "item_blade": 0.92,
+      "item_fish": 0.90,
+      "item_hetun_blade": 1.08,
+      "item_wine": 0.94
+    }
+  }
+}

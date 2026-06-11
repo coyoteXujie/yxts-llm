@@ -1683,6 +1683,7 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 	var shop: Dictionary = SHOP_DEFINITIONS.get(shop_id, {})
 	if shop.is_empty():
 		return
+	var region_id := str(current_region.get("id", ""))
 	var keeper := {
 		"id": 9300 + _shop_index(shop_id),
 		"name": str(shop.get("keeper", "掌柜")),
@@ -1694,6 +1695,8 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 		"pos_y": 6,
 		"shop_name": str(shop.get("name", "商铺")),
 		"shop_type": shop_id,
+		"region_id": region_id,
+		"region_name": str(current_region.get("name", "")),
 		"sell_items": shop.get("sell_items", []),
 		"teach_skills": [],
 		"can_rest": bool(shop.get("can_rest", false)),

@@ -184,6 +184,52 @@ def _validate_region_point_list(
             errors.append(f"region point {point_owner}.reward_count must be positive")
 
 
+def _validate_market_entry(
+    errors: list[str],
+    owner: str,
+    entry,
+    item_ids: set[str],
+    allowed_shop_ids: set[str],
+) -> None:
+    if not isinstance(entry, dict):
+        errors.append(f"region market entry {owner} must be an object")
+        return
+    allowed_keys = {"label", "buy_factor", "sell_factor", "shop_factors", "item_factors"}
+    unknown_keys = set(entry.keys()) - allowed_keys
+    if unknown_keys:
+        errors.append(f"region market entry {owner} has unknown keys: {', '.join(sorted(unknown_keys))}")
+    if "label" in entry and not isinstance(entry["label"], str):
+        errors.append(f"region market entry {owner}.label must be a string")
+    for factor_key in ("buy_factor", "sell_factor"):
+        if factor_key not in entry:
+            errors.append(f"region market entry {owner} missing {factor_key}")
+            continue
+        factor = entry[factor_key]
+        if not isinstance(factor, (int, float)):
+            errors.append(f"region market entry {owner}.{factor_key} must be numeric")
+            continue
+        if not 0.70 <= float(factor) <= 1.30:
+            errors.append(f"region market entry {owner}.{factor_key}={factor} outside 0.70..1.30")
+    shop_factors = entry.get("shop_factors", {})
+    if not isinstance(shop_factors, dict):
+        errors.append(f"region market entry {owner}.shop_factors must be an object")
+    else:
+        for shop_id, factor in shop_factors.items():
+            if str(shop_id) not in allowed_shop_ids:
+                errors.append(f"region market entry {owner}.shop_factors references unknown shop {shop_id}")
+            if not isinstance(factor, (int, float)) or not 0.70 <= float(factor) <= 1.30:
+                errors.append(f"region market entry {owner}.shop_factors.{shop_id} must be numeric 0.70..1.30")
+    item_factors = entry.get("item_factors", {})
+    if not isinstance(item_factors, dict):
+        errors.append(f"region market entry {owner}.item_factors must be an object")
+    else:
+        for item_id, factor in item_factors.items():
+            if str(item_id) not in item_ids:
+                errors.append(f"region market entry {owner}.item_factors references missing item {item_id}")
+            if not isinstance(factor, (int, float)) or not 0.70 <= float(factor) <= 1.30:
+                errors.append(f"region market entry {owner}.item_factors.{item_id} must be numeric 0.70..1.30")
+
+
 def main() -> int:
     errors: list[str] = []
     npcs = load_json("npcs.json")
@@ -201,6 +247,7 @@ def main() -> int:
     combat_actor_frames = load_json("combat_actor_frames.json")
     region_shop_assets = load_json("region_shops.json")
     region_point_assets = load_json("region_points.json")
+    region_market_assets = load_json("region_market_modifiers.json")
 
     item_ids = {item["id"] for item in items}
     npc_names = {npc["name"] for npc in npcs}
@@ -403,6 +450,24 @@ def main() -> int:
                     allowed_point_kinds,
                 )
 
+    if not isinstance(region_market_assets, dict):
+        errors.append("region_market_modifiers.json must be an object")
+    else:
+        default_markets = region_market_assets.get("_defaults", {})
+        if not isinstance(default_markets, dict):
+            errors.append("region_market_modifiers.json _defaults must be an object")
+        else:
+            for region_type, market_entry in default_markets.items():
+                if region_type not in expected_counts:
+                    errors.append(f"region_market_modifiers.json has unknown default region type {region_type}")
+                _validate_market_entry(errors, f"_defaults.{region_type}", market_entry, item_ids, allowed_shop_ids)
+        for region_id, market_entry in region_market_assets.items():
+            if region_id == "_defaults":
+                continue
+            if region_id not in region_id_set:
+                errors.append(f"region market mapping references missing region {region_id}")
+            _validate_market_entry(errors, str(region_id), market_entry, item_ids, allowed_shop_ids)
+
     allowed_stage_layers = {"floor", "midground", "foreground"}
     required_stage_layers = {"floor", "midground", "foreground"}
     for region_id, layers in stage_layer_assets.items():
@@ -505,7 +570,7 @@ def main() -> int:
         f"OK regions={len(regions)} npcs={len(npcs)} items={len(items)} quests={len(quests)} "
         f"sprites={len(sprite_assets)} portraits={len(portrait_assets)} icons={len(item_icon_assets)} skill_icons={len(skill_icon_assets)} "
         f"scenes={len(scene_background_assets)} stage_layers={len(stage_layer_assets)} region_shops={len(region_shop_assets)} region_points={len(region_point_assets)} "
-        f"shop_interiors={len(shop_interior_assets)} combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
+        f"region_markets={len(region_market_assets)} shop_interiors={len(shop_interior_assets)} combat_stages={len(combat_stage_assets)} combat_actor_frames={len(combat_actor_frames)}"
     )
     return 0
 

@@ -5,6 +5,8 @@ const MODE_BUY := "buy"
 const MODE_SELL := "sell"
 const MODE_BUYBACK := "buyback"
 const SHOP_BUY_PRICE_MIN_FACTOR := 0.80
+const MARKET_PRICE_MIN_FACTOR := 0.70
+const MARKET_PRICE_MAX_FACTOR := 1.30
 const SHOP_BUY_PRICE_FACTORS := {
 	"inn": 0.94,
 	"medicine": 0.92,
@@ -369,7 +371,7 @@ func _shop_title() -> String:
 func _update_money_label() -> void:
 	if money_label == null:
 		return
-	money_label.text = "银两：%d    行情：%s" % [int(GameState.player.get("money", 0)), _shop_discount_label()]
+	money_label.text = "银两：%d    行情：%s" % [int(GameState.player.get("money", 0)), _shop_market_summary()]
 
 func _update_mode_buttons() -> void:
 	if buy_mode_button != null:
@@ -459,8 +461,9 @@ func _execute_buy(item_id: String, count: int) -> void:
 		_refresh()
 
 func _execute_sell(item_id: String, count: int) -> void:
-	if GameState.sell_item(item_id, count):
-		_add_buyback_stock(item_id, count, _sell_price(item_id))
+	var price := _sell_price(item_id)
+	if GameState.sell_item(item_id, count, price):
+		_add_buyback_stock(item_id, count, price)
 		_refresh()
 
 func _execute_buyback(item_id: String, count: int) -> void:
@@ -535,7 +538,7 @@ func _buy_price(item_id: String) -> int:
 	var base_price := _base_item_price(item_id)
 	if base_price <= 0:
 		return 0
-	return maxi(1, int(roundf(float(base_price) * _shop_buy_price_factor())))
+	return maxi(1, int(roundf(float(base_price) * _combined_buy_price_factor(item_id))))
 
 func _base_item_price(item_id: String) -> int:
 	var item := GameData.get_item(item_id)
@@ -544,7 +547,10 @@ func _base_item_price(item_id: String) -> int:
 	return int(item.get("price", 0))
 
 func _sell_price(item_id: String) -> int:
-	return GameState.get_item_sell_price(item_id)
+	var base_price := GameState.get_item_sell_price(item_id)
+	if base_price <= 0:
+		return 0
+	return maxi(1, int(roundf(float(base_price) * _region_sell_price_factor(item_id))))
 
 func _buyback_price(item_id: String) -> int:
 	if buyback_prices.has(item_id):
@@ -629,15 +635,62 @@ func _shop_type() -> String:
 		return direct_id
 	return str(npc_data.get("shop_type", ""))
 
+func _region_id() -> String:
+	return str(npc_data.get("region_id", ""))
+
+func _region_market() -> Dictionary:
+	var region_id := _region_id()
+	if region_id.is_empty():
+		return {}
+	return GameData.get_region_market(region_id)
+
 func _shop_buy_price_factor() -> float:
 	var factor := float(SHOP_BUY_PRICE_FACTORS.get(_shop_type(), 1.0))
 	return clampf(factor, SHOP_BUY_PRICE_MIN_FACTOR, 1.0)
+
+func _combined_buy_price_factor(item_id: String) -> float:
+	return clampf(_shop_buy_price_factor() * _region_buy_price_factor(item_id), MARKET_PRICE_MIN_FACTOR, MARKET_PRICE_MAX_FACTOR)
+
+func _region_buy_price_factor(item_id: String) -> float:
+	return _region_price_factor(item_id, "buy_factor")
+
+func _region_sell_price_factor(item_id: String) -> float:
+	return _region_price_factor(item_id, "sell_factor")
+
+func _region_price_factor(item_id: String, base_factor_key: String) -> float:
+	var market := _region_market()
+	if market.is_empty():
+		return 1.0
+	var factor := float(market.get(base_factor_key, 1.0))
+	var shop_factors = market.get("shop_factors", {})
+	if typeof(shop_factors) == TYPE_DICTIONARY:
+		factor *= float(shop_factors.get(_shop_type(), 1.0))
+	var item_factors = market.get("item_factors", {})
+	if typeof(item_factors) == TYPE_DICTIONARY:
+		factor *= float(item_factors.get(item_id, 1.0))
+	return clampf(factor, MARKET_PRICE_MIN_FACTOR, MARKET_PRICE_MAX_FACTOR)
 
 func _shop_discount_label() -> String:
 	var factor := _shop_buy_price_factor()
 	if factor >= 0.999:
 		return "原价"
 	return _format_discount_factor(factor)
+
+func _shop_market_summary() -> String:
+	var market := _region_market()
+	var label := str(market.get("label", ""))
+	var shop_label := _shop_discount_label()
+	if label.is_empty():
+		return shop_label
+	return "%s · 本店%s" % [label, shop_label]
+
+func _item_buy_market_label(item_id: String) -> String:
+	var market := _region_market()
+	var label := str(market.get("label", ""))
+	var factor_label := _format_discount_factor(_combined_buy_price_factor(item_id))
+	if label.is_empty():
+		return factor_label
+	return "%s · %s" % [label, factor_label]
 
 func _format_discount_factor(factor: float) -> String:
 	var zhe := factor * 10.0
@@ -646,7 +699,7 @@ func _format_discount_factor(factor: float) -> String:
 	return "%.1f折" % zhe
 
 func _buy_price_label(price: int, base_price: int) -> String:
-	if base_price > 0 and price < base_price:
+	if base_price > 0 and price != base_price:
 		return "%d两（原%d）" % [price, base_price]
 	return "%d两" % price
 
@@ -730,12 +783,18 @@ func _buyback_item_label(item_id: String, item: Dictionary, count: int) -> Strin
 
 func _sell_item_detail(item_id: String, item: Dictionary) -> String:
 	var blocked := "\n已装备，不能出售" if _is_item_equipped(item_id) else ""
-	return "%s\n%s\n类型：%s    出售价：%d 两\n%s%s" % [
+	var base_price := GameState.get_item_sell_price(item_id)
+	var price := _sell_price(item_id)
+	var market_line := ""
+	if price != base_price:
+		market_line = "\n本地回收行情：%s" % _format_discount_factor(_region_sell_price_factor(item_id))
+	return "%s\n%s\n类型：%s    出售价：%d 两\n%s%s%s" % [
 		str(item.get("name", item_id)),
 		str(item.get("description", "")),
 		_type_name(str(item.get("type", ""))),
-		_sell_price(item_id),
+		price,
 		_format_effects(item),
+		market_line,
 		blocked
 	]
 
@@ -744,7 +803,9 @@ func _buy_item_detail(item_id: String, item: Dictionary) -> String:
 	var base_price := _base_item_price(item_id)
 	var market_line := ""
 	if base_price > 0 and price < base_price:
-		market_line = "\n本店行情：%s，已少收 %d 两。" % [_shop_discount_label(), base_price - price]
+		market_line = "\n本店行情：%s，已少收 %d 两。" % [_item_buy_market_label(item_id), base_price - price]
+	elif base_price > 0 and price > base_price:
+		market_line = "\n本店行情：%s，需多付 %d 两。" % [_item_buy_market_label(item_id), price - base_price]
 	return "%s\n%s\n类型：%s    价格：%s\n%s%s" % [
 		str(item.get("name", item_id)),
 		str(item.get("description", "")),

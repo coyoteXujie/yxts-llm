@@ -797,8 +797,14 @@ func _run() -> void:
 		if local_area.npc_nodes.size() > 0:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data
 			_check((keeper_data.get("sell_items", []) as Array).size() > 0, "商铺掌柜应带商品列表")
+			_check(str(keeper_data.get("region_id", "")) == "qinghe", "商铺掌柜应携带当前区域 id 供地区行情使用")
 			_check(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_MIN_FACTOR <= 0.80, "商店买入折扣应有明确下限，避免价格体系失控")
+			_check(SHOP_PANEL_SCRIPT.MARKET_PRICE_MIN_FACTOR <= 0.70 and SHOP_PANEL_SCRIPT.MARKET_PRICE_MAX_FACTOR >= 1.30, "地区行情应有明确价格系数边界")
 			_check(float(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_FACTORS.get("market", 1.0)) <= 0.90, "市集应有可见九折行情，形成不同店铺价格感")
+			var qinghe_market: Dictionary = GameData.get_region_market("qinghe")
+			var linan_market: Dictionary = GameData.get_region_market("linan")
+			_check(str(qinghe_market.get("label", "")) == "平安镇熟客价" and (qinghe_market.get("item_factors", {}) as Dictionary).has("item_baozi"), "平安镇应加载熟客价和本地吃食特产行情")
+			_check(str(linan_market.get("label", "")) == "临安水市行情" and float((linan_market.get("item_factors", {}) as Dictionary).get("item_fish", 1.0)) < 0.90, "临安应加载水市鲜鱼特产行情")
 			var market_panel := SHOP_PANEL_SCRIPT.new()
 			market_panel.npc_data = {
 				"shop_type": "market",
@@ -819,7 +825,27 @@ func _run() -> void:
 			_check(int(GameState.player.get("money", 0)) == money_before_shop_buy - tanghulu_price * 2, "商店真实购买扣款应使用折后单价")
 			GameState.player["money"] = money_before_shop_buy
 			GameState.inventory = inventory_before_shop_buy
+			var linan_market_panel := SHOP_PANEL_SCRIPT.new()
+			linan_market_panel.npc_data = {
+				"shop_type": "market",
+				"region_id": "linan",
+				"sell_items": LOCAL_AREA_SCRIPT.SHOP_DEFINITIONS["market"].get("sell_items", [])
+			}
+			var fish_base := int(GameData.get_item("item_fish").get("price", 0))
+			var linan_fish_price := int(linan_market_panel.call("_buy_price", "item_fish"))
+			_check(fish_base > 0 and linan_fish_price < int(roundf(float(fish_base) * 0.80)), "临安水市鲜鱼买入价应明显低于基础价")
+			var fish_detail := str(linan_market_panel.call("_buy_item_detail", "item_fish", GameData.get_item("item_fish")))
+			_check(fish_detail.contains("临安水市行情") and fish_detail.contains("已少收"), "临安鱼价详情应解释地区特产行情")
+			var money_before_region_sell := int(GameState.player.get("money", 0))
+			var inventory_before_region_sell: Dictionary = GameState.inventory.duplicate(true)
+			GameState.add_item("item_fish", 1)
+			var linan_fish_sell_price := int(linan_market_panel.call("_sell_price", "item_fish"))
+			linan_market_panel.call("_execute_sell", "item_fish", 1)
+			_check(int(GameState.player.get("money", 0)) == money_before_region_sell + linan_fish_sell_price, "商店真实出售收入应使用地区回收单价")
+			GameState.player["money"] = money_before_region_sell
+			GameState.inventory = inventory_before_region_sell
 			market_panel.free()
+			linan_market_panel.free()
 
 	local_area.setup_region(GameData.get_region("luoyang"))
 	await get_tree().process_frame
