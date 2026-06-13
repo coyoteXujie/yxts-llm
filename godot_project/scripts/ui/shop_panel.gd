@@ -1044,13 +1044,15 @@ func _buyback_item_detail(item_id: String, item: Dictionary) -> String:
 
 func _repair_item_detail(item_id: String, item: Dictionary) -> String:
 	var equipped := "\n当前已装备" if _is_item_equipped(item_id) else ""
-	return "%s\n%s\n类型：%s    修理费：%d 两\n耐久：%d/%d，修理后恢复满耐久%s\n%s" % [
+	return "%s\n%s\n类型：%s    修理费：%d 两\n耐久：%d/%d（%s，加成%d%%），修理后恢复满耐久%s\n%s" % [
 		str(item.get("name", item_id)),
 		str(item.get("description", "")),
 		_type_name(str(item.get("type", ""))),
 		_repair_price(item_id),
 		GameState.get_equipment_durability(item_id),
 		GameState.EQUIPMENT_DURABILITY_MAX,
+		GameState.get_equipment_condition_label(item_id),
+		int(round(GameState.get_equipment_durability_effect_factor(item_id) * 100.0)),
 		equipped,
 		_format_effects(item)
 	]

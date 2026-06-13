@@ -1652,12 +1652,51 @@ func equip_item(item_id: String) -> bool:
 	return true
 
 func _apply_equipment_stats(item_id: String, direction: int) -> void:
-	var item := GameData.get_item(item_id)
-	var effects: Dictionary = item.get("effects", {})
+	_apply_equipment_effects(_equipment_scaled_effects(item_id), direction)
+
+func _apply_equipment_effects(effects: Dictionary, direction: int) -> void:
 	if effects.has("attack"):
 		player["attack"] = int(player.get("attack", 0)) + int(effects["attack"]) * direction
 	if effects.has("defense"):
 		player["defense"] = int(player.get("defense", 0)) + int(effects["defense"]) * direction
+
+func _equipment_scaled_effects(item_id: String) -> Dictionary:
+	var item := GameData.get_item(item_id)
+	var effects: Dictionary = item.get("effects", {})
+	var factor := get_equipment_durability_effect_factor(item_id)
+	var scaled: Dictionary = {}
+	if effects.has("attack"):
+		scaled["attack"] = int(round(float(effects["attack"]) * factor))
+	if effects.has("defense"):
+		scaled["defense"] = int(round(float(effects["defense"]) * factor))
+	return scaled
+
+func get_equipment_scaled_effects(item_id: String) -> Dictionary:
+	return _equipment_scaled_effects(item_id).duplicate(true)
+
+func get_equipment_durability_effect_factor(item_id: String) -> float:
+	var durability := get_equipment_durability(item_id)
+	if durability >= 75:
+		return 1.0
+	if durability >= 50:
+		return 0.85
+	if durability >= 25:
+		return 0.65
+	if durability > 0:
+		return 0.45
+	return 0.25
+
+func get_equipment_condition_label(item_id: String) -> String:
+	var durability := get_equipment_durability(item_id)
+	if durability >= 75:
+		return "完好"
+	if durability >= 50:
+		return "磨损"
+	if durability >= 25:
+		return "受损"
+	if durability > 0:
+		return "残破"
+	return "损坏"
 
 func is_equipment_item(item_id: String) -> bool:
 	var item := GameData.get_item(item_id)
@@ -1681,8 +1720,19 @@ func get_equipment_durability(item_id: String) -> int:
 func set_equipment_durability(item_id: String, value: int) -> void:
 	if item_id.is_empty() or not is_equipment_item(item_id):
 		return
+	var equipped := equipment.values().has(item_id)
+	var old_effects := _equipment_scaled_effects(item_id) if equipped else {}
 	equipment_durability[item_id] = clampi(value, 0, EQUIPMENT_DURABILITY_MAX)
+	if equipped:
+		var new_effects := _equipment_scaled_effects(item_id)
+		if _equipment_effects_changed(old_effects, new_effects):
+			_apply_equipment_effects(old_effects, -1)
+			_apply_equipment_effects(new_effects, 1)
+			EventBus.player_changed.emit(player)
 	EventBus.inventory_changed.emit(inventory)
+
+func _equipment_effects_changed(old_effects: Dictionary, new_effects: Dictionary) -> bool:
+	return int(old_effects.get("attack", 0)) != int(new_effects.get("attack", 0)) or int(old_effects.get("defense", 0)) != int(new_effects.get("defense", 0))
 
 func damage_equipment(slot: String, amount: int) -> int:
 	var item_id := str(equipment.get(slot, ""))
@@ -1717,8 +1767,7 @@ func repair_equipment(item_id: String, cost_override: int = -1) -> bool:
 		return false
 	if not spend_money(cost):
 		return false
-	equipment_durability[item_id] = EQUIPMENT_DURABILITY_MAX
-	EventBus.inventory_changed.emit(inventory)
+	set_equipment_durability(item_id, EQUIPMENT_DURABILITY_MAX)
 	var item := GameData.get_item(item_id)
 	EventBus.emit_toast("修理%s，花费%d两" % [str(item.get("name", item_id)), cost])
 	return true

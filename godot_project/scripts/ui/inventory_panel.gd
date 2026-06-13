@@ -207,10 +207,12 @@ func _format_equipment_detail(item_id: String, item: Dictionary) -> String:
 		var current_item := GameData.get_item(current_id)
 		current_name = str(current_item.get("name", current_id))
 	var status := "已装备：%s" % slot_name if current_id == item_id else "可装备到：%s" % slot_name
-	var stat_line := _format_equipment_bonus(item) if current_id == item_id else _format_equipment_delta(item, GameData.get_item(current_id) if not current_id.is_empty() else {})
+	var stat_line := _format_equipment_bonus(item_id) if current_id == item_id else _format_equipment_delta(item_id, current_id)
 	var durability := GameState.get_equipment_durability(item_id)
 	var repair_cost := GameState.get_equipment_repair_cost(item_id)
-	var durability_line := "耐久：%d/%d" % [durability, GameState.EQUIPMENT_DURABILITY_MAX]
+	var condition := GameState.get_equipment_condition_label(item_id)
+	var effect_percent := int(round(GameState.get_equipment_durability_effect_factor(item_id) * 100.0))
+	var durability_line := "耐久：%d/%d（%s，加成%d%%）" % [durability, GameState.EQUIPMENT_DURABILITY_MAX, condition, effect_percent]
 	if repair_cost > 0:
 		durability_line = "%s（铁匠修理 %d 两）" % [durability_line, repair_cost]
 	return "\n%s\n当前%s：%s\n%s\n%s" % [
@@ -237,18 +239,20 @@ func _equipment_slot_name(slot: String) -> String:
 			return "防具"
 	return "装备"
 
-func _format_equipment_delta(next_item: Dictionary, current_item: Dictionary) -> String:
-	var next_effects: Dictionary = next_item.get("effects", {})
-	var current_effects: Dictionary = current_item.get("effects", {})
+func _format_equipment_delta(next_item_id: String, current_item_id: String) -> String:
+	var next_effects := GameState.get_equipment_scaled_effects(next_item_id)
+	var current_effects := GameState.get_equipment_scaled_effects(current_item_id) if not current_item_id.is_empty() else {}
 	var parts: Array[String] = []
 	for stat in ["attack", "defense"]:
 		var next_value := int(next_effects.get(stat, 0))
 		var current_value := int(current_effects.get(stat, 0))
 		var delta := next_value - current_value
-		if delta == 0 and next_value == 0:
+		if current_item_id.is_empty() and next_value == 0:
+			continue
+		if not current_item_id.is_empty() and delta == 0:
 			continue
 		var stat_name := "攻击" if stat == "attack" else "防御"
-		if current_item.is_empty():
+		if current_item_id.is_empty():
 			parts.append("%s %+d" % [stat_name, next_value])
 		else:
 			parts.append("%s %+d" % [stat_name, delta])
@@ -256,8 +260,8 @@ func _format_equipment_delta(next_item: Dictionary, current_item: Dictionary) ->
 		return "更换变化：无"
 	return "更换变化：%s" % "，".join(parts)
 
-func _format_equipment_bonus(item: Dictionary) -> String:
-	var effects: Dictionary = item.get("effects", {})
+func _format_equipment_bonus(item_id: String) -> String:
+	var effects := GameState.get_equipment_scaled_effects(item_id)
 	var parts: Array[String] = []
 	if effects.has("attack"):
 		parts.append("攻击 %+d" % int(effects["attack"]))
