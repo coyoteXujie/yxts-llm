@@ -224,11 +224,17 @@ func _format_equipment_detail(item_id: String, item: Dictionary) -> String:
 	]
 
 func _equipment_slot_for_item(item: Dictionary) -> String:
+	var explicit_slot: String = str(item.get("slot", ""))
+	if not explicit_slot.is_empty():
+		return explicit_slot
+
 	match str(item.get("type", "")):
 		"weapon":
 			return "weapon"
 		"armor":
 			return "armor"
+		"accessory":
+			return "accessory"
 	return ""
 
 func _equipment_slot_name(slot: String) -> String:
@@ -237,6 +243,14 @@ func _equipment_slot_name(slot: String) -> String:
 			return "武器"
 		"armor":
 			return "防具"
+		"head":
+			return "头盔"
+		"hands":
+			return "护腕"
+		"feet":
+			return "靴子"
+		"accessory":
+			return "饰品"
 	return "装备"
 
 func _format_equipment_delta(next_item_id: String, current_item_id: String) -> String:

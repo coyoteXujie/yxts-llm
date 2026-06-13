@@ -1629,12 +1629,19 @@ func equip_item(item_id: String) -> bool:
 	if int(inventory.get(item_id, 0)) <= 0:
 		return false
 	var item_type := str(item.get("type", ""))
-	var slot := ""
-	if item_type == "weapon":
-		slot = "weapon"
-	elif item_type == "armor":
-		slot = "armor"
-	else:
+	var slot := str(item.get("slot", ""))
+	if slot.is_empty():
+		if item_type == "weapon":
+			slot = "weapon"
+		elif item_type == "armor":
+			slot = "armor"
+		elif item_type == "accessory":
+			slot = "accessory"
+		else:
+			EventBus.emit_toast("无法装备")
+			return false
+
+	if slot.is_empty():
 		EventBus.emit_toast("无法装备")
 		return false
 
