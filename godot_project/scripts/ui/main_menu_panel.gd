@@ -60,6 +60,13 @@ func _build() -> void:
 	)
 	box.add_child(continue_button)
 
+	var settings_button := _menu_button("设置")
+	settings_button.pressed.connect(func() -> void:
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), -10.0 if AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Master")) > -20.0 else 0.0)
+		_show_settings_toast()
+	)
+	box.add_child(settings_button)
+
 	var quit_button := _menu_button("退出")
 	quit_button.pressed.connect(func() -> void: get_tree().quit())
 	box.add_child(quit_button)
@@ -95,3 +102,6 @@ func _panel_style() -> StyleBoxFlat:
 	style.content_margin_top = 30
 	style.content_margin_bottom = 30
 	return style
+
+func _show_settings_toast() -> void:
+	EventBus.emit_toast("设置功能开发中...")
