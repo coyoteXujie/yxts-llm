@@ -1751,6 +1751,27 @@ func get_equipment_repair_cost(item_id: String) -> int:
 	var base_price := int(item.get("price", 0))
 	return maxi(1, int(ceil(float(base_price) * EQUIPMENT_REPAIR_PRICE_PER_MISSING_RATE * float(missing))))
 
+func get_repairable_equipment_item_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for raw_item_id in inventory.keys():
+		var item_id := str(raw_item_id)
+		if int(inventory.get(raw_item_id, 0)) <= 0:
+			continue
+		if get_equipment_repair_cost(item_id) <= 0:
+			continue
+		ids.append(item_id)
+	ids.sort()
+	return ids
+
+func get_all_equipment_repair_cost(item_ids: Array[String] = []) -> int:
+	var ids := item_ids
+	if ids.is_empty():
+		ids = get_repairable_equipment_item_ids()
+	var total := 0
+	for item_id in ids:
+		total += get_equipment_repair_cost(item_id)
+	return total
+
 func repair_equipment(item_id: String, cost_override: int = -1) -> bool:
 	if item_id.is_empty() or not is_equipment_item(item_id):
 		return false
@@ -1770,6 +1791,27 @@ func repair_equipment(item_id: String, cost_override: int = -1) -> bool:
 	set_equipment_durability(item_id, EQUIPMENT_DURABILITY_MAX)
 	var item := GameData.get_item(item_id)
 	EventBus.emit_toast("修理%s，花费%d两" % [str(item.get("name", item_id)), cost])
+	return true
+
+func repair_all_equipment(item_ids: Array[String] = []) -> bool:
+	var ids := item_ids
+	if ids.is_empty():
+		ids = get_repairable_equipment_item_ids()
+	var filtered_ids: Array[String] = []
+	for item_id in ids:
+		if get_equipment_repair_cost(item_id) > 0:
+			filtered_ids.append(item_id)
+	if filtered_ids.is_empty():
+		EventBus.emit_toast("无需修理")
+		return false
+	var total_cost := get_all_equipment_repair_cost(filtered_ids)
+	if total_cost <= 0:
+		return false
+	if not spend_money(total_cost):
+		return false
+	for item_id in filtered_ids:
+		set_equipment_durability(item_id, EQUIPMENT_DURABILITY_MAX)
+	EventBus.emit_toast("修理全部装备，花费%d两" % total_cost)
 	return true
 
 func buy_item(item_id: String, count: int = 1, price_override: int = -1) -> bool:

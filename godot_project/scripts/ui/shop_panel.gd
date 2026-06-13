@@ -41,6 +41,7 @@ var quantity_plus_button: Button
 var quantity_max_button: Button
 var total_label: Label
 var primary_button: Button
+var repair_all_button: Button
 var confirm_overlay: Control
 var confirm_title_label: Label
 var confirm_body_label: Label
@@ -215,6 +216,12 @@ func _build() -> void:
 	primary_button.text = "购买"
 	primary_button.pressed.connect(_confirm_selected)
 	actions.add_child(primary_button)
+
+	repair_all_button = Button.new()
+	repair_all_button.text = "全部修理"
+	repair_all_button.tooltip_text = "修理背包中所有受损装备"
+	repair_all_button.pressed.connect(_execute_repair_all)
+	actions.add_child(repair_all_button)
 
 	var close_button := Button.new()
 	close_button.text = "离开"
@@ -485,6 +492,11 @@ func _update_transaction_controls() -> void:
 		primary_button.disabled = not can_trade
 		var verb := _trade_verb()
 		primary_button.text = "%s x%d" % [verb, quantity] if can_trade else verb
+	if repair_all_button != null:
+		var repair_all_cost := _repair_all_price()
+		repair_all_button.visible = shop_mode == MODE_REPAIR
+		repair_all_button.disabled = shop_mode != MODE_REPAIR or repair_all_cost <= 0 or int(GameState.player.get("money", 0)) < repair_all_cost
+		repair_all_button.text = "全部修理 %d两" % repair_all_cost if repair_all_cost > 0 else "全部修理"
 	if total_label != null:
 		total_label.text = _transaction_summary(selected_item_id, quantity, max_quantity)
 
@@ -542,6 +554,13 @@ func _execute_buyback(item_id: String, count: int) -> void:
 func _execute_repair(item_id: String) -> void:
 	var price := _repair_price(item_id)
 	if GameState.repair_equipment(item_id, price):
+		_refresh()
+
+func _execute_repair_all() -> void:
+	var item_ids := _repairable_item_ids()
+	if item_ids.is_empty():
+		return
+	if GameState.repair_all_equipment(item_ids):
 		_refresh()
 
 func _open_transaction_confirmation() -> void:
@@ -646,6 +665,12 @@ func _buyback_price(item_id: String) -> int:
 
 func _repair_price(item_id: String) -> int:
 	return GameState.get_equipment_repair_cost(item_id)
+
+func _repair_all_price() -> int:
+	return GameState.get_all_equipment_repair_cost(_repairable_item_ids())
+
+func _repairable_item_ids() -> Array[String]:
+	return GameState.get_repairable_equipment_item_ids()
 
 func _add_buyback_stock(item_id: String, count: int, price: int) -> void:
 	if item_id.is_empty() or count <= 0:

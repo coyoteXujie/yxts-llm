@@ -199,6 +199,14 @@ func _run() -> void:
 	blacksmith_panel.call("_set_shop_mode", "buy")
 	blacksmith_panel.call("_set_shop_mode", "repair")
 	_check(blacksmith_panel.item_ids.has("item_blade") and blacksmith_panel.item_ids.has("item_cloth"), "战斗磨损后的武器和防具应重新出现在铁匠修理列表")
+	var repair_all_cost := GameState.get_all_equipment_repair_cost()
+	var money_before_repair_all := int(GameState.player.get("money", 0))
+	_check(repair_all_cost > 0 and blacksmith_panel.repair_all_button != null and blacksmith_panel.repair_all_button.visible and blacksmith_panel.repair_all_button.text.contains("%d两" % repair_all_cost), "铁匠铺修理模式应提供一键修理全部装备并显示总价")
+	blacksmith_panel.call("_execute_repair_all")
+	_check(GameState.get_equipment_durability("item_blade") == GameState.EQUIPMENT_DURABILITY_MAX and GameState.get_equipment_durability("item_cloth") == GameState.EQUIPMENT_DURABILITY_MAX and int(GameState.player.get("money", 0)) == money_before_repair_all - repair_all_cost, "一键修理应扣总价并恢复所有受损装备")
+	_check(hud.equipment_label.text.contains("雁翎刀 100%·完好") and hud.equipment_label.text.contains("布衣 100%·完好"), "HUD 应在一键修理后刷新所有装备状态")
+	GameState.player["money"] = money_before_repair_all
+	EventBus.player_changed.emit(GameState.player)
 	blacksmith_panel.close_panel()
 
 	var world_map = WORLD_MAP_SCRIPT.new()
