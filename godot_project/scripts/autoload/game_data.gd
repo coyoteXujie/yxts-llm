@@ -967,18 +967,23 @@ func build_region_encounter_enemy(region: Dictionary) -> Dictionary:
 	var danger := int(region.get("danger", 1))
 	var terrain := str(region.get("terrain", ""))
 	var candidates: Array = []
+
+	# 根据地形和危险等级选择敌人
 	if terrain.contains("snow") or terrain.contains("mountain") or terrain.contains("cliff") or terrain.contains("gorge") or terrain.contains("plateau"):
-		candidates = ["土匪甲", "雪豹"] if danger <= 3 else ["土匪头目", "独角大盗"]
+		candidates = ["土匪甲", "雪豹"] if danger <= 3 else ["土匪头目", "独角大盗", "魔化和尚"]
 	elif terrain.contains("forest") or terrain.contains("bamboo") or terrain.contains("marsh"):
 		candidates = ["流氓头", "采花大盗"] if danger <= 3 else ["黑衣大盗", "独角大盗"]
 	elif terrain.contains("river") or terrain.contains("lake") or terrain.contains("water") or terrain.contains("ford") or terrain.contains("canal"):
 		candidates = ["流氓", "流氓头"] if danger <= 2 else ["采花大盗", "黑衣大盗"]
+	elif danger >= 5:
+		candidates = ["独角大盗", "黑衣大盗", "魔化和尚"]
 	elif danger >= 4:
 		candidates = ["独角大盗", "黑衣大盗"]
 	elif danger >= 3:
-		candidates = ["流氓头", "采花大盗"]
+		candidates = ["流氓头", "采花大盗", "土匪头目"]
 	else:
-		candidates = ["流氓"]
+		candidates = ["流氓", "土匪甲"]
+
 	var index: int = int(abs(hash(region_id)) % maxi(1, candidates.size()))
 	var enemy: Dictionary = get_npc_by_name(candidates[index]).duplicate(true)
 	if enemy.is_empty():
@@ -988,6 +993,16 @@ func build_region_encounter_enemy(region: Dictionary) -> Dictionary:
 	enemy["encounter"] = true
 	enemy["source_region"] = region_id
 	enemy["id"] = -100000 - abs(hash(region_id)) % 900000
+
+	# 根据危险等级提升敌人属性
+	if danger >= 4:
+		if enemy.has("hp"): enemy["hp"] = int(enemy["hp"] * 1.3)
+		if enemy.has("attack"): enemy["attack"] = int(enemy["attack"] * 1.25)
+		if enemy.has("defense"): enemy["defense"] = int(enemy["defense"] * 1.2)
+	elif danger >= 2:
+		if enemy.has("hp"): enemy["hp"] = int(enemy["hp"] * 1.15)
+		if enemy.has("attack"): enemy["attack"] = int(enemy["attack"] * 1.1)
+
 	return enemy
 
 func get_regions() -> Array:
