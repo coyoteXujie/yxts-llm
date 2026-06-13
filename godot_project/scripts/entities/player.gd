@@ -4,6 +4,9 @@ class_name PlayerActor
 const StageVisualProfile = preload("res://scripts/shared/stage_visual_profile.gd")
 
 const SPEED := 190.0
+const PLAYER_MOVE_ACCELERATION := 1800.0
+const PLAYER_MOVE_DECELERATION := 2600.0
+const PLAYER_MOVE_STOP_EPSILON := 3.0
 const DRAW_SCALE := 1.0
 const SPRITE_TARGET_HEIGHT := StageVisualProfile.STAGE_SIDE_VIEW_ENTITY_HEIGHT
 const SPRITE_TARGET_WIDTH := StageVisualProfile.STAGE_SIDE_VIEW_PLAYER_WIDTH
@@ -119,7 +122,7 @@ func _process(delta: float) -> void:
 		idle_redraw_accumulator = fposmod(idle_redraw_accumulator, PLAYER_IDLE_REDRAW_INTERVAL)
 		queue_redraw()
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not movement_enabled:
 		velocity = Vector2.ZERO
 		_refresh_stage_depth_scale()
@@ -143,7 +146,13 @@ func _physics_process(_delta: float) -> void:
 		_update_lateral_facing(input_vector)
 
 	var previous_position := position
-	velocity = input_vector * SPEED
+	var target_velocity := _movement_target_velocity(input_vector)
+	if input_vector == Vector2.ZERO:
+		velocity = velocity.move_toward(Vector2.ZERO, PLAYER_MOVE_DECELERATION * delta)
+		if velocity.length() <= PLAYER_MOVE_STOP_EPSILON:
+			velocity = Vector2.ZERO
+	else:
+		velocity = velocity.move_toward(target_velocity, PLAYER_MOVE_ACCELERATION * delta)
 	move_and_slide()
 
 	last_axis_fallback = Vector2.ZERO
@@ -365,6 +374,11 @@ func _movement_axis_fallback_order(input_vector: Vector2) -> Array[Vector2]:
 	if absf(input_vector.y) > PLAYER_STAGE_SIDE_INPUT_DEADZONE:
 		axes.append(Vector2(0.0, signf(input_vector.y)))
 	return axes
+
+func _movement_target_velocity(input_vector: Vector2) -> Vector2:
+	if input_vector == Vector2.ZERO:
+		return Vector2.ZERO
+	return input_vector.normalized() * SPEED
 
 func _is_side_view_stage() -> bool:
 	if world_map == null:

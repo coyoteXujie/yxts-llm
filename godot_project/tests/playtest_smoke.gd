@@ -302,6 +302,7 @@ func _run() -> void:
 	_check(PLAYER_SCRIPT.PLAYER_IDLE_REDRAW_INTERVAL >= 1.0 / 15.0, "玩家静止状态不应每帧重绘整套自绘层")
 	_check(PLAYER_SCRIPT.PLAYER_MOVING_REDRAW_INTERVAL >= 1.0 / 35.0 and PLAYER_SCRIPT.PLAYER_MOVING_REDRAW_INTERVAL <= 1.0 / 24.0, "玩家移动状态应节流自绘动画，位置移动不应被每帧手绘层拖慢")
 	_check(PLAYER_SCRIPT.PLAYER_TURN_REDRAW_INTERVAL <= 1.0 / 40.0, "玩家转身过渡应比普通移动保留更高的动画刷新")
+	_check(PLAYER_SCRIPT.PLAYER_MOVE_ACCELERATION >= PLAYER_SCRIPT.SPEED * 6.0 and PLAYER_SCRIPT.PLAYER_MOVE_DECELERATION > PLAYER_SCRIPT.PLAYER_MOVE_ACCELERATION, "玩家移动应有短加速和更快刹停，避免硬起硬停造成卡顿感")
 	_check(bool(ProjectSettings.get_setting("physics/common/physics_interpolation", false)), "项目应启用 Godot 物理插值以减少 CharacterBody2D 移动抖动")
 	_check(PLAYER_SCRIPT.PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS > 0.35 and PLAYER_SCRIPT.PLAYER_STAGE_TURN_TEXTURE_SWAP_PROGRESS < 0.70, "玩家转身不应一开始就镜像底图，应先保留旧侧身压缩帧")
 	_check(not PLAYER_SCRIPT.PLAYER_SPRITE_SOURCE_FACES_LEFT, "当前默认玩家源图按朝右资源处理，向右时不应镜像底图")
@@ -336,6 +337,22 @@ func _run() -> void:
 	Input.action_release("move_right")
 	_check(player.facing.x > 0.0 and player._facing_side() > 0.0 and player.turn_accent_side > 0.0, "真实右移输入应在物理帧内更新玩家朝右状态")
 	_release_movement_actions()
+	var previous_player_map = player.world_map
+	player.world_map = null
+	player.position = Vector2.ZERO
+	player.velocity = Vector2.ZERO
+	Input.action_press("move_right")
+	player._physics_process(1.0 / 60.0)
+	Input.action_release("move_right")
+	var first_frame_move_speed: float = player.velocity.length()
+	_check(first_frame_move_speed > 1.0 and first_frame_move_speed < PLAYER_SCRIPT.SPEED, "玩家起步首帧应加速到部分速度，而不是瞬间跳到满速")
+	player._physics_process(1.0 / 60.0)
+	_check(player.velocity.length() < first_frame_move_speed, "玩家松开方向后应立即开始快速刹停")
+	for _i in range(4):
+		player._physics_process(1.0 / 60.0)
+	_check(player.velocity == Vector2.ZERO, "玩家松开方向后应在短时间内收敛到静止")
+	player.world_map = previous_player_map
+	player.position = GameState.player_position
 	_check(NPC_SCRIPT.BASE_SPRITE_HEIGHT >= 124.0, "NPC 地图贴图基础高度不应继续偏小")
 	_check(NPC_SCRIPT.STAGE_PRESENCE_SCALE >= 1.42, "NPC 局部横版舞台应叠加额外角色存在感缩放")
 	_check(NPC_SCRIPT.STAGE_MASTER_SCALE_BIAS >= 1.08 and NPC_SCRIPT.STAGE_ENEMY_SCALE_BIAS >= 1.10, "掌门/敌人应在局部横版舞台获得额外体量")
