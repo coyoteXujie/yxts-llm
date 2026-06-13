@@ -10,6 +10,7 @@ var hp_bar: ProgressBar
 var mp_bar: ProgressBar
 var name_label: Label
 var stats_label: Label
+var equipment_label: Label
 var quest_label: Label
 var quest_hint_label: Label
 var time_label: Label
@@ -37,6 +38,7 @@ func _ready() -> void:
 	_build_region_banner()
 	_build_toast()
 	EventBus.player_changed.connect(_on_player_changed)
+	EventBus.inventory_changed.connect(_on_inventory_changed)
 	EventBus.quests_changed.connect(_on_quests_changed)
 	EventBus.toast_requested.connect(show_toast)
 	EventBus.time_changed.connect(_on_time_changed)
@@ -82,7 +84,7 @@ func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(460, 210)
+	panel.size = Vector2(460, 226)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
@@ -113,6 +115,11 @@ func _build_top_panel() -> void:
 	stats_label.add_theme_font_size_override("font_size", 15)
 	stats_label.add_theme_color_override("font_color", Color(0.86, 0.82, 0.72))
 	box.add_child(stats_label)
+
+	equipment_label = Label.new()
+	equipment_label.add_theme_font_size_override("font_size", 14)
+	equipment_label.add_theme_color_override("font_color", Color(0.80, 0.74, 0.62))
+	box.add_child(equipment_label)
 
 	quest_label = Label.new()
 	quest_label.add_theme_font_size_override("font_size", 15)
@@ -247,7 +254,36 @@ func _on_player_changed(player: Dictionary) -> void:
 		int(player.get("pot", 0)),
 		int(player.get("money", 0))
 	]
+	_refresh_equipment_label()
 	_refresh_quest_labels()
+
+func _on_inventory_changed(_inventory: Dictionary) -> void:
+	_refresh_equipment_label()
+
+func _refresh_equipment_label() -> void:
+	if equipment_label == null:
+		return
+	equipment_label.text = "装备：%s  %s" % [
+		_equipment_status_part("weapon", "武"),
+		_equipment_status_part("armor", "防")
+	]
+
+func _equipment_status_part(slot: String, short_name: String) -> String:
+	var item_id := str(GameState.equipment.get(slot, ""))
+	if item_id.is_empty():
+		return "%s 无" % short_name
+	var item := GameData.get_item(item_id)
+	var durability := GameState.get_equipment_durability(item_id)
+	var condition := GameState.get_equipment_condition_label(item_id)
+	var repair_cost := GameState.get_equipment_repair_cost(item_id)
+	var repair_text := "" if repair_cost <= 0 else "·修%d两" % repair_cost
+	return "%s %s %d%%·%s%s" % [
+		short_name,
+		str(item.get("name", item_id)),
+		durability,
+		condition,
+		repair_text
+	]
 
 func _on_quests_changed() -> void:
 	_refresh_quest_labels()

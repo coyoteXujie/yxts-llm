@@ -10,6 +10,7 @@ const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
+const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
 const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
 const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
@@ -92,6 +93,11 @@ func _run() -> void:
 	var saved_equipment_durability: Dictionary = equipment_snapshot.get("equipment_durability", {})
 	_check(int(saved_equipment_durability.get("item_blade", 0)) == 72, "装备耐久应写入存档快照")
 
+	var hud = HUD_SCRIPT.new()
+	test_root.add_child(hud)
+	await get_tree().process_frame
+	_check(hud.equipment_label.text.contains("雁翎刀 72%·磨损") and hud.equipment_label.text.contains("修%d两" % blade_repair_cost) and hud.equipment_label.text.contains("布衣 100%·完好"), "HUD 应显示当前武器防具耐久状态和修理费")
+
 	var inventory_panel = INVENTORY_PANEL_SCRIPT.new()
 	test_root.add_child(inventory_panel)
 	await get_tree().process_frame
@@ -127,6 +133,7 @@ func _run() -> void:
 	var money_before_repair := int(GameState.player.get("money", 0))
 	blacksmith_panel.call("_execute_repair", "item_blade")
 	_check(GameState.get_equipment_durability("item_blade") == GameState.EQUIPMENT_DURABILITY_MAX and int(GameState.player.get("money", 0)) == money_before_repair - blade_repair_cost and int(GameState.player.get("attack", 0)) == base_attack + int(blade_effects.get("attack", 0)), "执行铁匠修理应扣银两、恢复满耐久并恢复满额加成")
+	_check(hud.equipment_label.text.contains("雁翎刀 100%·完好"), "HUD 应在铁匠修理后刷新装备耐久状态")
 	var repaired_snapshot := GameState.build_save_snapshot(GameState.player_position)
 	var repaired_equipment_durability: Dictionary = repaired_snapshot.get("equipment_durability", {})
 	_check(int(repaired_equipment_durability.get("item_blade", 0)) == GameState.EQUIPMENT_DURABILITY_MAX, "修理后的装备耐久应写入存档快照")
@@ -158,6 +165,7 @@ func _run() -> void:
 	var combat_snapshot: Dictionary = combat_system.snapshot()
 	var weapon_wear: Dictionary = combat_snapshot.get("equipment_wear", {})
 	_check(blade_after_combat == blade_before_combat - player_attack_count and int(weapon_wear.get("item_blade", 0)) == player_attack_count, "玩家每次有效出手都应磨损已装备武器")
+	_check(hud.equipment_label.text.contains("雁翎刀 %d%%" % blade_after_combat), "HUD 应在战斗磨损后通过库存事件刷新武器耐久")
 	_check("\n".join(combat_snapshot.get("log", []) as Array).contains("装备磨损"), "战斗结算日志应提示装备磨损")
 
 	var cloth_before_enemy_hit := GameState.get_equipment_durability("item_cloth")
