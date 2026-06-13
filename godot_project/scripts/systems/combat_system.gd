@@ -555,11 +555,14 @@ func _equipment_wear_summary() -> String:
 		if loss <= 0:
 			continue
 		var item := GameData.get_item(item_id)
-		parts.append("%s -%d（%d/%d）" % [
+		var repair_cost := GameState.get_equipment_repair_cost(item_id)
+		var repair_text := "" if repair_cost <= 0 else "，修%d两" % repair_cost
+		parts.append("%s -%d（%d/%d%s）" % [
 			str(item.get("name", item_id)),
 			loss,
 			GameState.get_equipment_durability(item_id),
-			GameState.EQUIPMENT_DURABILITY_MAX
+			GameState.EQUIPMENT_DURABILITY_MAX,
+			repair_text
 		])
 	if parts.is_empty():
 		return ""

@@ -168,7 +168,9 @@ func _run() -> void:
 	var weapon_wear: Dictionary = combat_snapshot.get("equipment_wear", {})
 	_check(blade_after_combat == blade_before_combat - player_attack_count and int(weapon_wear.get("item_blade", 0)) == player_attack_count, "玩家每次有效出手都应磨损已装备武器")
 	_check(hud.equipment_label.text.contains("雁翎刀 %d%%" % blade_after_combat), "HUD 应在战斗磨损后通过库存事件刷新武器耐久")
-	_check("\n".join(combat_snapshot.get("log", []) as Array).contains("装备磨损"), "战斗结算日志应提示装备磨损")
+	var blade_combat_repair_cost := GameState.get_equipment_repair_cost("item_blade")
+	var combat_log_text := "\n".join(combat_snapshot.get("log", []) as Array)
+	_check(combat_log_text.contains("装备磨损") and combat_log_text.contains("修%d两" % blade_combat_repair_cost), "战斗结算日志应提示装备磨损和修理费")
 
 	var cloth_before_enemy_hit := GameState.get_equipment_durability("item_cloth")
 	combat_system.start({
