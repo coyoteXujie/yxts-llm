@@ -928,6 +928,12 @@ func _run() -> void:
 			_check(local_area.shop_interior_texture.get_size().x >= LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_WIDTH and local_area.shop_interior_texture.get_size().y >= LOCAL_AREA_SCRIPT.SHOP_INTERIOR_TEXTURE_MIN_HEIGHT, "商铺内景整屏背景应达到横版舞台分辨率")
 		_check(local_area.stage_postfx_overlay == null or not local_area.stage_postfx_overlay.visible, "商铺内景不应显示局部横版后期光影层")
 		_check(local_area.stage_foreground_overlay == null or not local_area.stage_foreground_overlay.visible, "商铺内景不应显示局部横版前景遮挡层")
+		var shop_service_portal := _first_portal(local_area, "shop_service")
+		_check(not shop_service_portal.is_empty(), "商铺内应生成柜台服务入口")
+		if not shop_service_portal.is_empty():
+			_check(str(shop_service_portal.get("interaction_hint", "")).contains("/") and str(shop_service_portal.get("shop_id", "")) == local_area.active_shop_id, "柜台服务入口应携带店铺服务说明和店铺类型")
+			_check(local_area.is_position_walkable(local_area.get_shop_service_anchor()), "柜台服务点应落在可行走区域")
+			_check(str(local_area.call("_portal_label_text", shop_service_portal)).contains("柜台服务"), "柜台服务入口应有空间牌匾文案")
 		_check(not _first_portal(local_area, "exit_area").is_empty(), "商铺内应有出门入口")
 		if local_area.npc_nodes.size() > 0:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data

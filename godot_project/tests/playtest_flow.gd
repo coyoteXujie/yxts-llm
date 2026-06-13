@@ -184,10 +184,14 @@ func _run() -> void:
 			_check(main.local_area.current_mode == "shop", "应能进入商铺内景")
 			_check(main.local_area.npc_nodes.size() == 1, "商铺内应只生成掌柜")
 			if main.local_area.npc_nodes.size() == 1:
-				var keeper = main.local_area.npc_nodes[0]
-				main._open_dialogue(keeper.data)
+				var shop_service_portal := _first_portal(main.local_area, "shop_service")
+				_check(not shop_service_portal.is_empty(), "商铺内应能通过柜台服务入口触发掌柜")
+				_check(main._portal_prompt(shop_service_portal).contains("交谈") and main._portal_prompt(shop_service_portal).contains("柜台服务"), "柜台服务靠近提示应展示交谈动作和服务点")
+				main.focused_portal = shop_service_portal
+				main.focused_npc = null
+				main._handle_enter_area()
 				await _frames(2)
-				_check(GameState.mode == GameState.Mode.DIALOGUE, "应能与商铺掌柜对话")
+				_check(GameState.mode == GameState.Mode.DIALOGUE, "应能通过柜台服务点与商铺掌柜对话")
 				_check(main.dialogue_panel.visible, "对话面板应显示")
 				main.dialogue_panel._shop()
 				await _frames(2)

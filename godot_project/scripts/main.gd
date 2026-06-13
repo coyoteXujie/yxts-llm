@@ -448,6 +448,12 @@ func _portal_prompt(portal: Dictionary) -> String:
 			str(portal.get("shop_name", portal.get("label", "商铺"))),
 			str(portal.get("interaction_hint", "商铺"))
 		]
+	if portal_type == "shop_service":
+		return "%s%s（%s）" % [
+			str(portal.get("action_label", "交谈")),
+			str(portal.get("label", "柜台服务")),
+			str(portal.get("interaction_hint", "交易"))
+		]
 	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 		var action := str(portal.get("action_label", "查看"))
 		var hint := str(portal.get("interaction_hint", ""))
@@ -476,6 +482,8 @@ func _handle_enter_area() -> void:
 			_return_to_world()
 		"shop":
 			_enter_shop(focused_portal)
+		"shop_service":
+			_open_shop_service(focused_portal)
 		"exit_area":
 			_exit_shop_to_area()
 		"travel_region":
@@ -510,6 +518,12 @@ func _enter_shop(portal: Dictionary) -> void:
 	local_area.enter_shop(portal)
 	_transition_player_to_map(local_area, local_area.get_entry_position("shop"))
 	EventBus.emit_toast(str(portal.get("label", "进入商铺")))
+
+func _open_shop_service(_portal: Dictionary) -> void:
+	if local_area == null or local_area.current_mode != "shop" or local_area.npc_nodes.is_empty():
+		EventBus.emit_toast("柜台暂时没人")
+		return
+	_open_dialogue(local_area.npc_nodes[0].data)
 
 func _exit_shop_to_area() -> void:
 	_transition_player_to_map(local_area, local_area.exit_shop())

@@ -249,6 +249,8 @@ const SHOP_INTERIOR_TEXTURE_PROCEDURAL_GOODS_ENABLED := false
 const SHOP_INTERIOR_TEXTURE_SERVICE_ZONE_ALPHA := 0.18
 const SHOP_INTERIOR_TEXTURE_LIGHT_ALPHA := 0.22
 const SHOP_INTERIOR_TEXTURE_FOREGROUND_FRAME_ALPHA := 0.22
+const SHOP_INTERIOR_SERVICE_MARKER_ALPHA := 0.76
+const SHOP_INTERIOR_SERVICE_MARKER_GLOW_ALPHA := 0.24
 const SHOP_INTERIOR_BACK_WALL_RATIO := 0.48
 const SHOP_INTERIOR_COUNTER_ALPHA := 0.92
 const SHOP_INTERIOR_SHELF_ALPHA := 0.82
@@ -647,6 +649,11 @@ func get_entry_position(kind: String = "area") -> Vector2:
 		"west":
 			tile = Vector2i(8, map_height / 2)
 	return tile_to_world(_find_nearest_walkable_tile(tile))
+
+func get_shop_service_anchor() -> Vector2:
+	if current_mode != "shop":
+		return Vector2.ZERO
+	return tile_to_world(_shop_service_tile())
 
 func is_position_walkable(world_position: Vector2) -> bool:
 	return is_tile_walkable(world_to_tile(world_position))
@@ -1749,7 +1756,32 @@ func _generate_shop_map(shop_id: String) -> void:
 	elif shop_id == "inn":
 		_fill_rect(Rect2i(4, 10, 6, 3), Tile.COUNTER)
 		_fill_rect(Rect2i(map_width - 10, 10, 6, 3), Tile.COUNTER)
+	var shop: Dictionary = SHOP_DEFINITIONS.get(shop_id, {})
+	_add_portal("shop_service", "柜台服务", "shop_service", _shop_service_tile(), shop_id, "", "", {
+		"action_label": "交谈",
+		"shop_name": str(shop.get("name", "商铺")),
+		"interaction_hint": _shop_service_hint(shop_id)
+	})
 	_add_portal("exit_area", "出门", "exit_area", Vector2i(map_width / 2, map_height - 3), "")
+
+func _shop_service_tile() -> Vector2i:
+	return Vector2i(map_width / 2, 8)
+
+func _shop_service_hint(shop_id: String) -> String:
+	match shop_id:
+		"inn":
+			return "交易/住店"
+		"blacksmith":
+			return "交易/修理"
+		"medicine":
+			return "药品/疗伤"
+		"tailor":
+			return "衣装/护具"
+		"teahouse":
+			return "茶水/消息"
+		"market":
+			return "买卖/行情"
+	return "交易"
 
 func _spawn_region_npcs() -> void:
 	var region_id := str(current_region.get("id", ""))
@@ -1994,6 +2026,8 @@ func _build_portal_labels() -> void:
 		var label_size := Vector2(136, 24)
 		if portal_type == "travel_region":
 			label_size = Vector2(LOCAL_TRAVEL_BOARD_WIDTH, LOCAL_TRAVEL_BOARD_HEIGHT)
+		elif portal_type == "shop_service":
+			label_size = Vector2(LOCAL_INTERACTION_BOARD_WIDTH, LOCAL_INTERACTION_BOARD_HEIGHT + 10.0)
 		elif portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 			label_size = Vector2(LOCAL_INTERACTION_BOARD_WIDTH, LOCAL_INTERACTION_BOARD_HEIGHT)
 		label.position = tile_to_world(Vector2i(int(tile_data[0]), int(tile_data[1]))) - label_size * 0.5 + Vector2(0, -46)
@@ -2005,11 +2039,16 @@ func _build_portal_labels() -> void:
 		label.add_theme_constant_override("shadow_offset_x", 1)
 		label.add_theme_constant_override("shadow_offset_y", 2)
 		label.add_theme_constant_override("line_spacing", -2)
-		if portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
+		if portal_type == "shop" or portal_type == "shop_service" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 			var board := StyleBoxFlat.new()
 			if portal_type == "travel_region":
 				board.bg_color = Color(0.06, 0.12, 0.10, 0.82)
 				board.border_color = _travel_risk_color(int(portal.get("risk_level", 1)), 0.68)
+			elif portal_type == "shop_service":
+				var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", active_shop_id)), {})
+				var accent: Color = shop.get("accent", Color(0.86, 0.58, 0.28))
+				board.bg_color = Color(0.18, 0.10, 0.045, 0.76)
+				board.border_color = Color(accent.r, accent.g, accent.b, 0.62)
 			elif portal_type == "landmark":
 				board.bg_color = Color(0.16, 0.12, 0.07, 0.72)
 				board.border_color = Color(0.80, 0.68, 0.38, 0.56)
@@ -2028,7 +2067,7 @@ func _build_portal_labels() -> void:
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue"
+		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "shop_service" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue"
 		add_child(label)
 		portal_labels.append(label)
 
@@ -2036,6 +2075,12 @@ func _portal_label_text(portal: Dictionary) -> String:
 	var portal_type := str(portal.get("type", ""))
 	if portal_type == "shop":
 		return "%s · %s" % [str(portal.get("action_label", "进入")), str(portal.get("shop_name", portal.get("label", "商铺")))]
+	if portal_type == "shop_service":
+		return "%s · %s\n%s" % [
+			str(portal.get("action_label", "交谈")),
+			str(portal.get("label", "柜台服务")),
+			str(portal.get("interaction_hint", "交易"))
+		]
 	if portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue":
 		var action := str(portal.get("action_label", "查看"))
 		var hint := str(portal.get("interaction_hint", ""))
@@ -4556,6 +4601,10 @@ func _draw_portals() -> void:
 			color = Color(0.78, 0.58, 1.00, 0.86)
 		elif portal_type == "adventure_clue":
 			color = Color(0.46, 0.78, 1.00, 0.88)
+		elif portal_type == "shop_service":
+			var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", active_shop_id)), {})
+			var accent: Color = shop.get("accent", Color(0.90, 0.66, 0.28))
+			color = Color(accent.r, accent.g, accent.b, 0.82)
 		elif portal_type == "exit_world" or portal_type == "exit_area":
 			color = Color(0.56, 0.78, 0.98, 0.75)
 		draw_arc(pos, 18.0 if highlighted else 14.0, 0.0, TAU, 32, color, 2.4 if highlighted else 1.6)
@@ -4581,6 +4630,35 @@ func _draw_portal_signs() -> void:
 			_draw_stage_landmark_marker(pos, portal, highlighted)
 		elif portal_type == "adventure_clue":
 			_draw_stage_landmark_marker(pos, portal, highlighted)
+		elif portal_type == "shop_service":
+			var shop: Dictionary = SHOP_DEFINITIONS.get(str(portal.get("shop_id", active_shop_id)), {})
+			var accent: Color = shop.get("accent", Color(0.86, 0.58, 0.28))
+			_draw_shop_service_marker(pos, str(portal.get("shop_id", active_shop_id)), accent, highlighted)
+
+func _draw_shop_service_marker(pos: Vector2, shop_id: String, accent: Color, highlighted: bool) -> void:
+	var alpha := SHOP_INTERIOR_SERVICE_MARKER_ALPHA * (1.18 if highlighted else 1.0)
+	var glow_alpha := SHOP_INTERIOR_SERVICE_MARKER_GLOW_ALPHA * (1.30 if highlighted else 1.0)
+	_draw_ellipse_poly(pos + Vector2(0.0, 6.0), Vector2(58.0, 14.0), Color(accent.r, accent.g, accent.b, glow_alpha))
+	draw_arc(pos + Vector2(0.0, 2.0), 24.0 if highlighted else 19.0, PI * 0.06, PI * 0.94, 32, Color(accent.r, accent.g, accent.b, alpha), 2.2 if highlighted else 1.5)
+	var counter_y := pos.y - 28.0
+	draw_rect(Rect2(Vector2(pos.x - 48.0, counter_y), Vector2(96.0, 18.0)), Color(0.075, 0.040, 0.022, alpha * 0.84), true)
+	draw_line(Vector2(pos.x - 42.0, counter_y + 4.0), Vector2(pos.x + 42.0, counter_y + 1.0), Color(accent.r, accent.g, accent.b, alpha * 0.48), 1.2)
+	match shop_id:
+		"blacksmith":
+			draw_line(pos + Vector2(-16.0, -40.0), pos + Vector2(18.0, -56.0), Color(0.82, 0.80, 0.70, alpha * 0.82), 2.0)
+			draw_rect(Rect2(pos + Vector2(15.0, -60.0), Vector2(14.0, 6.0)), Color(0.18, 0.13, 0.09, alpha), true)
+		"medicine":
+			draw_rect(Rect2(pos + Vector2(-9.0, -55.0), Vector2(18.0, 20.0)), Color(0.16, 0.34, 0.18, alpha * 0.86), true)
+			draw_circle(pos + Vector2(0.0, -58.0), 4.0, Color(accent.r, accent.g, accent.b, alpha * 0.72))
+		"tailor":
+			draw_line(pos + Vector2(-22.0, -50.0), pos + Vector2(18.0, -36.0), Color(accent.r, accent.g, accent.b, alpha * 0.82), 4.0)
+			draw_line(pos + Vector2(-14.0, -39.0), pos + Vector2(23.0, -48.0), Color(0.96, 0.78, 0.90, alpha * 0.44), 1.3)
+		"inn", "teahouse":
+			draw_circle(pos + Vector2(-10.0, -46.0), 8.0, Color(0.42, 0.18, 0.08, alpha * 0.86))
+			draw_circle(pos + Vector2(10.0, -48.0), 5.0, Color(accent.r, accent.g, accent.b, alpha * 0.64))
+		_:
+			draw_rect(Rect2(pos + Vector2(-16.0, -51.0), Vector2(32.0, 15.0)), Color(0.24, 0.12, 0.06, alpha * 0.84), true)
+			draw_circle(pos + Vector2(9.0, -54.0), 5.0, Color(accent.r, accent.g, accent.b, alpha * 0.62))
 
 func _draw_stage_travel_gate(pos: Vector2, portal: Dictionary, highlighted: bool) -> void:
 	var direction := str(portal.get("direction", "south"))
