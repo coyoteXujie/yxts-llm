@@ -1825,12 +1825,47 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 		"teach_skills": [],
 		"can_rest": bool(shop.get("can_rest", false)),
 		"use_map_sprite": true,
+		"map_actor_scale": 1.12,
+		"stage_actor": true,
+		"stage_facing_side": 1.0,
+		"stage_activity": _shop_keeper_activity(shop_id),
+		"shop_service_line": _shop_keeper_service_line(shop_id),
 		"appearance": {
 			"accent": _color_to_array(shop.get("accent", Color(0.86, 0.66, 0.34)))
 		}
 	}
 	occupied_npc_tiles.clear()
 	_spawn_npc(keeper)
+	if not npc_nodes.is_empty():
+		var actor = npc_nodes[npc_nodes.size() - 1]
+		if is_instance_valid(actor) and actor.has_method("show_ambient_line"):
+			actor.show_ambient_line(str(keeper.get("shop_service_line", "")), 8.0)
+
+func _shop_keeper_activity(shop_id: String) -> String:
+	match shop_id:
+		"blacksmith":
+			return "forge"
+		"medicine":
+			return "herb"
+		"inn", "teahouse", "market", "tailor":
+			return "service"
+	return "service"
+
+func _shop_keeper_service_line(shop_id: String) -> String:
+	match shop_id:
+		"inn":
+			return "打尖住店，先看少侠要歇脚还是备些吃食。"
+		"blacksmith":
+			return "兵器防具都能看，磨损了也能当场修。"
+		"medicine":
+			return "金创药和小还丹都在柜上，伤势别拖。"
+		"tailor":
+			return "衣甲护具都可试，行走江湖别只顾刀剑。"
+		"teahouse":
+			return "茶水热着，街巷里的消息也刚到。"
+		"market":
+			return "今日行情在这儿，买卖先问一声价。"
+	return "货都在柜上，少侠慢慢看。"
 
 func _shop_index(shop_id: String) -> int:
 	var keys := SHOP_DEFINITIONS.keys()

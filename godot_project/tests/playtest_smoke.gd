@@ -939,6 +939,8 @@ func _run() -> void:
 			var keeper_data: Dictionary = local_area.npc_nodes[0].data
 			_check((keeper_data.get("sell_items", []) as Array).size() > 0, "商铺掌柜应带商品列表")
 			_check(str(keeper_data.get("region_id", "")) == "qinghe", "商铺掌柜应携带当前区域 id 供地区行情使用")
+			_check(bool(keeper_data.get("stage_actor", false)) and float(keeper_data.get("map_actor_scale", 0.0)) >= 1.10 and not str(keeper_data.get("stage_activity", "")).is_empty(), "商铺掌柜应启用店内横版舞台比例和职业动作")
+			_check(local_area.npc_nodes[0].has_active_ambient_line() and str(keeper_data.get("shop_service_line", "")).length() > 0, "商铺掌柜进店后应展示店铺服务气泡")
 			_check(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_MIN_FACTOR <= 0.80, "商店买入折扣应有明确下限，避免价格体系失控")
 			_check(SHOP_PANEL_SCRIPT.MARKET_PRICE_MIN_FACTOR <= 0.70 and SHOP_PANEL_SCRIPT.MARKET_PRICE_MAX_FACTOR >= 1.30, "地区行情应有明确价格系数边界")
 			_check(float(SHOP_PANEL_SCRIPT.SHOP_BUY_PRICE_FACTORS.get("market", 1.0)) <= 0.90, "市集应有可见九折行情，形成不同店铺价格感")
