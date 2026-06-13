@@ -64,38 +64,6 @@
     "effects": {"hp": 22, "mp": 8}
   },
   {
-    "id": "item_sword",
-    "name": "青钢剑",
-    "type": "weapon",
-    "price": 160,
-    "description": "入门剑客常用的长剑。",
-    "effects": {"attack": 10}
-  },
-  {
-    "id": "item_blade",
-    "name": "雁翎刀",
-    "type": "weapon",
-    "price": 180,
-    "description": "刀身厚重，适合刚猛路数。",
-    "effects": {"attack": 12}
-  },
-  {
-    "id": "item_cloth",
-    "name": "布衣",
-    "type": "armor",
-    "price": 60,
-    "description": "粗布衣衫，胜在轻便。",
-    "effects": {"defense": 4}
-  },
-  {
-    "id": "item_fine_cloth",
-    "name": "细布衣",
-    "type": "armor",
-    "price": 120,
-    "description": "裁缝铺的细布衣，防护更好。",
-    "effects": {"defense": 8}
-  },
-  {
     "id": "item_green_doufu",
     "name": "青豆腐",
     "type": "consumable",
@@ -136,12 +104,52 @@
     "effects": {"hp": 32, "mp": 6}
   },
   {
+    "id": "item_sword",
+    "name": "青钢剑",
+    "type": "weapon",
+    "price": 160,
+    "description": "入门剑客常用的长剑。",
+    "effects": {"attack": 10},
+    "weapon_type": "sword",
+    "slot": "hand"
+  },
+  {
+    "id": "item_blade",
+    "name": "雁翎刀",
+    "type": "weapon",
+    "price": 180,
+    "description": "刀身厚重，适合刚猛路数。",
+    "effects": {"attack": 12},
+    "weapon_type": "blade",
+    "slot": "hand"
+  },
+  {
+    "id": "item_cloth",
+    "name": "布衣",
+    "type": "armor",
+    "price": 60,
+    "description": "粗布衣衫，胜在轻便。",
+    "effects": {"defense": 4},
+    "slot": "body"
+  },
+  {
+    "id": "item_fine_cloth",
+    "name": "细布衣",
+    "type": "armor",
+    "price": 120,
+    "description": "裁缝铺的细布衣，防护更好。",
+    "effects": {"defense": 8},
+    "slot": "body"
+  },
+  {
     "id": "item_diaogan",
     "name": "钓竿",
     "type": "weapon",
     "price": 90,
     "description": "看似普通的钓竿，也能当作棍棒防身。",
-    "effects": {"attack": 6}
+    "effects": {"attack": 6},
+    "weapon_type": "staff",
+    "slot": "hand"
   },
   {
     "id": "item_dagger",
@@ -149,7 +157,9 @@
     "type": "weapon",
     "price": 120,
     "description": "短小锋利，适合近身突袭。",
-    "effects": {"attack": 8}
+    "effects": {"attack": 8},
+    "weapon_type": "dagger",
+    "slot": "hand"
   },
   {
     "id": "item_whip",
@@ -157,7 +167,9 @@
     "type": "weapon",
     "price": 220,
     "description": "何铁手惯用的软兵器，出手刁钻。",
-    "effects": {"attack": 14}
+    "effects": {"attack": 14},
+    "weapon_type": "whip",
+    "slot": "hand"
   },
   {
     "id": "item_hetun_blade",
@@ -165,7 +177,9 @@
     "type": "weapon",
     "price": 360,
     "description": "刀锋带毒纹，五毒门路的奇兵。",
-    "effects": {"attack": 18}
+    "effects": {"attack": 18},
+    "weapon_type": "blade",
+    "slot": "hand"
   },
   {
     "id": "item_silk_cloth",
@@ -173,6 +187,675 @@
     "type": "armor",
     "price": 260,
     "description": "裁剪精细的丝绸衣，轻便且护身。",
-    "effects": {"defense": 12}
+    "effects": {"defense": 12},
+    "slot": "body"
+  },
+  {
+    "id": "item_iron_sword",
+    "name": "铁剑",
+    "type": "weapon",
+    "price": 280,
+    "description": "精铁打造的长剑，剑锋泛青。",
+    "effects": {"attack": 16},
+    "weapon_type": "sword",
+    "slot": "hand"
+  },
+  {
+    "id": "item_steel_blade",
+    "name": "精钢刀",
+    "type": "weapon",
+    "price": 320,
+    "description": "百炼精钢刀，刀背厚重刀刃锋利。",
+    "effects": {"attack": 18},
+    "weapon_type": "blade",
+    "slot": "hand"
+  },
+  {
+    "id": "item_spear",
+    "name": "长枪",
+    "type": "weapon",
+    "price": 350,
+    "description": "战场常用的长矛，一寸长一寸强。",
+    "effects": {"attack": 20},
+    "weapon_type": "spear",
+    "slot": "hand"
+  },
+  {
+    "id": "item_staff",
+    "name": "齐眉棍",
+    "type": "weapon",
+    "price": 280,
+    "description": "比人还高的木棍，挥舞起来虎虎生风。",
+    "effects": {"attack": 17},
+    "weapon_type": "staff",
+    "slot": "hand"
+  },
+  {
+    "id": "item_fist",
+    "name": "铁拳套",
+    "type": "weapon",
+    "price": 240,
+    "description": "戴上它，一拳下去能打断石碑。",
+    "effects": {"attack": 15},
+    "weapon_type": "fist",
+    "slot": "hand"
+  },
+  {
+    "id": "item_shuriken",
+    "name": "飞蝗石",
+    "type": "weapon",
+    "price": 80,
+    "description": "江湖常用的暗器，一次可投掷多枚。",
+    "effects": {"attack": 7},
+    "weapon_type": "throwing",
+    "slot": "hand"
+  },
+  {
+    "id": "item_poison_needle",
+    "name": "透骨钉",
+    "type": "weapon",
+    "price": 180,
+    "description": "淬毒的银针，见血封喉。",
+    "effects": {"attack": 12},
+    "weapon_type": "throwing",
+    "slot": "hand"
+  },
+  {
+    "id": "item_leather_armor",
+    "name": "皮甲",
+    "type": "armor",
+    "price": 180,
+    "description": "鞣制过的牛皮甲，防护轻便。",
+    "effects": {"defense": 10},
+    "slot": "body"
+  },
+  {
+    "id": "item_chain_armor",
+    "name": "链子甲",
+    "type": "armor",
+    "price": 380,
+    "description": "铁环相扣而成的铠甲，防护力强。",
+    "effects": {"defense": 18},
+    "slot": "body"
+  },
+  {
+    "id": "item_steel_armor",
+    "name": "精钢甲",
+    "type": "armor",
+    "price": 680,
+    "description": "全身精钢打造的铠甲，重在防护。",
+    "effects": {"defense": 26},
+    "slot": "body"
+  },
+  {
+    "id": "item_helmet",
+    "name": "皮帽",
+    "type": "armor",
+    "price": 80,
+    "description": "猎人常用的皮帽，能护住头顶。",
+    "effects": {"defense": 3},
+    "slot": "head"
+  },
+  {
+    "id": "item_iron_helmet",
+    "name": "铁盔",
+    "type": "armor",
+    "price": 220,
+    "description": "官兵常用的铁头盔，防护扎实。",
+    "effects": {"defense": 8},
+    "slot": "head"
+  },
+  {
+    "id": "item_bracers",
+    "name": "护腕",
+    "type": "armor",
+    "price": 60,
+    "description": "皮制护腕，护住手腕。",
+    "effects": {"defense": 2},
+    "slot": "hands"
+  },
+  {
+    "id": "item_iron_bracers",
+    "name": "铁护腕",
+    "type": "armor",
+    "price": 160,
+    "description": "精铁打造的护腕，防护更好。",
+    "effects": {"defense": 6},
+    "slot": "hands"
+  },
+  {
+    "id": "item_boots",
+    "name": "草鞋",
+    "type": "armor",
+    "price": 20,
+    "description": "编草鞋，耐穿又透气。",
+    "effects": {"defense": 1},
+    "slot": "feet"
+  },
+  {
+    "id": "item_cloth_boots",
+    "name": "布鞋",
+    "type": "armor",
+    "price": 50,
+    "description": "布料做的鞋，穿起来舒服。",
+    "effects": {"defense": 2},
+    "slot": "feet"
+  },
+  {
+    "id": "item_leather_boots",
+    "name": "皮靴",
+    "type": "armor",
+    "price": 140,
+    "description": "牛皮靴子，防水耐磨。",
+    "effects": {"defense": 5},
+    "slot": "feet"
+  },
+  {
+    "id": "item_iron_boots",
+    "name": "铁靴",
+    "type": "armor",
+    "price": 320,
+    "description": "铁片包裹的靴子，防护周全。",
+    "effects": {"defense": 10},
+    "slot": "feet"
+  },
+  {
+    "id": "item_xiaoyao_dan",
+    "name": "逍遥丹",
+    "type": "consumable",
+    "price": 200,
+    "description": "逍遥派秘制灵丹，大幅恢复气血内力。",
+    "effects": {"hp": 280, "mp": 180}
+  },
+  {
+    "id": "item_xiangyang_tea",
+    "name": "襄阳茶",
+    "type": "consumable",
+    "price": 45,
+    "description": "襄阳特产名茶，清香提神。",
+    "effects": {"mp": 60, "pot": 5}
+  },
+  {
+    "id": "item_antidote",
+    "name": "解毒散",
+    "type": "consumable",
+    "price": 60,
+    "description": "能解蛇毒、蝎毒等常见毒物。",
+    "effects": {"poison_resist": 50}
+  },
+  {
+    "id": "item_horse_meat",
+    "name": "马肉干",
+    "type": "consumable",
+    "price": 35,
+    "description": "西北风干的马肉干，耐饿。",
+    "effects": {"hp": 55}
+  },
+  {
+    "id": "item_honey",
+    "name": "蜂蜜",
+    "type": "consumable",
+    "price": 28,
+    "description": "山野蜂蜜，甜润滋补。",
+    "effects": {"hp": 40, "mp": 15}
+  },
+  {
+    "id": "item_gingko",
+    "name": "银杏果",
+    "type": "consumable",
+    "price": 22,
+    "description": "白果银杏，养生佳品。",
+    "effects": {"hp": 28, "mp": 28}
+  },
+  {
+    "id": "item_lingzhi",
+    "name": "灵芝",
+    "type": "consumable",
+    "price": 150,
+    "description": "深山老林采集的灵芝，延年益寿。",
+    "effects": {"hp": 200, "pot": 15}
+  },
+  {
+    "id": "item_renshen",
+    "name": "人参",
+    "type": "consumable",
+    "price": 180,
+    "description": "百年老参，大补元气。",
+    "effects": {"hp": 300, "mp": 100}
+  },
+  {
+    "id": "item_huzhang_powder",
+    "name": "虎掌粉",
+    "type": "consumable",
+    "price": 90,
+    "description": "虎掌菇晒制的粉末，能强身健体。",
+    "effects": {"hp": 120, "defense": 10, "duration": 60}
+  },
+  {
+    "id": "item_xuetong",
+    "name": "血藤",
+    "type": "material",
+    "price": 25,
+    "description": "深山老林里的血红色藤蔓，可入药。",
+    "effects": {}
+  },
+  {
+    "id": "item_xilian",
+    "name": "西莲",
+    "type": "material",
+    "price": 35,
+    "description": "雪山西域莲，可解寒毒。",
+    "effects": {}
+  },
+  {
+    "id": "item_bailian",
+    "name": "白莲",
+    "type": "material",
+    "price": 28,
+    "description": "清池白莲，花瓣可入药。",
+    "effects": {}
+  },
+  {
+    "id": "item_jinying",
+    "name": "金银花",
+    "type": "material",
+    "price": 18,
+    "description": "清热解毒的常用药材。",
+    "effects": {}
+  },
+  {
+    "id": "item_chuanwu",
+    "name": "川乌",
+    "type": "material",
+    "price": 42,
+    "description": "四川产的乌头，有大毒但可入药。",
+    "effects": {}
+  },
+  {
+    "id": "item_tiekuang",
+    "name": "铁矿石",
+    "type": "material",
+    "price": 15,
+    "description": "提炼精铁的原料。",
+    "effects": {}
+  },
+  {
+    "id": "item_meitong",
+    "name": "煤炭",
+    "type": "material",
+    "price": 8,
+    "description": "生火做饭的燃料。",
+    "effects": {}
+  },
+  {
+    "id": "item_niujin",
+    "name": "牛筋",
+    "type": "material",
+    "price": 32,
+    "description": "鞣制后的牛筋，可制弓弦。",
+    "effects": {}
+  },
+  {
+    "id": "item_shepi",
+    "name": "蛇皮",
+    "type": "material",
+    "price": 45,
+    "description": "毒蛇的皮，可做鞭子或容器。",
+    "effects": {}
+  },
+  {
+    "id": "item_hupi",
+    "name": "虎皮",
+    "type": "material",
+    "price": 120,
+    "description": "完整虎皮，价值不菲。",
+    "effects": {}
+  },
+  {
+    "id": "item_chongci",
+    "name": "虫翅",
+    "type": "material",
+    "price": 12,
+    "description": "各种昆虫的翅膀，可入药或做暗器。",
+    "effects": {}
+  },
+  {
+    "id": "item_shanhu",
+    "name": "珊瑚",
+    "type": "material",
+    "price": 80,
+    "description": "海底采集的珊瑚，可作装饰或药材。",
+    "effects": {}
+  },
+  {
+    "id": "item_baiyu",
+    "name": "白玉",
+    "type": "material",
+    "price": 150,
+    "description": "温润无瑕的白玉，可雕刻成饰品。",
+    "effects": {}
+  },
+  {
+    "id": "item_jiuhua_yulu",
+    "name": "九华玉露",
+    "type": "consumable",
+    "price": 500,
+    "description": "九华山巅的灵泉，传说能洗髓伐毛。",
+    "effects": {"hp": 500, "mp": 300, "pot": 50}
+  },
+  {
+    "id": "item_yuxi_dan",
+    "name": "玉犀丹",
+    "type": "consumable",
+    "price": 380,
+    "description": "犀牛角制成的灵丹，化解万毒。",
+    "effects": {"poison_cure": 100}
+  },
+  {
+    "id": "item_bingpo_tea",
+    "name": "冰魄茶",
+    "type": "consumable",
+    "price": 160,
+    "description": "寒冰洞窟中的茶叶，服用后内力大增。",
+    "effects": {"mp": 250}
+  },
+  {
+    "id": "item_jade_ring",
+    "name": "玉戒指",
+    "type": "accessory",
+    "price": 200,
+    "description": "佩戴可宁心静气，略增内力。",
+    "effects": {"mp_max": 20},
+    "slot": "accessory"
+  },
+  {
+    "id": "item_tiger_amulet",
+    "name": "虎符",
+    "type": "accessory",
+    "price": 500,
+    "description": "调动军队的虎符，象征身份。",
+    "effects": {"attack": 15, "defense": 10},
+    "slot": "accessory"
+  },
+  {
+    "id": "item_apollo_orb",
+    "name": "日月宝镜",
+    "type": "accessory",
+    "price": 800,
+    "description": "传说能映照未来的宝镜。",
+    "effects": {"mp": 50, "attack": 10},
+    "slot": "accessory"
+  },
+  {
+    "id": "item_taiji_talisman",
+    "name": "太极符",
+    "type": "accessory",
+    "price": 350,
+    "description": "武当山太极观开光的护符。",
+    "effects": {"defense": 15, "hp_regen": 2},
+    "slot": "accessory"
+  },
+  {
+    "id": "item_bai_zha",
+    "name": "悲酥清风",
+    "type": "weapon",
+    "price": 450,
+    "description": "大理段氏的独门毒药，无色无味。",
+    "effects": {"attack": 22, "poison": 30},
+    "weapon_type": "throwing",
+    "slot": "hand"
+  },
+  {
+    "id": "item_xuanming_ice",
+    "name": "玄冥神冰",
+    "type": "consumable",
+    "price": 280,
+    "description": "极北之地采集的寒冰，触之即冻。",
+    "effects": {"attack": 50, "freeze": 30}
+  },
+  {
+    "id": "item_baiyun_guai",
+    "name": "白云观符",
+    "type": "consumable",
+    "price": 120,
+    "description": "白云观道士画的驱邪符。",
+    "effects": {"evil_damage": 50}
+  },
+  {
+    "id": "item_huaidian_candy",
+    "name": "桂花糖",
+    "type": "consumable",
+    "price": 10,
+    "description": "桂花香气的糖果，孩子们的最爱。",
+    "effects": {"hp": 15}
+  },
+  {
+    "id": "item_zongzi",
+    "name": "粽子",
+    "type": "consumable",
+    "price": 16,
+    "description": "端午节的粽子，软糯可口。",
+    "effects": {"hp": 30}
+  },
+  {
+    "id": "item_mooncake",
+    "name": "月饼",
+    "type": "consumable",
+    "price": 40,
+    "description": "中秋节的月饼，圆圆如月。",
+    "effects": {"hp": 50, "mp": 30}
+  },
+  {
+    "id": "item_tangyuan",
+    "name": "汤圆",
+    "type": "consumable",
+    "price": 18,
+    "description": "元宵节的汤圆，团圆美满。",
+    "effects": {"hp": 35, "mp": 15}
+  },
+  {
+    "id": "item_longsword",
+    "name": "龙泉剑",
+    "type": "weapon",
+    "price": 1200,
+    "description": "龙泉剑冢出品的传世名剑，剑身如秋水。",
+    "effects": {"attack": 35},
+    "weapon_type": "sword",
+    "slot": "hand",
+    "rarity": "legendary"
+  },
+  {
+    "id": "item_snake_staff",
+    "name": "蛇杖",
+    "type": "weapon",
+    "price": 980,
+    "description": "欧阳锋的蛇杖，顶端盘踞毒蛇。",
+    "effects": {"attack": 32, "poison": 40},
+    "weapon_type": "staff",
+    "slot": "hand",
+    "rarity": "epic"
+  },
+  {
+    "id": "item_xiangmo_ring",
+    "name": "吸星戒指",
+    "type": "accessory",
+    "price": 1500,
+    "description": "日月神教吸星大法所用的邪物。",
+    "effects": {"mp_steal": 5, "attack": 20},
+    "slot": "accessory",
+    "rarity": "legendary"
+  },
+  {
+    "id": "item_jiuyang_zhenjing",
+    "name": "九阳真经",
+    "type": "book",
+    "price": 0,
+    "description": "少林九阳功的无上心法秘籍。",
+    "effects": {},
+    "skill_id": "skill_jiuyang",
+    "unique": true
+  },
+  {
+    "id": "item_xiantian_gong",
+    "name": "先天功",
+    "type": "book",
+    "price": 0,
+    "description": "全真派镇派内功心法。",
+    "effects": {},
+    "skill_id": "skill_xiantian",
+    "unique": true
+  },
+  {
+    "id": "item_yijing",
+    "name": "易筋经",
+    "type": "book",
+    "price": 0,
+    "description": "少林至高无上内功绝学。",
+    "effects": {},
+    "skill_id": "skill_yijing",
+    "unique": true
+  },
+  {
+    "id": "item_xuanming_bei",
+    "name": "玄冥神掌谱",
+    "type": "book",
+    "price": 0,
+    "description": "玄冥二老独门掌法秘籍。",
+    "effects": {},
+    "skill_id": "skill_xuanming",
+    "unique": true
+  },
+  {
+    "id": "item_jinshe_jian",
+    "name": "金蛇剑谱",
+    "type": "book",
+    "price": 0,
+    "description": "金蛇郎君独创的剑法秘籍。",
+    "effects": {},
+    "skill_id": "skill_jinshe",
+    "unique": true
+  },
+  {
+    "id": "item_xiaoyao_zhi",
+    "name": "逍遥派掌法",
+    "type": "book",
+    "price": 0,
+    "description": "逍遥派天山折梅手中的掌法。",
+    "effects": {},
+    "skill_id": "skill_xiaoyao",
+    "unique": true
+  },
+  {
+    "id": "item_huashan_sword",
+    "name": "华山剑谱",
+    "type": "book",
+    "price": 0,
+    "description": "华山派基础剑法的完整记录。",
+    "effects": {},
+    "skill_id": "skill_huashan_sword",
+    "unique": true
+  },
+  {
+    "id": "item_skill_bagua_zhang",
+    "name": "八卦掌谱",
+    "type": "book",
+    "price": 0,
+    "description": "武当八卦掌的修炼法门。",
+    "effects": {},
+    "skill_id": "skill_bagua_zhang",
+    "unique": true
+  },
+  {
+    "id": "item_skill_shaolin_tui",
+    "name": "少林腿法",
+    "type": "book",
+    "price": 0,
+    "description": "少林七十二绝技之腿法。",
+    "effects": {},
+    "skill_id": "skill_shaolin_leg",
+    "unique": true
+  },
+  {
+    "id": "item_skill_emei_needle",
+    "name": "峨眉暗器谱",
+    "type": "book",
+    "price": 0,
+    "description": "峨眉派暗器手法的精华。",
+    "effects": {},
+    "skill_id": "skill_emei_throw",
+    "unique": true
+  },
+  {
+    "id": "item_letter_1",
+    "name": "密信",
+    "type": "quest",
+    "price": 0,
+    "description": "一封神秘信件，上面有暗影司的标记。",
+    "effects": {}
+  },
+  {
+    "id": "item_letter_2",
+    "name": "血书",
+    "type": "quest",
+    "price": 0,
+    "description": "染血的书信，似乎关乎重大秘密。",
+    "effects": {}
+  },
+  {
+    "id": "item_token_1",
+    "name": "掌门令符",
+    "type": "quest",
+    "price": 0,
+    "description": "代表掌门身份的令牌。",
+    "effects": {}
+  },
+  {
+    "id": "item_token_2",
+    "name": "七派令",
+    "type": "quest",
+    "price": 0,
+    "description": "七派联盟的信物，各派掌门皆认。",
+    "effects": {}
+  },
+  {
+    "id": "item_key_prison",
+    "name": "牢房钥匙",
+    "type": "quest",
+    "price": 0,
+    "description": "打开牢门的钥匙。",
+    "effects": {}
+  },
+  {
+    "id": "item_treasure_map",
+    "name": "藏宝图",
+    "type": "quest",
+    "price": 0,
+    "description": "标记着宝藏位置的地图。",
+    "effects": {}
+  },
+  {
+    "id": "item_yuandan",
+    "name": "九转还魂丹",
+    "type": "consumable",
+    "price": 0,
+    "description": "传说能起死回生的仙丹。",
+    "effects": {"revive": 1},
+    "unique": true
+  },
+  {
+    "id": "item_silver_ling",
+    "name": "银两",
+    "type": "currency",
+    "price": 1,
+    "description": "江湖通用的银两。",
+    "effects": {}
+  },
+  {
+    "id": "item_gold_ling",
+    "name": "黄金",
+    "type": "currency",
+    "price": 1000,
+    "description": "价值连城的黄金。",
+    "effects": {}
   }
 ]
