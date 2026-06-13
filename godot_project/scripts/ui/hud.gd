@@ -5,6 +5,14 @@ const MINIMAP_SCRIPT := preload("res://scripts/ui/minimap_canvas.gd")
 const HUD_PROMPT_CHIP_MIN_WIDTH := 74.0
 const HUD_PROMPT_PRIMARY_ALPHA := 0.88
 const HUD_PROMPT_SECONDARY_ALPHA := 0.70
+const SHOP_SERVICE_NAMES := {
+	"inn": "客栈",
+	"medicine": "药铺",
+	"blacksmith": "铁匠铺",
+	"tailor": "布庄",
+	"market": "市集",
+	"teahouse": "茶肆"
+}
 
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
@@ -15,6 +23,7 @@ var quest_label: Label
 var quest_hint_label: Label
 var time_label: Label
 var region_label: Label
+var service_label: Label
 var rumor_label: Label
 var prompt_panel: PanelContainer
 var prompt_box: HBoxContainer
@@ -28,6 +37,7 @@ var region_banner_label: Label
 var toast_timer := 0.0
 var region_banner_timer := 0.0
 var last_region_id := ""
+var current_region: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -84,7 +94,7 @@ func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(460, 226)
+	panel.size = Vector2(460, 242)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
@@ -142,6 +152,12 @@ func _build_top_panel() -> void:
 	region_label.add_theme_font_size_override("font_size", 14)
 	region_label.add_theme_color_override("font_color", Color(0.76, 0.82, 0.70))
 	box.add_child(region_label)
+
+	service_label = Label.new()
+	service_label.custom_minimum_size = Vector2(410, 18)
+	service_label.add_theme_font_size_override("font_size", 13)
+	service_label.add_theme_color_override("font_color", Color(0.82, 0.76, 0.62))
+	box.add_child(service_label)
 
 	rumor_label = Label.new()
 	rumor_label.custom_minimum_size = Vector2(410, 34)
@@ -259,6 +275,7 @@ func _on_player_changed(player: Dictionary) -> void:
 
 func _on_inventory_changed(_inventory: Dictionary) -> void:
 	_refresh_equipment_label()
+	_refresh_service_label()
 
 func _refresh_equipment_label() -> void:
 	if equipment_label == null:
@@ -302,8 +319,10 @@ func _on_time_changed(day: int, hour: float, weather: String) -> void:
 func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 	if region_label == null:
 		return
+	current_region = region.duplicate(true)
 	if region.is_empty():
 		region_label.text = "所在地：未知之地"
+		_refresh_service_label()
 		return
 	var danger := int(region.get("danger", 0))
 	var danger_text := _danger_text(danger)
@@ -315,10 +334,29 @@ func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 		exploration_title,
 		danger_text
 	]
+	_refresh_service_label()
 	var region_id := str(region.get("id", ""))
 	if not region_id.is_empty() and region_id != last_region_id:
 		last_region_id = region_id
 		_show_region_banner(region, state)
+
+func _refresh_service_label() -> void:
+	if service_label == null:
+		return
+	var shop_ids := GameData.get_region_shop_ids(current_region)
+	var service_parts: Array[String] = []
+	for shop_id in shop_ids:
+		service_parts.append(str(SHOP_SERVICE_NAMES.get(str(shop_id), str(shop_id))))
+	var service_text := "本地服务：暂无" if service_parts.is_empty() else "本地服务：%s" % " / ".join(service_parts)
+	if _has_damaged_equipment() and shop_ids.has("blacksmith"):
+		service_text = "%s    装备需修理：铁匠铺" % service_text
+	service_label.text = service_text
+
+func _has_damaged_equipment() -> bool:
+	for item_id in GameState.get_repairable_equipment_item_ids():
+		if GameState.equipment.values().has(item_id):
+			return true
+	return false
 
 func _on_world_events_changed(events: Array) -> void:
 	if rumor_label == null:

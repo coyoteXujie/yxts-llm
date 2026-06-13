@@ -96,7 +96,9 @@ func _run() -> void:
 	var hud = HUD_SCRIPT.new()
 	test_root.add_child(hud)
 	await get_tree().process_frame
+	hud._on_region_changed(GameData.get_region("qinghe"), GameState.get_region_state("qinghe"))
 	_check(hud.equipment_label.text.contains("雁翎刀 72%·磨损") and hud.equipment_label.text.contains("修%d两" % blade_repair_cost) and hud.equipment_label.text.contains("布衣 100%·完好"), "HUD 应显示当前武器防具耐久状态和修理费")
+	_check(hud.service_label.text.contains("本地服务") and hud.service_label.text.contains("铁匠铺") and hud.service_label.text.contains("装备需修理"), "HUD 城镇服务行应在装备受损时提示铁匠铺")
 
 	var inventory_panel = INVENTORY_PANEL_SCRIPT.new()
 	test_root.add_child(inventory_panel)
