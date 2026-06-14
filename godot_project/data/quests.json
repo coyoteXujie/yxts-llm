@@ -1614,5 +1614,242 @@
       "money": 80,
       "daode": 1
     }
+  },
+  {
+    "id": "q_medicine_delivery",
+    "title": "送药任务",
+    "giver": "平一指",
+    "description": "平一指让你把药材送到成都的药店。",
+    "requires_completed": [
+      "q_herb_gather"
+    ],
+    "next_hint": "前往成都天府药市",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_baozi",
+        "count": 3,
+        "label": "准备物资"
+      }
+    ],
+    "rewards": {
+      "exp": 120,
+      "money": 80,
+      "daode": 2
+    }
+  },
+  {
+    "id": "q_escort_mission",
+    "title": "护送任务",
+    "giver": "巡捕",
+    "description": "巡捕需要人护送官差去长安。",
+    "requires_completed": [
+      "q_clear_thugs"
+    ],
+    "next_hint": "前往长安城",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_baozi",
+        "count": 3,
+        "label": "准备物资"
+      }
+    ],
+    "rewards": {
+      "exp": 180,
+      "money": 150,
+      "daode": 3
+    }
+  },
+  {
+    "id": "q_find_mentor",
+    "title": "寻访名师",
+    "giver": "韦扬",
+    "description": "掌门让你去拜访其他门派的武林前辈。",
+    "requires_completed": [
+      "q_bagua_entry"
+    ],
+    "next_hint": "先去少林寺拜访",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "太极真人",
+        "count": 1,
+        "label": "拜访前辈"
+      }
+    ],
+    "rewards": {
+      "exp": 200,
+      "money": 100,
+      "daode": 3
+    }
+  },
+  {
+    "id": "q_trade_route",
+    "title": "开辟商路",
+    "giver": "阎商",
+    "description": "阎商想开辟新的商路，需要你去探查路线。",
+    "requires_completed": [
+      "q_protect_merchant"
+    ],
+    "next_hint": "探查从临安到江陵的路线",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_baozi",
+        "count": 3,
+        "label": "准备物资"
+      }
+    ],
+    "rewards": {
+      "exp": 160,
+      "money": 120,
+      "daode": 2
+    }
+  },
+  {
+    "id": "q_sect_trial",
+    "title": "门派试炼",
+    "giver": "韦扬",
+    "description": "各派掌门让你参加门派试炼，证明实力。",
+    "requires_completed": [
+      "q_visit_wudang"
+    ],
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "土匪头目",
+        "count": 1,
+        "label": "击败土匪头目"
+      }
+    ],
+    "rewards": {
+      "exp": 250,
+      "money": 150,
+      "daode": 4,
+      "items": {
+        "item_dan": 1
+      }
+    }
+  },
+  {
+    "id": "q_rare_herb",
+    "title": "采集珍药",
+    "giver": "平一指",
+    "description": "需要去山中采集珍稀药材。",
+    "requires_completed": [
+      "q_gather_herbs"
+    ],
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_lingzhi",
+        "count": 1,
+        "label": "采集灵芝"
+      }
+    ],
+    "rewards": {
+      "exp": 200,
+      "money": 200,
+      "daode": 3,
+      "items": {
+        "item_shengji": 1
+      }
+    }
+  },
+  {
+    "id": "q_defend_sect",
+    "title": "守卫山门",
+    "giver": "玄机子",
+    "description": "有人闯上山来，需要你出手相助。",
+    "requires_completed": [
+      "q_bagua_array_trial"
+    ],
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "独角大盗",
+        "count": 1,
+        "label": "击退入侵者"
+      }
+    ],
+    "rewards": {
+      "exp": 280,
+      "money": 180,
+      "daode": 4,
+      "skills": {
+        "kf_bazhen": 1
+      }
+    }
+  },
+  {
+    "id": "q_hunt_master",
+    "title": "追捕要犯",
+    "giver": "捕快",
+    "description": "朝廷下了通缉令，要捉拿江湖要犯。",
+    "requires_completed": [
+      "q_sect_trial"
+    ],
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "采花大盗",
+        "count": 1,
+        "label": "捉拿要犯"
+      }
+    ],
+    "rewards": {
+      "exp": 300,
+      "money": 250,
+      "daode": 5
+    }
+  },
+  {
+    "id": "q_secret_pass",
+    "title": "密道探索",
+    "giver": "何喜",
+    "description": "探险家发现了一处密道，邀请你一起去探索。",
+    "requires_completed": [
+      "q_explore_ruins"
+    ],
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_baozi",
+        "count": 3,
+        "label": "准备物资"
+      }
+    ],
+    "rewards": {
+      "exp": 350,
+      "money": 300,
+      "daode": 4
+    }
+  },
+  {
+    "id": "q_final_trial",
+    "title": "终极试炼",
+    "giver": "韦扬",
+    "description": "掌门让你接受终极试炼，考验你的综合实力。",
+    "requires_completed": [
+      "q_hunt_master"
+    ],
+    "next_hint": "前往最危险的区域接受试炼",
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "魔化和尚",
+        "count": 1,
+        "label": "击败魔化和尚"
+      }
+    ],
+    "rewards": {
+      "exp": 500,
+      "money": 400,
+      "daode": 6,
+      "items": {
+        "item_longsword": 1
+      }
+    }
   }
 ]
