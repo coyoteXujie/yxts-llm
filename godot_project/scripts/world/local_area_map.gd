@@ -126,6 +126,7 @@ const SIDE_VIEW_STAGE_LANE_ALPHA := 0.44
 const SIDE_VIEW_FOREGROUND_ALPHA := 0.36
 const SIDE_VIEW_STAGE_SCENE_Z := -3000
 const SIDE_VIEW_FOREGROUND_OVERLAY_Z := 3350
+const SIDE_VIEW_FOREGROUND_DEPTH_RATIO := 0.72
 const SIDE_VIEW_POSTFX_Z := 3220
 const SIDE_VIEW_DEPTH_GUIDE_ALPHA := 0.18
 const SIDE_VIEW_MIDGROUND_STRUCTURE_ALPHA := 0.46
@@ -272,6 +273,7 @@ const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.86
 const STAGE_DEPTH_MAX_SCALE := 1.24
+const LOCAL_PROP_BLOCKERS_ENABLED := true
 
 var tile_size := GameData.TILE_SIZE
 var map_width := 64
@@ -284,6 +286,7 @@ var portal_labels: Array[Label] = []
 var title_label: Label
 var npc_nodes: Array = []
 var prop_nodes: Array[Node2D] = []
+var prop_blockers: Array[Rect2] = []
 var highlighted_portal_id := ""
 var active_shop_id := ""
 var shop_return_tile := Vector2i.ZERO
@@ -656,7 +659,7 @@ func get_shop_service_anchor() -> Vector2:
 	return tile_to_world(_shop_service_tile())
 
 func is_position_walkable(world_position: Vector2) -> bool:
-	return is_tile_walkable(world_to_tile(world_position))
+	return is_tile_walkable(world_to_tile(world_position)) and not _is_prop_blocked_position(world_position)
 
 func is_tile_walkable(tile: Vector2i) -> bool:
 	if tile.x < 0 or tile.y < 0 or tile.x >= map_width or tile.y >= map_height:
@@ -1961,12 +1964,70 @@ func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset:
 	var depth_scale := get_actor_depth_scale(world_position) if current_mode == "region" and side_view_stage_enabled else 1.0
 	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor * depth_scale)
 	prop_nodes.append(prop)
+	_register_prop_blocker(kind, world_position, scale_factor * depth_scale)
 
 func _clear_depth_props() -> void:
 	for prop in prop_nodes:
 		if is_instance_valid(prop):
 			prop.queue_free()
 	prop_nodes.clear()
+	prop_blockers.clear()
+
+func _register_prop_blocker(kind: String, world_position: Vector2, scale_factor: float) -> void:
+	if not LOCAL_PROP_BLOCKERS_ENABLED:
+		return
+	var blocker_size := _prop_blocker_size(kind) * maxf(0.35, scale_factor)
+	if blocker_size.x <= 0.0 or blocker_size.y <= 0.0:
+		return
+	var center := world_position + _prop_blocker_offset(kind) * maxf(0.35, scale_factor)
+	prop_blockers.append(Rect2(center - blocker_size * 0.5, blocker_size))
+
+func _prop_blocker_size(kind: String) -> Vector2:
+	match kind:
+		"tree", "flower_tree":
+			return Vector2(tile_size * 0.62, tile_size * 0.34)
+		"bamboo":
+			return Vector2(tile_size * 0.76, tile_size * 0.30)
+		"ridge":
+			return Vector2(tile_size * 0.92, tile_size * 0.40)
+		"rock_cluster":
+			return Vector2(tile_size * 0.66, tile_size * 0.34)
+		"gate":
+			return Vector2(tile_size * 0.92, tile_size * 0.28)
+		"market_stall":
+			return Vector2(tile_size * 0.86, tile_size * 0.38)
+		"well":
+			return Vector2(tile_size * 0.64, tile_size * 0.42)
+		"stone_lantern", "lantern", "banner":
+			return Vector2(tile_size * 0.34, tile_size * 0.26)
+		"shelf":
+			return Vector2(tile_size * 0.82, tile_size * 0.26)
+		_:
+			return Vector2.ZERO
+
+func _prop_blocker_offset(kind: String) -> Vector2:
+	match kind:
+		"lantern", "banner", "stone_lantern":
+			return Vector2(0.0, tile_size * 0.12)
+		"ridge", "rock_cluster", "well", "market_stall":
+			return Vector2(0.0, tile_size * 0.08)
+		_:
+			return Vector2.ZERO
+
+func _is_prop_blocked_position(world_position: Vector2) -> bool:
+	if not LOCAL_PROP_BLOCKERS_ENABLED or prop_blockers.is_empty():
+		return false
+	var checks := [
+		world_position,
+		world_position + Vector2(-tile_size * 0.16, 0.0),
+		world_position + Vector2(tile_size * 0.16, 0.0),
+		world_position + Vector2(0.0, tile_size * 0.10)
+	]
+	for blocker in prop_blockers:
+		for check_pos in checks:
+			if blocker.has_point(check_pos):
+				return true
+	return false
 
 func _ensure_stage_scene_layer() -> void:
 	if stage_scene_layer != null and is_instance_valid(stage_scene_layer):
@@ -1995,7 +2056,6 @@ func _ensure_stage_foreground_overlay() -> void:
 	if stage_foreground_overlay != null and is_instance_valid(stage_foreground_overlay):
 		return
 	stage_foreground_overlay = STAGE_FOREGROUND_SCRIPT.new()
-	stage_foreground_overlay.z_index = SIDE_VIEW_FOREGROUND_OVERLAY_Z
 	stage_foreground_overlay.z_as_relative = false
 	add_child(stage_foreground_overlay)
 
@@ -2005,8 +2065,14 @@ func _update_stage_foreground_overlay(force_visible: bool = false) -> void:
 		return
 	_ensure_stage_foreground_overlay()
 	stage_foreground_overlay.visible = force_visible or visible
+	stage_foreground_overlay.z_index = _stage_foreground_overlay_z()
 	stage_foreground_overlay.call("setup_region", current_region, get_world_rect().size, tile_size)
 	_update_stage_foreground_phase()
+
+func _stage_foreground_overlay_z() -> int:
+	if not side_view_stage_enabled:
+		return SIDE_VIEW_FOREGROUND_OVERLAY_Z
+	return int(get_world_rect().size.y * SIDE_VIEW_FOREGROUND_DEPTH_RATIO)
 
 func _update_stage_foreground_phase() -> void:
 	if stage_foreground_overlay == null or not is_instance_valid(stage_foreground_overlay):

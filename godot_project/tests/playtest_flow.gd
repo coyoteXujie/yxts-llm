@@ -24,6 +24,7 @@ func _run() -> void:
 	_check(main.active_map == main.local_area, "新游戏应直接进入平安镇横版城镇")
 	_check(main.player_actor != null and main.player_actor.world_map == main.local_area, "玩家新游戏后应绑定局部城镇地图")
 	_check(not main.world_map.visible and main.local_area.visible, "新游戏首屏不应继续显示世界大地图")
+	_check(main.transition_overlay != null and main.transition_overlay.visible and main.transition_overlay.color.a > 0.0, "进入局部区域应有淡入转场遮罩")
 	_check(main.hud.region_label.text.contains("探索") and main.hud.region_label.text.contains("·"), "HUD 所在地区域栏应显示探索阶段")
 	_check(main.hud.service_label.text.contains("本地服务") and main.hud.service_label.text.contains("客栈") and main.hud.service_label.text.contains("铁匠铺"), "HUD 应显示当前城镇可用商铺服务")
 	_check(main.hud.map_target_label.visible and main.hud.map_target_label.text.contains("可标记") and main.hud.map_target_label.text.contains("平安镇"), "HUD 应提示当前任务目标可标记到地图")
@@ -58,6 +59,17 @@ func _run() -> void:
 	if not qinghe.is_empty():
 		_check(str(main.local_area.current_region.get("id", "")) == "qinghe", "新游戏首个局部城镇应为平安镇")
 		_check(main.local_area.current_mode == "region", "进入平安镇后应处于区域模式")
+		_check(main.local_area.prop_blockers.size() > 0, "局部场景道具应生成脚底阻挡区")
+		var prop_blocker_blocks_walk := false
+		for blocker_value in main.local_area.prop_blockers:
+			if typeof(blocker_value) != TYPE_RECT2:
+				continue
+			var blocker: Rect2 = blocker_value
+			if main.local_area.is_tile_walkable(main.local_area.world_to_tile(blocker.get_center())) and not main.local_area.is_position_walkable(blocker.get_center()):
+				prop_blocker_blocks_walk = true
+				break
+		_check(prop_blocker_blocks_walk, "局部场景道具阻挡区应阻止玩家穿过可走瓦片上的建模")
+		_check(main.local_area.stage_foreground_overlay != null and main.local_area.stage_foreground_overlay.z_index < int(main.local_area.get_world_rect().size.y), "局部前景遮挡层应使用舞台深度线而不是永远盖住所有角色")
 		_check(main.local_area.npc_nodes.size() >= 8, "平安镇局部地图应有镇民")
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")
 		var travel_portal := _first_portal(main.local_area, "travel_region")

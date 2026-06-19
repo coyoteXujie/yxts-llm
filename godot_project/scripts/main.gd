@@ -27,6 +27,9 @@ const NEW_GAME_START_REGION_ID := "qinghe"
 const AMBIENT_NPC_INTERVAL := 6.8
 const AMBIENT_NPC_RADIUS := 430.0
 const POST_TRANSITION_RESET_DELAY := 1.2
+const MAP_TRANSITION_FADE_SECONDS := 0.42
+const MAP_TRANSITION_START_ALPHA := 0.46
+const MAP_TRANSITION_ZOOM_PUNCH := 1.035
 const LANDMARK_EXPLORATION_GAIN := 8
 const RESOURCE_EXPLORATION_GAIN := 3
 const HIDDEN_CLUE_EXPLORATION_GAIN := 5
@@ -57,6 +60,8 @@ var cultivation_panel
 var world_map_panel
 var discovery_panel
 var combat_system
+var transition_overlay: ColorRect
+var transition_tween: Tween
 var focused_npc
 var focused_portal: Dictionary = {}
 var active_enemy_actor
@@ -124,6 +129,13 @@ func _ready() -> void:
 	ui_layer.add_child(character_creation_panel)
 	main_menu_panel = MAIN_MENU_SCRIPT.new()
 	ui_layer.add_child(main_menu_panel)
+
+	transition_overlay = ColorRect.new()
+	transition_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	transition_overlay.color = Color(0.02, 0.015, 0.010, 0.0)
+	transition_overlay.hide()
+	ui_layer.add_child(transition_overlay)
 
 	EventBus.dialogue_requested.connect(_open_dialogue)
 	EventBus.combat_requested.connect(_start_combat_from_data)
@@ -1069,6 +1081,26 @@ func _transition_player_to_map(target_map: Node, position: Vector2, update_playe
 	_apply_camera_zoom()
 	if camera != null:
 		camera.reset_smoothing()
+	_play_map_transition_feedback()
+
+func _play_map_transition_feedback() -> void:
+	if transition_overlay != null:
+		transition_overlay.show()
+		transition_overlay.color = Color(0.02, 0.015, 0.010, MAP_TRANSITION_START_ALPHA)
+	if transition_tween != null and transition_tween.is_valid():
+		transition_tween.kill()
+	transition_tween = create_tween()
+	transition_tween.set_parallel(true)
+	if transition_overlay != null:
+		transition_tween.tween_property(transition_overlay, "color:a", 0.0, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		transition_tween.chain().tween_callback(func() -> void:
+			if transition_overlay != null:
+				transition_overlay.hide()
+		)
+	if camera != null:
+		var target_zoom := camera.zoom
+		camera.zoom = target_zoom * MAP_TRANSITION_ZOOM_PUNCH
+		transition_tween.tween_property(camera, "zoom", target_zoom, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 func _current_world_save_position() -> Vector2:
 	if active_map == world_map:
