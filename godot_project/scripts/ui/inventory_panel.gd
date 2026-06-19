@@ -1,8 +1,11 @@
 extends Control
 class_name InventoryPanel
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 var item_list: ItemList
 var item_preview: TextureRect
+var summary_label: Label
 var details: Label
 var item_ids: Array[String] = []
 
@@ -34,12 +37,17 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "背包"
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	UI_ART.apply_title(title)
 	box.add_child(title)
 
+	summary_label = Label.new()
+	summary_label.custom_minimum_size = Vector2(430, 34)
+	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI_ART.apply_body_label(summary_label, 14)
+	box.add_child(summary_label)
+
 	item_list = ItemList.new()
-	item_list.custom_minimum_size = Vector2(430, 270)
+	item_list.custom_minimum_size = Vector2(430, 236)
 	item_list.fixed_icon_size = Vector2i(36, 36)
 	item_list.icon_mode = ItemList.ICON_MODE_LEFT
 	item_list.item_selected.connect(_select_item)
@@ -64,8 +72,7 @@ func _build() -> void:
 	details = Label.new()
 	details.custom_minimum_size = Vector2(328, 120)
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	details.add_theme_font_size_override("font_size", 16)
-	details.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
+	UI_ART.apply_body_label(details)
 	detail_row.add_child(details)
 
 	var actions := HBoxContainer.new()
@@ -75,11 +82,13 @@ func _build() -> void:
 
 	var use_button := Button.new()
 	use_button.text = "使用"
+	UI_ART.apply_button(use_button)
 	use_button.pressed.connect(_use_selected)
 	actions.add_child(use_button)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
+	UI_ART.apply_button(close_button)
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
@@ -88,6 +97,8 @@ func _refresh() -> void:
 		return
 	item_list.clear()
 	item_ids.clear()
+	if summary_label != null:
+		summary_label.text = _inventory_summary_text()
 	var ids := GameState.inventory.keys()
 	ids.sort()
 	for item_id in ids:
@@ -128,41 +139,32 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.95)
-	style.border_color = Color(0.58, 0.46, 0.26, 0.86)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style
+func _panel_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))
 
-func _slot_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.10, 0.085, 0.06, 0.92)
-	style.border_color = Color(0.68, 0.53, 0.28, 0.88)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	return style
+func _slot_style() -> StyleBox:
+	return UI_ART.slot_texture_style()
+
+func _inventory_summary_text() -> String:
+	var item_kinds := 0
+	var item_count := 0
+	for raw_item_id in GameState.inventory.keys():
+		var count := int(GameState.inventory.get(raw_item_id, 0))
+		if count <= 0:
+			continue
+		item_kinds += 1
+		item_count += count
+	var damaged := 0
+	for item_id in GameState.get_repairable_equipment_item_ids():
+		if GameState.get_equipment_repair_cost(item_id) > 0:
+			damaged += 1
+	var repair_text := "装备完好" if damaged <= 0 else "受损装备 %d 件，可去铁匠铺修理" % damaged
+	return "银两 %d  ·  物品 %d 类/%d 件  ·  %s" % [
+		int(GameState.player.get("money", 0)),
+		item_kinds,
+		item_count,
+		repair_text
+	]
 
 func _load_item_icon(item_id: String) -> Texture2D:
 	var path := GameData.get_item_icon_path(item_id)

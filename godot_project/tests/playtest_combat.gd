@@ -7,6 +7,7 @@ const NPC_SCRIPT := preload("res://scripts/entities/npc.gd")
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
 const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
+const REGION_MAP_CANVAS_SCRIPT := preload("res://scripts/ui/region_map_canvas.gd")
 
 var failures: Array[String] = []
 var combat_result: Dictionary = {}
@@ -28,6 +29,45 @@ func _run() -> void:
 	_check(GameState.completed_quests.has("q_intro_town"), "完成两次拜访后应完成初始任务")
 	_check(GameState.can_accept_quest("q_clear_thugs"), "初始任务完成后应解锁镇东除恶")
 	_check(GameState.get_world_event_summary(3).find("平安镇") >= 0, "完成初始任务后应更新江湖传闻")
+	var quest_dialogue = DIALOGUE_PANEL_SCRIPT.new()
+	add_child(quest_dialogue)
+	await get_tree().process_frame
+	quest_dialogue.show_npc(GameData.get_npc_by_name("捕快"))
+	quest_dialogue._quest()
+	var accepted_quest_text: String = quest_dialogue.body_label.text
+	_check(GameState.active_quests.has("q_clear_thugs"), "对话任务按钮应能接下已解锁任务")
+	_check(accepted_quest_text.contains("接下任务：镇东除恶") and accepted_quest_text.contains("目标：") and accepted_quest_text.contains("击败流氓") and accepted_quest_text.contains("奖励："), "接任务后对话应展示目标进度和奖励摘要")
+	quest_dialogue._quest()
+	var active_quest_text: String = quest_dialogue.body_label.text
+	_check(active_quest_text.contains("任务进行中：镇东除恶") and active_quest_text.contains("0/1"), "进行中的任务对话应展示当前目标进度")
+	quest_dialogue.queue_free()
+	var active_target_region := GameState.get_active_quest_target_region()
+	_check(not active_target_region.is_empty(), "进行中的战斗任务应解析出目标区域")
+	var target_entries := GameState.get_active_quest_target_entries()
+	_check(JSON.stringify(target_entries).contains("流氓") and JSON.stringify(target_entries).contains(str(active_target_region.get("id", ""))), "当前任务目标列表应复用同一个目标区域解析")
+	var thug := GameData.get_npc_by_name("流氓")
+	var thug_tile := Vector2i(int(thug.get("pos_x", -1)), int(thug.get("pos_y", -1)))
+	_check(str(GameState.get_region_for_map_tile(thug_tile).get("id", "")) == str(active_target_region.get("id", "")), "边缘任务目标坐标应回退到最近区域")
+	GameState.update_current_region(active_target_region, GameState.current_tile)
+	var region_map_canvas = REGION_MAP_CANVAS_SCRIPT.new()
+	add_child(region_map_canvas)
+	await get_tree().process_frame
+	_check(region_map_canvas._tile_region_discovered(thug_tile), "世界地图任务目标标记应使用同一套边缘坐标区域回退")
+	region_map_canvas.queue_free()
+	var quest_target_panel = QUEST_PANEL_SCRIPT.new()
+	add_child(quest_target_panel)
+	await get_tree().process_frame
+	quest_target_panel.show_panel()
+	_check(not quest_target_panel.quest_focus_button.disabled and quest_target_panel.quest_focus_button.text.contains(str(active_target_region.get("name", ""))), "任务日志应提供一键标记当前任务目标按钮")
+	quest_target_panel._mark_active_quest_target()
+	_check(GameState.map_target_region_id == str(active_target_region.get("id", "")), "任务目标按钮应把当前任务目标设为世界地图目的地")
+	_check(GameState.get_map_target_summary().contains("任务目标") and GameState.get_map_target_summary().contains(str(active_target_region.get("name", ""))), "任务目标标记后应生成可复用的地图目标摘要")
+	_check(quest_target_panel.summary_label.text.contains(str(active_target_region.get("name", ""))), "任务日志摘要应显示当前地图目的地")
+	_check(not quest_target_panel.clear_target_button.disabled and quest_target_panel.clear_target_button.text.contains(str(active_target_region.get("name", ""))), "任务日志应提供清除当前地图目的地按钮")
+	quest_target_panel._clear_map_target()
+	_check(GameState.map_target_region_id.is_empty() and quest_target_panel.clear_target_button.disabled and quest_target_panel.summary_label.text.contains("未标记"), "任务日志清除按钮应清空地图目的地并刷新状态")
+	quest_target_panel.close_panel()
+	quest_target_panel.queue_free()
 	var event_count_before_pulse := GameState.get_recent_world_events(30).size()
 	GameState.advance_hours(16.5)
 	_check(GameState.day == 2, "跨天推进应进入第二日")
@@ -412,7 +452,42 @@ func _run() -> void:
 	_check(not combat.active, "测试战斗应在 12 回合内结束")
 	_check(bool(combat_result.get("victory", false)), "测试战斗应胜利")
 	_check(int(GameState.inventory.get("item_baozi", 0)) == before_baozi + 1, "胜利后应结算敌人掉落")
+	_check(int(combat_result.get("exp_reward", 0)) == 12 and int(combat_result.get("money_delta", 0)) >= 7, "战斗结算结果应携带阅历和银两变化")
+	var loot_result: Array = combat_result.get("loot", [])
+	_check(not loot_result.is_empty() and str(loot_result[0]).contains("包"), "战斗结算结果应携带掉落名称")
+	_check(str(combat_result.get("quest_tracker", "")).contains("下一步") or not str(combat_result.get("quest_tracker", "")).is_empty(), "战斗结算结果应携带下一步任务提示")
 	_check(GameState.mode == GameState.Mode.EXPLORE, "战斗结束后应回到探索模式")
+
+	var panel_combat = COMBAT_SYSTEM_SCRIPT.new()
+	add_child(panel_combat)
+	var result_combat_panel = COMBAT_PANEL_SCRIPT.new()
+	add_child(result_combat_panel)
+	result_combat_panel.set_combat_system(panel_combat)
+	panel_combat.start({
+		"id": -2,
+		"name": "结算木桩",
+		"npc_type": "enemy",
+		"level": 1,
+		"hp": 1,
+		"max_hp": 1,
+		"mp": 0,
+		"max_mp": 0,
+		"attack": 0,
+		"defense": 0,
+		"money": 1,
+		"exp_reward": 1,
+		"loot": []
+	})
+	panel_combat.player_attack("normal")
+	await get_tree().process_frame
+	_check(result_combat_panel.visible and result_combat_panel.is_result_visible(), "完整战斗 UI 结束后应显示结算面板")
+	_check(GameState.mode == GameState.Mode.COMBAT, "结算面板显示时应暂时阻止探索输入")
+	_check(result_combat_panel.result_rewards_label.text.contains("阅历") and result_combat_panel.result_next_label.text.length() > 0, "结算面板应展示奖励和下一步提示")
+	result_combat_panel.close_result_panel()
+	await get_tree().process_frame
+	_check(not result_combat_panel.visible and GameState.mode == GameState.Mode.EXPLORE, "确认结算后应回到探索模式")
+	result_combat_panel.queue_free()
+	panel_combat.queue_free()
 
 	if failures.is_empty():
 		print("PLAYTEST_COMBAT_OK")

@@ -1,6 +1,8 @@
 extends Control
 class_name ShopPanel
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 const MODE_BUY := "buy"
 const MODE_SELL := "sell"
 const MODE_BUYBACK := "buyback"
@@ -95,8 +97,7 @@ func _build() -> void:
 
 	title_label = Label.new()
 	title_label.text = "商店"
-	title_label.add_theme_font_size_override("font_size", 26)
-	title_label.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	UI_ART.apply_title(title_label)
 	box.add_child(title_label)
 
 	money_label = Label.new()
@@ -107,8 +108,7 @@ func _build() -> void:
 	market_tip_label = Label.new()
 	market_tip_label.custom_minimum_size = Vector2(430, 34)
 	market_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	market_tip_label.add_theme_font_size_override("font_size", 14)
-	market_tip_label.add_theme_color_override("font_color", Color(0.86, 0.76, 0.56))
+	UI_ART.apply_body_label(market_tip_label, 14)
 	box.add_child(market_tip_label)
 
 	var mode_row := HBoxContainer.new()
@@ -117,21 +117,25 @@ func _build() -> void:
 
 	buy_mode_button = Button.new()
 	buy_mode_button.text = "买入"
+	UI_ART.apply_button(buy_mode_button)
 	buy_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_BUY))
 	mode_row.add_child(buy_mode_button)
 
 	sell_mode_button = Button.new()
 	sell_mode_button.text = "出售"
+	UI_ART.apply_button(sell_mode_button)
 	sell_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_SELL))
 	mode_row.add_child(sell_mode_button)
 
 	buyback_mode_button = Button.new()
 	buyback_mode_button.text = "回购"
+	UI_ART.apply_button(buyback_mode_button)
 	buyback_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_BUYBACK))
 	mode_row.add_child(buyback_mode_button)
 
 	repair_mode_button = Button.new()
 	repair_mode_button.text = "修理"
+	UI_ART.apply_button(repair_mode_button)
 	repair_mode_button.pressed.connect(func() -> void: _set_shop_mode(MODE_REPAIR))
 	mode_row.add_child(repair_mode_button)
 
@@ -161,8 +165,7 @@ func _build() -> void:
 	details = Label.new()
 	details.custom_minimum_size = Vector2(328, 118)
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	details.add_theme_font_size_override("font_size", 16)
-	details.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
+	UI_ART.apply_body_label(details)
 	detail_row.add_child(details)
 
 	var quantity_row := HBoxContainer.new()
@@ -178,6 +181,7 @@ func _build() -> void:
 	quantity_minus_button = Button.new()
 	quantity_minus_button.text = "-"
 	quantity_minus_button.tooltip_text = "减少交易数量"
+	UI_ART.apply_button(quantity_minus_button)
 	quantity_minus_button.pressed.connect(func() -> void: _set_quantity(quantity - 1))
 	quantity_row.add_child(quantity_minus_button)
 
@@ -191,12 +195,14 @@ func _build() -> void:
 	quantity_plus_button = Button.new()
 	quantity_plus_button.text = "+"
 	quantity_plus_button.tooltip_text = "增加交易数量"
+	UI_ART.apply_button(quantity_plus_button)
 	quantity_plus_button.pressed.connect(func() -> void: _set_quantity(quantity + 1))
 	quantity_row.add_child(quantity_plus_button)
 
 	quantity_max_button = Button.new()
 	quantity_max_button.text = "最大"
 	quantity_max_button.tooltip_text = "设为当前可交易最大数量"
+	UI_ART.apply_button(quantity_max_button)
 	quantity_max_button.pressed.connect(func() -> void: _set_quantity(_max_quantity_for_selected()))
 	quantity_row.add_child(quantity_max_button)
 
@@ -214,17 +220,20 @@ func _build() -> void:
 
 	primary_button = Button.new()
 	primary_button.text = "购买"
+	UI_ART.apply_button(primary_button)
 	primary_button.pressed.connect(_confirm_selected)
 	actions.add_child(primary_button)
 
 	repair_all_button = Button.new()
 	repair_all_button.text = "全部修理"
 	repair_all_button.tooltip_text = "修理背包中所有受损装备"
+	UI_ART.apply_button(repair_all_button)
 	repair_all_button.pressed.connect(_execute_repair_all)
 	actions.add_child(repair_all_button)
 
 	var close_button := Button.new()
 	close_button.text = "离开"
+	UI_ART.apply_button(close_button)
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
@@ -252,15 +261,13 @@ func _build_confirmation_overlay() -> void:
 
 	confirm_title_label = Label.new()
 	confirm_title_label.text = "确认交易"
-	confirm_title_label.add_theme_font_size_override("font_size", 24)
-	confirm_title_label.add_theme_color_override("font_color", Color(0.98, 0.78, 0.36))
+	UI_ART.apply_title(confirm_title_label)
 	box.add_child(confirm_title_label)
 
 	confirm_body_label = Label.new()
 	confirm_body_label.custom_minimum_size = Vector2(410, 108)
 	confirm_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	confirm_body_label.add_theme_font_size_override("font_size", 17)
-	confirm_body_label.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
+	UI_ART.apply_body_label(confirm_body_label, 17)
 	box.add_child(confirm_body_label)
 
 	var actions := HBoxContainer.new()
@@ -270,11 +277,13 @@ func _build_confirmation_overlay() -> void:
 
 	var cancel_button := Button.new()
 	cancel_button.text = "取消"
+	UI_ART.apply_button(cancel_button)
 	cancel_button.pressed.connect(_hide_transaction_confirmation)
 	actions.add_child(cancel_button)
 
 	confirm_accept_button = Button.new()
 	confirm_accept_button.text = "确认交易"
+	UI_ART.apply_button(confirm_accept_button)
 	confirm_accept_button.pressed.connect(_confirm_pending_transaction)
 	actions.add_child(confirm_accept_button)
 
@@ -949,41 +958,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.95)
-	style.border_color = Color(0.58, 0.46, 0.26, 0.86)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style
+func _panel_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))
 
-func _slot_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.10, 0.085, 0.06, 0.92)
-	style.border_color = Color(0.68, 0.53, 0.28, 0.88)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	return style
+func _slot_style() -> StyleBox:
+	return UI_ART.slot_texture_style()
 
 func _load_item_icon(item_id: String) -> Texture2D:
 	var path := GameData.get_item_icon_path(item_id)

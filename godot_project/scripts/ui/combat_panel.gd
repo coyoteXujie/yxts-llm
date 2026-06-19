@@ -2,6 +2,7 @@ extends Control
 class_name CombatPanel
 
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
 
 const IMMERSIVE_STAGE_ENABLED := true
 const COMBAT_STAGE_MARGIN := 0.0
@@ -20,6 +21,11 @@ var status_label: Label
 var body_label: Label
 var action_grid: GridContainer
 var effect_label: Label
+var result_panel: Control
+var result_title_label: Label
+var result_body_label: Label
+var result_rewards_label: Label
+var result_next_label: Label
 var last_snapshot: Dictionary = {}
 var last_effect_event_id := 0
 var effect_timer := 0.0
@@ -171,12 +177,16 @@ func _build() -> void:
 	effect_label.custom_minimum_size = Vector2(340, 44)
 	add_child(effect_label)
 
+	_build_result_panel()
+
 func _on_combat_started(enemy: Dictionary) -> void:
 	title_label.text = "遭遇：%s" % str(enemy.get("name", "敌人"))
 	last_snapshot = {}
 	last_effect_event_id = 0
 	if effect_label != null:
 		effect_label.hide()
+	if result_panel != null:
+		result_panel.hide()
 	if stage != null:
 		stage.setup(enemy)
 	_set_enemy_portrait(enemy)
@@ -209,9 +219,156 @@ func _on_combat_finished(result: Dictionary) -> void:
 		EventBus.emit_toast("已脱离战斗")
 	else:
 		EventBus.emit_toast("战败，回客栈休养")
+	_show_result_panel(result)
+
+func close_result_panel() -> void:
+	if result_panel != null:
+		result_panel.hide()
 	if stage != null:
 		stage.clear()
 	hide()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+
+func is_result_visible() -> bool:
+	return result_panel != null and result_panel.visible
+
+func _build_result_panel() -> void:
+	result_panel = Control.new()
+	result_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	result_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	result_panel.hide()
+	add_child(result_panel)
+
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.012, 0.010, 0.54)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	result_panel.add_child(shade)
+
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -370.0
+	panel.offset_top = -218.0
+	panel.offset_right = 370.0
+	panel.offset_bottom = 218.0
+	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(34, 26, 34, 26)))
+	result_panel.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	panel.add_child(box)
+
+	result_title_label = Label.new()
+	result_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI_ART.apply_title(result_title_label)
+	box.add_child(result_title_label)
+
+	result_body_label = Label.new()
+	result_body_label.custom_minimum_size = Vector2(650, 82)
+	result_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result_body_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI_ART.apply_body_label(result_body_label, 18)
+	box.add_child(result_body_label)
+
+	result_rewards_label = Label.new()
+	result_rewards_label.custom_minimum_size = Vector2(650, 116)
+	result_rewards_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result_rewards_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI_ART.apply_body_label(result_rewards_label, 17)
+	result_rewards_label.add_theme_color_override("font_color", Color(0.78, 0.93, 0.62))
+	box.add_child(result_rewards_label)
+
+	result_next_label = Label.new()
+	result_next_label.custom_minimum_size = Vector2(650, 56)
+	result_next_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result_next_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UI_ART.apply_body_label(result_next_label, 16)
+	result_next_label.add_theme_color_override("font_color", Color(0.86, 0.78, 0.60))
+	box.add_child(result_next_label)
+
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(actions)
+
+	var close_button := Button.new()
+	close_button.text = "回到江湖"
+	close_button.custom_minimum_size = Vector2(142, 42)
+	UI_ART.apply_button(close_button)
+	close_button.pressed.connect(close_result_panel)
+	actions.add_child(close_button)
+
+func _show_result_panel(result: Dictionary) -> void:
+	if result_panel == null:
+		hide()
+		GameState.set_mode(GameState.Mode.EXPLORE)
+		return
+	var enemy: Dictionary = result.get("enemy", {})
+	var enemy_name := str(enemy.get("name", "敌人"))
+	if bool(result.get("victory", false)):
+		result_title_label.text = "战斗胜利"
+		result_body_label.text = "击败 %s。\n气血 %d/%d  内力 %d/%d" % [
+			enemy_name,
+			int(result.get("player_hp", 0)),
+			int(result.get("player_max_hp", 1)),
+			int(result.get("player_mp", 0)),
+			int(result.get("player_max_mp", 1))
+		]
+	elif bool(result.get("escaped", false)):
+		result_title_label.text = "脱离战斗"
+		result_body_label.text = "你从 %s 手下抽身，局势暂时缓了下来。" % enemy_name
+	else:
+		result_title_label.text = "战斗失利"
+		result_body_label.text = "你被送回客栈休养。\n气血 %d/%d  内力 %d/%d" % [
+			int(result.get("player_hp", 0)),
+			int(result.get("player_max_hp", 1)),
+			int(result.get("player_mp", 0)),
+			int(result.get("player_max_mp", 1))
+		]
+	result_rewards_label.text = _result_reward_text(result)
+	result_next_label.text = _result_next_text(result)
+	result_panel.show()
+	GameState.set_mode(GameState.Mode.COMBAT)
+
+func _result_reward_text(result: Dictionary) -> String:
+	if bool(result.get("victory", false)):
+		var parts: Array[String] = []
+		var exp_reward := int(result.get("exp_reward", 0))
+		var money_delta := int(result.get("money_delta", result.get("money_reward", 0)))
+		var pot_delta := int(result.get("pot_delta", 0))
+		if exp_reward > 0:
+			parts.append("阅历 +%d" % exp_reward)
+		if pot_delta > 0:
+			parts.append("潜能 +%d" % pot_delta)
+		if money_delta > 0:
+			parts.append("银两 +%d" % money_delta)
+		var loot: Array = result.get("loot", [])
+		if not loot.is_empty():
+			parts.append("掉落：%s" % "、".join(loot))
+		var level_before := int(result.get("level_before", 1))
+		var level_after := int(result.get("level_after", level_before))
+		if level_after > level_before:
+			parts.append("等级 %d -> %d" % [level_before, level_after])
+		var quests: Array = result.get("completed_quests", [])
+		if not quests.is_empty():
+			parts.append("完成任务：%s" % "、".join(quests))
+		var wear_text := str(result.get("equipment_wear_text", ""))
+		if not wear_text.is_empty():
+			parts.append(wear_text)
+		if parts.is_empty():
+			return "已扫清阻碍。"
+		return "\n".join(parts)
+	if bool(result.get("escaped", false)):
+		return "未结算战利。"
+	return "客栈休养 4 时辰，气血与内力已恢复。"
+
+func _result_next_text(result: Dictionary) -> String:
+	var tracker := str(result.get("quest_tracker", ""))
+	if tracker.is_empty():
+		tracker = "下一步：自由探索江湖"
+	return tracker
 
 func _panel_style(alpha: float = 0.94) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -293,6 +450,7 @@ func _add_action_button(label: String, action_id: String, icon_skill_id: String)
 	button.custom_minimum_size = COMBAT_ACTION_BUTTON_SIZE
 	button.clip_text = true
 	button.add_theme_font_size_override("font_size", 15)
+	UI_ART.apply_button(button)
 	var icon_path := GameData.get_skill_icon_path(icon_skill_id)
 	if not icon_path.is_empty():
 		button.icon = GameData.load_texture(icon_path)
@@ -314,6 +472,7 @@ func _add_flee_button() -> void:
 	button.text = "脱身"
 	button.custom_minimum_size = COMBAT_ACTION_BUTTON_SIZE
 	button.add_theme_font_size_override("font_size", 15)
+	UI_ART.apply_button(button)
 	var icon_path := GameData.get_skill_icon_path("kf_basic_dodge")
 	if not icon_path.is_empty():
 		button.icon = GameData.load_texture(icon_path)
@@ -391,3 +550,10 @@ func _effect_position(target: String) -> Vector2:
 	if target == "player":
 		return Vector2(viewport_size.x * 0.22, viewport_size.y * 0.46)
 	return Vector2(viewport_size.x * 0.62, viewport_size.y * 0.42)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or result_panel == null or not result_panel.visible:
+		return
+	if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+		close_result_panel()
+		get_viewport().set_input_as_handled()

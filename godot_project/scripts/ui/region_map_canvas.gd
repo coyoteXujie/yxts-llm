@@ -3,8 +3,11 @@ class_name RegionMapCanvas
 
 signal region_clicked(region_id: String)
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 var selected_region_id := ""
 var route_plan: Dictionary = {}
+var backdrop_texture: Texture2D
 var marker_npc: Texture2D
 var marker_quest: Texture2D
 var marker_target: Texture2D
@@ -12,6 +15,7 @@ var marker_target: Texture2D
 func _ready() -> void:
 	custom_minimum_size = Vector2(660, 318)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop_texture = UI_ART.load_texture(UI_ART.WORLD_MAP_BACKDROP)
 	marker_npc = GameData.load_texture("res://assets/ui/marker_npc.png")
 	marker_quest = GameData.load_texture("res://assets/ui/marker_quest.png")
 	marker_target = GameData.load_texture("res://assets/ui/marker_target.png")
@@ -35,7 +39,11 @@ func _gui_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	var canvas := Rect2(Vector2.ZERO, size)
-	draw_rect(canvas, Color(0.07, 0.08, 0.065, 0.95), true)
+	if backdrop_texture != null:
+		draw_texture_rect(backdrop_texture, canvas, false, Color(1.0, 1.0, 1.0, 0.92))
+		draw_rect(canvas, Color(0.045, 0.038, 0.026, 0.22), true)
+	else:
+		draw_rect(canvas, Color(0.07, 0.08, 0.065, 0.95), true)
 	draw_rect(canvas, Color(0.55, 0.44, 0.25, 0.75), false, 2.0)
 
 	for region in GameData.get_regions():
@@ -123,14 +131,14 @@ func _draw_npc_markers(canvas: Rect2) -> void:
 			draw_circle(pos, 2.3, Color(0.82, 0.78, 0.62, 0.58))
 
 func _draw_quest_markers(canvas: Rect2) -> void:
-	var active_targets := _active_quest_targets()
-	for target_name in active_targets.keys():
-		var npc := GameData.get_npc_by_name(str(target_name))
-		if npc.is_empty():
+	for target_value in GameState.get_active_quest_target_entries():
+		if typeof(target_value) != TYPE_DICTIONARY:
 			continue
-		var tile := Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
-		if not _tile_region_discovered(tile):
+		var target: Dictionary = target_value
+		var region_id := str(target.get("region_id", ""))
+		if region_id.is_empty() or not GameState.is_region_discovered(region_id):
 			continue
+		var tile: Vector2i = target.get("tile", Vector2i(-1, -1))
 		_draw_marker_texture(marker_target, _scaled_tile(tile, canvas), 18.0, Color(1, 1, 1, 0.96))
 
 	for quest in GameData.get_available_quests():
@@ -145,23 +153,6 @@ func _draw_quest_markers(canvas: Rect2) -> void:
 			continue
 		var pos := _scaled_tile(tile, canvas)
 		_draw_marker_texture(marker_quest, pos + Vector2(4, -4), 16.0, Color(1, 1, 1, 0.94))
-
-func _active_quest_targets() -> Dictionary:
-	var result := {}
-	for quest_id in GameState.active_quests.keys():
-		var quest := GameData.get_quest(str(quest_id))
-		var progress: Dictionary = GameState.active_quests[quest_id].get("progress", {})
-		var objectives: Array = quest.get("objectives", [])
-		for objective in objectives:
-			var kind := str(objective.get("type", ""))
-			if kind != "talk" and kind != "kill":
-				continue
-			var target := str(objective.get("target", ""))
-			var key := "%s:%s" % [kind, target]
-			if int(progress.get(key, 0)) >= int(objective.get("count", 1)):
-				continue
-			result[target] = true
-	return result
 
 func _draw_marker_star(pos: Vector2, color: Color) -> void:
 	draw_circle(pos, 5.0, color)
@@ -199,7 +190,7 @@ func _region_id_at_point(point: Vector2) -> String:
 	return str(region.get("id", ""))
 
 func _tile_region_discovered(tile: Vector2i) -> bool:
-	var region := GameData.get_region_at_tile(tile)
+	var region := GameState.get_region_for_map_tile(tile)
 	if region.is_empty():
 		return false
 	return GameState.is_region_discovered(str(region.get("id", "")))

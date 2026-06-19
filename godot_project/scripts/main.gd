@@ -63,6 +63,7 @@ var active_enemy_actor
 var world_return_position := Vector2.ZERO
 var ambient_npc_timer := 2.0
 var ambient_npc_round := 0
+var pending_quest_summaries: Array[Dictionary] = []
 
 func _ready() -> void:
 	randomize()
@@ -116,6 +117,7 @@ func _ready() -> void:
 	ui_layer.add_child(world_map_panel)
 	world_map_panel.focus_region_requested.connect(_mark_region_target)
 	world_map_panel.fast_travel_requested.connect(_fast_travel_to_region)
+	world_map_panel.clear_target_requested.connect(_clear_region_target)
 	discovery_panel = DISCOVERY_PANEL_SCRIPT.new()
 	ui_layer.add_child(discovery_panel)
 	character_creation_panel = CHARACTER_CREATION_SCRIPT.new()
@@ -127,6 +129,8 @@ func _ready() -> void:
 	EventBus.combat_requested.connect(_start_combat_from_data)
 	EventBus.shop_requested.connect(_open_shop)
 	EventBus.game_loaded.connect(_on_game_loaded)
+	EventBus.quest_completed.connect(_on_quest_completed)
+	EventBus.map_target_changed.connect(_on_map_target_changed)
 	main_menu_panel.new_game_requested.connect(_open_character_creation)
 	main_menu_panel.continue_requested.connect(_continue_game)
 	character_creation_panel.character_created.connect(_start_new_game)
@@ -137,6 +141,9 @@ func _process(delta: float) -> void:
 	GameState.advance_time(delta)
 	player_actor.movement_enabled = GameState.can_explore()
 	_update_camera_limits()
+
+	if GameState.can_explore() and not pending_quest_summaries.is_empty():
+		_try_show_pending_quest_summary()
 
 	if not GameState.can_explore():
 		_clear_explore_state()
@@ -246,6 +253,11 @@ func _handle_cancel() -> void:
 			world_map_panel.close_panel()
 		GameState.Mode.DISCOVERY:
 			discovery_panel.close_panel()
+		GameState.Mode.COMBAT:
+			if combat_panel != null and combat_panel.has_method("is_result_visible") and combat_panel.is_result_visible():
+				combat_panel.close_result_panel()
+			else:
+				EventBus.emit_toast("战斗中无法打开菜单")
 		GameState.Mode.MENU:
 			main_menu_panel.hide()
 			GameState.set_mode(GameState.Mode.EXPLORE)
@@ -315,6 +327,14 @@ func _mark_region_target(region_id: String) -> void:
 	world_map_panel.close_panel()
 	EventBus.emit_toast("已标记目的地：%s" % str(region.get("name", region_id)))
 
+func _clear_region_target() -> void:
+	if GameState.map_target_region_id.is_empty():
+		EventBus.emit_toast("当前没有地图目的地")
+		return
+	GameState.set_map_target_region("")
+	world_map.set_target_region("")
+	EventBus.emit_toast("已清除地图目的地")
+
 func _fast_travel_to_region(region_id: String) -> void:
 	var region := GameData.get_region(region_id)
 	if region.is_empty():
@@ -362,6 +382,7 @@ func _start_combat_from_data(enemy: Dictionary) -> void:
 	combat_system.start(enemy)
 
 func _on_game_loaded(_snapshot: Dictionary) -> void:
+	pending_quest_summaries.clear()
 	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()
 	world_map.apply_defeated_enemies()
@@ -371,6 +392,10 @@ func _on_game_loaded(_snapshot: Dictionary) -> void:
 	main_menu_panel.hide()
 	GameState.set_mode(GameState.Mode.EXPLORE)
 
+func _on_map_target_changed(region_id: String) -> void:
+	if world_map != null:
+		world_map.set_target_region(region_id)
+
 func _on_combat_finished(result: Dictionary) -> void:
 	if bool(result.get("victory", false)) and active_enemy_actor != null and is_instance_valid(active_enemy_actor):
 		GameState.mark_enemy_defeated(int(active_enemy_actor.data.get("id", -1)))
@@ -378,6 +403,32 @@ func _on_combat_finished(result: Dictionary) -> void:
 			active_map.unregister_npc(active_enemy_actor)
 		active_enemy_actor.queue_free()
 	active_enemy_actor = null
+
+func _on_quest_completed(summary: Dictionary) -> void:
+	pending_quest_summaries.append(summary.duplicate(true))
+	call_deferred("_try_show_pending_quest_summary")
+
+func _try_show_pending_quest_summary() -> void:
+	if pending_quest_summaries.is_empty():
+		return
+	if discovery_panel == null or not GameState.can_explore():
+		return
+	if discovery_panel.visible:
+		return
+	var summary: Dictionary = pending_quest_summaries.pop_front()
+	var description_parts: Array[String] = []
+	var description := str(summary.get("description", ""))
+	if not description.is_empty():
+		description_parts.append(description)
+	var next_hint := str(summary.get("next_hint", summary.get("active_quest", "")))
+	if not next_hint.is_empty():
+		description_parts.append("下一步：%s" % next_hint)
+	discovery_panel.show_discovery({
+		"title": "任务完成：%s" % str(summary.get("title", "任务")),
+		"region": str(summary.get("region_name", GameState.current_region_name)),
+		"description": "\n".join(description_parts),
+		"rewards": summary.get("reward_lines", [])
+	})
 
 func _update_camera_limits() -> void:
 	if active_map == null or camera == null:

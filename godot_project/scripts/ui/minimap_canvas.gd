@@ -80,14 +80,14 @@ func _draw_target_line(map_rect: Rect2) -> void:
 	_draw_target_marker(target_pos, 13.0, Color(0.62, 0.86, 1.0, 0.94))
 
 func _draw_quest_targets(map_rect: Rect2) -> void:
-	for target_name in _active_quest_targets().keys():
-		var npc := GameData.get_npc_by_name(str(target_name))
-		if npc.is_empty():
+	for target_value in GameState.get_active_quest_target_entries():
+		if typeof(target_value) != TYPE_DICTIONARY:
 			continue
-		var tile := Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
-		var region := GameData.get_region_at_tile(tile)
-		if not GameState.is_region_discovered(str(region.get("id", ""))):
+		var target: Dictionary = target_value
+		var region_id := str(target.get("region_id", ""))
+		if region_id.is_empty() or not GameState.is_region_discovered(region_id):
 			continue
+		var tile: Vector2i = target.get("tile", Vector2i(-1, -1))
 		_draw_target_marker(_scaled_tile(tile, map_rect), 11.0, Color(1.0, 0.72, 0.26, 0.96))
 
 func _draw_player_marker(map_rect: Rect2) -> void:
@@ -114,23 +114,6 @@ func _draw_target_marker(pos: Vector2, size_px: float, tint: Color) -> void:
 	draw_circle(pos, size_px * 0.33, tint)
 	draw_line(pos + Vector2(-size_px * 0.5, 0), pos + Vector2(size_px * 0.5, 0), Color(1.0, 0.90, 0.55, 0.88), 1.2)
 	draw_line(pos + Vector2(0, -size_px * 0.5), pos + Vector2(0, size_px * 0.5), Color(1.0, 0.90, 0.55, 0.88), 1.2)
-
-func _active_quest_targets() -> Dictionary:
-	var result := {}
-	for quest_id in GameState.active_quests.keys():
-		var quest := GameData.get_quest(str(quest_id))
-		var progress: Dictionary = GameState.active_quests[quest_id].get("progress", {})
-		var objectives: Array = quest.get("objectives", [])
-		for objective in objectives:
-			var kind := str(objective.get("type", ""))
-			if kind != "talk" and kind != "kill":
-				continue
-			var target := str(objective.get("target", ""))
-			var key := "%s:%s" % [kind, target]
-			if int(progress.get(key, 0)) >= int(objective.get("count", 1)):
-				continue
-			result[target] = true
-	return result
 
 func _scaled_tile(tile: Vector2i, map_rect: Rect2) -> Vector2:
 	var scale := Vector2(map_rect.size.x / float(GameData.MAP_WIDTH), map_rect.size.y / float(GameData.MAP_HEIGHT))

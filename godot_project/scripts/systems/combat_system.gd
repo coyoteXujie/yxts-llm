@@ -505,6 +505,11 @@ func _tick_cooldowns() -> void:
 		player_cooldowns.erase(skill_id)
 
 func _finish(victory: bool, escaped: bool = false) -> void:
+	var player_before := GameState.player.duplicate(true)
+	var completed_before: Array = GameState.completed_quests.duplicate()
+	var exp_reward := 0
+	var money_reward := 0
+	var loot_parts: Array[String] = []
 	var result := {
 		"victory": victory,
 		"escaped": escaped,
@@ -512,11 +517,11 @@ func _finish(victory: bool, escaped: bool = false) -> void:
 		"equipment_wear": equipment_wear.duplicate(true)
 	}
 	if victory:
-		var exp_reward := int(enemy.get("exp_reward", 10))
-		var money_reward := int(enemy.get("money", 0))
+		exp_reward = int(enemy.get("exp_reward", 10))
+		money_reward = int(enemy.get("money", 0))
 		GameState.reward_player(exp_reward, money_reward)
 		GameState.progress_quest("kill", str(enemy.get("name", "")), 1)
-		var loot_parts := GameState.grant_enemy_loot(enemy)
+		loot_parts = GameState.grant_enemy_loot(enemy)
 		var loot_text := ""
 		if not loot_parts.is_empty():
 			loot_text = "，掉落：%s" % "、".join(loot_parts)
@@ -536,9 +541,32 @@ func _finish(victory: bool, escaped: bool = false) -> void:
 	player_statuses.clear()
 	enemy_statuses.clear()
 	player_cooldowns.clear()
+	result["exp_reward"] = exp_reward
+	result["money_reward"] = money_reward
+	result["money_delta"] = int(GameState.player.get("money", 0)) - int(player_before.get("money", 0))
+	result["pot_delta"] = int(GameState.player.get("pot", 0)) - int(player_before.get("pot", 0))
+	result["level_before"] = int(player_before.get("level", 1))
+	result["level_after"] = int(GameState.player.get("level", 1))
+	result["player_hp"] = int(GameState.player.get("hp", 0))
+	result["player_max_hp"] = int(GameState.player.get("max_hp", 1))
+	result["player_mp"] = int(GameState.player.get("mp", 0))
+	result["player_max_mp"] = int(GameState.player.get("max_mp", 1))
+	result["loot"] = loot_parts.duplicate()
+	result["completed_quests"] = _completed_quest_titles_since(completed_before)
+	result["quest_tracker"] = GameState.get_active_story_quest_hint()
+	result["equipment_wear_text"] = wear_summary
 	GameState.set_mode(GameState.Mode.EXPLORE)
 	combat_changed.emit(snapshot())
 	combat_finished.emit(result)
+
+func _completed_quest_titles_since(completed_before: Array) -> Array[String]:
+	var titles: Array[String] = []
+	for quest_id in GameState.completed_quests:
+		if completed_before.has(quest_id):
+			continue
+		var quest := GameData.get_quest(str(quest_id))
+		titles.append(str(quest.get("title", quest_id)))
+	return titles
 
 func _append_log(text: String) -> void:
 	log_lines.append(text)

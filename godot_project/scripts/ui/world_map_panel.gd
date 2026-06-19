@@ -2,17 +2,21 @@ extends Control
 class_name WorldMapPanel
 
 const MAP_CANVAS_SCRIPT := preload("res://scripts/ui/region_map_canvas.gd")
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
 
 signal focus_region_requested(region_id: String)
 signal fast_travel_requested(region_id: String)
+signal clear_target_requested()
 
 var region_list: ItemList
+var target_summary_label: Label
 var scene_texture: TextureRect
 var scene_caption: Label
 var details: RichTextLabel
 var map_canvas
 var focus_button: Button
 var travel_button: Button
+var clear_target_button: Button
 var region_ids: Array[String] = []
 var selected_region_id := ""
 
@@ -21,6 +25,7 @@ func _ready() -> void:
 	hide()
 	_build()
 	EventBus.region_changed.connect(func(_region: Dictionary, _state: Dictionary) -> void: _refresh())
+	EventBus.map_target_changed.connect(func(_region_id: String) -> void: _refresh())
 
 func show_panel() -> void:
 	_refresh()
@@ -35,7 +40,7 @@ func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(110, 58)
 	panel.size = Vector2(1060, 594)
-	panel.add_theme_stylebox_override("panel", _panel_style())
+	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(18, 16, 18, 16)))
 	add_child(panel)
 
 	var root := HBoxContainer.new()
@@ -49,13 +54,21 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "江湖舆图"
-	title.add_theme_font_size_override("font_size", 27)
-	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	UI_ART.apply_title(title)
 	left.add_child(title)
 
+	target_summary_label = Label.new()
+	target_summary_label.custom_minimum_size = Vector2(300, 42)
+	target_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI_ART.apply_body_label(target_summary_label, 14)
+	left.add_child(target_summary_label)
+
 	region_list = ItemList.new()
-	region_list.custom_minimum_size = Vector2(300, 455)
+	region_list.custom_minimum_size = Vector2(300, 403)
 	region_list.item_selected.connect(_select_region)
+	region_list.add_theme_stylebox_override("panel", UI_ART.panel_style(Color(0.050, 0.048, 0.038, 0.80), Color(0.42, 0.34, 0.20, 0.62), Vector4(8, 8, 8, 8)))
+	region_list.add_theme_color_override("font_color", Color(0.88, 0.82, 0.68))
+	region_list.add_theme_color_override("font_selected_color", Color(1.0, 0.88, 0.50))
 	left.add_child(region_list)
 
 	var right := VBoxContainer.new()
@@ -99,6 +112,7 @@ func _build() -> void:
 	details.fit_content = false
 	details.bbcode_enabled = false
 	details.add_theme_font_size_override("normal_font_size", 16)
+	details.add_theme_color_override("default_color", Color(0.90, 0.86, 0.76))
 	info_row.add_child(details)
 
 	var actions := HBoxContainer.new()
@@ -110,23 +124,34 @@ func _build() -> void:
 	focus_button.text = "标记目的地"
 	focus_button.custom_minimum_size = Vector2(132, 36)
 	focus_button.pressed.connect(_request_focus_region)
+	UI_ART.apply_button(focus_button)
 	actions.add_child(focus_button)
 
 	travel_button = Button.new()
 	travel_button.text = "快速前往"
 	travel_button.custom_minimum_size = Vector2(132, 36)
 	travel_button.pressed.connect(_request_fast_travel)
+	UI_ART.apply_button(travel_button)
 	actions.add_child(travel_button)
+
+	clear_target_button = Button.new()
+	clear_target_button.text = "清除目的地"
+	clear_target_button.custom_minimum_size = Vector2(132, 36)
+	clear_target_button.pressed.connect(_request_clear_target)
+	UI_ART.apply_button(clear_target_button)
+	actions.add_child(clear_target_button)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
 	close_button.custom_minimum_size = Vector2(118, 36)
 	close_button.pressed.connect(close_panel)
+	UI_ART.apply_button(close_button)
 	actions.add_child(close_button)
 
 func _refresh() -> void:
 	if region_list == null:
 		return
+	_refresh_target_summary_label()
 	var selected_id := selected_region_id
 	if selected_id.is_empty() and not GameState.map_target_region_id.is_empty():
 		selected_id = GameState.map_target_region_id
@@ -263,12 +288,22 @@ func _fast_travel_line(region_id: String) -> String:
 	return "驿路：%s。" % reason
 
 func _update_action_buttons(region_id: String) -> void:
-	if focus_button == null or travel_button == null:
+	if focus_button == null or travel_button == null or clear_target_button == null:
 		return
 	var region := GameData.get_region(region_id)
 	var discovered := not region.is_empty() and GameState.is_region_discovered(region_id)
-	focus_button.disabled = not discovered
-	focus_button.tooltip_text = "在大地图上标记该区域" if discovered else "尚未发现区域"
+	var is_current_target := not region_id.is_empty() and region_id == GameState.map_target_region_id
+	focus_button.text = "已标记目的地" if is_current_target else "标记目的地"
+	focus_button.disabled = not discovered or is_current_target
+	if is_current_target:
+		focus_button.tooltip_text = "该区域已是当前地图目的地"
+	else:
+		focus_button.tooltip_text = "在大地图上标记该区域" if discovered else "尚未发现区域"
+	clear_target_button.disabled = GameState.map_target_region_id.is_empty()
+	if clear_target_button.disabled:
+		clear_target_button.tooltip_text = "当前没有地图目的地"
+	else:
+		clear_target_button.tooltip_text = "清除当前地图目的地"
 	var plan := GameState.build_region_travel_plan(region_id)
 	var reason := str(plan.get("blocked_reason", ""))
 	travel_button.disabled = not reason.is_empty()
@@ -285,11 +320,27 @@ func _update_action_buttons(region_id: String) -> void:
 	else:
 		travel_button.tooltip_text = reason
 
+func _refresh_target_summary_label() -> void:
+	if target_summary_label == null:
+		return
+	var summary := GameState.get_map_target_summary()
+	if summary.is_empty():
+		target_summary_label.text = "地图目的地：未标记"
+		return
+	target_summary_label.text = summary
+
 func _request_focus_region() -> void:
 	if selected_region_id.is_empty() or not GameState.is_region_discovered(selected_region_id):
 		EventBus.emit_toast("尚未发现该区域")
 		return
 	focus_region_requested.emit(selected_region_id)
+
+func _request_clear_target() -> void:
+	if GameState.map_target_region_id.is_empty():
+		EventBus.emit_toast("当前没有地图目的地")
+		_refresh()
+		return
+	clear_target_requested.emit()
 
 func _request_fast_travel() -> void:
 	if selected_region_id.is_empty():

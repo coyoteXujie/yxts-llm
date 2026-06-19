@@ -21,6 +21,7 @@ var stats_label: Label
 var equipment_label: Label
 var quest_label: Label
 var quest_hint_label: Label
+var map_target_label: Label
 var time_label: Label
 var region_label: Label
 var service_label: Label
@@ -50,6 +51,7 @@ func _ready() -> void:
 	EventBus.player_changed.connect(_on_player_changed)
 	EventBus.inventory_changed.connect(_on_inventory_changed)
 	EventBus.quests_changed.connect(_on_quests_changed)
+	EventBus.map_target_changed.connect(_on_map_target_changed)
 	EventBus.toast_requested.connect(show_toast)
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.region_changed.connect(_on_region_changed)
@@ -94,7 +96,7 @@ func _build_top_panel() -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.position = Vector2(16, 16)
-	panel.size = Vector2(460, 242)
+	panel.size = Vector2(460, 266)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
 	add_child(panel)
 
@@ -142,6 +144,13 @@ func _build_top_panel() -> void:
 	quest_hint_label.add_theme_font_size_override("font_size", 14)
 	quest_hint_label.add_theme_color_override("font_color", Color(0.94, 0.78, 0.42))
 	box.add_child(quest_hint_label)
+
+	map_target_label = Label.new()
+	map_target_label.custom_minimum_size = Vector2(410, 20)
+	map_target_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_target_label.add_theme_font_size_override("font_size", 14)
+	map_target_label.add_theme_color_override("font_color", Color(0.62, 0.84, 1.0))
+	box.add_child(map_target_label)
 
 	time_label = Label.new()
 	time_label.add_theme_font_size_override("font_size", 14)
@@ -305,11 +314,17 @@ func _equipment_status_part(slot: String, short_name: String) -> String:
 func _on_quests_changed() -> void:
 	_refresh_quest_labels()
 
+func _on_map_target_changed(_region_id: String) -> void:
+	_refresh_quest_labels()
+
 func _refresh_quest_labels() -> void:
 	if quest_label != null:
 		quest_label.text = "当前目标：%s" % GameState.get_active_quest_tracker()
 	if quest_hint_label != null:
 		quest_hint_label.text = GameState.get_active_story_quest_hint()
+	if map_target_label != null:
+		map_target_label.text = _map_target_text()
+		map_target_label.visible = not map_target_label.text.is_empty()
 
 func _on_time_changed(day: int, hour: float, weather: String) -> void:
 	if time_label == null:
@@ -335,10 +350,24 @@ func _on_region_changed(region: Dictionary, state: Dictionary) -> void:
 		danger_text
 	]
 	_refresh_service_label()
+	_refresh_quest_labels()
 	var region_id := str(region.get("id", ""))
 	if not region_id.is_empty() and region_id != last_region_id:
 		last_region_id = region_id
 		_show_region_banner(region, state)
+
+func _map_target_text() -> String:
+	var summary := GameState.get_map_target_summary()
+	if not summary.is_empty():
+		return summary
+	var target_region := GameState.get_active_quest_target_region()
+	if target_region.is_empty():
+		return ""
+	var region_name := str(target_region.get("name", target_region.get("id", "目标区域")))
+	var target_label := GameState.get_active_quest_target_label()
+	if target_label.is_empty():
+		return "可标记：%s" % region_name
+	return "可标记：%s · %s" % [region_name, target_label]
 
 func _refresh_service_label() -> void:
 	if service_label == null:

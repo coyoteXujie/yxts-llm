@@ -654,6 +654,37 @@ func set_map_target_region(region_id: String) -> void:
 	map_target_region_id = region_id
 	EventBus.map_target_changed.emit(map_target_region_id)
 
+func get_map_target_summary() -> String:
+	if map_target_region_id.is_empty():
+		return ""
+	var region := GameData.get_region(map_target_region_id)
+	if region.is_empty():
+		return ""
+	var region_name := str(region.get("name", map_target_region_id))
+	var label := "地图标记"
+	var active_target_region := get_active_quest_target_region()
+	if not active_target_region.is_empty() and str(active_target_region.get("id", "")) == map_target_region_id:
+		label = "任务目标"
+	if map_target_region_id == current_region_id:
+		return "%s：已抵达%s" % [label, region_name]
+	var plan := build_region_travel_plan(map_target_region_id)
+	var reason := str(plan.get("blocked_reason", ""))
+	var route_summary := str(plan.get("route_summary", ""))
+	var risk_label := str(plan.get("risk_label", ""))
+	var travel_text := "%.1f时辰 · %d两" % [
+		float(plan.get("hours", 0.0)),
+		int(plan.get("fare", 0))
+	]
+	if not risk_label.is_empty():
+		travel_text = "%s · %s" % [travel_text, risk_label]
+	if not route_summary.is_empty():
+		travel_text = "%s · %s" % [travel_text, route_summary]
+	if reason.is_empty():
+		return "%s：%s · 可驿路 %s" % [label, region_name, travel_text]
+	if route_summary.is_empty():
+		return "%s：%s · %s" % [label, region_name, reason]
+	return "%s：%s · 路线 %s · %s" % [label, region_name, travel_text, reason]
+
 func get_npc_memory(npc_name: String) -> Dictionary:
 	if npc_name.is_empty():
 		return _default_npc_memory()
@@ -2011,6 +2042,22 @@ func _complete_quest(quest_id: String) -> void:
 		active_quest = "江湖初成"
 		EventBus.player_changed.emit(player)
 		EventBus.emit_toast("阶段通关：江湖初成")
+	EventBus.emit_quest_completed(_quest_completion_summary(quest_id, quest))
+
+func _quest_completion_summary(quest_id: String, quest: Dictionary) -> Dictionary:
+	var next_hint := str(quest.get("next_hint", active_quest))
+	if quest_id == "q_hero_trial":
+		next_hint = active_quest
+	return {
+		"quest_id": quest_id,
+		"title": str(quest.get("title", quest_id)),
+		"description": str(quest.get("description", "")),
+		"reward_lines": get_quest_reward_lines(quest_id),
+		"next_hint": next_hint,
+		"region_id": current_region_id,
+		"region_name": current_region_name,
+		"active_quest": active_quest
+	}
 
 func _record_quest_world_event(quest_id: String, quest: Dictionary) -> void:
 	var quest_title := str(quest.get("title", quest_id))
@@ -2076,13 +2123,8 @@ func get_quest_status_lines() -> Array[String]:
 		var description := str(quest.get("description", ""))
 		if not description.is_empty():
 			lines.append("  %s" % description)
-		var progress: Dictionary = active_quests[quest_id].get("progress", {})
-		var objectives: Array = quest.get("objectives", [])
-		for objective in objectives:
-			var key := _objective_key(objective)
-			var current := int(progress.get(key, 0))
-			var required := int(objective.get("count", 1))
-			lines.append("  - %s %d/%d" % [str(objective.get("label", key)), min(current, required), required])
+		for objective_line in get_quest_objective_lines(str(quest_id)):
+			lines.append("  - %s" % objective_line)
 	var clues := get_adventure_clues(4)
 	if not clues.is_empty():
 		lines.append("")
@@ -2125,6 +2167,72 @@ func get_quest_status_lines() -> Array[String]:
 				str(entry.get("description", ""))
 			])
 	return lines
+
+func get_quest_objective_lines(quest_id: String, include_hints: bool = false) -> Array[String]:
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return []
+	var quest_state: Dictionary = active_quests.get(quest_id, {})
+	var progress: Dictionary = quest_state.get("progress", {})
+	var objectives: Array = quest.get("objectives", [])
+	var lines: Array[String] = []
+	for objective in objectives:
+		var objective_data: Dictionary = objective
+		var key := _objective_key(objective_data)
+		var current := int(progress.get(key, 0))
+		var required := int(objective_data.get("count", 1))
+		var progress_text := "完成" if current >= required else "%d/%d" % [min(current, required), required]
+		var label := str(objective_data.get("label", key))
+		if include_hints and current < required:
+			var hint := _objective_hint(objective_data)
+			if not hint.is_empty() and hint != label:
+				label = "%s（%s）" % [label, hint]
+		lines.append("%s %s" % [label, progress_text])
+	return lines
+
+func get_quest_reward_lines(quest_id: String) -> Array[String]:
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return []
+	var rewards: Dictionary = quest.get("rewards", {})
+	var lines: Array[String] = []
+	var exp_reward := int(rewards.get("exp", 0))
+	var money_reward := int(rewards.get("money", 0))
+	var daode_reward := int(rewards.get("daode", 0))
+	if exp_reward > 0:
+		lines.append("阅历 +%d" % exp_reward)
+	if money_reward > 0:
+		lines.append("银两 +%d" % money_reward)
+	if daode_reward != 0:
+		lines.append("道德 %+d" % daode_reward)
+	var items: Dictionary = rewards.get("items", {})
+	for item_id in items.keys():
+		var item := GameData.get_item(str(item_id))
+		var item_name := str(item.get("name", item_id))
+		lines.append("%s x%d" % [item_name, int(items[item_id])])
+	var skills: Dictionary = rewards.get("skills", {})
+	for skill_id in skills.keys():
+		lines.append("%s +%d" % [GameData.get_skill_name(str(skill_id)), int(skills[skill_id])])
+	return lines
+
+func get_quest_brief_text(quest_id: String, state_label: String = "任务") -> String:
+	var quest := GameData.get_quest(quest_id)
+	if quest.is_empty():
+		return "任务不存在"
+	var lines: Array[String] = ["%s：%s" % [state_label, str(quest.get("title", quest_id))]]
+	var description := str(quest.get("description", ""))
+	if not description.is_empty():
+		lines.append(description)
+	var objective_lines := get_quest_objective_lines(quest_id, true)
+	if not objective_lines.is_empty():
+		lines.append("目标：%s" % "；".join(objective_lines))
+	var reward_lines := get_quest_reward_lines(quest_id)
+	if not reward_lines.is_empty():
+		lines.append("奖励：%s" % "，".join(reward_lines))
+	var next_hint := str(quest.get("next_hint", ""))
+	if not next_hint.is_empty():
+		lines.append("后续：%s" % next_hint)
+	return "\n".join(lines)
 
 func get_active_quest_tracker() -> String:
 	if active_quests.is_empty():
@@ -2177,6 +2285,75 @@ func _primary_active_quest_id() -> String:
 		return ""
 	return str(active_quests.keys()[0])
 
+func get_active_quest_target_region() -> Dictionary:
+	var quest_id := _primary_active_quest_id()
+	if quest_id.is_empty():
+		return {}
+	var objective := _first_incomplete_objective(quest_id)
+	if objective.is_empty():
+		return {}
+	var kind := str(objective.get("type", ""))
+	if kind != "talk" and kind != "kill":
+		return {}
+	return _target_region(str(objective.get("target", "")))
+
+func get_active_quest_target_entries() -> Array:
+	var entries: Array = []
+	for quest_id_value in active_quests.keys():
+		var quest_id := str(quest_id_value)
+		var quest := GameData.get_quest(quest_id)
+		if quest.is_empty():
+			continue
+		var quest_state: Dictionary = active_quests.get(quest_id, {})
+		var progress: Dictionary = quest_state.get("progress", {})
+		var objectives: Array = quest.get("objectives", [])
+		for objective_value in objectives:
+			if typeof(objective_value) != TYPE_DICTIONARY:
+				continue
+			var objective: Dictionary = objective_value
+			var kind := str(objective.get("type", ""))
+			if kind != "talk" and kind != "kill":
+				continue
+			var key := _objective_key(objective)
+			var current := int(progress.get(key, 0))
+			var required := int(objective.get("count", 1))
+			if current >= required:
+				continue
+			var target := str(objective.get("target", ""))
+			var npc := GameData.get_npc_by_name(target)
+			var tile := Vector2i(-1, -1)
+			if not npc.is_empty():
+				tile = Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
+			var region := _target_region(target)
+			var region_id := str(region.get("id", ""))
+			entries.append({
+				"quest_id": quest_id,
+				"quest_title": str(quest.get("title", quest_id)),
+				"kind": kind,
+				"target": target,
+				"label": str(objective.get("label", key)),
+				"current": current,
+				"required": required,
+				"tile": tile,
+				"region_id": region_id,
+				"region_name": str(region.get("name", region_id))
+			})
+	return entries
+
+func get_active_quest_target_label() -> String:
+	var quest_id := _primary_active_quest_id()
+	if quest_id.is_empty():
+		return ""
+	var quest := GameData.get_quest(quest_id)
+	var objective := _first_incomplete_objective(quest_id)
+	var region := get_active_quest_target_region()
+	if quest.is_empty() or objective.is_empty() or region.is_empty():
+		return ""
+	return "%s · %s" % [
+		str(quest.get("title", quest_id)),
+		str(objective.get("label", _objective_key(objective)))
+	]
+
 func _first_incomplete_objective(quest_id: String) -> Dictionary:
 	if not active_quests.has(quest_id):
 		return {}
@@ -2224,9 +2401,39 @@ func _target_region(target: String) -> Dictionary:
 	if npc.is_empty():
 		return {}
 	var tile := Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
+	return get_region_for_map_tile(tile)
+
+func get_region_for_map_tile(tile: Vector2i) -> Dictionary:
 	if tile.x < 0 or tile.y < 0:
 		return {}
-	return GameData.get_region_at_tile(tile)
+	var region := GameData.get_region_at_tile(tile)
+	if not region.is_empty():
+		return region
+	return _nearest_region_to_tile(tile)
+
+func _nearest_region_to_tile(tile: Vector2i) -> Dictionary:
+	var best: Dictionary = {}
+	var best_distance := 999999.0
+	var target_position := Vector2(float(tile.x), float(tile.y))
+	for region_value in GameData.get_regions():
+		if typeof(region_value) != TYPE_DICTIONARY:
+			continue
+		var region: Dictionary = region_value
+		var center := _region_center_for_targeting(region)
+		var distance := center.distance_to(target_position)
+		if distance < best_distance:
+			best = region
+			best_distance = distance
+	return best
+
+func _region_center_for_targeting(region: Dictionary) -> Vector2:
+	var center_data: Array = region.get("center", [])
+	if center_data.size() >= 2:
+		return Vector2(float(center_data[0]), float(center_data[1]))
+	var rect_data: Array = region.get("rect", [])
+	if rect_data.size() >= 4:
+		return Vector2(float(rect_data[0]) + float(rect_data[2]) * 0.5, float(rect_data[1]) + float(rect_data[3]) * 0.5)
+	return Vector2.ZERO
 
 func mark_enemy_defeated(enemy_id: int) -> void:
 	if not defeated_enemies.has(enemy_id):
@@ -2286,6 +2493,35 @@ func load_game() -> bool:
 
 func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
+
+func get_save_summary() -> Dictionary:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return {}
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	var snapshot: Dictionary = parsed
+	var saved_player: Dictionary = snapshot.get("player", {})
+	var pos: Dictionary = snapshot.get("player_position", {})
+	var saved_position := Vector2(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)))
+	var saved_tile := Vector2i(floori(saved_position.x / GameData.TILE_SIZE), floori(saved_position.y / GameData.TILE_SIZE))
+	var region := GameData.get_region_at_tile(saved_tile)
+	var active: Dictionary = snapshot.get("active_quests", {})
+	return {
+		"player_name": str(saved_player.get("name", "少侠")),
+		"level": int(saved_player.get("level", 1)),
+		"faction": GameData.get_faction_name(str(saved_player.get("faction", "none"))),
+		"day": int(snapshot.get("day", 1)),
+		"hour": int(float(snapshot.get("hour", 8.0))),
+		"weather": str(snapshot.get("weather", "晴朗")),
+		"region_name": str(region.get("name", "未知之地")),
+		"active_quest": str(snapshot.get("active_quest", "自由探索江湖")),
+		"active_count": active.size(),
+		"completed_count": snapshot.get("completed_quests", []).size()
+	}
 
 func _apply_snapshot(snapshot: Dictionary) -> void:
 	player = snapshot.get("player", {})

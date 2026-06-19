@@ -1,8 +1,11 @@
 extends Control
 class_name CultivationPanel
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 var skill_list: ItemList
 var skill_preview: TextureRect
+var summary_label: Label
 var details: Label
 var skill_ids: Array[String] = []
 
@@ -34,12 +37,17 @@ func _build() -> void:
 
 	var title := Label.new()
 	title.text = "修炼"
-	title.add_theme_font_size_override("font_size", 26)
-	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	UI_ART.apply_title(title)
 	box.add_child(title)
 
+	summary_label = Label.new()
+	summary_label.custom_minimum_size = Vector2(430, 34)
+	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI_ART.apply_body_label(summary_label, 14)
+	box.add_child(summary_label)
+
 	skill_list = ItemList.new()
-	skill_list.custom_minimum_size = Vector2(430, 270)
+	skill_list.custom_minimum_size = Vector2(430, 236)
 	skill_list.fixed_icon_size = Vector2i(36, 36)
 	skill_list.icon_mode = ItemList.ICON_MODE_LEFT
 	skill_list.item_selected.connect(_select_skill)
@@ -64,8 +72,7 @@ func _build() -> void:
 	details = Label.new()
 	details.custom_minimum_size = Vector2(328, 118)
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	details.add_theme_font_size_override("font_size", 16)
-	details.add_theme_color_override("font_color", Color(0.90, 0.86, 0.76))
+	UI_ART.apply_body_label(details)
 	detail_row.add_child(details)
 
 	var actions := HBoxContainer.new()
@@ -75,16 +82,19 @@ func _build() -> void:
 
 	var practice := Button.new()
 	practice.text = "修炼"
+	UI_ART.apply_button(practice)
 	practice.pressed.connect(_practice_selected)
 	actions.add_child(practice)
 
 	var meditate := Button.new()
 	meditate.text = "打坐"
+	UI_ART.apply_button(meditate)
 	meditate.pressed.connect(_meditate)
 	actions.add_child(meditate)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
+	UI_ART.apply_button(close_button)
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
@@ -93,6 +103,8 @@ func _refresh() -> void:
 		return
 	skill_list.clear()
 	skill_ids.clear()
+	if summary_label != null:
+		summary_label.text = _cultivation_summary_text()
 	var ids := GameState.learned_skills.keys()
 	ids.sort()
 	for skill_id in ids:
@@ -134,41 +146,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.95)
-	style.border_color = Color(0.58, 0.46, 0.26, 0.86)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style
+func _panel_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))
 
-func _slot_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.10, 0.085, 0.06, 0.92)
-	style.border_color = Color(0.68, 0.53, 0.28, 0.88)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	return style
+func _slot_style() -> StyleBox:
+	return UI_ART.slot_texture_style()
+
+func _cultivation_summary_text() -> String:
+	return "潜能 %d  ·  已学 %d 门  ·  门派 %s" % [
+		int(GameState.player.get("pot", 0)),
+		GameState.learned_skills.size(),
+		GameData.get_faction_name(str(GameState.player.get("faction", "none")))
+	]
 
 func _load_skill_icon(skill_id: String) -> Texture2D:
 	var path := GameData.get_skill_icon_path(skill_id)

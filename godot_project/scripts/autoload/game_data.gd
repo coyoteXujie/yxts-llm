@@ -12,7 +12,27 @@ const FACTION_NAMES := {
 	"naja": "那迦派",
 	"taiji": "太极门",
 	"xueshan": "雪山派",
-	"xiaoyao": "逍遥派"
+	"xiaoyao": "逍遥派",
+	"court": "朝廷",
+	"beggar": "丐帮",
+	"bandit": "山贼"
+}
+
+const FACTION_ALIASES := {
+	"": "none",
+	"无门无派": "none",
+	"无": "none",
+	"八卦门": "bagua",
+	"花间派": "flower",
+	"红莲教": "honglian",
+	"那迦派": "naja",
+	"太极门": "taiji",
+	"雪山派": "xueshan",
+	"逍遥派": "xiaoyao",
+	"官府": "court",
+	"朝廷": "court",
+	"丐帮": "beggar",
+	"山贼": "bandit"
 }
 
 const SKILL_NAMES := {
@@ -114,6 +134,16 @@ const DIALOGUES := {
 		"太极真人": ["事有阴阳，局有虚实。", "年轻人，查案也如推手，急进则露破绽。", "七派若要夜议，先要有人把最危险的那封信带上山。"],
 		"冰魄": ["雪山不问俗世，但江湖寒意已经吹到山门。", "若你心不定，雪岭会先试你的胆。", "雪地不会说谎，脚印会告诉你来人是逃命，还是追杀。"],
 		"逍遥子": ["人生得意须尽欢，可惜江湖总有人不让人尽欢。", "你若看不清局，不妨先离局远一点。", "暗线最怕旁观者，我站远些，反而看见他们藏得很近。"],
+		"林婉清": ["花间派收徒先看心性，再看剑路。", "苏家旧事牵到花间，我不会只听江湖传言。", "若你要拜入花间，先学会收住锋芒。"],
+		"张铁牛": ["拳架子不怕粗，怕的是脚下没根。", "洛阳武馆不问出身，只看你肯不肯挨练。", "想学拳脚，先把气沉稳。"],
+		"李清风": ["终南山风冷，最适合让人把旧账想明白。", "朝堂文字能杀人，江湖刀剑也能救人。", "别急着问真相，先问自己敢不敢担。"],
+		"王小二": ["洛阳街上没有白来的消息，只有便宜些的消息。", "少侠买点干粮吧，顺路我也能讲两句城中风声。"],
+		"赵德": ["洛阳城讲法度，江湖人进城也一样。", "若你查的是旧案，就别在街面上拔刀。"],
+		"李慕白": ["长安剑客多，我只信出鞘那一瞬。", "剑不是拿来吓人的，拿出来就要有交代。"],
+		"王铁山": ["好铁要反复折打，好人也得经得住事。", "长安不缺兵刃，缺的是知道该何时收刀的人。"],
+		"孙小妹": ["临安的花卖给游人，也卖给等消息的人。", "若你见到带血的花枝，记得别碰叶尖。"],
+		"周不通": ["丐帮喝的是浊酒，听的却是最清楚的风声。", "你若想问路，先坐下来把这碗酒喝完。"],
+		"吴连山": ["这条山路归我看着，官府和江湖都别想白走。", "少侠若真有胆，就别拿正义两个字吓人。"],
 	"韦扬": ["八卦门重根基，刀掌步法缺一不可。", "入门先练游龙步，再谈八阵变化。"],
 	"清照": ["花间武学讲究身法与气韵。", "心有杂念，花飞便失了灵动。"],
 	"清虚道人": ["太极无胜负，只有虚实。", "来者若能守静，贫道自会指点。"],
@@ -635,6 +665,90 @@ const APPEARANCE_PRESETS := {
 	}
 }
 
+const NPC_SPRITE_FALLBACK_BY_PRESET := {
+	"default": "res://assets/characters/reference_map_sprites/wanderer_ref.png",
+	"innkeeper": "res://assets/characters/reference_map_sprites/innkeeper_ref.png",
+	"waiter": "res://assets/characters/reference_map_sprites/waiter_ref.png",
+	"tofu_seller": "res://assets/characters/reference_map_sprites/tofu_seller_ref.png",
+	"scholar": "res://assets/characters/reference_map_sprites/scholar_ref.png",
+	"constable": "res://assets/characters/npc/map_sprites_v2/constable_stage_v2.png",
+	"elder": "res://assets/characters/reference_map_sprites/elder_ref.png",
+	"monk": "res://assets/characters/reference_map_sprites/monk_ref.png",
+	"blacksmith": "res://assets/characters/reference_map_sprites/blacksmith_ref.png",
+	"wandering_hero": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png",
+	"bagua_master": "res://assets/characters/reference_map_sprites/bagua_grandmaster_ref.png",
+	"flower_master": "res://assets/characters/reference_map_sprites/flower_master_ref.png",
+	"taiji_master": "res://assets/characters/reference_map_sprites/taiji_master_ref.png",
+	"xueshan_master": "res://assets/characters/reference_map_sprites/xueshan_master_ref.png",
+	"town_trader": "res://assets/characters/npc/map_sprites_v2/peddler_stage_v2.png",
+	"cook": "res://assets/characters/npc/map_sprites_v2/chef_stage_v2.png",
+	"butcher": "res://assets/characters/reference_map_sprites/bandit_axe_ref.png",
+	"flower_seller": "res://assets/characters/npc/map_sprites_v2/flower_seller_stage_v2.png",
+	"doctor": "res://assets/characters/reference_map_sprites/scholar_ref.png",
+	"poison_master": "res://assets/characters/reference_map_sprites/naja_lady_ref.png",
+	"tailor": "res://assets/characters/npc/map_sprites_v2/tailor_stage_v2.png",
+	"town_guard": "res://assets/characters/reference_map_sprites/constable_ref.png",
+	"town_elder": "res://assets/characters/reference_map_sprites/elder_ref.png",
+	"noble": "res://assets/characters/reference_map_sprites/scholar_ref.png",
+	"child": "res://assets/characters/reference_map_sprites/taiji_herb_ref.png",
+	"wanderer": "res://assets/characters/reference_map_sprites/wanderer_ref.png",
+	"swordsman_poet": "res://assets/characters/reference_map_sprites/xiaoyao_hero_ref.png",
+	"bagua_disciple": "res://assets/characters/reference_map_sprites/bagua_blade_ref.png",
+	"flower_disciple": "res://assets/characters/reference_map_sprites/flower_swordswoman_ref.png",
+	"honglian_master": "res://assets/characters/reference_map_sprites/honglian_master_ref.png",
+	"honglian_disciple": "res://assets/characters/reference_map_sprites/honglian_staff_ref.png",
+	"naja_master": "res://assets/characters/reference_map_sprites/naja_assassin_ref.png",
+	"naja_disciple": "res://assets/characters/reference_map_sprites/naja_hat_ref.png",
+	"taiji_disciple": "res://assets/characters/reference_map_sprites/taiji_disciple_ref.png",
+	"xueshan_disciple": "res://assets/characters/reference_map_sprites/xueshan_blade_ref.png",
+	"thug": "res://assets/characters/npc/map_sprites_v2/thug_stage_v2.png",
+	"bandit": "res://assets/characters/reference_map_sprites/bandit_ref.png",
+	"assassin": "res://assets/characters/reference_map_sprites/assassin_ref.png",
+	"boss": "res://assets/characters/reference_map_sprites/boss_ref.png"
+}
+
+const NPC_PORTRAIT_FALLBACK_BY_PRESET := {
+	"default": "res://assets/characters/npc/portraits/portrait_016.png",
+	"innkeeper": "res://assets/characters/npc/portraits/portrait_047.png",
+	"waiter": "res://assets/characters/npc/portraits/portrait_035.png",
+	"tofu_seller": "res://assets/characters/npc/portraits/portrait_001.png",
+	"scholar": "res://assets/characters/npc/portraits/portrait_031.png",
+	"constable": "res://assets/characters/npc/portraits/portrait_003.png",
+	"elder": "res://assets/characters/npc/portraits/portrait_006.png",
+	"monk": "res://assets/characters/npc/portraits/portrait_012.png",
+	"blacksmith": "res://assets/characters/npc/portraits/portrait_200.png",
+	"wandering_hero": "res://assets/characters/npc/portraits/portrait_007.png",
+	"bagua_master": "res://assets/characters/npc/portraits/portrait_048.png",
+	"flower_master": "res://assets/characters/npc/portraits_v2/hua_ruyu.png",
+	"taiji_master": "res://assets/characters/npc/portraits_v2/taiji_zhenren.png",
+	"xueshan_master": "res://assets/characters/npc/portraits_v2/bingpo.png",
+	"town_trader": "res://assets/characters/npc/portraits/portrait_027.png",
+	"cook": "res://assets/characters/npc/portraits/portrait_005.png",
+	"butcher": "res://assets/characters/npc/portraits/portrait_034.png",
+	"flower_seller": "res://assets/characters/npc/portraits/portrait_009.png",
+	"doctor": "res://assets/characters/npc/portraits/portrait_026.png",
+	"poison_master": "res://assets/characters/npc/portraits/portrait_019.png",
+	"tailor": "res://assets/characters/npc/portraits/portrait_029.png",
+	"town_guard": "res://assets/characters/npc/portraits/portrait_033.png",
+	"town_elder": "res://assets/characters/npc/portraits/portrait_015.png",
+	"noble": "res://assets/characters/npc/portraits/portrait_013.png",
+	"child": "res://assets/characters/npc/portraits/portrait_002.png",
+	"wanderer": "res://assets/characters/npc/portraits/portrait_017.png",
+	"swordsman_poet": "res://assets/characters/npc/portraits/portrait_032.png",
+	"bagua_disciple": "res://assets/characters/npc/portraits/portrait_043.png",
+	"flower_disciple": "res://assets/characters/npc/portraits/portrait_053.png",
+	"honglian_master": "res://assets/characters/npc/portraits_v2/liehuo.png",
+	"honglian_disciple": "res://assets/characters/npc/portraits/portrait_075.png",
+	"naja_master": "res://assets/characters/npc/portraits_v2/shewang.png",
+	"naja_disciple": "res://assets/characters/npc/portraits/portrait_080.png",
+	"taiji_disciple": "res://assets/characters/npc/portraits/portrait_096.png",
+	"xueshan_disciple": "res://assets/characters/npc/portraits/portrait_108.png",
+	"thug": "res://assets/characters/npc/portraits/portrait_021.png",
+	"bandit": "res://assets/characters/npc/portraits/portrait_024.png",
+	"assassin": "res://assets/characters/npc/portraits/portrait_004.png",
+	"boss": "res://assets/characters/npc/portraits/portrait_120.png"
+}
+
 var npcs: Array = []
 var items: Dictionary = {}
 var quests: Dictionary = {}
@@ -1147,10 +1261,23 @@ func get_quests_for_npc(npc_name: String) -> Array:
 	return found
 
 func get_npc_sprite_path(npc_name: String) -> String:
-	return str(npc_sprite_assets.get(npc_name, ""))
+	var direct_path := str(npc_sprite_assets.get(npc_name, ""))
+	if not direct_path.is_empty():
+		return direct_path
+	return _fallback_npc_asset_path(npc_name, NPC_SPRITE_FALLBACK_BY_PRESET)
 
 func get_npc_portrait_path(npc_name: String) -> String:
-	return str(npc_portrait_assets.get(npc_name, ""))
+	var direct_path := str(npc_portrait_assets.get(npc_name, ""))
+	if not direct_path.is_empty():
+		return direct_path
+	return _fallback_npc_asset_path(npc_name, NPC_PORTRAIT_FALLBACK_BY_PRESET)
+
+func _fallback_npc_asset_path(npc_name: String, mapping: Dictionary) -> String:
+	var npc := get_npc_by_name(npc_name)
+	if npc.is_empty():
+		return ""
+	var preset_key := _appearance_preset_key(npc)
+	return str(mapping.get(preset_key, mapping.get("default", "")))
 
 func get_item_icon_path(item_id: String) -> String:
 	return str(item_icon_assets.get(item_id, ""))
@@ -1267,8 +1394,12 @@ func load_texture(path: String, use_mipmaps: bool = false) -> Texture2D:
 	texture_cache[cache_key] = texture
 	return texture
 
+func normalize_faction_id(faction_id: String) -> String:
+	var key := faction_id.strip_edges()
+	return str(FACTION_ALIASES.get(key, key))
+
 func get_faction_skills(faction_id: String) -> Array:
-	return FACTION_SKILLS.get(faction_id, [])
+	return FACTION_SKILLS.get(normalize_faction_id(faction_id), [])
 
 func is_attack_skill(skill_id: String) -> bool:
 	return bool(ATTACK_SKILLS.get(skill_id, false))
@@ -1292,6 +1423,10 @@ func get_npc_appearance(npc_data: Dictionary) -> Dictionary:
 		for key in override.keys():
 			preset[key] = override[key]
 	return preset
+
+func is_master_like_npc(npc_data: Dictionary) -> bool:
+	var npc_type := str(npc_data.get("npc_type", "normal"))
+	return bool(npc_data.get("is_master", false)) or ["master", "sect_leader", "sect_elder", "sword_master", "hermit"].has(npc_type)
 
 func _appearance_preset_key(npc_data: Dictionary) -> String:
 	var npc_name := str(npc_data.get("name", ""))
@@ -1324,6 +1459,8 @@ func _appearance_preset_key(npc_data: Dictionary) -> String:
 			return "bagua_master"
 		"花如玉":
 			return "flower_master"
+		"林婉清":
+			return "flower_master"
 		"烈火":
 			return "honglian_master"
 		"蛇王":
@@ -1334,13 +1471,29 @@ func _appearance_preset_key(npc_data: Dictionary) -> String:
 			return "xueshan_master"
 		"逍遥子":
 			return "wandering_hero"
+		"张铁牛":
+			return "wandering_hero"
+		"李清风":
+			return "swordsman_poet"
+		"赵德":
+			return "constable"
+		"李慕白":
+			return "swordsman_poet"
+		"王铁山":
+			return "blacksmith"
+		"周不通":
+			return "wanderer"
+		"吴连山":
+			return "bandit"
 		"阎商", "葛朗台", "小商贩":
+			return "town_trader"
+		"王小二":
 			return "town_trader"
 		"厨师":
 			return "cook"
 		"屠夫":
 			return "butcher"
-		"卖花女":
+		"卖花女", "孙小妹":
 			return "flower_seller"
 		"平一指":
 			return "doctor"
@@ -1389,8 +1542,8 @@ func _appearance_preset_key(npc_data: Dictionary) -> String:
 		"神秘人":
 			return "boss"
 
-	var faction_id := str(npc_data.get("faction", "none"))
-	if bool(npc_data.get("is_master", false)):
+	var faction_id := normalize_faction_id(str(npc_data.get("faction", "none")))
+	if is_master_like_npc(npc_data):
 		match faction_id:
 			"bagua":
 				return "bagua_master"
@@ -1421,18 +1574,29 @@ func _appearance_preset_key(npc_data: Dictionary) -> String:
 			return "xueshan_disciple"
 		"xiaoyao":
 			return "wandering_hero"
+		"court":
+			return "town_guard"
+		"beggar":
+			return "wanderer"
+		"bandit":
+			return "bandit"
 	var npc_type := str(npc_data.get("npc_type", "normal"))
 	if npc_type == "enemy":
 		return "bandit"
 	if npc_type == "trader":
 		return "town_trader"
+	if npc_type == "guard":
+		return "town_guard"
 	return "default"
 
 func get_faction_name(faction_id: String) -> String:
-	return str(FACTION_NAMES.get(faction_id, FACTION_NAMES["none"]))
+	var normalized := normalize_faction_id(faction_id)
+	if FACTION_NAMES.has(normalized):
+		return str(FACTION_NAMES[normalized])
+	return faction_id.strip_edges() if not faction_id.strip_edges().is_empty() else FACTION_NAMES["none"]
 
 func get_faction_color(faction_id: String) -> Color:
-	match faction_id:
+	match normalize_faction_id(faction_id):
 		"bagua":
 			return Color(0.55, 0.52, 0.45)
 		"flower":
@@ -1447,6 +1611,12 @@ func get_faction_color(faction_id: String) -> Color:
 			return Color(0.62, 0.76, 0.92)
 		"xiaoyao":
 			return Color(0.50, 0.67, 0.55)
+		"court":
+			return Color(0.34, 0.48, 0.62)
+		"beggar":
+			return Color(0.62, 0.48, 0.30)
+		"bandit":
+			return Color(0.62, 0.28, 0.22)
 		_:
 			return Color(0.75, 0.65, 0.50)
 
@@ -1459,14 +1629,22 @@ func get_dialogue_lines(npc_name: String) -> Array:
 	var npc := get_npc_by_name(npc_name)
 	if npc.is_empty():
 		return ["江湖路远，少侠保重。"]
-	var faction_id := str(npc.get("faction", "none"))
+	var faction_id := normalize_faction_id(str(npc.get("faction", "none")))
 	var npc_type := str(npc.get("npc_type", "normal"))
 	if npc_type == "enemy":
 		return ["此路不太平，想过去就凭本事。", "刀剑无眼，少侠可想好了？"]
-	if bool(npc.get("is_master", false)):
+	if is_master_like_npc(npc):
 		return ["%s讲究根基，急不得。" % get_faction_name(faction_id), "若你心志坚定，可以先从入门功夫练起。"]
 	if npc_type == "trader":
 		return ["小店货色不多，但都是行走江湖用得上的东西。", "出门在外，银两和伤药都别省。"]
+	if npc_type == "guard":
+		return ["城中规矩不是摆设，江湖人进城也要收起刀锋。", "若有线索牵涉案情，可以来衙门递话。"]
+	if faction_id == "court":
+		return ["朝廷眼线不只在城门，也在茶铺和渡口。", "江湖事若闹到百姓头上，官府不会袖手。"]
+	if faction_id == "beggar":
+		return ["丐帮弟子走街串巷，知道的事比酒楼账房还多。", "一碗酒换一句实话，少侠可别亏待了消息。"]
+	if faction_id == "bandit":
+		return ["山路不是官道，想过就得懂规矩。", "别把我当寻常剪径贼看。"]
 	if faction_id != "none":
 		return ["我是%s门下弟子，平日负责守山与演武。" % get_faction_name(faction_id), "掌门在正殿，有缘自会指点你。"]
 	return ["平安镇虽小，江湖风声却不小。", "多问多看，少侠会少吃些亏。"]

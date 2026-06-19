@@ -1,11 +1,16 @@
 extends Control
 class_name QuestPanel
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 var tabs: TabContainer
+var summary_label: Label
 var quest_text: RichTextLabel
 var rumor_text: RichTextLabel
 var relation_text: RichTextLabel
+var quest_focus_button: Button
 var clue_focus_button: Button
+var clear_target_button: Button
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -14,6 +19,10 @@ func _ready() -> void:
 	EventBus.quests_changed.connect(_refresh)
 	if not EventBus.world_events_changed.is_connected(_on_world_events_changed):
 		EventBus.world_events_changed.connect(_on_world_events_changed)
+	EventBus.map_target_changed.connect(func(_region_id: String) -> void:
+		if visible:
+			_refresh()
+	)
 
 func show_panel() -> void:
 	_refresh()
@@ -28,21 +37,30 @@ func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(214, 92)
 	panel.size = Vector2(760, 516)
-	panel.add_theme_stylebox_override("panel", _panel_style())
+	panel.add_theme_stylebox_override("panel", UI_ART.panel_style(Color(0.075, 0.062, 0.044, 0.94), Color(0.66, 0.48, 0.23, 0.84), Vector4(18, 14, 18, 14)))
 	add_child(panel)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
+	box.add_theme_constant_override("separation", 8)
 	panel.add_child(box)
 
 	var title := Label.new()
 	title.text = "任务日志"
 	title.add_theme_font_size_override("font_size", 26)
 	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
+	UI_ART.apply_label_shadow(title)
 	box.add_child(title)
 
+	summary_label = Label.new()
+	summary_label.custom_minimum_size = Vector2(700, 48)
+	summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary_label.add_theme_font_size_override("font_size", 15)
+	summary_label.add_theme_color_override("font_color", Color(0.90, 0.82, 0.64))
+	UI_ART.apply_label_shadow(summary_label, 0.62)
+	box.add_child(summary_label)
+
 	tabs = TabContainer.new()
-	tabs.custom_minimum_size = Vector2(700, 390)
+	tabs.custom_minimum_size = Vector2(700, 342)
 	box.add_child(tabs)
 
 	quest_text = _make_text_tab("任务")
@@ -57,15 +75,31 @@ func _build() -> void:
 	actions.add_theme_constant_override("separation", 10)
 	box.add_child(actions)
 
+	quest_focus_button = Button.new()
+	quest_focus_button.text = "标记任务目标"
+	quest_focus_button.custom_minimum_size = Vector2(168, 38)
+	UI_ART.apply_button(quest_focus_button)
+	quest_focus_button.pressed.connect(_mark_active_quest_target)
+	actions.add_child(quest_focus_button)
+
 	clue_focus_button = Button.new()
 	clue_focus_button.text = "标记线索目的地"
 	clue_focus_button.custom_minimum_size = Vector2(168, 38)
+	UI_ART.apply_button(clue_focus_button)
 	clue_focus_button.pressed.connect(_mark_latest_adventure_clue_target)
 	actions.add_child(clue_focus_button)
+
+	clear_target_button = Button.new()
+	clear_target_button.text = "清除目的地"
+	clear_target_button.custom_minimum_size = Vector2(142, 38)
+	UI_ART.apply_button(clear_target_button)
+	clear_target_button.pressed.connect(_clear_map_target)
+	actions.add_child(clear_target_button)
 
 	var close_button := Button.new()
 	close_button.text = "关闭"
 	close_button.custom_minimum_size = Vector2(120, 38)
+	UI_ART.apply_button(close_button)
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
@@ -81,10 +115,26 @@ func _make_text_tab(tab_name: String) -> RichTextLabel:
 func _refresh() -> void:
 	if quest_text == null:
 		return
+	if summary_label != null:
+		summary_label.text = _quest_summary_text()
 	quest_text.text = "\n".join(GameState.get_quest_status_lines())
 	rumor_text.text = "\n".join(_world_event_lines())
 	relation_text.text = "\n".join(_relation_lines())
+	_refresh_quest_focus_button()
 	_refresh_clue_focus_button()
+	_refresh_clear_target_button()
+
+func _quest_summary_text() -> String:
+	var tracker := GameState.get_active_quest_tracker()
+	var hint := GameState.get_active_story_quest_hint()
+	var region_name := GameState.current_region_name
+	if tracker.is_empty():
+		tracker = "自由探索江湖"
+	if hint.is_empty():
+		hint = "下一步：打开地图寻找任务标记，或与附近 NPC 交谈。"
+	var target_summary := GameState.get_map_target_summary()
+	var target_text := "地图目的地：未标记" if target_summary.is_empty() else target_summary
+	return "当前：%s\n%s  ·  所在地：%s\n%s" % [tracker, hint, region_name, target_text]
 
 func _on_world_events_changed(_events: Array) -> void:
 	if visible:
@@ -212,6 +262,49 @@ func _refresh_clue_focus_button() -> void:
 	clue_focus_button.disabled = false
 	clue_focus_button.tooltip_text = "把最近奇遇线索标记到世界地图"
 
+func _refresh_clear_target_button() -> void:
+	if clear_target_button == null:
+		return
+	var target_region_id := GameState.map_target_region_id
+	if target_region_id.is_empty():
+		clear_target_button.text = "清除目的地"
+		clear_target_button.disabled = true
+		clear_target_button.tooltip_text = "当前没有地图目的地"
+		return
+	var target_region := GameData.get_region(target_region_id)
+	var target_name := str(target_region.get("name", target_region_id)) if not target_region.is_empty() else target_region_id
+	clear_target_button.text = "清除：%s" % target_name
+	clear_target_button.disabled = false
+	clear_target_button.tooltip_text = "清除当前地图目的地"
+
+func _refresh_quest_focus_button() -> void:
+	if quest_focus_button == null:
+		return
+	var region := GameState.get_active_quest_target_region()
+	if region.is_empty():
+		quest_focus_button.text = "标记任务目标"
+		quest_focus_button.disabled = true
+		quest_focus_button.tooltip_text = "当前任务暂无可标记区域"
+		return
+	var region_name := str(region.get("name", region.get("id", "目标")))
+	quest_focus_button.text = "任务：%s" % region_name
+	quest_focus_button.disabled = false
+	var target_label := GameState.get_active_quest_target_label()
+	quest_focus_button.tooltip_text = "把%s标记到世界地图" % target_label if not target_label.is_empty() else "把当前任务目标标记到世界地图"
+
+func _mark_active_quest_target() -> void:
+	var region := GameState.get_active_quest_target_region()
+	if region.is_empty():
+		EventBus.emit_toast("当前任务暂无可标记区域")
+		_refresh_quest_focus_button()
+		return
+	var region_id := str(region.get("id", ""))
+	var region_name := str(region.get("name", region_id))
+	GameState.set_map_target_region(region_id)
+	EventBus.emit_toast("已标记任务目标：%s" % region_name)
+	_refresh_quest_focus_button()
+	_refresh_clear_target_button()
+
 func _mark_latest_adventure_clue_target() -> void:
 	var clue := _latest_adventure_clue_with_target()
 	if clue.is_empty():
@@ -225,6 +318,16 @@ func _mark_latest_adventure_clue_target() -> void:
 	GameState.set_map_target_region(target_region_id)
 	EventBus.emit_toast("已标记奇遇目的地：%s" % target_region_name)
 	_refresh_clue_focus_button()
+	_refresh_clear_target_button()
+
+func _clear_map_target() -> void:
+	if GameState.map_target_region_id.is_empty():
+		EventBus.emit_toast("当前没有地图目的地")
+		_refresh_clear_target_button()
+		return
+	GameState.set_map_target_region("")
+	EventBus.emit_toast("已清除地图目的地")
+	_refresh_clear_target_button()
 
 func _relation_lines() -> Array[String]:
 	var lines: Array[String] = []
@@ -255,21 +358,3 @@ func _relation_lines() -> Array[String]:
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
-
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.95)
-	style.border_color = Color(0.58, 0.46, 0.26, 0.86)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 18
-	style.content_margin_right = 18
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style

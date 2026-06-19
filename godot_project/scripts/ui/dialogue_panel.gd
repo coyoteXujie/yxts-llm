@@ -1,16 +1,27 @@
 extends Control
 class_name DialoguePanel
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
+
 var npc_data: Dictionary = {}
 var title_label: Label
 var body_label: Label
 var meta_label: Label
+var action_hint_label: Label
 var relation_label: Label
 var favor_bar: ProgressBar
 var memory_label: Label
 var rumor_label: Label
 var portrait_texture: TextureRect
 var story_choice_box: HBoxContainer
+var talk_button: Button
+var teach_button: Button
+var quest_button: Button
+var story_button: Button
+var shop_button: Button
+var join_button: Button
+var rest_button: Button
+var close_button: Button
 var talk_index := 0
 
 func _ready() -> void:
@@ -28,6 +39,7 @@ func show_npc(data: Dictionary) -> void:
 	GameState.record_npc_interaction(npc_data, "talk")
 	_update_meta()
 	_set_portrait()
+	_refresh_action_buttons()
 	_clear_story_choice_buttons()
 	_set_next_line()
 	show()
@@ -67,20 +79,19 @@ func _build() -> void:
 	title_label = Label.new()
 	title_label.add_theme_font_size_override("font_size", 24)
 	title_label.add_theme_color_override("font_color", Color(0.98, 0.82, 0.45))
+	UI_ART.apply_label_shadow(title_label)
 	box.add_child(title_label)
 
 	meta_label = Label.new()
 	meta_label.custom_minimum_size = Vector2(560, 34)
-	meta_label.add_theme_font_size_override("font_size", 15)
-	meta_label.add_theme_color_override("font_color", Color(0.72, 0.69, 0.62))
+	UI_ART.apply_body_label(meta_label, 15)
 	meta_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(meta_label)
 
 	body_label = Label.new()
 	body_label.custom_minimum_size = Vector2(560, 126)
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.add_theme_font_size_override("font_size", 20)
-	body_label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.78))
+	UI_ART.apply_body_label(body_label, 20)
 	box.add_child(body_label)
 
 	story_choice_box = HBoxContainer.new()
@@ -88,48 +99,65 @@ func _build() -> void:
 	story_choice_box.hide()
 	box.add_child(story_choice_box)
 
+	action_hint_label = Label.new()
+	action_hint_label.custom_minimum_size = Vector2(560, 22)
+	action_hint_label.clip_text = true
+	action_hint_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	action_hint_label.add_theme_font_size_override("font_size", 14)
+	action_hint_label.add_theme_color_override("font_color", Color(0.82, 0.76, 0.62))
+	UI_ART.apply_label_shadow(action_hint_label, 0.55)
+	box.add_child(action_hint_label)
+
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	actions.add_theme_constant_override("separation", 8)
 	box.add_child(actions)
 
-	var talk_button := Button.new()
+	talk_button = Button.new()
 	talk_button.text = "闲谈"
+	UI_ART.apply_button(talk_button)
 	talk_button.pressed.connect(_talk)
 	actions.add_child(talk_button)
 
-	var teach_button := Button.new()
+	teach_button = Button.new()
 	teach_button.text = "请教"
+	UI_ART.apply_button(teach_button)
 	teach_button.pressed.connect(_teach)
 	actions.add_child(teach_button)
 
-	var quest_button := Button.new()
+	quest_button = Button.new()
 	quest_button.text = "任务"
+	UI_ART.apply_button(quest_button)
 	quest_button.pressed.connect(_quest)
 	actions.add_child(quest_button)
 
-	var story_button := Button.new()
+	story_button = Button.new()
 	story_button.text = "抉择"
+	UI_ART.apply_button(story_button)
 	story_button.pressed.connect(_story_choice)
 	actions.add_child(story_button)
 
-	var shop_button := Button.new()
+	shop_button = Button.new()
 	shop_button.text = "交易"
+	UI_ART.apply_button(shop_button)
 	shop_button.pressed.connect(_shop)
 	actions.add_child(shop_button)
 
-	var join_button := Button.new()
+	join_button = Button.new()
 	join_button.text = "拜师"
+	UI_ART.apply_button(join_button)
 	join_button.pressed.connect(_join_faction)
 	actions.add_child(join_button)
 
-	var rest_button := Button.new()
+	rest_button = Button.new()
 	rest_button.text = "住店"
+	UI_ART.apply_button(rest_button)
 	rest_button.pressed.connect(_rest)
 	actions.add_child(rest_button)
 
-	var close_button := Button.new()
+	close_button = Button.new()
 	close_button.text = "离开"
+	UI_ART.apply_button(close_button)
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
@@ -142,6 +170,7 @@ func _build() -> void:
 	relation_title.text = "关系"
 	relation_title.add_theme_font_size_override("font_size", 16)
 	relation_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	UI_ART.apply_label_shadow(relation_title, 0.55)
 	side_box.add_child(relation_title)
 
 	relation_label = Label.new()
@@ -162,6 +191,7 @@ func _build() -> void:
 	memory_title.text = "近期记忆"
 	memory_title.add_theme_font_size_override("font_size", 16)
 	memory_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	UI_ART.apply_label_shadow(memory_title, 0.55)
 	side_box.add_child(memory_title)
 
 	memory_label = Label.new()
@@ -175,6 +205,7 @@ func _build() -> void:
 	rumor_title.text = "江湖风声"
 	rumor_title.add_theme_font_size_override("font_size", 16)
 	rumor_title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.40))
+	UI_ART.apply_label_shadow(rumor_title, 0.55)
 	side_box.add_child(rumor_title)
 
 	rumor_label = Label.new()
@@ -230,6 +261,91 @@ func _update_meta() -> void:
 		parts.append("性格：%s" % personality)
 	meta_label.text = "  |  ".join(parts)
 	_update_relation_sidebar(npc_name, memory)
+
+func _refresh_action_buttons() -> void:
+	var available_actions: Array[String] = ["闲谈"]
+	_set_button_state(talk_button, true, "换一句闲谈或听对方提起江湖风声")
+
+	var teach_skills: Array = npc_data.get("teach_skills", [])
+	var can_teach := not teach_skills.is_empty()
+	_set_button_state(teach_button, can_teach, "可请教武学" if can_teach else "此人暂无可教武学")
+	if can_teach:
+		available_actions.append("请教")
+
+	var quest_state := _quest_action_state()
+	var quest_enabled := bool(quest_state.get("enabled", false))
+	_set_button_state(quest_button, quest_enabled, str(quest_state.get("tooltip", "")))
+	if quest_enabled:
+		available_actions.append("任务")
+
+	var story_choices := GameState.get_available_story_choices(str(npc_data.get("name", "")))
+	var has_story_choice := not story_choices.is_empty()
+	_set_button_state(story_button, has_story_choice, "可做剧情抉择" if has_story_choice else "暂无剧情抉择")
+	if has_story_choice:
+		available_actions.append("抉择")
+
+	var sell_items: Array = npc_data.get("sell_items", [])
+	var can_trade := not sell_items.is_empty()
+	_set_button_state(shop_button, can_trade, "打开交易和修理服务" if can_trade else "此人不做买卖")
+	if can_trade:
+		available_actions.append("交易")
+
+	var join_state := _join_action_state()
+	var join_enabled := bool(join_state.get("enabled", false))
+	_set_button_state(join_button, join_enabled, str(join_state.get("tooltip", "")))
+	if join_enabled:
+		available_actions.append("拜师")
+
+	var can_rest := _can_rest_here()
+	_set_button_state(rest_button, can_rest, "住店休息并恢复状态" if can_rest else "这里不能住店")
+	if can_rest:
+		available_actions.append("住店")
+	_set_button_state(close_button, true, "离开对话")
+
+	if action_hint_label != null:
+		action_hint_label.text = "可互动：%s" % " / ".join(available_actions)
+
+func _set_button_state(button: Button, enabled: bool, tooltip: String) -> void:
+	if button == null:
+		return
+	button.disabled = not enabled
+	button.tooltip_text = tooltip
+
+func _quest_action_state() -> Dictionary:
+	var quests := GameData.get_quests_for_npc(str(npc_data.get("name", "")))
+	if quests.is_empty():
+		return {"enabled": false, "tooltip": "暂无可接任务"}
+	var blocked_lines: Array[String] = []
+	var completed_count := 0
+	for quest in quests:
+		var quest_data: Dictionary = quest
+		var quest_id := str(quest_data.get("id", ""))
+		if GameState.completed_quests.has(quest_id):
+			completed_count += 1
+			continue
+		if GameState.active_quests.has(quest_id):
+			return {"enabled": true, "tooltip": "任务进行中"}
+		var block_reason := GameState.get_quest_block_reason(quest_id)
+		if block_reason.is_empty():
+			return {"enabled": true, "tooltip": "可接任务：%s" % str(quest_data.get("title", quest_id))}
+		blocked_lines.append(block_reason)
+	if completed_count >= quests.size():
+		return {"enabled": false, "tooltip": "此人的委托已完成"}
+	if not blocked_lines.is_empty():
+		return {"enabled": true, "tooltip": "有任务线索，但条件未满足：%s" % str(blocked_lines[0])}
+	return {"enabled": false, "tooltip": "暂无可推进任务"}
+
+func _join_action_state() -> Dictionary:
+	var faction_id := GameData.normalize_faction_id(str(npc_data.get("faction", "none")))
+	if faction_id == "none" or not GameData.is_master_like_npc(npc_data):
+		return {"enabled": false, "tooltip": "此人不是可拜师的门派掌门"}
+	var player_faction := GameData.normalize_faction_id(str(GameState.player.get("faction", "none")))
+	if player_faction != "none" and player_faction != faction_id:
+		return {"enabled": false, "tooltip": "你已有门派，不能改拜%s" % GameData.get_faction_name(faction_id)}
+	return {"enabled": true, "tooltip": "拜入%s并学习入门武学" % GameData.get_faction_name(faction_id)}
+
+func _can_rest_here() -> bool:
+	return str(npc_data.get("name", "")) == "平阿四" or bool(npc_data.get("can_rest", false))
 
 func _update_relation_sidebar(npc_name: String, memory: Dictionary) -> void:
 	if relation_label == null:
@@ -328,7 +444,7 @@ func _quest() -> void:
 		if GameState.completed_quests.has(quest_id):
 			continue
 		if GameState.active_quests.has(quest_id):
-			body_label.text = "任务进行中：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
+			body_label.text = GameState.get_quest_brief_text(quest_id, "任务进行中")
 			return
 		var block_reason := GameState.get_quest_block_reason(quest_id)
 		if not block_reason.is_empty():
@@ -337,7 +453,8 @@ func _quest() -> void:
 		GameState.accept_quest(quest_id)
 		GameState.record_npc_interaction(npc_data, "quest_accept")
 		_update_meta()
-		body_label.text = "接下任务：%s\n%s" % [str(quest.get("title", quest_id)), str(quest.get("description", ""))]
+		_refresh_action_buttons()
+		body_label.text = GameState.get_quest_brief_text(quest_id, "接下任务")
 		return
 	if not blocked_lines.is_empty():
 		body_label.text = "%s 沉吟片刻：眼下还不到时候。\n%s" % [
@@ -345,7 +462,17 @@ func _quest() -> void:
 			"\n".join(blocked_lines.slice(0, 3))
 		]
 		return
-	body_label.text = "%s 点点头：你已经帮了不少忙。" % str(npc_data.get("name", "对方"))
+	var completed_titles: Array[String] = []
+	for quest in quests:
+		var quest_id := str(quest.get("id", ""))
+		if GameState.completed_quests.has(quest_id):
+			completed_titles.append(str(quest.get("title", quest_id)))
+	var completed_text := "、".join(completed_titles) if not completed_titles.is_empty() else "这些委托"
+	body_label.text = "%s 点点头：%s已经办妥。\n%s" % [
+		str(npc_data.get("name", "对方")),
+		completed_text,
+		GameState.get_active_story_quest_hint()
+	]
 
 func _story_choice() -> void:
 	var choices := GameState.get_available_story_choices(str(npc_data.get("name", "")))
@@ -361,6 +488,7 @@ func _story_choice() -> void:
 		var button := Button.new()
 		button.text = str(choice_data.get("title", "抉择"))
 		button.tooltip_text = str(choice_data.get("description", ""))
+		UI_ART.apply_button(button)
 		button.pressed.connect(func() -> void:
 			_choose_story_choice(choice_id)
 		)
@@ -392,25 +520,27 @@ func _shop() -> void:
 
 func _join_faction() -> void:
 	_clear_story_choice_buttons()
-	var faction_id := str(npc_data.get("faction", "none"))
-	if faction_id == "none" or not bool(npc_data.get("is_master", false)):
+	var faction_id := GameData.normalize_faction_id(str(npc_data.get("faction", "none")))
+	if faction_id == "none" or not GameData.is_master_like_npc(npc_data):
 		body_label.text = "%s 不是可拜师的门派掌门。" % str(npc_data.get("name", "对方"))
 		return
 	if GameState.join_faction(faction_id):
 		GameState.record_npc_interaction(npc_data, "join")
 		_update_meta()
+		_refresh_action_buttons()
 		body_label.text = "你拜入%s门下。" % GameData.get_faction_name(faction_id)
 	else:
 		body_label.text = "拜师未成。"
 
 func _rest() -> void:
 	_clear_story_choice_buttons()
-	if str(npc_data.get("name", "")) != "平阿四" and not bool(npc_data.get("can_rest", false)):
+	if not _can_rest_here():
 		body_label.text = "这里不能住店休息。"
 		return
 	if GameState.rest(12):
 		GameState.record_npc_interaction(npc_data, "rest")
 		_update_meta()
+		_refresh_action_buttons()
 		body_label.text = "你在客栈歇下，醒来时精神恢复。"
 	else:
 		body_label.text = "银两不足，住不了店。"
@@ -426,38 +556,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.94)
-	style.border_color = Color(0.66, 0.52, 0.28, 0.86)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 18
-	style.content_margin_right = 18
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style
+func _panel_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(18, 14, 18, 14))
 
-func _portrait_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.045, 0.040, 0.032, 0.94)
-	style.border_color = Color(0.66, 0.52, 0.28, 0.82)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 6
-	style.content_margin_right = 6
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	return style
+func _portrait_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(6, 6, 6, 6))

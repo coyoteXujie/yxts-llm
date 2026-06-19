@@ -119,7 +119,7 @@ func is_enemy() -> bool:
 	return str(data.get("npc_type", "normal")) == "enemy"
 
 func is_master() -> bool:
-	return bool(data.get("is_master", false)) or str(data.get("npc_type", "normal")) == "master"
+	return GameData.is_master_like_npc(data)
 
 func set_highlight(value: bool) -> void:
 	if highlighted == value:
