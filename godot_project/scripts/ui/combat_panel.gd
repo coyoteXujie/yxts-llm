@@ -6,10 +6,21 @@ const UI_ART := preload("res://scripts/ui/ui_art.gd")
 
 const IMMERSIVE_STAGE_ENABLED := true
 const COMBAT_STAGE_MARGIN := 0.0
-const COMBAT_TOP_HUD_HEIGHT := 94.0
+const COMBAT_TOP_HUD_HEIGHT := 124.0
 const COMBAT_BOTTOM_HUD_HEIGHT := 156.0
 const COMBAT_ACTION_COLUMNS := 4
 const COMBAT_ACTION_BUTTON_SIZE := Vector2(132, 44)
+const STATUS_ORDER := ["bleed", "poison", "burn", "stun", "slow", "weaken", "vulnerable", "guard"]
+const STATUS_CHIP_META := {
+	"bleed": {"label": "流血", "short": "血", "color": Color(0.92, 0.18, 0.20)},
+	"poison": {"label": "中毒", "short": "毒", "color": Color(0.40, 0.78, 0.26)},
+	"burn": {"label": "灼烧", "short": "炎", "color": Color(1.00, 0.43, 0.18)},
+	"stun": {"label": "眩晕", "short": "晕", "color": Color(0.56, 0.72, 1.00)},
+	"slow": {"label": "迟缓", "short": "缓", "color": Color(0.35, 0.80, 0.88)},
+	"weaken": {"label": "虚弱", "short": "弱", "color": Color(0.73, 0.48, 0.88)},
+	"vulnerable": {"label": "破绽", "short": "破", "color": Color(1.00, 0.76, 0.30)},
+	"guard": {"label": "守势", "short": "守", "color": Color(0.92, 0.78, 0.42)}
+}
 
 var combat_system
 var stage
@@ -17,6 +28,8 @@ var title_label: Label
 var enemy_portrait: TextureRect
 var enemy_bar: ProgressBar
 var player_bar: ProgressBar
+var enemy_status_box: HBoxContainer
+var player_status_box: HBoxContainer
 var status_label: Label
 var body_label: Label
 var action_grid: GridContainer
@@ -111,6 +124,12 @@ func _build() -> void:
 	enemy_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	enemy_info.add_child(enemy_bar)
 
+	enemy_status_box = HBoxContainer.new()
+	enemy_status_box.add_theme_constant_override("separation", 6)
+	enemy_status_box.custom_minimum_size = Vector2(520, 25)
+	enemy_status_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_info.add_child(enemy_status_box)
+
 	status_label = Label.new()
 	status_label.add_theme_font_size_override("font_size", 14)
 	status_label.add_theme_color_override("font_color", Color(0.80, 0.76, 0.66))
@@ -134,6 +153,12 @@ func _build() -> void:
 	player_bar.show_percentage = false
 	player_bar.custom_minimum_size = Vector2(238, 18)
 	player_box.add_child(player_bar)
+
+	player_status_box = HBoxContainer.new()
+	player_status_box.alignment = BoxContainer.ALIGNMENT_END
+	player_status_box.add_theme_constant_override("separation", 6)
+	player_status_box.custom_minimum_size = Vector2(238, 25)
+	player_box.add_child(player_status_box)
 
 	var bottom_panel := PanelContainer.new()
 	bottom_panel.anchor_left = 0.0
@@ -190,6 +215,7 @@ func _on_combat_started(enemy: Dictionary) -> void:
 	if stage != null:
 		stage.setup(enemy)
 	_set_enemy_portrait(enemy)
+	_refresh_status_chips({})
 	_refresh_actions()
 	show()
 
@@ -205,6 +231,7 @@ func _on_combat_changed(snapshot: Dictionary) -> void:
 		str(snapshot.get("enemy_status_text", "无")),
 		str(snapshot.get("player_status_text", "无"))
 	]
+	_refresh_status_chips(snapshot)
 	var lines: Array = snapshot.get("log", [])
 	body_label.text = "\n".join(lines)
 	if stage != null:
@@ -482,6 +509,103 @@ func _add_flee_button() -> void:
 			combat_system.flee()
 	)
 	action_grid.add_child(button)
+
+func _refresh_status_chips(snapshot: Dictionary) -> void:
+	if enemy_status_box == null or player_status_box == null:
+		return
+	_populate_status_box(enemy_status_box, snapshot.get("enemy_statuses", {}), false)
+	_populate_status_box(player_status_box, snapshot.get("player_statuses", {}), true)
+
+func _populate_status_box(box: HBoxContainer, statuses_value, align_right: bool) -> void:
+	for child in box.get_children():
+		box.remove_child(child)
+		child.queue_free()
+	var statuses: Dictionary = statuses_value if statuses_value is Dictionary else {}
+	var added := 0
+	for status_id in STATUS_ORDER:
+		if not statuses.has(status_id):
+			continue
+		_add_status_chip(box, status_id, statuses.get(status_id, {}))
+		added += 1
+	for raw_status_id in statuses.keys():
+		var status_id := str(raw_status_id)
+		if STATUS_ORDER.has(status_id):
+			continue
+		_add_status_chip(box, status_id, statuses.get(raw_status_id, {}))
+		added += 1
+	if added == 0:
+		_add_empty_status_chip(box, align_right)
+
+func _add_status_chip(box: HBoxContainer, status_id: String, status_value) -> void:
+	var status: Dictionary = status_value if status_value is Dictionary else {}
+	var meta: Dictionary = STATUS_CHIP_META.get(status_id, {})
+	var label := str(meta.get("label", status_id))
+	var short := str(meta.get("short", label.substr(0, 1)))
+	var turns: int = maxi(1, int(status.get("turns", 1)))
+	var power := int(status.get("power", 0))
+	var color: Color = meta.get("color", Color(0.78, 0.76, 0.68))
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(58, 25)
+	chip.tooltip_text = _status_tooltip(label, status_id, turns, power)
+	chip.add_theme_stylebox_override("panel", _status_chip_style(color))
+	box.add_child(chip)
+
+	var text := Label.new()
+	text.text = "%s %d" % [short, turns]
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text.add_theme_font_size_override("font_size", 13)
+	text.add_theme_color_override("font_color", Color(0.98, 0.92, 0.78))
+	UI_ART.apply_label_shadow(text, 0.62)
+	chip.add_child(text)
+
+func _add_empty_status_chip(box: HBoxContainer, align_right: bool) -> void:
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(70 if align_right else 82, 25)
+	chip.tooltip_text = "当前没有持续状态"
+	chip.add_theme_stylebox_override("panel", _status_chip_style(Color(0.54, 0.50, 0.42), true))
+	box.add_child(chip)
+
+	var text := Label.new()
+	text.text = "无状态"
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text.add_theme_font_size_override("font_size", 13)
+	text.add_theme_color_override("font_color", Color(0.66, 0.63, 0.55))
+	UI_ART.apply_label_shadow(text, 0.40)
+	chip.add_child(text)
+
+func _status_tooltip(label: String, status_id: String, turns: int, power: int) -> String:
+	if ["bleed", "poison", "burn"].has(status_id) and power > 0:
+		return "%s：剩余 %d 回合，每回合 %d 点气血损失" % [label, turns, power]
+	if status_id == "guard":
+		return "%s：剩余 %d 回合，降低下一次承受伤害" % [label, turns]
+	if status_id == "vulnerable":
+		return "%s：剩余 %d 回合，下一次受击更重" % [label, turns]
+	if status_id == "weaken":
+		return "%s：剩余 %d 回合，出招伤害降低" % [label, turns]
+	if status_id == "slow":
+		return "%s：剩余 %d 回合，命中和脱身受影响" % [label, turns]
+	return "%s：剩余 %d 回合" % [label, turns]
+
+func _status_chip_style(color: Color, muted: bool = false) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	var alpha := 0.20 if muted else 0.30
+	style.bg_color = Color(color.r * 0.34, color.g * 0.26, color.b * 0.22, alpha + 0.18)
+	style.border_color = Color(color.r, color.g, color.b, 0.36 if muted else 0.72)
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
+	return style
 
 func _play_latest_event(snapshot: Dictionary) -> void:
 	if effect_label == null:

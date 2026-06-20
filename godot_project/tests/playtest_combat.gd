@@ -176,6 +176,27 @@ func _run() -> void:
 	_check(COMBAT_PANEL_SCRIPT.COMBAT_ACTION_COLUMNS >= 4, "战斗 UI 底部操作区应横向容纳主要招式按钮")
 	_check(combat_panel.stage != null and combat_panel.stage.anchor_right == 1.0 and combat_panel.stage.anchor_bottom == 1.0, "战斗 UI 舞台应铺满主视野")
 	_check(combat_panel.player_bar != null, "战斗 UI 顶部应显示我方状态条")
+	_check(combat_panel.enemy_status_box != null and combat_panel.player_status_box != null, "战斗 UI 顶部应提供敌我状态徽记栏")
+	combat_panel._on_combat_changed({
+		"enemy": {"name": "流氓", "hp": 60, "max_hp": 75},
+		"log": ["状态徽记测试"],
+		"events": [],
+		"enemy_statuses": {
+			"bleed": {"turns": 3, "power": 5},
+			"vulnerable": {"turns": 2, "power": 0}
+		},
+		"player_statuses": {
+			"guard": {"turns": 1, "power": 0},
+			"poison": {"turns": 2, "power": 4}
+		},
+		"enemy_status_text": "流血3 / 破绽2",
+		"player_status_text": "守势1 / 中毒2",
+		"cooldowns": {}
+	})
+	var enemy_status_text := _collect_label_text(combat_panel.enemy_status_box)
+	var player_status_text := _collect_label_text(combat_panel.player_status_box)
+	_check(combat_panel.enemy_status_box.get_child_count() >= 2 and enemy_status_text.contains("血") and enemy_status_text.contains("破"), "战斗 UI 应把敌方持续状态渲染成可扫读徽记")
+	_check(combat_panel.player_status_box.get_child_count() >= 2 and player_status_text.contains("守") and player_status_text.contains("毒"), "战斗 UI 应把我方持续状态渲染成可扫读徽记")
 	combat_panel.queue_free()
 	stage.update_snapshot({
 		"enemy": GameData.get_npc_by_name("流氓"),
@@ -500,6 +521,14 @@ func _run() -> void:
 func _check(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
+
+func _collect_label_text(node: Node) -> String:
+	var parts: Array[String] = []
+	if node is Label:
+		parts.append((node as Label).text)
+	for child in node.get_children():
+		parts.append(_collect_label_text(child))
+	return " ".join(parts)
 
 func _run_faction_questline_checks() -> void:
 	var lines := [
