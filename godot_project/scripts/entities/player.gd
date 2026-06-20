@@ -51,6 +51,9 @@ const PLAYER_STAGE_TURN_BLEND_SPEED := 10.5
 const PLAYER_STAGE_TURN_SETTLE_SPEED := 6.4
 const PLAYER_STAGE_TURN_SQUASH_MIN := 0.78
 const PLAYER_STAGE_TURN_BODY_SLIDE := 13.0
+const PLAYER_BLOCKED_CONTACT_DURATION := 0.24
+const PLAYER_BLOCKED_CONTACT_PUSHBACK := 6.5
+const PLAYER_BLOCKED_CONTACT_ALPHA := 0.38
 const PLAYER_STAGE_SIDE_PROFILE_ALPHA := 0.44
 const PLAYER_STAGE_SIDE_PROFILE_SHADOW_ALPHA := 0.24
 const PLAYER_STAGE_DIRECTIONAL_WEAPON_ALPHA := 0.52
@@ -85,6 +88,9 @@ var visual_facing_initialized := false
 var stage_turn_progress := 0.0
 var stage_turn_from_side := 1.0
 var stage_turn_to_side := 1.0
+var blocked_contact_timer := 0.0
+var blocked_contact_direction := Vector2.ZERO
+var blocked_contact_strength := 0.0
 var last_axis_fallback := Vector2.ZERO
 var idle_redraw_accumulator := 0.0
 var active_redraw_accumulator := PLAYER_MOVING_REDRAW_INTERVAL
@@ -107,8 +113,13 @@ func _process(delta: float) -> void:
 	walk_phase += delta * (10.5 if moving else 1.45)
 	if turn_accent_timer > 0.0:
 		turn_accent_timer = maxf(0.0, turn_accent_timer - delta)
+	if blocked_contact_timer > 0.0:
+		blocked_contact_timer = maxf(0.0, blocked_contact_timer - delta)
+		if blocked_contact_timer <= 0.0:
+			blocked_contact_strength = 0.0
 	var turn_active := turn_accent_timer > 0.0 or stage_turn_progress > 0.0
-	if moving or turn_active:
+	var blocked_contact_active := blocked_contact_timer > 0.0
+	if moving or turn_active or blocked_contact_active:
 		idle_redraw_accumulator = 0.0
 		var redraw_interval := PLAYER_TURN_REDRAW_INTERVAL if turn_active else PLAYER_MOVING_REDRAW_INTERVAL
 		active_redraw_accumulator += delta
@@ -175,13 +186,16 @@ func _draw() -> void:
 	var stage_actor := _is_side_view_stage()
 	var depth_scale := get_map_actor_visual_scale()
 	var lane_visual_offset := get_stage_lane_visual_offset()
+	var blocked_strength := _blocked_contact_visual_strength()
+	var blocked_visual_offset := _blocked_contact_visual_offset(depth_scale)
 	var bob := (sin(walk_phase) * 3.2 if moving else sin(walk_phase) * 0.75) * depth_scale
-	var lean := (clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45) * depth_scale
+	var lean := (clampf(facing.x, -1.0, 1.0) * 2.2 if moving else sin(walk_phase * 0.6) * 0.45) * depth_scale + blocked_visual_offset.x
 
 	_draw_step_dust(moving, depth_scale)
 	_draw_player_contact_glow(trim, depth_scale, moving, lane_visual_offset)
+	_draw_blocked_contact_feedback(trim, depth_scale, lane_visual_offset, blocked_visual_offset)
 	_draw_player_idle_motes(trim, depth_scale)
-	_draw_actor_shadow(Vector2(4 * depth_scale, 32 * depth_scale + lane_visual_offset * 0.82), Vector2(42, 13) * depth_scale, 1.0)
+	_draw_actor_shadow(Vector2(4 * depth_scale + blocked_visual_offset.x * 0.32, 32 * depth_scale + lane_visual_offset * 0.82 + blocked_visual_offset.y * 0.36), Vector2(42, 13) * depth_scale, 1.0)
 	if stage_actor:
 		_draw_stage_player_ground_lock(trim, depth_scale, moving, lane_visual_offset)
 	if sprite_texture != null:
@@ -191,8 +205,10 @@ func _draw() -> void:
 		var factor: float = min(target_height / max(texture_size.y, 1.0), target_width / max(texture_size.x, 1.0))
 		var breath := 1.0 + sin(walk_phase * 0.72) * (0.010 if moving else 0.018)
 		var step_sway := absf(sin(walk_phase)) if moving else 0.0
-		var draw_size := texture_size * factor * Vector2(1.0 + step_sway * 0.018, breath - step_sway * 0.006)
-		var foot_y := 35.0 * depth_scale + bob + lane_visual_offset * 0.55
+		var block_widen := 1.0 + blocked_strength * 0.020
+		var block_squash := 1.0 - blocked_strength * 0.026
+		var draw_size := texture_size * factor * Vector2((1.0 + step_sway * 0.018) * block_widen, (breath - step_sway * 0.006) * block_squash)
+		var foot_y := 35.0 * depth_scale + bob + lane_visual_offset * 0.55 + blocked_visual_offset.y
 		var top_left := Vector2(-draw_size.x * 0.5 + lean, foot_y - draw_size.y)
 		var facing_side := _stage_draw_facing_side() if stage_actor else _facing_side()
 		if stage_actor and PLAYER_STAGE_DIRECTIONAL_POSE_ENABLED:
@@ -229,9 +245,10 @@ func _draw() -> void:
 		_draw_sprite_rim_light(top_left, draw_size, trim, stage_actor, facing_side)
 		_draw_sprite_motion_accents(lean, foot_y, draw_size, trim, moving, stage_actor)
 		var dir := facing.normalized()
-		draw_line(Vector2(0, 4 * depth_scale + bob), dir * 18.0 * depth_scale + Vector2(0, bob), Color(1.0, 1.0, 1.0, 0.18), 1.8)
+		var direction_origin := Vector2(blocked_visual_offset.x, 4 * depth_scale + bob + blocked_visual_offset.y)
+		draw_line(direction_origin, direction_origin + dir * 18.0 * depth_scale, Color(1.0, 1.0, 1.0, 0.18), 1.8)
 		return
-	draw_set_transform(Vector2(0, bob + lane_visual_offset * 0.50), 0.0, Vector2.ONE * DRAW_SCALE * depth_scale)
+	draw_set_transform(Vector2(blocked_visual_offset.x, bob + blocked_visual_offset.y + lane_visual_offset * 0.50), 0.0, Vector2.ONE * DRAW_SCALE * depth_scale)
 
 	# Back sword and loose cloak give the player a more readable wuxia silhouette.
 	draw_line(Vector2(16, -9), Vector2(29, -37), Color(0.78, 0.80, 0.76), 2.5)
@@ -355,6 +372,7 @@ func _recover_axis_slide(previous_position: Vector2, input_vector: Vector2) -> v
 	if not PLAYER_AXIS_FALLBACK_ENABLED or input_vector == Vector2.ZERO:
 		position = previous_position
 		velocity = Vector2.ZERO
+		_register_blocked_contact(input_vector, 1.0)
 		return
 	var axes := _movement_axis_fallback_order(input_vector)
 	for axis in axes:
@@ -363,9 +381,11 @@ func _recover_axis_slide(previous_position: Vector2, input_vector: Vector2) -> v
 		move_and_slide()
 		if _is_position_walkable(position):
 			last_axis_fallback = axis
+			_register_blocked_contact(_blocked_axis_direction(input_vector, axis), 0.56)
 			return
 	position = previous_position
 	velocity = Vector2.ZERO
+	_register_blocked_contact(input_vector, 1.0)
 
 func _movement_axis_fallback_order(input_vector: Vector2) -> Array[Vector2]:
 	var axes: Array[Vector2] = []
@@ -379,6 +399,38 @@ func _movement_target_velocity(input_vector: Vector2) -> Vector2:
 	if input_vector == Vector2.ZERO:
 		return Vector2.ZERO
 	return input_vector.normalized() * SPEED
+
+func _blocked_axis_direction(input_vector: Vector2, slide_axis: Vector2) -> Vector2:
+	var blocked_dir := input_vector - slide_axis
+	if blocked_dir.length() <= 0.05:
+		blocked_dir = input_vector
+	return blocked_dir
+
+func _register_blocked_contact(input_vector: Vector2, strength: float) -> void:
+	var direction := input_vector.normalized()
+	if direction == Vector2.ZERO:
+		direction = facing.normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.DOWN
+	blocked_contact_direction = direction
+	blocked_contact_strength = clampf(strength, 0.0, 1.0)
+	blocked_contact_timer = PLAYER_BLOCKED_CONTACT_DURATION
+	queue_redraw()
+
+func _blocked_contact_visual_strength() -> float:
+	if blocked_contact_timer <= 0.0:
+		return 0.0
+	var life := clampf(blocked_contact_timer / PLAYER_BLOCKED_CONTACT_DURATION, 0.0, 1.0)
+	return blocked_contact_strength * sin(life * PI * 0.5)
+
+func _blocked_contact_visual_offset(depth_scale: float) -> Vector2:
+	var strength := _blocked_contact_visual_strength()
+	if strength <= 0.0:
+		return Vector2.ZERO
+	var direction := blocked_contact_direction.normalized()
+	if direction == Vector2.ZERO:
+		return Vector2.ZERO
+	return -direction * PLAYER_BLOCKED_CONTACT_PUSHBACK * strength * depth_scale
 
 func _is_side_view_stage() -> bool:
 	if world_map == null:
@@ -1008,8 +1060,28 @@ func _draw_stage_actor_sash(top_left: Vector2, draw_size: Vector2, accent: Color
 func _draw_player_contact_glow(accent: Color, depth_scale: float, moving: bool, lane_offset_y: float = 0.0) -> void:
 	var pulse := 0.5 + sin(walk_phase * (1.7 if moving else 0.9)) * 0.5
 	var center := Vector2(3.0 * depth_scale, 32.0 * depth_scale + lane_offset_y * 0.82)
-	_draw_shadow(center, Vector2(38.0, 9.5) * depth_scale, Color(accent.r, accent.g, accent.b, PLAYER_CONTACT_GLOW_ALPHA * (0.55 + pulse * 0.25)))
+	var blocked_boost := _blocked_contact_visual_strength() * 0.45
+	_draw_shadow(center, Vector2(38.0, 9.5) * depth_scale, Color(accent.r, accent.g, accent.b, (PLAYER_CONTACT_GLOW_ALPHA + blocked_boost * 0.10) * (0.55 + pulse * 0.25)))
 	_draw_shadow(center + Vector2(0.0, 2.0 * depth_scale), Vector2(23.0, 4.8) * depth_scale, Color(1.0, 0.86, 0.50, PLAYER_CONTACT_GLOW_ALPHA * 0.55))
+
+func _draw_blocked_contact_feedback(accent: Color, depth_scale: float, lane_offset_y: float = 0.0, visual_offset: Vector2 = Vector2.ZERO) -> void:
+	var strength := _blocked_contact_visual_strength()
+	if strength <= 0.0:
+		return
+	var direction := blocked_contact_direction.normalized()
+	if direction == Vector2.ZERO:
+		return
+	var tangent := Vector2(-direction.y, direction.x)
+	var foot := Vector2(3.0 * depth_scale, 33.0 * depth_scale + lane_offset_y * 0.82) + visual_offset * 0.35
+	var contact := foot + direction * (23.0 + strength * 5.0) * depth_scale
+	var alpha := PLAYER_BLOCKED_CONTACT_ALPHA * strength
+	_draw_shadow(contact, Vector2(17.0, 4.4) * depth_scale * (0.70 + strength * 0.22), Color(1.0, 0.78, 0.34, alpha * 0.44))
+	draw_line(contact - tangent * 8.0 * depth_scale, contact + tangent * 8.0 * depth_scale, Color(1.0, 0.86, 0.45, alpha), 1.4 + depth_scale * 0.20)
+	draw_line(foot + direction * 7.0 * depth_scale, contact - direction * 2.0 * depth_scale, Color(accent.r, accent.g, accent.b, alpha * 0.64), 1.0 + depth_scale * 0.16)
+	for i in range(2):
+		var spread := (float(i) - 0.5) * 11.0 * depth_scale
+		var chip := contact + tangent * spread - direction * (4.0 + float(i) * 2.6) * depth_scale
+		draw_line(chip, chip - direction * (5.0 + strength * 4.0) * depth_scale, Color(1.0, 0.93, 0.64, alpha * (0.46 - float(i) * 0.08)), 0.9)
 
 func _draw_player_idle_motes(accent: Color, depth_scale: float) -> void:
 	var faction := str(GameState.player.get("faction", "none"))

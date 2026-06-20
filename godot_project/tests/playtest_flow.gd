@@ -61,14 +61,40 @@ func _run() -> void:
 		_check(main.local_area.current_mode == "region", "进入平安镇后应处于区域模式")
 		_check(main.local_area.prop_blockers.size() > 0, "局部场景道具应生成脚底阻挡区")
 		var prop_blocker_blocks_walk := false
+		var blocked_prop_center := Vector2.ZERO
 		for blocker_value in main.local_area.prop_blockers:
 			if typeof(blocker_value) != TYPE_RECT2:
 				continue
 			var blocker: Rect2 = blocker_value
 			if main.local_area.is_tile_walkable(main.local_area.world_to_tile(blocker.get_center())) and not main.local_area.is_position_walkable(blocker.get_center()):
 				prop_blocker_blocks_walk = true
+				blocked_prop_center = blocker.get_center()
 				break
 		_check(prop_blocker_blocks_walk, "局部场景道具阻挡区应阻止玩家穿过可走瓦片上的建模")
+		if blocked_prop_center != Vector2.ZERO:
+			var feedback_probe_start := Vector2.ZERO
+			var has_feedback_probe_start := false
+			for offset in [
+				Vector2(-GameData.TILE_SIZE * 1.1, 0.0),
+				Vector2(GameData.TILE_SIZE * 1.1, 0.0),
+				Vector2(0.0, -GameData.TILE_SIZE * 1.1),
+				Vector2(0.0, GameData.TILE_SIZE * 1.1)
+			]:
+				var candidate: Vector2 = blocked_prop_center + offset
+				if main.local_area.is_position_walkable(candidate):
+					feedback_probe_start = candidate
+					has_feedback_probe_start = true
+					break
+			_check(has_feedback_probe_start, "局部道具阻挡测试应能找到相邻可行走起点")
+			if has_feedback_probe_start:
+				var original_player_position: Vector2 = main.player_actor.position
+				main.player_actor.position = blocked_prop_center
+				main.player_actor.velocity = Vector2.ZERO
+				main.player_actor.blocked_contact_timer = 0.0
+				main.player_actor._recover_axis_slide(feedback_probe_start, (blocked_prop_center - feedback_probe_start).normalized())
+				_check(main.player_actor.blocked_contact_timer > 0.0 and main.player_actor.blocked_contact_direction.length() > 0.1, "玩家撞到局部建模阻挡时应触发受阻反馈")
+				main.player_actor.position = original_player_position
+				main.player_actor.velocity = Vector2.ZERO
 		_check(main.local_area.stage_foreground_overlay != null and main.local_area.stage_foreground_overlay.z_index < int(main.local_area.get_world_rect().size.y), "局部前景遮挡层应使用舞台深度线而不是永远盖住所有角色")
 		_check(main.local_area.npc_nodes.size() >= 8, "平安镇局部地图应有镇民")
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")
