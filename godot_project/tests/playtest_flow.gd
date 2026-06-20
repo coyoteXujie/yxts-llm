@@ -13,6 +13,12 @@ func _run() -> void:
 	add_child(main)
 	await _frames(4)
 
+	_check(GameState.mode == GameState.Mode.MENU and main.main_menu_panel.visible, "游戏启动后应停留在主菜单")
+	main._handle_cancel()
+	await _frames(1)
+	_check(GameState.mode == GameState.Mode.MENU and main.main_menu_panel.visible, "未开局时按取消不应直接进入探索态")
+	_check(main.main_menu_panel.resume_button != null and not main.main_menu_panel.resume_button.visible and main.main_menu_panel.save_button != null and not main.main_menu_panel.save_button.visible, "开局主菜单不应显示返回和保存按钮")
+
 	main._start_new_game({
 		"name": "流程测试",
 		"gender": "male",
@@ -40,6 +46,25 @@ func _run() -> void:
 		_check(main.hud.prompt_chips.size() == 5 and main.hud.prompt_chips[0] == primary_prompt_chip, "HUD 相同提示不应每帧重建快捷栏 chip")
 	else:
 		_check(false, "HUD 快捷栏应生成操作 chip")
+
+	main._handle_cancel()
+	await _frames(1)
+	_check(GameState.mode == GameState.Mode.MENU and main.main_menu_panel.visible, "探索中按取消应打开暂停菜单")
+	_check(main.main_menu_panel.resume_button.visible and main.main_menu_panel.save_button.visible and main.main_menu_panel.continue_button.text.contains("读取"), "暂停菜单应提供返回、保存和读取入口")
+	main.main_menu_panel.save_requested.emit()
+	await _frames(1)
+	_check(GameState.has_save() and not main.main_menu_panel.continue_button.disabled and main.main_menu_panel.save_summary_label.text.contains("流程测试"), "暂停菜单保存后应刷新存档摘要和读取按钮")
+	var master_bus := AudioServer.get_bus_index("Master")
+	if master_bus >= 0:
+		var muted_before := AudioServer.is_bus_mute(master_bus)
+		main.main_menu_panel._toggle_master_audio()
+		await _frames(1)
+		_check(AudioServer.is_bus_mute(master_bus) != muted_before, "暂停菜单声音按钮应切换主音频静音状态")
+		main.main_menu_panel._toggle_master_audio()
+		await _frames(1)
+	main._handle_cancel()
+	await _frames(1)
+	_check(GameState.mode == GameState.Mode.EXPLORE and not main.main_menu_panel.visible, "暂停菜单按取消应返回探索")
 
 	main._open_dialogue(GameData.get_npc_by_name("平阿四"))
 	await _frames(2)

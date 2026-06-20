@@ -68,6 +68,7 @@ var active_enemy_actor
 var world_return_position := Vector2.ZERO
 var ambient_npc_timer := 2.0
 var ambient_npc_round := 0
+var game_started := false
 var pending_quest_summaries: Array[Dictionary] = []
 
 func _ready() -> void:
@@ -145,9 +146,11 @@ func _ready() -> void:
 	EventBus.map_target_changed.connect(_on_map_target_changed)
 	main_menu_panel.new_game_requested.connect(_open_character_creation)
 	main_menu_panel.continue_requested.connect(_continue_game)
+	main_menu_panel.resume_requested.connect(_resume_from_menu)
+	main_menu_panel.save_requested.connect(_save_from_menu)
 	character_creation_panel.character_created.connect(_start_new_game)
 
-	main_menu_panel.show_menu()
+	main_menu_panel.show_menu(false)
 
 func _process(delta: float) -> void:
 	GameState.advance_time(delta)
@@ -271,10 +274,12 @@ func _handle_cancel() -> void:
 			else:
 				EventBus.emit_toast("战斗中无法打开菜单")
 		GameState.Mode.MENU:
-			main_menu_panel.hide()
-			GameState.set_mode(GameState.Mode.EXPLORE)
+			if game_started:
+				_resume_from_menu()
+			else:
+				main_menu_panel.show_menu(false)
 		GameState.Mode.EXPLORE:
-			main_menu_panel.show_menu()
+			main_menu_panel.show_menu(true)
 		_:
 			_close_gameplay_panels()
 			GameState.set_mode(GameState.Mode.EXPLORE)
@@ -283,9 +288,25 @@ func _open_character_creation() -> void:
 	character_creation_panel.show_panel()
 
 func _continue_game() -> void:
-	GameState.load_game()
+	if not GameState.load_game():
+		main_menu_panel.show_menu(game_started)
+
+func _resume_from_menu() -> void:
+	if not game_started:
+		main_menu_panel.show_menu(false)
+		return
+	main_menu_panel.hide()
+	_close_gameplay_panels()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+
+func _save_from_menu() -> void:
+	if not game_started:
+		return
+	if GameState.save_game(_current_world_save_position()):
+		main_menu_panel.refresh_menu_state()
 
 func _start_new_game(config: Dictionary) -> void:
+	game_started = true
 	GameState.new_game(config)
 	world_map.reset_npcs()
 	world_map.set_target_region(GameState.map_target_region_id)
@@ -394,6 +415,7 @@ func _start_combat_from_data(enemy: Dictionary) -> void:
 	combat_system.start(enemy)
 
 func _on_game_loaded(_snapshot: Dictionary) -> void:
+	game_started = true
 	pending_quest_summaries.clear()
 	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()

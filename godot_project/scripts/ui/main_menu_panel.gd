@@ -5,19 +5,28 @@ const UI_ART := preload("res://scripts/ui/ui_art.gd")
 
 signal new_game_requested()
 signal continue_requested()
+signal resume_requested()
+signal save_requested()
 
+var resume_button: Button
+var save_button: Button
 var continue_button: Button
+var settings_button: Button
 var save_summary_label: Label
+var can_resume_game := false
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
 
-func show_menu() -> void:
-	continue_button.disabled = not GameState.has_save()
-	_refresh_save_summary()
+func show_menu(can_resume: bool = false) -> void:
+	can_resume_game = can_resume
+	_refresh_action_state()
 	show()
 	GameState.set_mode(GameState.Mode.MENU)
+
+func refresh_menu_state() -> void:
+	_refresh_action_state()
 
 func _build() -> void:
 	var backdrop := UI_ART.full_rect_texture(UI_ART.MAIN_MENU_BACKDROP)
@@ -76,6 +85,13 @@ func _build() -> void:
 	UI_ART.apply_label_shadow(save_summary_label, 0.65)
 	box.add_child(save_summary_label)
 
+	resume_button = _menu_button("返回江湖")
+	resume_button.pressed.connect(func() -> void:
+		hide()
+		resume_requested.emit()
+	)
+	box.add_child(resume_button)
+
 	var new_button := _menu_button("新的江湖")
 	new_button.pressed.connect(func() -> void:
 		hide()
@@ -90,10 +106,15 @@ func _build() -> void:
 	)
 	box.add_child(continue_button)
 
-	var settings_button := _menu_button("设置")
+	save_button = _menu_button("保存当前")
+	save_button.pressed.connect(func() -> void:
+		save_requested.emit()
+	)
+	box.add_child(save_button)
+
+	settings_button = _menu_button("声音：开启")
 	settings_button.pressed.connect(func() -> void:
-		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), -10.0 if AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Master")) > -20.0 else 0.0)
-		_show_settings_toast()
+		_toggle_master_audio()
 	)
 	box.add_child(settings_button)
 
@@ -118,7 +139,35 @@ func _menu_button(text: String) -> Button:
 	return button
 
 func _show_settings_toast() -> void:
-	EventBus.emit_toast("设置功能开发中...")
+	EventBus.emit_toast("声音已%s" % ("关闭" if _is_master_audio_muted() else "开启"))
+
+func _refresh_action_state() -> void:
+	if resume_button != null:
+		resume_button.visible = can_resume_game
+	if save_button != null:
+		save_button.visible = can_resume_game
+	if continue_button != null:
+		continue_button.disabled = not GameState.has_save()
+		continue_button.text = "读取存档" if can_resume_game else "继续江湖"
+	if settings_button != null:
+		settings_button.text = "声音：%s" % ("关闭" if _is_master_audio_muted() else "开启")
+	_refresh_save_summary()
+
+func _toggle_master_audio() -> void:
+	var bus := _master_bus_index()
+	if bus < 0:
+		return
+	var muted := not AudioServer.is_bus_mute(bus)
+	AudioServer.set_bus_mute(bus, muted)
+	_refresh_action_state()
+	_show_settings_toast()
+
+func _is_master_audio_muted() -> bool:
+	var bus := _master_bus_index()
+	return bus >= 0 and AudioServer.is_bus_mute(bus)
+
+func _master_bus_index() -> int:
+	return AudioServer.get_bus_index("Master")
 
 func _refresh_save_summary() -> void:
 	if save_summary_label == null:
