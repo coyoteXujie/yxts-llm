@@ -2450,9 +2450,16 @@ func mark_enemy_defeated(enemy_id: int) -> void:
 	if not defeated_enemies.has(enemy_id):
 		defeated_enemies.append(enemy_id)
 
-func build_save_snapshot(position: Vector2) -> Dictionary:
+func build_save_snapshot(position: Vector2, map_context: Dictionary = {}) -> Dictionary:
 	player_position = position
+	var context := map_context.duplicate(true)
+	if context.is_empty():
+		context = {
+			"map": "world",
+			"world_position": {"x": position.x, "y": position.y}
+		}
 	return {
+		"save_version": 2,
 		"player": player,
 		"inventory": inventory,
 		"equipment": equipment,
@@ -2460,28 +2467,29 @@ func build_save_snapshot(position: Vector2) -> Dictionary:
 		"learned_skills": learned_skills,
 		"active_quests": active_quests,
 		"completed_quests": completed_quests,
-			"defeated_enemies": defeated_enemies,
-			"game_flags": game_flags,
-			"npc_memory": npc_memory,
-			"region_state": region_state,
-			"world_events": world_events,
-			"adventure_clues": adventure_clues,
-			"trade_records": trade_records,
-			"trade_reputation": trade_reputation,
-			"active_quest": active_quest,
+		"defeated_enemies": defeated_enemies,
+		"game_flags": game_flags,
+		"npc_memory": npc_memory,
+		"region_state": region_state,
+		"world_events": world_events,
+		"adventure_clues": adventure_clues,
+		"trade_records": trade_records,
+		"trade_reputation": trade_reputation,
+		"active_quest": active_quest,
 		"day": day,
 		"hour": hour,
 		"weather": weather,
 		"map_target_region_id": map_target_region_id,
+		"map_context": context,
 		"player_position": {"x": position.x, "y": position.y}
 	}
 
-func save_game(position: Vector2) -> bool:
+func save_game(position: Vector2, map_context: Dictionary = {}) -> bool:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
 		EventBus.emit_toast("存档失败")
 		return false
-	file.store_string(JSON.stringify(build_save_snapshot(position), "\t"))
+	file.store_string(JSON.stringify(build_save_snapshot(position, map_context), "\t"))
 	EventBus.emit_toast("存档完成")
 	return true
 
@@ -2520,6 +2528,21 @@ func get_save_summary() -> Dictionary:
 	var saved_position := Vector2(float(pos.get("x", 0.0)), float(pos.get("y", 0.0)))
 	var saved_tile := Vector2i(floori(saved_position.x / GameData.TILE_SIZE), floori(saved_position.y / GameData.TILE_SIZE))
 	var region := GameData.get_region_at_tile(saved_tile)
+	var location_name := str(region.get("name", "未知之地"))
+	var map_context = snapshot.get("map_context", {})
+	if typeof(map_context) == TYPE_DICTIONARY:
+		var context: Dictionary = map_context
+		var context_label := str(context.get("location_label", ""))
+		if not context_label.is_empty():
+			location_name = context_label
+		elif str(context.get("map", "")) == "local":
+			var context_region := GameData.get_region(str(context.get("region_id", "")))
+			if not context_region.is_empty():
+				location_name = str(context_region.get("name", context.get("region_id", "未知之地")))
+				if str(context.get("mode", "")) == "shop":
+					location_name = "%s · 商铺" % location_name
+				else:
+					location_name = "%s · 街区" % location_name
 	var active: Dictionary = snapshot.get("active_quests", {})
 	return {
 		"player_name": str(saved_player.get("name", "少侠")),
@@ -2528,7 +2551,7 @@ func get_save_summary() -> Dictionary:
 		"day": int(snapshot.get("day", 1)),
 		"hour": int(float(snapshot.get("hour", 8.0))),
 		"weather": str(snapshot.get("weather", "晴朗")),
-		"region_name": str(region.get("name", "未知之地")),
+		"region_name": location_name,
 		"active_quest": str(snapshot.get("active_quest", "自由探索江湖")),
 		"active_count": active.size(),
 		"completed_count": snapshot.get("completed_quests", []).size()

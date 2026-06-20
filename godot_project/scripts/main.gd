@@ -246,7 +246,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_handle_enter_area()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_save"):
-		GameState.save_game(_current_world_save_position())
+		_save_current_game()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_load"):
 		GameState.load_game()
@@ -302,7 +302,7 @@ func _resume_from_menu() -> void:
 func _save_from_menu() -> void:
 	if not game_started:
 		return
-	if GameState.save_game(_current_world_save_position()):
+	if _save_current_game():
 		main_menu_panel.refresh_menu_state()
 
 func _start_new_game(config: Dictionary) -> void:
@@ -417,11 +417,12 @@ func _start_combat_from_data(enemy: Dictionary) -> void:
 func _on_game_loaded(_snapshot: Dictionary) -> void:
 	game_started = true
 	pending_quest_summaries.clear()
-	_switch_to_world_map(GameState.player_position)
 	world_map.reset_npcs()
 	world_map.apply_defeated_enemies()
 	world_map.set_target_region(GameState.map_target_region_id)
-	_update_current_region()
+	if not _restore_loaded_map(_snapshot):
+		_switch_to_world_map(GameState.player_position)
+		_update_current_region()
 	_close_gameplay_panels()
 	main_menu_panel.hide()
 	GameState.set_mode(GameState.Mode.EXPLORE)
@@ -1081,6 +1082,38 @@ func _switch_to_world_map(position: Vector2) -> void:
 	world_return_position = position
 	_transition_player_to_map(world_map, position, true)
 
+func _restore_loaded_map(snapshot: Dictionary) -> bool:
+	var raw_context = snapshot.get("map_context", {})
+	if typeof(raw_context) != TYPE_DICTIONARY:
+		return false
+	var context: Dictionary = raw_context
+	if str(context.get("map", "world")) != "local":
+		return false
+	var region_id := str(context.get("region_id", ""))
+	var region := GameData.get_region(region_id)
+	if region.is_empty() or not _can_enter_region(region):
+		return false
+	world_return_position = _vector_from_save(context.get("world_position", {}), GameState.player_position)
+	world_map.hide()
+	local_area.setup_region(region)
+	var mode := str(context.get("mode", "region"))
+	if mode == "shop":
+		var shop_id := str(context.get("shop_id", ""))
+		if not shop_id.is_empty():
+			var return_tile := _tile_from_save(context.get("shop_return_tile", {}), local_area.world_to_tile(local_area.get_entry_position("world")))
+			local_area.enter_shop({
+				"shop_id": shop_id,
+				"tile": [return_tile.x, return_tile.y]
+			})
+	local_area.show()
+	var fallback_kind := "shop" if local_area.current_mode == "shop" else "world"
+	var local_position := _vector_from_save(context.get("local_position", {}), local_area.get_entry_position(fallback_kind))
+	if not local_area.is_position_walkable(local_position):
+		local_position = local_area.get_entry_position(fallback_kind)
+	_transition_player_to_map(local_area, local_position)
+	_update_current_region()
+	return true
+
 func _clear_map_node_state(map_node: Node) -> void:
 	if map_node == null:
 		return
@@ -1128,6 +1161,51 @@ func _current_world_save_position() -> Vector2:
 	if active_map == world_map:
 		return player_actor.position
 	return world_return_position
+
+func _save_current_game() -> bool:
+	return GameState.save_game(_current_world_save_position(), _current_save_context())
+
+func _current_save_context() -> Dictionary:
+	var world_position := _current_world_save_position()
+	var context := {
+		"map": "world",
+		"world_position": _vector_to_save(world_position),
+		"location_label": GameState.current_region_name
+	}
+	if active_map != local_area:
+		return context
+	var region_id := str(local_area.current_region.get("id", GameState.current_region_id))
+	var region_name := str(local_area.current_region.get("name", GameState.current_region_name))
+	var mode := str(local_area.current_mode)
+	var mode_label := "商铺" if mode == "shop" else "街区"
+	context["map"] = "local"
+	context["region_id"] = region_id
+	context["mode"] = mode
+	context["local_position"] = _vector_to_save(player_actor.position)
+	context["world_position"] = _vector_to_save(world_return_position)
+	context["location_label"] = "%s · %s" % [region_name, mode_label]
+	if mode == "shop":
+		context["shop_id"] = str(local_area.active_shop_id)
+		context["shop_return_tile"] = {
+			"x": local_area.shop_return_tile.x,
+			"y": local_area.shop_return_tile.y
+		}
+	return context
+
+func _vector_to_save(value: Vector2) -> Dictionary:
+	return {"x": value.x, "y": value.y}
+
+func _vector_from_save(value: Variant, fallback: Vector2) -> Vector2:
+	if typeof(value) != TYPE_DICTIONARY:
+		return fallback
+	var data: Dictionary = value
+	return Vector2(float(data.get("x", fallback.x)), float(data.get("y", fallback.y)))
+
+func _tile_from_save(value: Variant, fallback: Vector2i) -> Vector2i:
+	if typeof(value) != TYPE_DICTIONARY:
+		return fallback
+	var data: Dictionary = value
+	return Vector2i(int(data.get("x", fallback.x)), int(data.get("y", fallback.y)))
 
 func _apply_camera_zoom() -> void:
 	if camera == null:
