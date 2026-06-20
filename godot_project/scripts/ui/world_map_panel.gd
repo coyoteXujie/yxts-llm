@@ -3,6 +3,13 @@ class_name WorldMapPanel
 
 const MAP_CANVAS_SCRIPT := preload("res://scripts/ui/region_map_canvas.gd")
 const UI_ART := preload("res://scripts/ui/ui_art.gd")
+const REGION_FILTERS := [
+	{"id": "all", "label": "全部", "tooltip": "显示所有已记录区域"},
+	{"id": "settlement", "label": "城镇", "tooltip": "只显示城池和小镇"},
+	{"id": "sect", "label": "门派", "tooltip": "只显示门派驻地"},
+	{"id": "wild", "label": "野外", "tooltip": "只显示山林、水路和险地"},
+	{"id": "interest", "label": "线索", "tooltip": "只显示任务、目的地或关键人物相关区域"}
+]
 
 signal focus_region_requested(region_id: String)
 signal fast_travel_requested(region_id: String)
@@ -17,8 +24,10 @@ var map_canvas
 var focus_button: Button
 var travel_button: Button
 var clear_target_button: Button
+var filter_buttons: Dictionary = {}
 var region_ids: Array[String] = []
 var selected_region_id := ""
+var active_region_filter := "all"
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -63,8 +72,25 @@ func _build() -> void:
 	UI_ART.apply_body_label(target_summary_label, 14)
 	left.add_child(target_summary_label)
 
+	var filter_row := HBoxContainer.new()
+	filter_row.add_theme_constant_override("separation", 5)
+	left.add_child(filter_row)
+	for filter_data in REGION_FILTERS:
+		var filter_id := str(filter_data.get("id", "all"))
+		var button := Button.new()
+		button.text = str(filter_data.get("label", filter_id))
+		button.tooltip_text = str(filter_data.get("tooltip", ""))
+		button.toggle_mode = true
+		button.clip_text = true
+		button.custom_minimum_size = Vector2(54, 30)
+		button.add_theme_font_size_override("font_size", 13)
+		button.pressed.connect(_set_region_filter.bind(filter_id))
+		UI_ART.apply_button(button)
+		filter_buttons[filter_id] = button
+		filter_row.add_child(button)
+
 	region_list = ItemList.new()
-	region_list.custom_minimum_size = Vector2(300, 403)
+	region_list.custom_minimum_size = Vector2(300, 363)
 	region_list.item_selected.connect(_select_region)
 	region_list.add_theme_stylebox_override("panel", UI_ART.panel_style(Color(0.050, 0.048, 0.038, 0.80), Color(0.42, 0.34, 0.20, 0.62), Vector4(8, 8, 8, 8)))
 	region_list.add_theme_color_override("font_color", Color(0.88, 0.82, 0.68))
@@ -152,6 +178,7 @@ func _refresh() -> void:
 	if region_list == null:
 		return
 	_refresh_target_summary_label()
+	_update_filter_buttons()
 	var selected_id := selected_region_id
 	if selected_id.is_empty() and not GameState.map_target_region_id.is_empty():
 		selected_id = GameState.map_target_region_id
@@ -163,6 +190,8 @@ func _refresh() -> void:
 	region_ids.clear()
 	for region in GameData.get_regions():
 		var region_id := str(region.get("id", ""))
+		if not _region_matches_filter(region_id, region):
+			continue
 		region_ids.append(region_id)
 		var discovered := GameState.is_region_discovered(region_id)
 		var type_name := _type_name(str(region.get("type", "wild")))
@@ -176,6 +205,15 @@ func _refresh() -> void:
 		region_list.add_item(text)
 		if region_id == selected_id:
 			region_list.select(region_ids.size() - 1)
+	if region_ids.is_empty():
+		selected_region_id = ""
+		details.text = "没有符合当前筛选的区域。"
+		_set_scene_background("", "区域景象")
+		_set_route_plan({})
+		_update_action_buttons("")
+		return
+	if selected_id.is_empty() or not region_ids.has(selected_id):
+		selected_id = region_ids[0]
 	if selected_id.is_empty():
 		selected_id = GameState.current_region_id
 	_select_region_by_id(selected_id)
@@ -225,6 +263,58 @@ func _select_region_by_id(region_id: String) -> void:
 	_set_scene_background(region_id, str(region.get("name", region_id)))
 	_set_route_plan(GameState.build_region_travel_plan(region_id))
 	_update_action_buttons(region_id)
+
+func _set_region_filter(filter_id: String) -> void:
+	if not _is_valid_filter(filter_id):
+		filter_id = "all"
+	if active_region_filter == filter_id:
+		_update_filter_buttons()
+		return
+	active_region_filter = filter_id
+	selected_region_id = ""
+	_refresh()
+
+func _is_valid_filter(filter_id: String) -> bool:
+	for filter_data in REGION_FILTERS:
+		if str(filter_data.get("id", "")) == filter_id:
+			return true
+	return false
+
+func _update_filter_buttons() -> void:
+	for filter_id in filter_buttons.keys():
+		var button := filter_buttons[filter_id] as Button
+		if button == null:
+			continue
+		button.button_pressed = str(filter_id) == active_region_filter
+
+func _region_matches_filter(region_id: String, region: Dictionary) -> bool:
+	match active_region_filter:
+		"settlement":
+			return ["city", "town"].has(str(region.get("type", "wild")))
+		"sect":
+			return str(region.get("type", "wild")) == "sect"
+		"wild":
+			return not ["city", "town", "sect"].has(str(region.get("type", "wild")))
+		"interest":
+			return _region_has_interest(region_id)
+	return true
+
+func _region_has_interest(region_id: String) -> bool:
+	if region_id.is_empty():
+		return false
+	if region_id == GameState.map_target_region_id:
+		return true
+	for entry in GameState.get_active_quest_target_entries():
+		if str((entry as Dictionary).get("region_id", "")) == region_id:
+			return true
+	for npc in GameData.get_npcs():
+		if not bool(npc.get("has_quests", false)) and not bool(npc.get("is_master", false)):
+			continue
+		var tile := Vector2i(int(npc.get("pos_x", -1)), int(npc.get("pos_y", -1)))
+		var npc_region := GameData.get_region_at_tile(tile)
+		if str(npc_region.get("id", "")) == region_id:
+			return true
+	return false
 
 func _select_region_list_item(region_id: String) -> void:
 	if region_list == null:

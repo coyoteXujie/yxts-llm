@@ -837,6 +837,21 @@ func _run() -> void:
 	var map_panel = WORLD_MAP_PANEL_SCRIPT.new()
 	add_child(map_panel)
 	map_panel.show_panel()
+	_check(map_panel.filter_buttons.size() >= 5 and map_panel.active_region_filter == "all", "世界地图面板应提供区域筛选段控件")
+	map_panel._set_region_filter("settlement")
+	await get_tree().process_frame
+	_check(map_panel.active_region_filter == "settlement" and _regions_match_types(map_panel.region_ids, ["city", "town"]), "世界地图城镇筛选应只保留城池和小镇")
+	map_panel._set_region_filter("sect")
+	await get_tree().process_frame
+	_check(map_panel.active_region_filter == "sect" and _regions_match_types(map_panel.region_ids, ["sect"]), "世界地图门派筛选应只保留门派区域")
+	var saved_target_region_id := GameState.map_target_region_id
+	GameState.set_map_target_region("luoyang")
+	map_panel._set_region_filter("interest")
+	await get_tree().process_frame
+	_check(map_panel.region_ids.has("luoyang"), "世界地图线索筛选应包含当前地图目的地")
+	GameState.set_map_target_region(saved_target_region_id)
+	map_panel._set_region_filter("all")
+	await get_tree().process_frame
 	map_panel._select_region_by_id("luoyang")
 	await get_tree().process_frame
 	_check((map_panel.map_canvas.route_plan.get("route", []) as Array).size() >= 2, "世界地图面板应把选中区域的驿路线传给地图画布")
@@ -1391,6 +1406,17 @@ func _actors_have_stage_body_overlays(nodes: Array) -> bool:
 		if has_torso and has_sash and has_weapon_glow:
 			return true
 	return false
+
+func _regions_match_types(region_ids: Array, allowed_types: Array[String]) -> bool:
+	if region_ids.is_empty():
+		return false
+	for raw_region_id in region_ids:
+		var region := GameData.get_region(str(raw_region_id))
+		if region.is_empty():
+			return false
+		if not allowed_types.has(str(region.get("type", "wild"))):
+			return false
+	return true
 
 func _actors_have_stage_activity(nodes: Array) -> bool:
 	var seen := {}
