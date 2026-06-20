@@ -5,6 +5,8 @@ const MINIMAP_SCRIPT := preload("res://scripts/ui/minimap_canvas.gd")
 const HUD_PROMPT_CHIP_MIN_WIDTH := 74.0
 const HUD_PROMPT_PRIMARY_ALPHA := 0.88
 const HUD_PROMPT_SECONDARY_ALPHA := 0.70
+const HUD_STATUS_PANEL_SIZE := Vector2(424.0, 98.0)
+const HUD_CONTEXT_PANEL_SIZE := Vector2(424.0, 96.0)
 const SHOP_SERVICE_NAMES := {
 	"inn": "客栈",
 	"medicine": "药铺",
@@ -26,6 +28,7 @@ var time_label: Label
 var region_label: Label
 var service_label: Label
 var rumor_label: Label
+var status_panel: PanelContainer
 var prompt_panel: PanelContainer
 var prompt_box: HBoxContainer
 var prompt_label: Label
@@ -93,87 +96,93 @@ func show_toast(text: String) -> void:
 	toast_timer = 3.0
 
 func _build_top_panel() -> void:
-	var panel := PanelContainer.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = Vector2(16, 16)
-	panel.size = Vector2(460, 266)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.72), Color(0.62, 0.48, 0.24, 0.55)))
-	add_child(panel)
+	status_panel = PanelContainer.new()
+	status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status_panel.position = Vector2(12, 12)
+	status_panel.size = HUD_STATUS_PANEL_SIZE
+	status_panel.clip_contents = true
+	status_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.055, 0.050, 0.040, 0.56), Color(0.62, 0.48, 0.24, 0.44)))
+	add_child(status_panel)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
+	box.add_theme_constant_override("separation", 3)
+	status_panel.add_child(box)
 
 	name_label = Label.new()
-	name_label.add_theme_font_size_override("font_size", 20)
-	name_label.add_theme_color_override("font_color", Color(0.95, 0.84, 0.56))
+	_configure_compact_label(name_label, 396.0, 22.0, 18, Color(0.95, 0.84, 0.56))
 	box.add_child(name_label)
 
 	hp_bar = ProgressBar.new()
-	hp_bar.custom_minimum_size = Vector2(360, 18)
+	hp_bar.custom_minimum_size = Vector2(392, 12)
 	hp_bar.show_percentage = false
 	hp_bar.add_theme_stylebox_override("background", _bar_background())
 	hp_bar.add_theme_stylebox_override("fill", _bar_fill(Color(0.64, 0.10, 0.08, 0.92), Color(0.94, 0.34, 0.22, 0.96)))
 	box.add_child(hp_bar)
 
 	mp_bar = ProgressBar.new()
-	mp_bar.custom_minimum_size = Vector2(360, 18)
+	mp_bar.custom_minimum_size = Vector2(392, 12)
 	mp_bar.show_percentage = false
 	mp_bar.add_theme_stylebox_override("background", _bar_background())
 	mp_bar.add_theme_stylebox_override("fill", _bar_fill(Color(0.08, 0.24, 0.54, 0.90), Color(0.32, 0.62, 0.96, 0.96)))
 	box.add_child(mp_bar)
 
 	stats_label = Label.new()
-	stats_label.add_theme_font_size_override("font_size", 15)
-	stats_label.add_theme_color_override("font_color", Color(0.86, 0.82, 0.72))
+	_configure_compact_label(stats_label, 396.0, 17.0, 13, Color(0.86, 0.82, 0.72))
 	box.add_child(stats_label)
 
+	var context_panel := PanelContainer.new()
+	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	context_panel.position = Vector2(12, 116)
+	context_panel.size = HUD_CONTEXT_PANEL_SIZE
+	context_panel.clip_contents = true
+	context_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.050, 0.045, 0.036, 0.46), Color(0.62, 0.48, 0.24, 0.34)))
+	add_child(context_panel)
+
+	var context_row := HBoxContainer.new()
+	context_row.add_theme_constant_override("separation", 8)
+	context_panel.add_child(context_row)
+
+	var left_context := VBoxContainer.new()
+	left_context.custom_minimum_size = Vector2(194.0, 0.0)
+	left_context.add_theme_constant_override("separation", 2)
+	context_row.add_child(left_context)
+
+	var right_context := VBoxContainer.new()
+	right_context.custom_minimum_size = Vector2(194.0, 0.0)
+	right_context.add_theme_constant_override("separation", 2)
+	context_row.add_child(right_context)
+
 	equipment_label = Label.new()
-	equipment_label.add_theme_font_size_override("font_size", 14)
-	equipment_label.add_theme_color_override("font_color", Color(0.80, 0.74, 0.62))
-	box.add_child(equipment_label)
+	_configure_compact_label(equipment_label, 190.0, 14.0, 11, Color(0.80, 0.74, 0.62))
+	right_context.add_child(equipment_label)
 
 	quest_label = Label.new()
-	quest_label.add_theme_font_size_override("font_size", 15)
-	quest_label.add_theme_color_override("font_color", Color(0.70, 0.86, 0.68))
-	box.add_child(quest_label)
+	_configure_compact_label(quest_label, 190.0, 16.0, 12, Color(0.70, 0.86, 0.68))
+	left_context.add_child(quest_label)
 
 	quest_hint_label = Label.new()
-	quest_hint_label.custom_minimum_size = Vector2(410, 20)
-	quest_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	quest_hint_label.add_theme_font_size_override("font_size", 14)
-	quest_hint_label.add_theme_color_override("font_color", Color(0.94, 0.78, 0.42))
-	box.add_child(quest_hint_label)
+	_configure_compact_label(quest_hint_label, 190.0, 16.0, 12, Color(0.94, 0.78, 0.42))
+	left_context.add_child(quest_hint_label)
 
 	map_target_label = Label.new()
-	map_target_label.custom_minimum_size = Vector2(410, 20)
-	map_target_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	map_target_label.add_theme_font_size_override("font_size", 14)
-	map_target_label.add_theme_color_override("font_color", Color(0.62, 0.84, 1.0))
-	box.add_child(map_target_label)
+	_configure_compact_label(map_target_label, 190.0, 16.0, 12, Color(0.62, 0.84, 1.0))
+	left_context.add_child(map_target_label)
 
 	time_label = Label.new()
-	time_label.add_theme_font_size_override("font_size", 14)
-	time_label.add_theme_color_override("font_color", Color(0.70, 0.74, 0.82))
-	box.add_child(time_label)
+	_configure_compact_label(time_label, 190.0, 14.0, 11, Color(0.70, 0.74, 0.82))
+	right_context.add_child(time_label)
 
 	region_label = Label.new()
-	region_label.add_theme_font_size_override("font_size", 14)
-	region_label.add_theme_color_override("font_color", Color(0.76, 0.82, 0.70))
-	box.add_child(region_label)
+	_configure_compact_label(region_label, 190.0, 14.0, 11, Color(0.76, 0.82, 0.70))
+	right_context.add_child(region_label)
 
 	service_label = Label.new()
-	service_label.custom_minimum_size = Vector2(410, 18)
-	service_label.add_theme_font_size_override("font_size", 13)
-	service_label.add_theme_color_override("font_color", Color(0.82, 0.76, 0.62))
-	box.add_child(service_label)
+	_configure_compact_label(service_label, 190.0, 14.0, 11, Color(0.82, 0.76, 0.62))
+	right_context.add_child(service_label)
 
 	rumor_label = Label.new()
-	rumor_label.custom_minimum_size = Vector2(410, 34)
-	rumor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rumor_label.add_theme_font_size_override("font_size", 13)
-	rumor_label.add_theme_color_override("font_color", Color(0.86, 0.74, 0.54))
-	box.add_child(rumor_label)
+	_configure_compact_label(rumor_label, 190.0, 14.0, 11, Color(0.86, 0.74, 0.54))
+	right_context.add_child(rumor_label)
 
 func _build_minimap() -> void:
 	var panel := PanelContainer.new()
@@ -255,6 +264,14 @@ func _build_toast() -> void:
 	toast_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(toast_label)
 	toast_label.hide()
+
+func _configure_compact_label(label: Label, width: float, height: float, font_size: int, color: Color) -> void:
+	label.custom_minimum_size = Vector2(width, height)
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
 
 func _on_player_changed(player: Dictionary) -> void:
 	var hp := int(player.get("hp", 0))

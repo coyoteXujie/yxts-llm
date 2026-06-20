@@ -25,6 +25,7 @@ func _run() -> void:
 	_check(main.player_actor != null and main.player_actor.world_map == main.local_area, "玩家新游戏后应绑定局部城镇地图")
 	_check(not main.world_map.visible and main.local_area.visible, "新游戏首屏不应继续显示世界大地图")
 	_check(main.transition_overlay != null and main.transition_overlay.visible and main.transition_overlay.color.a > 0.0, "进入局部区域应有淡入转场遮罩")
+	_check(main.hud.status_panel != null and main.hud.status_panel.size.x <= 430.0 and main.hud.status_panel.size.y <= 180.0, "HUD 常驻状态面板不应大面积遮挡局部场景")
 	_check(main.hud.region_label.text.contains("探索") and main.hud.region_label.text.contains("·"), "HUD 所在地区域栏应显示探索阶段")
 	_check(main.hud.service_label.text.contains("本地服务") and main.hud.service_label.text.contains("客栈") and main.hud.service_label.text.contains("铁匠铺"), "HUD 应显示当前城镇可用商铺服务")
 	_check(main.hud.map_target_label.visible and main.hud.map_target_label.text.contains("可标记") and main.hud.map_target_label.text.contains("平安镇"), "HUD 应提示当前任务目标可标记到地图")
@@ -59,6 +60,7 @@ func _run() -> void:
 	if not qinghe.is_empty():
 		_check(str(main.local_area.current_region.get("id", "")) == "qinghe", "新游戏首个局部城镇应为平安镇")
 		_check(main.local_area.current_mode == "region", "进入平安镇后应处于区域模式")
+		_check(main.player_actor.position.y >= main.local_area.get_world_rect().size.y * 0.68, "局部城镇出生点应落在横版舞台可行走带而不是屋顶背景层")
 		_check(main.local_area.prop_blockers.size() > 0, "局部场景道具应生成脚底阻挡区")
 		var prop_blocker_blocks_walk := false
 		var blocked_prop_center := Vector2.ZERO
@@ -100,6 +102,8 @@ func _run() -> void:
 		_check(_min_actor_distance(main.local_area.npc_nodes) >= GameData.TILE_SIZE * 2.4, "平安镇 NPC 仍然过于拥挤")
 		var travel_portal := _first_portal(main.local_area, "travel_region")
 		_check(not travel_portal.is_empty(), "平安镇应有通往相邻区域的路牌入口")
+		main.local_area.focus_portal({})
+		_check(_visible_portal_label_count(main.local_area) == 0, "局部区域未聚焦入口时不应常驻显示一堆入口文字牌")
 		var landmark_portal := _first_reward_landmark(main.local_area)
 		_check(not landmark_portal.is_empty(), "平安镇应有带奖励的探索地标")
 		if not landmark_portal.is_empty():
@@ -249,7 +253,11 @@ func _run() -> void:
 		_check(not shop_portal.is_empty(), "平安镇应有可进入商铺")
 		if not shop_portal.is_empty():
 			_check(main._portal_prompt(shop_portal).contains("进入") and main._portal_prompt(shop_portal).contains("商铺"), "商铺靠近提示应展示进入动作和商铺类型")
-			main._enter_shop(shop_portal)
+			main.local_area.focus_portal(shop_portal)
+			_check(_visible_portal_label_count(main.local_area) == 1, "局部区域只应显示当前聚焦入口的文字牌")
+			main.focused_portal = shop_portal
+			main.focused_npc = null
+			main._handle_enter_area()
 			await _frames(3)
 			_check(main.local_area.current_mode == "shop", "应能进入商铺内景")
 			_check(main.local_area.npc_nodes.size() == 1, "商铺内应只生成掌柜")
@@ -413,6 +421,13 @@ func _portal_count(local_area, portal_type: String) -> int:
 	var count := 0
 	for portal in local_area.portals:
 		if str(portal.get("type", "")) == portal_type:
+			count += 1
+	return count
+
+func _visible_portal_label_count(local_area) -> int:
+	var count := 0
+	for label in local_area.portal_labels:
+		if is_instance_valid(label) and label.visible:
 			count += 1
 	return count
 

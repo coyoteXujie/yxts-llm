@@ -1659,19 +1659,7 @@ func equip_item(item_id: String) -> bool:
 		return false
 	if int(inventory.get(item_id, 0)) <= 0:
 		return false
-	var item_type := str(item.get("type", ""))
-	var slot := str(item.get("slot", ""))
-	if slot.is_empty():
-		if item_type == "weapon":
-			slot = "weapon"
-		elif item_type == "armor":
-			slot = "armor"
-		elif item_type == "accessory":
-			slot = "accessory"
-		else:
-			EventBus.emit_toast("无法装备")
-			return false
-
+	var slot := get_equipment_slot_for_item(item)
 	if slot.is_empty():
 		EventBus.emit_toast("无法装备")
 		return false
@@ -1688,6 +1676,29 @@ func equip_item(item_id: String) -> bool:
 	EventBus.player_changed.emit(player)
 	EventBus.emit_toast("装备%s" % str(item.get("name", item_id)))
 	return true
+
+func get_equipment_slot_for_item(item: Dictionary) -> String:
+	return _equipment_slot_for_item(item)
+
+func get_equipment_slot_for_item_id(item_id: String) -> String:
+	return _equipment_slot_for_item(GameData.get_item(item_id))
+
+func _equipment_slot_for_item(item: Dictionary) -> String:
+	if item.is_empty():
+		return ""
+	var item_type := str(item.get("type", ""))
+	var explicit_slot := str(item.get("slot", ""))
+	if item_type == "weapon":
+		return "weapon"
+	if item_type == "armor" and (explicit_slot.is_empty() or explicit_slot == "body"):
+		return "armor"
+	if item_type == "accessory" and explicit_slot.is_empty():
+		return "accessory"
+	if explicit_slot == "hand":
+		return "weapon"
+	if explicit_slot == "body":
+		return "armor"
+	return explicit_slot
 
 func _apply_equipment_stats(item_id: String, direction: int) -> void:
 	_apply_equipment_effects(_equipment_scaled_effects(item_id), direction)
@@ -2527,10 +2538,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	player = snapshot.get("player", {})
 	inventory = snapshot.get("inventory", {})
 	equipment = snapshot.get("equipment", {"weapon": "", "armor": ""})
-	if not equipment.has("weapon"):
-		equipment["weapon"] = ""
-	if not equipment.has("armor"):
-		equipment["armor"] = ""
+	_normalize_equipment_slots()
 	var loaded_equipment_durability = snapshot.get("equipment_durability", {})
 	equipment_durability = loaded_equipment_durability if typeof(loaded_equipment_durability) == TYPE_DICTIONARY else {}
 	_normalize_equipment_durability()
@@ -2560,6 +2568,22 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	EventBus.world_events_changed.emit(get_recent_world_events(30))
 	EventBus.time_changed.emit(day, hour, weather)
 	EventBus.map_target_changed.emit(map_target_region_id)
+
+func _normalize_equipment_slots() -> void:
+	if typeof(equipment) != TYPE_DICTIONARY:
+		equipment = {}
+	if not equipment.has("weapon"):
+		equipment["weapon"] = ""
+	if not equipment.has("armor"):
+		equipment["armor"] = ""
+	var hand_item := str(equipment.get("hand", ""))
+	if not hand_item.is_empty() and str(equipment.get("weapon", "")).is_empty():
+		equipment["weapon"] = hand_item
+	equipment.erase("hand")
+	var body_item := str(equipment.get("body", ""))
+	if not body_item.is_empty() and str(equipment.get("armor", "")).is_empty():
+		equipment["armor"] = body_item
+	equipment.erase("body")
 
 func _normalize_equipment_durability() -> void:
 	var normalized: Dictionary = {}

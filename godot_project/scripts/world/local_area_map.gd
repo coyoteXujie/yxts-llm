@@ -273,6 +273,7 @@ const STAGE_DEPTH_TOP_RATIO := 0.48
 const STAGE_DEPTH_BOTTOM_RATIO := 0.95
 const STAGE_DEPTH_MIN_SCALE := 0.86
 const STAGE_DEPTH_MAX_SCALE := 1.24
+const LOCAL_STAGE_DEFAULT_ENTRY_DEPTH_RATIO := 0.68
 const LOCAL_PROP_BLOCKERS_ENABLED := true
 
 var tile_size := GameData.TILE_SIZE
@@ -640,8 +641,8 @@ func get_entry_position(kind: String = "area") -> Vector2:
 	if current_mode == "shop":
 		return tile_to_world(Vector2i(map_width / 2, map_height - 4))
 	if kind == "world":
-		return tile_to_world(_find_nearest_walkable_tile(Vector2i(map_width / 2, map_height / 2 + 6)))
-	var tile := Vector2i(map_width / 2, map_height / 2)
+		return tile_to_world(_find_nearest_walkable_tile(_stage_default_entry_tile()))
+	var tile := _stage_default_entry_tile()
 	match kind:
 		"north":
 			tile = Vector2i(map_width / 2, 7)
@@ -652,6 +653,10 @@ func get_entry_position(kind: String = "area") -> Vector2:
 		"west":
 			tile = Vector2i(8, map_height / 2)
 	return tile_to_world(_find_nearest_walkable_tile(tile))
+
+func _stage_default_entry_tile() -> Vector2i:
+	var y := clampi(int(round(float(map_height) * LOCAL_STAGE_DEFAULT_ENTRY_DEPTH_RATIO)), 4, map_height - 5)
+	return Vector2i(map_width / 2, y)
 
 func get_shop_service_anchor() -> Vector2:
 	if current_mode != "shop":
@@ -742,7 +747,7 @@ func focus_portal(portal: Dictionary) -> void:
 	for label in portal_labels:
 		if not is_instance_valid(label):
 			continue
-		label.visible = label.name == highlighted_portal_id or current_mode == "shop" or str(label.name).begins_with("shop_") or str(label.name).begins_with("travel_") or str(label.name).begins_with("landmark_") or str(label.name).begins_with("resource_") or str(label.name).begins_with("hidden_")
+		label.visible = _should_show_portal_label(label, highlighted_portal_id)
 	queue_redraw()
 
 func clear_highlights() -> void:
@@ -2120,6 +2125,7 @@ func _build_portal_labels() -> void:
 		var portal_type := str(portal.get("type", ""))
 		var label := Label.new()
 		label.name = str(portal.get("id", ""))
+		label.set_meta("portal_type", portal_type)
 		label.text = _portal_label_text(portal)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -2168,9 +2174,17 @@ func _build_portal_labels() -> void:
 			board.set_border_width_all(1)
 			board.set_corner_radius_all(3)
 			label.add_theme_stylebox_override("normal", board)
-		label.visible = current_mode == "shop" or portal_type == "shop" or portal_type == "shop_service" or portal_type == "travel_region" or portal_type == "landmark" or portal_type == "resource" or portal_type == "hidden_clue" or portal_type == "adventure_clue"
+		label.visible = _should_show_portal_label(label, highlighted_portal_id)
 		add_child(label)
 		portal_labels.append(label)
+
+func _should_show_portal_label(label: Label, focused_id: String) -> bool:
+	if not focused_id.is_empty() and str(label.name) == focused_id:
+		return true
+	var portal_type := str(label.get_meta("portal_type", ""))
+	if current_mode == "shop":
+		return portal_type == "shop_service" or portal_type == "exit_area"
+	return false
 
 func _portal_label_text(portal: Dictionary) -> String:
 	var portal_type := str(portal.get("type", ""))
