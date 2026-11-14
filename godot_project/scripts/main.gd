@@ -11,6 +11,7 @@ const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
 const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
 const OPENING_NARRATIVE_SCRIPT := preload("res://scripts/ui/opening_narrative_panel.gd")
 const INK_SPLASH_SCRIPT := preload("res://scripts/ui/ink_splash_overlay.gd")
+const INK_TRANSITION_SHADER := preload("res://shaders/ink_transition.gdshader")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
 const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
@@ -32,7 +33,6 @@ const AMBIENT_NPC_INTERVAL := 6.8
 const AMBIENT_NPC_RADIUS := 430.0
 const POST_TRANSITION_RESET_DELAY := 1.2
 const MAP_TRANSITION_FADE_SECONDS := 0.42
-const MAP_TRANSITION_START_ALPHA := 0.46
 const MAP_TRANSITION_ZOOM_PUNCH := 1.035
 const LANDMARK_EXPLORATION_GAIN := 8
 const RESOURCE_EXPLORATION_GAIN := 3
@@ -163,7 +163,12 @@ func _ready() -> void:
 	transition_overlay = ColorRect.new()
 	transition_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	transition_overlay.color = Color(0.02, 0.015, 0.010, 0.0)
+	transition_overlay.color = Color.BLACK
+	# 水墨转场 shader
+	var trans_mat := ShaderMaterial.new()
+	trans_mat.shader = INK_TRANSITION_SHADER
+	trans_mat.set_shader_parameter("progress", 1.0)
+	transition_overlay.material = trans_mat
 	transition_overlay.hide()
 	ui_layer.add_child(transition_overlay)
 
@@ -1205,13 +1210,18 @@ func _transition_player_to_map(target_map: Node, position: Vector2, update_playe
 func _play_map_transition_feedback() -> void:
 	if transition_overlay != null:
 		transition_overlay.show()
-		transition_overlay.color = Color(0.02, 0.015, 0.010, MAP_TRANSITION_START_ALPHA)
+		# 水墨转场：1.0 → 0.0（墨迹消退）
+		var mat := transition_overlay.material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("progress", 0.85)
 	if transition_tween != null and transition_tween.is_valid():
 		transition_tween.kill()
 	transition_tween = create_tween()
 	transition_tween.set_parallel(true)
 	if transition_overlay != null:
-		transition_tween.tween_property(transition_overlay, "color:a", 0.0, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		var mat := transition_overlay.material as ShaderMaterial
+		if mat != null:
+			transition_tween.tween_method(func(v): mat.set_shader_parameter("progress", v), 0.85, 0.0, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		transition_tween.chain().tween_callback(func() -> void:
 			if transition_overlay != null:
 				transition_overlay.hide()
