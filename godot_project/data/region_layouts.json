@@ -1,0 +1,664 @@
+{
+  "luoyang": {
+    "features": [
+      {"op": "fill", "tile": "road", "rect": [31, 21, 18, 12]},
+      {"op": "fill", "tile": "shop", "rect": [27, 17, 6, 5]},
+      {"op": "fill", "tile": "shop", "rect": [47, 32, 6, 5]}
+    ]
+  },
+  "changan": {
+    "features": [
+      {"op": "fill", "tile": "building", "rect": [36, 9, 8, 10]},
+      {"op": "line", "tile": "road", "points": [[40, 10], [40, 47]], "width": 3}
+    ]
+  },
+  "chengdu": {
+    "profile": {"garden_city": true},
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [9, 9, 14, 10]},
+      {"op": "fill", "tile": "field", "rect": [55, 33, 13, 9]},
+      {"op": "fill", "tile": "garden", "rect": [22, 9, 12, 7]}
+    ]
+  },
+  "jiangling": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[4, 34], [24, 32], [48, 34], [76, 31]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 33]},
+      {"op": "bridge_patch", "center": [63, 32]}
+    ]
+  },
+  "linan": {
+    "profile": {"water_city": true},
+    "features": [
+      {"op": "line", "tile": "water", "points": [[9, 20], [26, 22], [52, 20], [71, 23]], "width": 1},
+      {"op": "line", "tile": "water", "points": [[24, 8], [25, 27], [22, 45]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 21]},
+      {"op": "bridge_patch", "center": [24, 27]}
+    ]
+  },
+  "flower_sect": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [9, 8, 12, 9]},
+      {"op": "fill", "tile": "garden", "rect": [42, 27, 12, 8]},
+      {"op": "line", "tile": "road", "points": [[53, 12], [40, 19]], "width": 1}
+    ]
+  },
+  "xueshan_sect": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 7, 14, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [42, 8, 13, 8]},
+      {"op": "line", "tile": "road", "points": [[9, 34], [26, 30]], "width": 1}
+    ]
+  },
+  "xiaoyao_sect": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[10, 32], [32, 28], [54, 33]], "width": 1},
+      {"op": "bridge_patch", "center": [32, 29]}
+    ]
+  },
+  "honglian_sect": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [15, 12, 8, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [41, 12, 8, 6]}
+    ]
+  },
+  "naja_sect": {
+    "features": [
+      {"op": "line", "tile": "road", "points": [[8, 11], [25, 20], [55, 13]], "width": 1},
+      {"op": "fill", "tile": "mountain", "rect": [9, 29, 11, 7]}
+    ]
+  },
+  "taiji_sect": {
+    "features": [
+      {"op": "fill", "tile": "road", "rect": [20, 10, 24, 5]},
+      {"op": "fill", "tile": "garden", "rect": [20, 34, 24, 4]}
+    ]
+  },
+  "qinghe": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [9, 26, 8, 5]},
+      {"op": "fill", "tile": "field", "rect": [40, 25, 10, 6]},
+      {"op": "line", "tile": "road", "points": [[10, 28], [21, 25]], "width": 1}
+    ]
+  },
+  "bagua_sect": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 7, 10, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [62, 7, 10, 6]},
+      {"op": "fill", "tile": "road", "rect": [30, 34, 20, 4]},
+      {"op": "fill", "tile": "garden", "rect": [8, 40, 12, 6]},
+      {"op": "fill", "tile": "garden", "rect": [60, 40, 12, 6]}
+    ]
+  },
+  "mengjin": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[2, 46], [24, 47], [50, 45], [78, 48]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 46]},
+      {"op": "fill", "tile": "building", "rect": [52, 31, 8, 4]},
+      {"op": "fill", "tile": "garden", "rect": [24, 35, 8, 4]}
+    ]
+  },
+  "xianyang": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 33, 10, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [63, 29, 8, 5]},
+      {"op": "line", "tile": "road", "points": [[12, 40], [26, 33]], "width": 1},
+      {"op": "fill", "tile": "field", "rect": [24, 44, 12, 5]}
+    ]
+  },
+  "lintong": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [58, 30, 12, 4]},
+      {"op": "bridge_patch", "center": [59, 32]},
+      {"op": "fill", "tile": "mountain", "rect": [8, 33, 10, 6]},
+      {"op": "fill", "tile": "garden", "rect": [24, 35, 8, 4]}
+    ]
+  },
+  "yuhang": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[3, 20], [20, 22], [52, 20], [77, 23]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 21]},
+      {"op": "line", "tile": "water", "points": [[56, 6], [58, 20], [55, 34]], "width": 1},
+      {"op": "bridge_patch", "center": [57, 27]},
+      {"op": "line", "tile": "water", "points": [[3, 46], [30, 48], [60, 46], [77, 49]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 47]}
+    ]
+  },
+  "yiling": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 29, 5, 9]},
+      {"op": "fill", "tile": "mountain", "rect": [72, 29, 7, 10]},
+      {"op": "line", "tile": "water", "points": [[10, 50], [40, 47], [70, 51]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 47]}
+    ]
+  },
+  "huanghe_valley": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[0, 14], [24, 18], [48, 15], [79, 19]], "width": 3},
+      {"op": "fill", "tile": "field", "rect": [8, 22, 12, 4]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 34, 14, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [4, 34, 12, 6]}
+    ]
+  },
+  "zhongnan_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 16, 9]},
+      {"op": "fill", "tile": "mountain", "rect": [56, 7, 16, 8]},
+      {"op": "line", "tile": "road", "points": [[16, 46], [26, 36], [36, 29]], "width": 1},
+      {"op": "fill", "tile": "garden", "rect": [60, 32, 12, 7]}
+    ]
+  },
+  "huashan_cliff": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 4, 16, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [60, 4, 16, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [4, 30, 6, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [70, 32, 8, 10]},
+      {"op": "line", "tile": "road", "points": [[44, 26], [50, 18], [52, 12]], "width": 1}
+    ]
+  },
+  "dongting_lake": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [52, 28, 26, 20]},
+      {"op": "fill", "tile": "mountain", "rect": [60, 34, 8, 6]},
+      {"op": "fill", "tile": "garden", "rect": [8, 30, 10, 8]},
+      {"op": "line", "tile": "water", "points": [[52, 36], [36, 42], [20, 46]], "width": 1},
+      {"op": "fill", "tile": "field", "rect": [22, 32, 12, 5]}
+    ]
+  },
+  "yunmeng_marsh": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [6, 30, 14, 8]},
+      {"op": "fill", "tile": "water", "rect": [28, 38, 12, 6]},
+      {"op": "fill", "tile": "water", "rect": [48, 10, 12, 7]},
+      {"op": "fill", "tile": "water", "rect": [44, 40, 14, 6]},
+      {"op": "fill", "tile": "garden", "rect": [8, 10, 12, 7]},
+      {"op": "fill", "tile": "garden", "rect": [64, 34, 12, 7]}
+    ]
+  },
+  "longxi_desert": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 8, 14, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [52, 36, 14, 8]},
+      {"op": "fill", "tile": "water", "rect": [58, 10, 8, 4]},
+      {"op": "fill", "tile": "garden", "rect": [56, 15, 12, 4]},
+      {"op": "set", "tile": "building", "pos": [22, 36]},
+      {"op": "line", "tile": "road", "points": [[12, 44], [34, 36], [52, 30]], "width": 1}
+    ]
+  },
+  "gongyi": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[2, 12], [26, 15], [52, 12], [78, 16]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 13]},
+      {"op": "fill", "tile": "mountain", "rect": [4, 32, 6, 5]},
+      {"op": "fill", "tile": "mountain", "rect": [66, 29, 8, 5]}
+    ]
+  },
+  "yanshi": {
+    "features": [
+      {"op": "fill", "tile": "wall", "rect": [10, 34, 12, 3]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 30, 8, 4]},
+      {"op": "fill", "tile": "field", "rect": [26, 42, 10, 4]}
+    ]
+  },
+  "fengxiang": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [52, 10, 8, 5]},
+      {"op": "fill", "tile": "garden", "rect": [48, 18, 10, 3]},
+      {"op": "fill", "tile": "garden", "rect": [28, 40, 10, 5]},
+      {"op": "fill", "tile": "carpet", "rect": [44, 32, 6, 3]}
+    ]
+  },
+  "weinan": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[2, 6], [30, 9], [56, 6], [79, 10]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 8]},
+      {"op": "fill", "tile": "field", "rect": [22, 40, 16, 6]}
+    ]
+  },
+  "jiaxing": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[2, 16], [78, 16]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 16]},
+      {"op": "line", "tile": "water", "points": [[24, 2], [24, 52]], "width": 1},
+      {"op": "bridge_patch", "center": [24, 27]}
+    ]
+  },
+  "shaoxing": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[6, 20], [18, 23], [30, 20], [42, 23], [54, 20], [70, 23]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 22]},
+      {"op": "fill", "tile": "water", "rect": [50, 42, 18, 8]},
+      {"op": "fill", "tile": "garden", "rect": [24, 34, 8, 4]}
+    ]
+  },
+  "shuangliu": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[24, 8], [22, 22], [26, 36]], "width": 1},
+      {"op": "bridge_patch", "center": [24, 27]},
+      {"op": "line", "tile": "water", "points": [[54, 6], [56, 20], [53, 34]], "width": 1},
+      {"op": "bridge_patch", "center": [55, 27]},
+      {"op": "fill", "tile": "field", "rect": [8, 38, 16, 8]},
+      {"op": "fill", "tile": "field", "rect": [30, 42, 10, 5]}
+    ]
+  },
+  "xindu": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [50, 29, 10, 5]},
+      {"op": "fill", "tile": "building", "rect": [24, 36, 8, 5]},
+      {"op": "fill", "tile": "water", "rect": [28, 42, 9, 4]}
+    ]
+  },
+  "wenjiang": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [8, 30, 10, 5]},
+      {"op": "fill", "tile": "garden", "rect": [26, 32, 10, 5]},
+      {"op": "fill", "tile": "garden", "rect": [44, 30, 10, 4]},
+      {"op": "fill", "tile": "field", "rect": [56, 40, 14, 6]},
+      {"op": "line", "tile": "water", "points": [[4, 16], [30, 19], [56, 16], [78, 20]], "width": 1},
+      {"op": "bridge_patch", "center": [40, 18]}
+    ]
+  },
+  "dangyang": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [56, 30, 10, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [20, 8, 6, 4]},
+      {"op": "fill", "tile": "field", "rect": [24, 40, 12, 5]},
+      {"op": "line", "tile": "road", "points": [[56, 36], [44, 40]], "width": 1}
+    ]
+  },
+  "dujiang_weir": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[26, 2], [30, 14], [28, 26], [32, 40], [30, 53]], "width": 1},
+      {"op": "line", "tile": "water", "points": [[52, 2], [48, 16], [54, 30], [50, 44], [52, 53]], "width": 1},
+      {"op": "bridge_patch", "center": [28, 26]},
+      {"op": "bridge_patch", "center": [51, 26]},
+      {"op": "fill", "tile": "garden", "rect": [34, 30, 8, 4]}
+    ]
+  },
+  "minjiang_river": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[0, 10], [22, 14], [46, 11], [70, 15], [79, 13]], "width": 2},
+      {"op": "fill", "tile": "field", "rect": [8, 20, 12, 5]},
+      {"op": "fill", "tile": "mountain", "rect": [60, 32, 14, 8]},
+      {"op": "fill", "tile": "garden", "rect": [10, 32, 10, 6]}
+    ]
+  },
+  "shudao_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 6, 18, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [54, 6, 22, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [4, 38, 20, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [56, 40, 18, 8]},
+      {"op": "line", "tile": "road", "points": [[56, 44], [46, 36], [38, 28]], "width": 1},
+      {"op": "set", "tile": "building", "pos": [30, 12]}
+    ]
+  },
+  "xindu_field": {
+    "features": [
+      {"op": "fill", "tile": "field", "rect": [8, 32, 14, 8]},
+      {"op": "fill", "tile": "field", "rect": [28, 36, 12, 6]},
+      {"op": "fill", "tile": "field", "rect": [50, 34, 14, 8]},
+      {"op": "line", "tile": "water", "points": [[24, 8], [22, 20], [26, 32], [24, 46]], "width": 1},
+      {"op": "bridge_patch", "center": [24, 25]},
+      {"op": "fill", "tile": "garden", "rect": [56, 10, 12, 7]}
+    ]
+  },
+  "wenjiang_garden": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [8, 8, 14, 9]},
+      {"op": "fill", "tile": "garden", "rect": [56, 36, 14, 8]},
+      {"op": "fill", "tile": "garden", "rect": [30, 38, 12, 6]},
+      {"op": "fill", "tile": "field", "rect": [28, 10, 12, 6]},
+      {"op": "line", "tile": "water", "points": [[6, 34], [18, 37], [26, 36]], "width": 1}
+    ]
+  },
+  "western_plateau": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 4, 24, 12]},
+      {"op": "fill", "tile": "mountain", "rect": [50, 4, 26, 10]},
+      {"op": "fill", "tile": "water", "rect": [36, 8, 8, 5]},
+      {"op": "fill", "tile": "field", "rect": [8, 34, 16, 8]},
+      {"op": "fill", "tile": "garden", "rect": [58, 32, 12, 7]}
+    ]
+  },
+  "wudang_peak": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 4, 18, 10]},
+      {"op": "fill", "tile": "mountain", "rect": [56, 6, 18, 9]},
+      {"op": "fill", "tile": "building", "rect": [34, 7, 12, 5]},
+      {"op": "line", "tile": "road", "points": [[50, 44], [44, 38], [38, 32], [34, 25]], "width": 1},
+      {"op": "fill", "tile": "garden", "rect": [60, 34, 12, 7]}
+    ]
+  },
+  "shennongjia": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [6, 6, 16, 10]},
+      {"op": "fill", "tile": "garden", "rect": [56, 6, 16, 9]},
+      {"op": "fill", "tile": "garden", "rect": [6, 36, 14, 9]},
+      {"op": "fill", "tile": "garden", "rect": [54, 38, 16, 8]},
+      {"op": "line", "tile": "water", "points": [[28, 4], [30, 16], [28, 30], [30, 44]], "width": 1},
+      {"op": "bridge_patch", "center": [29, 25]},
+      {"op": "fill", "tile": "mountain", "rect": [44, 8, 8, 5]}
+    ]
+  },
+  "qingcheng_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 16, 9]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 6, 14, 8]},
+      {"op": "fill", "tile": "garden", "rect": [8, 34, 12, 7]},
+      {"op": "line", "tile": "water", "points": [[26, 40], [32, 33], [34, 26]], "width": 1},
+      {"op": "bridge_patch", "center": [33, 26]},
+      {"op": "fill", "tile": "building", "rect": [30, 8, 10, 5]}
+    ]
+  },
+  "emei_sacred": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 6, 20, 11]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 8, 16, 9]},
+      {"op": "fill", "tile": "building", "rect": [36, 6, 10, 5]},
+      {"op": "line", "tile": "road", "points": [[52, 40], [46, 34], [40, 26]], "width": 1},
+      {"op": "fill", "tile": "garden", "rect": [24, 34, 12, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [6, 36, 12, 8]}
+    ]
+  },
+  "beiling_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 22, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [52, 38, 20, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 16, 10, 4]},
+      {"op": "fill", "tile": "garden", "rect": [34, 32, 12, 6]},
+      {"op": "set", "tile": "building", "pos": [16, 18]}
+    ]
+  },
+  "luoshui_river": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [4, 8, 72, 6]},
+      {"op": "line", "tile": "water", "points": [[22, 14], [22, 30]], "width": 1},
+      {"op": "bridge_patch", "center": [22, 25]},
+      {"op": "fill", "tile": "garden", "rect": [8, 17, 12, 4]},
+      {"op": "fill", "tile": "field", "rect": [58, 16, 12, 5]},
+      {"op": "set", "tile": "building", "pos": [66, 15]}
+    ]
+  },
+  "funiu_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 20, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [18, 40, 26, 7]},
+      {"op": "line", "tile": "water", "points": [[34, 14], [32, 22], [34, 30], [32, 38]], "width": 1},
+      {"op": "bridge_patch", "center": [33, 25]},
+      {"op": "fill", "tile": "garden", "rect": [46, 32, 12, 6]},
+      {"op": "set", "tile": "building", "pos": [16, 15]}
+    ]
+  },
+  "three_gorges": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [46, 6, 5, 42]},
+      {"op": "bridge_patch", "center": [48, 25]},
+      {"op": "fill", "tile": "mountain", "rect": [16, 8, 8, 12]},
+      {"op": "fill", "tile": "mountain", "rect": [58, 8, 10, 12]},
+      {"op": "fill", "tile": "field", "rect": [30, 36, 12, 5]},
+      {"op": "set", "tile": "mountain", "pos": [70, 12]}
+    ]
+  },
+  "yiling_gap": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 6, 72, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [4, 37, 72, 8]},
+      {"op": "fill", "tile": "field", "rect": [10, 16, 12, 6]},
+      {"op": "set", "tile": "building", "pos": [62, 16]},
+      {"op": "line", "tile": "road", "points": [[18, 33], [28, 28], [34, 25]], "width": 1},
+      {"op": "line", "tile": "water", "points": [[56, 30], [62, 33], [68, 36]], "width": 1}
+    ]
+  },
+  "dangyang_plain": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 8, 10, 5]},
+      {"op": "fill", "tile": "field", "rect": [20, 34, 18, 6]},
+      {"op": "fill", "tile": "field", "rect": [48, 12, 14, 5]},
+      {"op": "fill", "tile": "garden", "rect": [56, 34, 12, 6]},
+      {"op": "line", "tile": "road", "points": [[10, 42], [20, 33], [28, 26]], "width": 1},
+      {"op": "line", "tile": "water", "points": [[62, 16], [66, 20], [70, 24]], "width": 1}
+    ]
+  },
+  "hanjiang_river": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [4, 8, 72, 5]},
+      {"op": "line", "tile": "water", "points": [[56, 14], [56, 26], [58, 32], [58, 40]], "width": 1},
+      {"op": "bridge_patch", "center": [56, 26]},
+      {"op": "fill", "tile": "field", "rect": [8, 16, 12, 4]},
+      {"op": "fill", "tile": "garden", "rect": [30, 34, 12, 6]},
+      {"op": "set", "tile": "building", "pos": [64, 14]}
+    ]
+  },
+  "daba_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 6, 34, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [40, 38, 36, 8]},
+      {"op": "line", "tile": "water", "points": [[52, 14], [50, 22], [52, 30], [54, 36]], "width": 1},
+      {"op": "bridge_patch", "center": [51, 25]},
+      {"op": "fill", "tile": "garden", "rect": [10, 30, 12, 6]},
+      {"op": "line", "tile": "road", "points": [[8, 44], [18, 36], [26, 26]], "width": 1}
+    ]
+  },
+  "bashu_bamboo": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [6, 8, 14, 10]},
+      {"op": "fill", "tile": "garden", "rect": [58, 10, 14, 9]},
+      {"op": "fill", "tile": "garden", "rect": [24, 36, 16, 6]},
+      {"op": "line", "tile": "water", "points": [[50, 6], [54, 16], [58, 26], [58, 36]], "width": 1},
+      {"op": "bridge_patch", "center": [58, 26]},
+      {"op": "set", "tile": "building", "pos": [46, 34]}
+    ]
+  },
+  "songshan_peak": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 18, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [54, 8, 16, 7]},
+      {"op": "fill", "tile": "garden", "rect": [30, 34, 12, 6]},
+      {"op": "line", "tile": "road", "points": [[48, 44], [42, 35], [38, 26]], "width": 1},
+      {"op": "line", "tile": "water", "points": [[28, 14], [26, 20], [28, 26]], "width": 1},
+      {"op": "bridge_patch", "center": [28, 25]},
+      {"op": "set", "tile": "building", "pos": [60, 18]}
+    ]
+  },
+  "taihang_range": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 6, 14, 14]},
+      {"op": "fill", "tile": "mountain", "rect": [56, 6, 16, 12]},
+      {"op": "fill", "tile": "mountain", "rect": [10, 38, 18, 7]},
+      {"op": "line", "tile": "water", "points": [[46, 8], [48, 16], [52, 24], [54, 32]], "width": 1},
+      {"op": "bridge_patch", "center": [52, 26]},
+      {"op": "fill", "tile": "garden", "rect": [30, 32, 10, 5]}
+    ]
+  },
+  "yanshi_plain": {
+    "features": [
+      {"op": "fill", "tile": "field", "rect": [10, 34, 18, 7]},
+      {"op": "fill", "tile": "field", "rect": [52, 12, 16, 6]},
+      {"op": "line", "tile": "water", "points": [[30, 10], [32, 18], [34, 26]], "width": 1},
+      {"op": "bridge_patch", "center": [34, 25]},
+      {"op": "fill", "tile": "garden", "rect": [50, 32, 12, 6]},
+      {"op": "fill", "tile": "mountain", "rect": [6, 8, 10, 5]}
+    ]
+  },
+  "mengjin_ford": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [4, 6, 72, 7]},
+      {"op": "line", "tile": "water", "points": [[26, 14], [28, 22], [26, 28]], "width": 1},
+      {"op": "bridge_patch", "center": [27, 25]},
+      {"op": "fill", "tile": "field", "rect": [8, 16, 14, 5]},
+      {"op": "fill", "tile": "garden", "rect": [56, 18, 12, 5]},
+      {"op": "set", "tile": "building", "pos": [44, 15]}
+    ]
+  },
+  "yiluo_valley": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[20, 6], [24, 16], [28, 26], [26, 36]], "width": 1},
+      {"op": "bridge_patch", "center": [28, 25]},
+      {"op": "line", "tile": "water", "points": [[56, 6], [52, 16], [48, 24], [50, 34]], "width": 1},
+      {"op": "bridge_patch", "center": [48, 25]},
+      {"op": "fill", "tile": "field", "rect": [34, 34, 12, 5]},
+      {"op": "fill", "tile": "garden", "rect": [8, 18, 10, 5]},
+      {"op": "fill", "tile": "mountain", "rect": [60, 8, 12, 5]}
+    ]
+  },
+  "zhongtiao_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 26, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [14, 38, 20, 7]},
+      {"op": "fill", "tile": "water", "rect": [52, 32, 14, 6]},
+      {"op": "fill", "tile": "field", "rect": [52, 40, 14, 4]},
+      {"op": "line", "tile": "road", "points": [[10, 44], [22, 32], [30, 25]], "width": 1},
+      {"op": "set", "tile": "building", "pos": [58, 30]}
+    ]
+  },
+  "qinling_deep": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 6, 22, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [44, 6, 24, 7]},
+      {"op": "line", "tile": "water", "points": [[36, 14], [34, 22], [36, 30], [34, 38]], "width": 1},
+      {"op": "bridge_patch", "center": [35, 25]},
+      {"op": "fill", "tile": "garden", "rect": [12, 32, 12, 7]},
+      {"op": "set", "tile": "building", "pos": [58, 32]}
+    ]
+  },
+  "zhongyuan_for": {
+    "features": [
+      {"op": "fill", "tile": "garden", "rect": [6, 8, 16, 10]},
+      {"op": "fill", "tile": "garden", "rect": [52, 8, 18, 9]},
+      {"op": "fill", "tile": "garden", "rect": [10, 36, 18, 8]},
+      {"op": "fill", "tile": "water", "rect": [44, 34, 10, 5]},
+      {"op": "set", "tile": "building", "pos": [30, 32]},
+      {"op": "line", "tile": "road", "points": [[20, 44], [26, 34], [32, 25]], "width": 1}
+    ]
+  },
+  "weihe_river": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [4, 10, 72, 6]},
+      {"op": "line", "tile": "water", "points": [[60, 18], [58, 26], [60, 34]], "width": 1},
+      {"op": "bridge_patch", "center": [59, 26]},
+      {"op": "fill", "tile": "field", "rect": [8, 18, 14, 5]},
+      {"op": "fill", "tile": "field", "rect": [24, 34, 14, 5]},
+      {"op": "set", "tile": "building", "pos": [30, 17]}
+    ]
+  },
+  "tongguan_pass": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [4, 6, 26, 8]},
+      {"op": "fill", "tile": "water", "rect": [48, 4, 26, 7]},
+      {"op": "fill", "tile": "mountain", "rect": [8, 38, 24, 7]},
+      {"op": "set", "tile": "building", "pos": [34, 12]},
+      {"op": "line", "tile": "water", "points": [[54, 14], [56, 20], [54, 28], [56, 36]], "width": 1},
+      {"op": "bridge_patch", "center": [55, 26]},
+      {"op": "fill", "tile": "field", "rect": [42, 32, 11, 5]}
+    ]
+  },
+  "lintong_bath": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 20, 7]},
+      {"op": "fill", "tile": "water", "rect": [52, 30, 12, 6]},
+      {"op": "fill", "tile": "garden", "rect": [48, 38, 10, 5]},
+      {"op": "fill", "tile": "wall", "rect": [10, 32, 14, 3]},
+      {"op": "line", "tile": "water", "points": [[34, 14], [32, 22], [34, 30]], "width": 1},
+      {"op": "bridge_patch", "center": [33, 25]}
+    ]
+  },
+  "xianyang_mound": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [10, 8, 22, 5]},
+      {"op": "set", "tile": "mountain", "pos": [36, 10]},
+      {"op": "set", "tile": "mountain", "pos": [44, 9]},
+      {"op": "fill", "tile": "wall", "rect": [52, 12, 10, 3]},
+      {"op": "fill", "tile": "garden", "rect": [50, 18, 14, 4]},
+      {"op": "line", "tile": "water", "points": [[26, 34], [30, 40], [34, 46]], "width": 1},
+      {"op": "line", "tile": "road", "points": [[12, 40], [22, 30], [30, 25]], "width": 1}
+    ]
+  },
+  "jiangnan_marsh": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [8, 10, 18, 10]},
+      {"op": "fill", "tile": "water", "rect": [52, 34, 18, 8]},
+      {"op": "line", "tile": "water", "points": [[22, 22], [26, 28], [30, 32]], "width": 1},
+      {"op": "bridge_patch", "center": [25, 25]},
+      {"op": "fill", "tile": "garden", "rect": [30, 34, 12, 6]},
+      {"op": "fill", "tile": "field", "rect": [56, 12, 14, 6]},
+      {"op": "set", "tile": "building", "pos": [62, 32]}
+    ]
+  },
+  "wuyi_for": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 16, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [54, 8, 14, 7]},
+      {"op": "line", "tile": "water", "points": [[30, 10], [34, 16], [30, 22], [36, 28], [44, 34]], "width": 1},
+      {"op": "bridge_patch", "center": [32, 25]},
+      {"op": "fill", "tile": "garden", "rect": [10, 32, 14, 6]},
+      {"op": "fill", "tile": "field", "rect": [48, 36, 12, 5]},
+      {"op": "set", "tile": "building", "pos": [60, 30]}
+    ]
+  },
+  "qiantang_tide": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [4, 38, 72, 9]},
+      {"op": "fill", "tile": "wall", "rect": [8, 34, 20, 3]},
+      {"op": "fill", "tile": "field", "rect": [46, 32, 14, 5]},
+      {"op": "line", "tile": "water", "points": [[30, 20], [34, 26], [38, 34], [40, 38]], "width": 1},
+      {"op": "bridge_patch", "center": [34, 25]},
+      {"op": "set", "tile": "building", "pos": [60, 20]}
+    ]
+  },
+  "tianmu_mtn": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [6, 8, 16, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [52, 6, 18, 8]},
+      {"op": "fill", "tile": "garden", "rect": [30, 32, 12, 7]},
+      {"op": "set", "tile": "building", "pos": [44, 12]},
+      {"op": "line", "tile": "water", "points": [[26, 16], [28, 24], [26, 32]], "width": 1},
+      {"op": "bridge_patch", "center": [27, 25]},
+      {"op": "fill", "tile": "field", "rect": [20, 42, 14, 5]}
+    ]
+  },
+  "taihu_lake": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [46, 6, 28, 14]},
+      {"op": "fill", "tile": "mountain", "rect": [54, 10, 6, 4]},
+      {"op": "line", "tile": "water", "points": [[14, 18], [20, 22], [26, 26]], "width": 1},
+      {"op": "bridge_patch", "center": [25, 25]},
+      {"op": "fill", "tile": "garden", "rect": [10, 34, 14, 7]},
+      {"op": "fill", "tile": "field", "rect": [26, 36, 14, 6]},
+      {"op": "set", "tile": "building", "pos": [44, 18]}
+    ]
+  },
+  "huangshan_peak": {
+    "features": [
+      {"op": "fill", "tile": "mountain", "rect": [8, 6, 14, 8]},
+      {"op": "fill", "tile": "mountain", "rect": [56, 6, 14, 8]},
+      {"op": "set", "tile": "building", "pos": [38, 10]},
+      {"op": "fill", "tile": "garden", "rect": [30, 34, 12, 6]},
+      {"op": "fill", "tile": "water", "rect": [50, 34, 10, 5]},
+      {"op": "line", "tile": "road", "points": [[46, 42], [41, 33], [36, 24]], "width": 1}
+    ]
+  },
+  "shaoxing_water": {
+    "features": [
+      {"op": "fill", "tile": "water", "rect": [8, 8, 22, 10]},
+      {"op": "fill", "tile": "water", "rect": [48, 10, 14, 8]},
+      {"op": "line", "tile": "water", "points": [[34, 18], [36, 24], [34, 32], [36, 38]], "width": 1},
+      {"op": "bridge_patch", "center": [35, 25]},
+      {"op": "fill", "tile": "garden", "rect": [30, 34, 12, 6]},
+      {"op": "fill", "tile": "field", "rect": [52, 34, 14, 6]},
+      {"op": "set", "tile": "building", "pos": [44, 32]}
+    ]
+  },
+  "jiaxing_canal": {
+    "features": [
+      {"op": "line", "tile": "water", "points": [[32, 4], [34, 14], [32, 22], [34, 32], [32, 42]], "width": 2},
+      {"op": "bridge_patch", "center": [33, 25]},
+      {"op": "fill", "tile": "water", "rect": [54, 34, 16, 9]},
+      {"op": "fill", "tile": "garden", "rect": [58, 36, 4, 3]},
+      {"op": "set", "tile": "building", "pos": [59, 37]},
+      {"op": "fill", "tile": "garden", "rect": [10, 34, 14, 6]},
+      {"op": "fill", "tile": "field", "rect": [48, 14, 14, 5]}
+    ]
+  }
+}

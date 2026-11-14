@@ -1,0 +1,2046 @@
+{
+  "luoyang": [
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "honglian_sect",
+      "type": "road"
+    },
+    {
+      "target": "jiangling",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "changan",
+      "type": "road",
+      "note": "城际驿路"
+    }
+  ],
+  "changan": [
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "fengxiang",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "chengdu",
+      "type": "road",
+      "note": "城际驿路"
+    }
+  ],
+  "linan": [
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    },
+    {
+      "target": "dongting_lake",
+      "type": "water"
+    },
+    {
+      "target": "xiaoyao_sect",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "jiangling",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "xiaoyao_sect",
+      "type": "secret",
+      "note": "逍遥宫藏于水泽深处，需对周边地理有足够了解方可寻得入口。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    },
+    {
+      "target": "huangshan_peak",
+      "type": "secret",
+      "note": "黄山峰群地势险峻，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得进山路径。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "jiangling": [
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "wudang_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    },
+    {
+      "target": "taiji_sect",
+      "type": "road"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "luoyang",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "chengdu",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "linan",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "naja_sect",
+      "type": "secret",
+      "note": "那迦派踪迹隐秘，需完成暗影眼线任务后方可发现其入口。",
+      "required_quest": "q_main_shadow_letters",
+      "required_source_exploration": 0,
+      "required_item": ""
+    },
+    {
+      "target": "shennongjia",
+      "type": "secret",
+      "note": "神农架密林深处迷雾重重，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得入口。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "chengdu": [
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    },
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "jiangling",
+      "type": "road",
+      "note": "城际驿路"
+    },
+    {
+      "target": "changan",
+      "type": "road",
+      "note": "城际驿路"
+    }
+  ],
+  "qinghe": [
+    {
+      "target": "bagua_sect",
+      "type": "road"
+    },
+    {
+      "target": "songshan_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    }
+  ],
+  "gongyi": [
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    }
+  ],
+  "yanshi": [
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "huanghe_valley",
+      "type": "water"
+    },
+    {
+      "target": "xueshan_sect",
+      "type": "road"
+    }
+  ],
+  "mengjin": [
+    {
+      "target": "mengjin_ford",
+      "type": "water"
+    },
+    {
+      "target": "huanghe_valley",
+      "type": "water"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "taihang_range",
+      "type": "mountain"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    }
+  ],
+  "fengxiang": [
+    {
+      "target": "zhongyuan_for",
+      "type": "forest"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    }
+  ],
+  "xianyang": [
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "zhongyuan_for",
+      "type": "forest"
+    },
+    {
+      "target": "fengxiang",
+      "type": "road"
+    }
+  ],
+  "weinan": [
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "honglian_sect",
+      "type": "road"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    }
+  ],
+  "lintong": [
+    {
+      "target": "lintong_bath",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "fengxiang",
+      "type": "road"
+    }
+  ],
+  "yuhang": [
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    }
+  ],
+  "jiaxing": [
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    },
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    },
+    {
+      "target": "linan",
+      "type": "road"
+    },
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    }
+  ],
+  "shaoxing": [
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    }
+  ],
+  "shuangliu": [
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "lintong_bath",
+      "type": "road"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    }
+  ],
+  "xindu": [
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "wenjiang_garden",
+      "type": "road"
+    },
+    {
+      "target": "wenjiang",
+      "type": "road"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    }
+  ],
+  "wenjiang": [
+    {
+      "target": "wenjiang_garden",
+      "type": "road"
+    },
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "xindu",
+      "type": "road"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    },
+    {
+      "target": "daba_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    }
+  ],
+  "yiling": [
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    }
+  ],
+  "dangyang": [
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    },
+    {
+      "target": "funiu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "shennongjia",
+      "type": "forest"
+    }
+  ],
+  "beiling_mtn": [
+    {
+      "target": "bagua_sect",
+      "type": "road"
+    },
+    {
+      "target": "songshan_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "zhongyuan_for",
+      "type": "forest"
+    },
+    {
+      "target": "qinghe",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    }
+  ],
+  "songshan_peak": [
+    {
+      "target": "bagua_sect",
+      "type": "road"
+    },
+    {
+      "target": "qinghe",
+      "type": "road"
+    },
+    {
+      "target": "beiling_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "xueshan_sect",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    }
+  ],
+  "luoshui_river": [
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    }
+  ],
+  "huanghe_valley": [
+    {
+      "target": "mengjin_ford",
+      "type": "water"
+    },
+    {
+      "target": "mengjin",
+      "type": "water"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "taihang_range",
+      "type": "mountain"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    }
+  ],
+  "taihang_range": [
+    {
+      "target": "mengjin",
+      "type": "water"
+    },
+    {
+      "target": "mengjin_ford",
+      "type": "water"
+    },
+    {
+      "target": "huanghe_valley",
+      "type": "water"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "naja_sect",
+      "type": "road"
+    }
+  ],
+  "yanshi_plain": [
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    },
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    }
+  ],
+  "mengjin_ford": [
+    {
+      "target": "huanghe_valley",
+      "type": "water"
+    },
+    {
+      "target": "mengjin",
+      "type": "water"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "taihang_range",
+      "type": "mountain"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    }
+  ],
+  "yiluo_valley": [
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "honglian_sect",
+      "type": "road"
+    }
+  ],
+  "zhongtiao_mtn": [
+    {
+      "target": "mengjin",
+      "type": "water"
+    },
+    {
+      "target": "mengjin_ford",
+      "type": "water"
+    },
+    {
+      "target": "huanghe_valley",
+      "type": "water"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "taihang_range",
+      "type": "mountain"
+    },
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    }
+  ],
+  "qinling_deep": [
+    {
+      "target": "honglian_sect",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "weinan",
+      "type": "road"
+    },
+    {
+      "target": "dangyang",
+      "type": "road"
+    }
+  ],
+  "zhongnan_mtn": [
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "qinghe",
+      "type": "road"
+    },
+    {
+      "target": "zhongyuan_for",
+      "type": "forest"
+    }
+  ],
+  "zhongyuan_for": [
+    {
+      "target": "fengxiang",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "beiling_mtn",
+      "type": "mountain"
+    }
+  ],
+  "weihe_river": [
+    {
+      "target": "weinan",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "honglian_sect",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    }
+  ],
+  "longxi_desert": [
+    {
+      "target": "lintong_bath",
+      "type": "road"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "fengxiang",
+      "type": "road"
+    }
+  ],
+  "huashan_cliff": [
+    {
+      "target": "xueshan_sect",
+      "type": "road"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    }
+  ],
+  "tongguan_pass": [
+    {
+      "target": "funiu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "wudang_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "taiji_sect",
+      "type": "road"
+    }
+  ],
+  "lintong_bath": [
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    }
+  ],
+  "xianyang_mound": [
+    {
+      "target": "xianyang",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "zhongyuan_for",
+      "type": "forest"
+    },
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "fengxiang",
+      "type": "road"
+    }
+  ],
+  "jiangnan_marsh": [
+    {
+      "target": "xiaoyao_sect",
+      "type": "water"
+    },
+    {
+      "target": "dongting_lake",
+      "type": "water"
+    },
+    {
+      "target": "linan",
+      "type": "road"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    }
+  ],
+  "wuyi_for": [
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "huangshan_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    }
+  ],
+  "dongting_lake": [
+    {
+      "target": "xiaoyao_sect",
+      "type": "water"
+    },
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    },
+    {
+      "target": "linan",
+      "type": "road"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    }
+  ],
+  "qiantang_tide": [
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    },
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "huangshan_peak",
+      "type": "mountain"
+    }
+  ],
+  "tianmu_mtn": [
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "yuhang",
+      "type": "road"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    }
+  ],
+  "taihu_lake": [
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    },
+    {
+      "target": "xiaoyao_sect",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "dongting_lake",
+      "type": "water"
+    },
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    }
+  ],
+  "huangshan_peak": [
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    },
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "linan",
+      "type": "secret",
+      "note": "黄山峰群地势险峻，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得进山路径。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "shaoxing_water": [
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "flower_sect",
+      "type": "forest"
+    },
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    }
+  ],
+  "jiaxing_canal": [
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    }
+  ],
+  "shudao_mtn": [
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "lintong_bath",
+      "type": "road"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "western_plateau",
+      "type": "mountain"
+    }
+  ],
+  "bashu_bamboo": [
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "western_plateau",
+      "type": "mountain"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    }
+  ],
+  "emei_sacred": [
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "wenjiang",
+      "type": "road"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "secret",
+      "note": "峨眉圣山后山有一条隐秘小径，需对青城山有足够了解方可寻得。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "qingcheng_mtn": [
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "lintong_bath",
+      "type": "road"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "lintong",
+      "type": "road"
+    },
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "secret",
+      "note": "峨眉圣山后山有一条隐秘小径，需对青城山有足够了解方可寻得。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "dujiang_weir": [
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    }
+  ],
+  "minjiang_river": [
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    }
+  ],
+  "xindu_field": [
+    {
+      "target": "xindu",
+      "type": "road"
+    },
+    {
+      "target": "wenjiang",
+      "type": "road"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    },
+    {
+      "target": "dujiang_weir",
+      "type": "road"
+    },
+    {
+      "target": "wenjiang_garden",
+      "type": "road"
+    }
+  ],
+  "wenjiang_garden": [
+    {
+      "target": "wenjiang",
+      "type": "road"
+    },
+    {
+      "target": "xindu",
+      "type": "road"
+    },
+    {
+      "target": "xindu_field",
+      "type": "road"
+    },
+    {
+      "target": "daba_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "emei_sacred",
+      "type": "mountain"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    }
+  ],
+  "western_plateau": [
+    {
+      "target": "bashu_bamboo",
+      "type": "forest"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "minjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "shuangliu",
+      "type": "road"
+    },
+    {
+      "target": "chengdu",
+      "type": "road"
+    }
+  ],
+  "funiu_mtn": [
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "wudang_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "taiji_sect",
+      "type": "road"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    },
+    {
+      "target": "dangyang",
+      "type": "road"
+    },
+    {
+      "target": "jiangling",
+      "type": "water"
+    }
+  ],
+  "wudang_peak": [
+    {
+      "target": "taiji_sect",
+      "type": "road"
+    },
+    {
+      "target": "funiu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    }
+  ],
+  "shennongjia": [
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "yuhang",
+      "type": "road"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    },
+    {
+      "target": "daba_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "dangyang",
+      "type": "road"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "jiangling",
+      "type": "secret",
+      "note": "神农架密林深处迷雾重重，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得入口。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ],
+  "three_gorges": [
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "secret",
+      "note": "三峡险滩藏于夷陵峡谷深处，需持商队路引方可入峡。",
+      "required_quest": "",
+      "required_source_exploration": 0,
+      "required_item": "item_shangdui_luyin"
+    }
+  ],
+  "yiling_gap": [
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "three_gorges",
+      "type": "secret",
+      "note": "三峡险滩藏于夷陵峡谷深处，需持商队路引方可入峡。",
+      "required_quest": "",
+      "required_source_exploration": 0,
+      "required_item": "item_shangdui_luyin"
+    }
+  ],
+  "dangyang_plain": [
+    {
+      "target": "dangyang",
+      "type": "road"
+    },
+    {
+      "target": "funiu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "shennongjia",
+      "type": "forest"
+    },
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    }
+  ],
+  "yunmeng_marsh": [
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "three_gorges",
+      "type": "mountain"
+    }
+  ],
+  "hanjiang_river": [
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "tianmu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "wudang_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "taiji_sect",
+      "type": "road"
+    },
+    {
+      "target": "jiaxing_canal",
+      "type": "water"
+    }
+  ],
+  "daba_mtn": [
+    {
+      "target": "wenjiang_garden",
+      "type": "road"
+    },
+    {
+      "target": "shennongjia",
+      "type": "forest"
+    },
+    {
+      "target": "wenjiang",
+      "type": "road"
+    },
+    {
+      "target": "xindu",
+      "type": "road"
+    },
+    {
+      "target": "dangyang",
+      "type": "road"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    }
+  ],
+  "bagua_sect": [
+    {
+      "target": "songshan_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "qinghe",
+      "type": "road"
+    },
+    {
+      "target": "zhongnan_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "beiling_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "xianyang_mound",
+      "type": "road"
+    },
+    {
+      "target": "xianyang",
+      "type": "road"
+    }
+  ],
+  "flower_sect": [
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "qiantang_tide",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    }
+  ],
+  "honglian_sect": [
+    {
+      "target": "qinling_deep",
+      "type": "mountain"
+    },
+    {
+      "target": "weinan",
+      "type": "road"
+    },
+    {
+      "target": "weihe_river",
+      "type": "water"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    },
+    {
+      "target": "yiluo_valley",
+      "type": "road"
+    },
+    {
+      "target": "dangyang",
+      "type": "road"
+    }
+  ],
+  "naja_sect": [
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    },
+    {
+      "target": "yiling_gap",
+      "type": "mountain"
+    },
+    {
+      "target": "yiling",
+      "type": "mountain"
+    },
+    {
+      "target": "shaoxing",
+      "type": "road"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "wuyi_for",
+      "type": "forest"
+    },
+    {
+      "target": "jiangling",
+      "type": "secret",
+      "note": "那迦派踪迹隐秘，需完成暗影眼线任务后方可发现其入口。",
+      "required_quest": "q_main_shadow_letters",
+      "required_source_exploration": 0,
+      "required_item": ""
+    }
+  ],
+  "taiji_sect": [
+    {
+      "target": "wudang_peak",
+      "type": "mountain"
+    },
+    {
+      "target": "funiu_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "hanjiang_river",
+      "type": "water"
+    },
+    {
+      "target": "jiangling",
+      "type": "water"
+    },
+    {
+      "target": "tongguan_pass",
+      "type": "mountain"
+    },
+    {
+      "target": "yunmeng_marsh",
+      "type": "water"
+    }
+  ],
+  "xueshan_sect": [
+    {
+      "target": "huashan_cliff",
+      "type": "mountain"
+    },
+    {
+      "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "luoshui_river",
+      "type": "water"
+    },
+    {
+      "target": "yanshi_plain",
+      "type": "road"
+    },
+    {
+      "target": "yanshi",
+      "type": "road"
+    },
+    {
+      "target": "luoyang",
+      "type": "road"
+    }
+  ],
+  "xiaoyao_sect": [
+    {
+      "target": "jiangnan_marsh",
+      "type": "water"
+    },
+    {
+      "target": "dongting_lake",
+      "type": "water"
+    },
+    {
+      "target": "linan",
+      "type": "road"
+    },
+    {
+      "target": "taihu_lake",
+      "type": "water"
+    },
+    {
+      "target": "jiaxing",
+      "type": "water"
+    },
+    {
+      "target": "shaoxing_water",
+      "type": "water"
+    },
+    {
+      "target": "linan",
+      "type": "secret",
+      "note": "逍遥宫藏于水泽深处，需对周边地理有足够了解方可寻得入口。",
+      "required_quest": "",
+      "required_source_exploration": 50,
+      "required_item": ""
+    }
+  ]
+}

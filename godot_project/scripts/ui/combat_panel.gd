@@ -397,23 +397,8 @@ func _result_next_text(result: Dictionary) -> String:
 		tracker = "下一步：自由探索江湖"
 	return tracker
 
-func _panel_style(alpha: float = 0.94) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.040, 0.034, alpha)
-	style.border_color = Color(0.86, 0.50, 0.25, 0.62)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 14
-	style.content_margin_bottom = 14
-	return style
+func _panel_style(_alpha: float = 0.94) -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))
 
 func _portrait_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

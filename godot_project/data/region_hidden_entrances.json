@@ -1,0 +1,86 @@
+{
+  "naja_sect": [
+    {
+      "from": "jiangling",
+      "note": "那迦派踪迹隐秘，需完成暗影眼线任务后方可发现其入口。",
+      "required_quest": "q_main_shadow_letters"
+    }
+  ],
+  "xiaoyao_sect": [
+    {
+      "from": "linan",
+      "note": "逍遥宫藏于水泽深处，需对周边地理有足够了解方可寻得入口。",
+      "required_source_exploration": 50
+    }
+  ],
+  "shennongjia": [
+    {
+      "from": "jiangling",
+      "note": "神农架密林深处迷雾重重，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得入口。",
+      "required_source_exploration": 50
+    }
+  ],
+  "huangshan_peak": [
+    {
+      "from": "linan",
+      "note": "黄山峰群地势险峻，需对周边地理有足够了解（当前区域探索度50%以上）方可寻得进山路径。",
+      "required_source_exploration": 50
+    }
+  ],
+  "emei_sacred": [
+    {
+      "from": "qingcheng_mtn",
+      "note": "峨眉圣山后山有一条隐秘小径，需对青城山有足够了解方可寻得。",
+      "required_source_exploration": 50
+    }
+  ],
+  "three_gorges": [
+    {
+      "from": "yiling_gap",
+      "note": "三峡险滩藏于夷陵峡谷深处，需持商队路引方可入峡。",
+      "required_item": "item_shangdui_luyin"
+    }
+  ],
+  "yiluo_valley": [
+    {
+      "from": "luoshui_river",
+      "note": "伊洛河谷的旧渡须要面熟之人才肯摆渡，洛阳旧案重提后方可问得渡口所在。",
+      "required_quest": "q_main_luoyang_ashes"
+    }
+  ],
+  "zhongtiao_mtn": [
+    {
+      "from": "mengjin",
+      "note": "中条山盐池乃官营重地，沿途设卡稽查，需持通关文牒方可入山。",
+      "required_item": "item_guanfang_wendie"
+    }
+  ],
+  "wuyi_for": [
+    {
+      "from": "shaoxing_water",
+      "note": "武夷群峰溪谷纵横，需对周边地理有足够了解方可寻得入山栈道。",
+      "required_source_exploration": 50
+    }
+  ],
+  "qiantang_tide": [
+    {
+      "from": "jiaxing",
+      "note": "钱塘江海塘有兵丁把守，观潮商旅需持商队路引方可近塘。",
+      "required_item": "item_shangdui_luyin"
+    }
+  ],
+  "tianmu_mtn": [
+    {
+      "from": "yuhang",
+      "note": "天目山林海茫茫云深不知处，需对周边地理有足够了解方可寻得禅源寺后山小径。",
+      "required_source_exploration": 50
+    }
+  ],
+  "taihu_lake": [
+    {
+      "from": "jiaxing",
+      "note": "太湖水面水深浪急，渔霸水匪混杂，需持商队路引搭官船方可入泽。",
+      "required_item": "item_shangdui_luyin"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "generated_at": "tools/generate_audio_assets.py",
+  "count": {
+    "sfx": 12,
+    "bgm": 4,
+    "ambient": 6
+  },
+  "files": {
+    "sfx": [
+      "ui_hover.wav",
+      "ui_click.wav",
+      "ui_confirm.wav",
+      "ui_cancel.wav",
+      "typewriter.wav",
+      "skill_unlock.wav",
+      "hammer.wav",
+      "item_pickup.wav",
+      "item_drop.wav",
+      "combat_hit.wav",
+      "combat_miss.wav",
+      "error.wav"
+    ],
+    "bgm": [
+      "main_menu.wav",
+      "explore.wav",
+      "combat.wav",
+      "inn.wav"
+    ],
+    "ambient": [
+      "sunny.wav",
+      "cloudy.wav",
+      "rain.wav",
+      "storm.wav",
+      "snow.wav",
+      "fog.wav"
+    ]
+  }
+}

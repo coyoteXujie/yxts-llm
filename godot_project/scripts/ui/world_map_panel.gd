@@ -92,7 +92,7 @@ func _build() -> void:
 	region_list = ItemList.new()
 	region_list.custom_minimum_size = Vector2(300, 363)
 	region_list.item_selected.connect(_select_region)
-	region_list.add_theme_stylebox_override("panel", UI_ART.panel_style(Color(0.050, 0.048, 0.038, 0.80), Color(0.42, 0.34, 0.20, 0.62), Vector4(8, 8, 8, 8)))
+	region_list.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(8, 8, 8, 8)))
 	region_list.add_theme_color_override("font_color", Color(0.88, 0.82, 0.68))
 	region_list.add_theme_color_override("font_selected_color", Color(1.0, 0.88, 0.50))
 	left.add_child(region_list)
@@ -469,23 +469,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if visible and event.is_action_pressed("ui_cancel"):
 		close_panel()
 
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.075, 0.068, 0.052, 0.97)
-	style.border_color = Color(0.58, 0.46, 0.26, 0.90)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 18
-	style.content_margin_right = 18
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	return style
+func _panel_style() -> StyleBox:
+	return UI_ART.panel_texture_style(Vector4(18, 16, 18, 16))
 
 func _scene_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

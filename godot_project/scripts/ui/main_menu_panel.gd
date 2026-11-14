@@ -51,7 +51,7 @@ func _build() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(74, 74)
 	panel.size = Vector2(500, 572)
-	panel.add_theme_stylebox_override("panel", UI_ART.panel_style(Color(0.060, 0.048, 0.034, 0.82), Color(0.74, 0.52, 0.23, 0.72), Vector4(34, 30, 34, 30)))
+	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(34, 30, 34, 30)))
 	add_child(panel)
 
 	var box := VBoxContainer.new()

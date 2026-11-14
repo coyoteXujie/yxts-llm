@@ -14,11 +14,39 @@ var paragraphs: Array[String] = []
 var _backdrop: TextureRect
 var _vignette: ColorRect
 var _title_label: Label
+var _panel: PanelContainer
+
+# 打字机状态
+var _typing_index := 0
+var _full_text := ""
+var _typing_timer: Timer
+var _is_typing := false
+
+const TYPING_INTERVAL := 0.035  # 35ms 每字，适配中文阅读
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
 	_build()
+	_setup_typing_timer()
+
+func _setup_typing_timer() -> void:
+	_typing_timer = Timer.new()
+	_typing_timer.wait_time = TYPING_INTERVAL
+	_typing_timer.one_shot = false
+	_typing_timer.timeout.connect(_on_typing_tick)
+	add_child(_typing_timer)
+
+func _on_typing_tick() -> void:
+	if _typing_index >= _full_text.length():
+		_typing_timer.stop()
+		_is_typing = false
+		body_label.text = _full_text
+		continue_button.disabled = false
+		return
+	# 逐字追加
+	_typing_index += 1
+	body_label.text = _full_text.left(_typing_index)
 
 func show_panel(player_name: String) -> void:
 	paragraphs = _build_paragraphs(player_name)
@@ -52,12 +80,18 @@ func _show_current_paragraph() -> void:
 	if is_title:
 		_title_label.text = text
 	else:
-		body_label.text = text
+		# 打字机模式：清空文字，启动逐字显示
+		_full_text = text
+		_typing_index = 0
+		_is_typing = true
+		body_label.text = ""
+		continue_button.disabled = true
+		_typing_timer.start()
 	
 	progress_label.text = "%d / %d" % [current_index + 1, paragraphs.size()]
 	continue_button.text = "踏入江湖" if current_index == paragraphs.size() - 1 else "继续"
 	
-	# 段落切换动画：淡入
+	# 段落切换淡入
 	if body_label.modulate.a > 0:
 		body_label.modulate.a = 0.0
 		_title_label.modulate.a = 0.0
@@ -67,6 +101,14 @@ func _show_current_paragraph() -> void:
 	tween.tween_property(_title_label, "modulate:a", 1.0, 0.40).set_ease(Tween.EASE_OUT)
 
 func _on_continue() -> void:
+	# 如果正在打字，点击后立刻显示全文
+	if _is_typing:
+		_typing_timer.stop()
+		_is_typing = false
+		body_label.text = _full_text
+		continue_button.disabled = false
+		return
+	
 	current_index += 1
 	if current_index >= paragraphs.size():
 		PANEL_ANIM.fade_out(self)
