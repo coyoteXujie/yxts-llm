@@ -27,6 +27,23 @@ func _on_time_changed(_day: int, next_hour: float, next_weather: String) -> void
 	# 同步到 GPU 天气层
 	if weather_overlay != null and weather_overlay.has_method("set_weather"):
 		weather_overlay.set_weather(next_weather)
+	# 同步环境音
+	AudioManager.play_ambient(_ambient_key_for_weather(next_weather))
+
+func _ambient_key_for_weather(w: String) -> String:
+	match w:
+		"细雨", "阴雨":
+			return "rain"
+		"暴雨", "雷暴":
+			return "storm"
+		"飞雪", "大雪":
+			return "snow"
+		"薄雾", "大雾":
+			return "fog"
+		"多云":
+			return "cloudy"
+		_:
+			return "sunny"
 
 func _on_region_changed(next_region: Dictionary, _state: Dictionary) -> void:
 	region = next_region

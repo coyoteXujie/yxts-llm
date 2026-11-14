@@ -101,6 +101,9 @@ func _ready() -> void:
 	add_child(combat_system)
 	combat_system.combat_finished.connect(_on_combat_finished)
 
+	# Audio: BGM 桥接
+	AudioManager.play_bgm("main_menu")
+	EventBus.mode_changed.connect(_on_mode_changed_bgm)
 	# UI 层叠顺序（从底到顶）：
 	#   layer 1: atmosphere_layer  （CPU 氛围覆盖）
 	#   layer 2: weather_overlay   （GPU 天气粒子）
@@ -329,6 +332,15 @@ func _resume_from_menu() -> void:
 	main_menu_panel.hide()
 	_close_gameplay_panels()
 	GameState.set_mode(GameState.Mode.EXPLORE)
+
+func _on_mode_changed_bgm(next_mode: GameState.Mode) -> void:
+	match next_mode:
+		GameState.Mode.MENU:
+			AudioManager.play_bgm("main_menu")
+		GameState.Mode.COMBAT:
+			AudioManager.play_bgm("combat")
+		GameState.Mode.EXPLORE:
+			AudioManager.play_bgm("explore", 0.5)
 
 func _save_from_menu() -> void:
 	if not game_started:

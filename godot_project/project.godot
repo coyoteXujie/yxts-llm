@@ -20,6 +20,7 @@ EventBus="*res://scripts/autoload/event_bus.gd"
 GameData="*res://scripts/autoload/game_data.gd"
 GameState="*res://scripts/autoload/game_state.gd"
 LLMDirector="*res://scripts/autoload/llm_director.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
 
 [display]
 

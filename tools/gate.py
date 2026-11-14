@@ -33,6 +33,7 @@ PLACEHOLDER_MIN_BYTES = 100_000
 # 已知的环境噪声，不算游戏问题。
 BENIGN_ERROR_KEYS = [
     "get_system_ca_certificates",  # macOS 沙箱内读取系统证书失败
+    "resources still in use",      # headless 退出时资源驻留，已计入leak警告
 ]
 
 HARD: list[str] = []
