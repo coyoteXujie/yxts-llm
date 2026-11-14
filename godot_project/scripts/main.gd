@@ -9,6 +9,7 @@ const COMBAT_PANEL_SCRIPT := preload("res://scripts/ui/combat_panel.gd")
 const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
 const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
 const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
+const OPENING_NARRATIVE_SCRIPT := preload("res://scripts/ui/opening_narrative_panel.gd")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
 const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
@@ -61,6 +62,7 @@ var shop_panel
 var cultivation_panel
 var world_map_panel
 var discovery_panel
+var opening_narrative
 var combat_system
 var transition_overlay: ColorRect
 var transition_tween: Tween
@@ -163,6 +165,11 @@ func _ready() -> void:
 	transition_overlay.color = Color(0.02, 0.015, 0.010, 0.0)
 	transition_overlay.hide()
 	ui_layer.add_child(transition_overlay)
+
+	# 开场叙事面板
+	opening_narrative = OPENING_NARRATIVE_SCRIPT.new()
+	ui_layer.add_child(opening_narrative)
+	opening_narrative.narrative_finished.connect(_on_narrative_finished)
 
 	EventBus.dialogue_requested.connect(_open_dialogue)
 	EventBus.combat_requested.connect(_start_combat_from_data)
@@ -342,6 +349,11 @@ func _on_mode_changed_bgm(next_mode: GameState.Mode) -> void:
 		GameState.Mode.EXPLORE:
 			AudioManager.play_bgm("explore", 0.5)
 
+func _on_narrative_finished() -> void:
+	# 叙事结束，切换到探索模式（世界已在 _start_new_game 中初始化）
+	main_menu_panel.hide()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+
 func _save_from_menu() -> void:
 	if not game_started:
 		return
@@ -351,6 +363,8 @@ func _save_from_menu() -> void:
 func _start_new_game(config: Dictionary) -> void:
 	game_started = true
 	GameState.new_game(config)
+	# 开场叙事（视觉覆盖层，不阻塞世界初始化）
+	opening_narrative.show_panel(str(config.get("name", "少侠")))
 	world_map.reset_npcs()
 	world_map.set_target_region(GameState.map_target_region_id)
 	var started_in_town := false

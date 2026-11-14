@@ -1,6 +1,7 @@
 extends Control
 class_name HudView
 
+const UI_ART := preload("res://scripts/ui/ui_art.gd")
 const MINIMAP_SCRIPT := preload("res://scripts/ui/minimap_canvas.gd")
 const HUD_PROMPT_CHIP_MIN_WIDTH := 74.0
 const HUD_PROMPT_PRIMARY_ALPHA := 0.88
@@ -580,23 +581,9 @@ func _prompt_key_style(primary: bool) -> StyleBoxFlat:
 	style.content_margin_bottom = 2
 	return style
 
-func _panel_style(bg: Color, border: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg
-	style.border_color = border
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	return style
+func _panel_style(_bg: Color, _border: Color) -> StyleBox:
+	# 使用水墨宣纸纹理替代程序化深色面板
+	return UI_ART.panel_texture_style(Vector4(14, 10, 14, 10))
 
 func _bar_background() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
