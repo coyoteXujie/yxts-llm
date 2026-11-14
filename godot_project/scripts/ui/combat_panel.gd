@@ -3,6 +3,7 @@ class_name CombatPanel
 
 const COMBAT_STAGE_SCRIPT := preload("res://scripts/ui/combat_stage.gd")
 const UI_ART := preload("res://scripts/ui/ui_art.gd")
+const INK_BURST_SHADER := preload("res://shaders/ink_burst.gdshader")
 
 const IMMERSIVE_STAGE_ENABLED := true
 const COMBAT_STAGE_MARGIN := 0.0
@@ -42,6 +43,8 @@ var result_next_label: Label
 var last_snapshot: Dictionary = {}
 var last_effect_event_id := 0
 var effect_timer := 0.0
+var _ink_burst_overlay: ColorRect
+var _ink_burst_tween: Tween
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -202,6 +205,17 @@ func _build() -> void:
 	effect_label.custom_minimum_size = Vector2(340, 44)
 	add_child(effect_label)
 
+	# 墨爆裂叠加层
+	_ink_burst_overlay = ColorRect.new()
+	_ink_burst_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ink_burst_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var burst_mat := ShaderMaterial.new()
+	burst_mat.shader = INK_BURST_SHADER
+	burst_mat.set_shader_parameter("intensity", 0.0)
+	_ink_burst_overlay.material = burst_mat
+	_ink_burst_overlay.color = Color.BLACK
+	add_child(_ink_burst_overlay)
+
 	_build_result_panel()
 
 func _on_combat_started(enemy: Dictionary) -> void:
@@ -242,6 +256,7 @@ func _on_combat_changed(snapshot: Dictionary) -> void:
 func _on_combat_finished(result: Dictionary) -> void:
 	if bool(result.get("victory", false)):
 		EventBus.emit_toast("战斗胜利")
+		AudioManager.play_sfx("skill_unlock")
 	elif bool(result.get("escaped", false)):
 		EventBus.emit_toast("已脱离战斗")
 	else:
@@ -616,6 +631,23 @@ func _play_latest_event(snapshot: Dictionary) -> void:
 	effect_timer = 0.9
 	effect_label.show()
 
+	# 打击视觉特效
+	var mat := _ink_burst_overlay.material as ShaderMaterial
+	if mat != null:
+		if kind == "damage":
+			# 墨爆裂
+			var is_player_hit := target == "player"
+			mat.set_shader_parameter("intensity", 1.0)
+			mat.set_shader_parameter("burst_color", Color(0.78, 0.05, 0.04, 0.7) if is_player_hit else Color(0.03, 0.02, 0.01, 0.6))
+			if _ink_burst_tween != null:
+				_ink_burst_tween.kill()
+			_ink_burst_tween = create_tween()
+			_ink_burst_tween.tween_method(func(v): mat.set_shader_parameter("intensity", v), 1.0, 0.0, 0.6).set_ease(Tween.EASE_OUT)
+			# 屏幕震动
+			_screen_shake(4.0 if is_player_hit else 2.5, 0.18)
+		elif kind == "miss":
+			mat.set_shader_parameter("intensity", 0.0)
+
 func _effect_label_for_kind(kind: String) -> String:
 	match kind:
 		"miss":
@@ -659,6 +691,14 @@ func _effect_position(target: String) -> Vector2:
 	if target == "player":
 		return Vector2(viewport_size.x * 0.22, viewport_size.y * 0.46)
 	return Vector2(viewport_size.x * 0.62, viewport_size.y * 0.42)
+
+func _screen_shake(amount: float, duration: float) -> void:
+	var orig := position
+	var shake_tween := create_tween()
+	shake_tween.tween_method(func(v: Vector2): position = v, orig, orig + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * amount, duration * 0.15).set_ease(Tween.EASE_IN)
+	shake_tween.tween_method(func(v: Vector2): position = v, orig, orig + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * amount * 0.5, duration * 0.15).set_ease(Tween.EASE_IN)
+	shake_tween.tween_method(func(v: Vector2): position = v, orig, orig + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * amount * 0.3, duration * 0.15).set_ease(Tween.EASE_IN)
+	shake_tween.tween_callback(func(): position = orig)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or result_panel == null or not result_panel.visible:

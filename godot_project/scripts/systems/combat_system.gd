@@ -121,6 +121,7 @@ func player_attack(skill_id: String = "normal") -> void:
 	if randf() > hit_chance:
 		_append_log("你使出%s，被%s避开。" % [skill_name, str(enemy.get("name", "敌人"))])
 		_record_event("enemy", "miss", 0, "未中", skill_name)
+		AudioManager.play_sfx("combat_miss")
 		_set_cooldown(normalized_skill_id, int(profile.get("cooldown", 0)))
 		_tick_cooldowns()
 		_enemy_turn()
@@ -140,6 +141,9 @@ func player_attack(skill_id: String = "normal") -> void:
 	var hit_text := "，连击 %d 段" % hits if hits > 1 else ""
 	_append_log("你使出%s%s%s，造成 %d 点伤害%s。" % [skill_name, level_text, hit_text, total_damage, crit_text])
 	_record_event("enemy", "damage", total_damage, "-%d" % total_damage, skill_name)
+	AudioManager.play_sfx("combat_hit")
+	if crit_count > 0:
+		AudioManager.play_sfx("skill_unlock")
 	_apply_profile_status(profile, level, enemy_statuses, str(enemy.get("name", "敌人")))
 	_apply_profile_self_status(profile)
 	_set_cooldown(normalized_skill_id, int(profile.get("cooldown", 0)))
@@ -262,6 +266,7 @@ func _enemy_attack(action: Dictionary) -> void:
 	if not any_hit:
 		_append_log("%s使出%s，被你避开。" % [str(enemy.get("name", "敌人")), action_name])
 		_record_event("player", "miss", 0, "未中", action_name)
+		AudioManager.play_sfx("combat_miss")
 		return
 	var actual := GameState.damage_player(total_damage)
 	if actual > 0:
@@ -271,6 +276,7 @@ func _enemy_attack(action: Dictionary) -> void:
 		_wear_equipment_slot("armor", armor_loss)
 	_append_log("%s使出%s，造成 %d 点伤害。" % [str(enemy.get("name", "敌人")), action_name, actual])
 	_record_event("player", "damage", actual, "-%d" % actual, action_name)
+	AudioManager.play_sfx("combat_hit")
 	_apply_enemy_status(action)
 
 	if int(GameState.player.get("hp", 0)) <= 0:

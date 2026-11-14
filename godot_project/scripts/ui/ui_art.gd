@@ -127,6 +127,17 @@ static func apply_button(button: Button) -> void:
 	button.add_theme_color_override("font_color", Color(0.98, 0.86, 0.58))
 	button.add_theme_color_override("font_hover_color", Color(1.0, 0.92, 0.68))
 	button.add_theme_color_override("font_disabled_color", Color(0.52, 0.49, 0.42))
+	# 音效接线（仅首次）
+	if not button.mouse_entered.is_connected(_on_button_hover):
+		button.mouse_entered.connect(_on_button_hover)
+	if not button.pressed.is_connected(_on_button_click):
+		button.pressed.connect(_on_button_click)
+
+static func _on_button_hover() -> void:
+	AudioManager.play_sfx("ui_hover")
+
+static func _on_button_click() -> void:
+	AudioManager.play_sfx("ui_click")
 
 static func apply_label_shadow(label: Label, alpha: float = 0.85) -> void:
 	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, alpha))

@@ -44,9 +44,11 @@ func _on_typing_tick() -> void:
 		body_label.text = _full_text
 		continue_button.disabled = false
 		return
-	# 逐字追加
+	# 逐字追加 + 打字机音效（每2字播一次，避免太密）
 	_typing_index += 1
 	body_label.text = _full_text.left(_typing_index)
+	if _typing_index % 2 == 0:
+		AudioManager.play_sfx("typewriter")
 
 func show_panel(player_name: String) -> void:
 	paragraphs = _build_paragraphs(player_name)
