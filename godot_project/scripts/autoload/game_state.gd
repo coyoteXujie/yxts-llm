@@ -218,6 +218,8 @@ func new_game(config: Dictionary = {}) -> void:
 	trade_reputation = 0
 	active_quest = "初入平安镇"
 	_start_quest_silently("q_intro_town")
+	# 自动标���平安镇为初始目标
+	_auto_set_quest_target("q_intro_town")
 	day = 1
 	hour = 8.0
 	weather = "晴朗"
@@ -1927,11 +1929,18 @@ func accept_quest(quest_id: String) -> bool:
 	active_quests[quest_id] = {"progress": {}}
 	active_quest = str(quest.get("title", quest_id))
 	_sync_existing_objective_progress(quest_id)
+	# 自动设置任务目标地点到地图标记
+	_auto_set_quest_target(quest_id)
 	EventBus.quests_changed.emit()
 	EventBus.player_changed.emit(player)
 	_check_quest_completion(quest_id)
 	EventBus.emit_toast("接到任务：%s" % active_quest)
 	return true
+
+func _auto_set_quest_target(quest_id: String) -> void:
+	var region := get_active_quest_target_region()
+	if not region.is_empty():
+		set_map_target_region(str(region.get("id", "")))
 
 func _start_quest_silently(quest_id: String) -> void:
 	if active_quests.has(quest_id) or completed_quests.has(quest_id):

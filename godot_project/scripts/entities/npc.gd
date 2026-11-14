@@ -121,6 +121,28 @@ func is_enemy() -> bool:
 func is_master() -> bool:
 	return GameData.is_master_like_npc(data)
 
+func is_active_quest_target() -> bool:
+	var npc_name := str(data.get("name", ""))
+	if npc_name.is_empty():
+		return false
+	for quest_id in GameState.active_quests.keys():
+		var quest := GameData.get_quest(str(quest_id))
+		if quest.is_empty():
+			continue
+		var progress: Dictionary = GameState.active_quests[quest_id].get("progress", {})
+		for objective in quest.get("objectives", []):
+			var obj_type := str(objective.get("type", ""))
+			if obj_type != "talk" and obj_type != "kill":
+				continue
+			if str(objective.get("target", "")) != npc_name:
+				continue
+			var key := "%s:%s" % [obj_type, objective.get("target", "")]
+			var current := int(progress.get(key, 0))
+			var required := int(objective.get("count", 1))
+			if current < required:
+				return true
+	return false
+
 func set_highlight(value: bool) -> void:
 	if highlighted == value:
 		return
@@ -451,6 +473,8 @@ func _draw() -> void:
 		if highlighted:
 			draw_arc(Vector2.ZERO, 32.0 * map_scale, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 			draw_circle(Vector2(0, 31 * map_scale), 3.0, Color(0.95, 0.74, 0.28, 0.95))
+		if is_active_quest_target():
+			_draw_quest_indicator(map_scale)
 		return
 
 	var skin := _color(appearance.get("skin", [0.84, 0.68, 0.52]), Color(0.84, 0.68, 0.52))
@@ -477,6 +501,8 @@ func _draw() -> void:
 	if highlighted:
 		draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 48, Color(0.95, 0.74, 0.28, 0.95), 2.4)
 		draw_circle(Vector2(0, 27), 3.0, Color(0.95, 0.74, 0.28, 0.95))
+	if is_active_quest_target():
+		_draw_quest_indicator(1.0)
 
 func _draw_ground_marker(accent: Color, lane_offset_y: float = 0.0) -> void:
 	var map_scale := _map_actor_scale()
@@ -495,6 +521,30 @@ func _draw_ground_marker(accent: Color, lane_offset_y: float = 0.0) -> void:
 		var quest_pos := Vector2(17 * map_scale, -50 * map_scale)
 		draw_arc(quest_pos, 6.0 + pulse * 3.5, 0.0, TAU, 24, Color(0.98, 0.78, 0.28, 0.30 + pulse * 0.22), 1.2)
 		draw_circle(quest_pos, 3.6 + pulse * 0.8, Color(0.98, 0.78, 0.28, 0.92))
+
+func _draw_quest_indicator(map_scale: float) -> void:
+	# 任务目标NPC头顶标记：四角星（墨砚形）
+	var pulse := 0.5 + 0.5 * sin(visual_phase * 1.5)
+	var y := -72 * map_scale
+	var size := 6.0 * map_scale * (1.0 + pulse * 0.15)
+	# 外圈光晕
+	draw_circle(Vector2(0, y), size * 1.8, Color(0.95, 0.72, 0.22, 0.18 + pulse * 0.12))
+	# 菱形标记
+	var d := size * 1.2
+	draw_polygon(
+		PackedVector2Array([
+			Vector2(0, y - d),
+			Vector2(d, y),
+			Vector2(0, y + d),
+			Vector2(-d, y)
+		]),
+		PackedColorArray([
+			Color(0.98, 0.78, 0.28, 0.90),
+			Color(0.98, 0.78, 0.28, 0.70),
+			Color(0.98, 0.78, 0.28, 0.90),
+			Color(0.98, 0.78, 0.28, 0.70)
+		])
+	)
 
 func _idle_motion_speed() -> float:
 	if is_enemy():
