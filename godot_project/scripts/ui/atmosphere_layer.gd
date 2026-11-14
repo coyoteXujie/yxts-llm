@@ -6,6 +6,8 @@ var hour := 8.0
 var region: Dictionary = {}
 var phase := 0.0
 
+var weather_overlay: Control  # WeatherOverlay (GPU 粒子层) 由 main.gd 注入
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -22,10 +24,36 @@ func _on_time_changed(_day: int, next_hour: float, next_weather: String) -> void
 	hour = next_hour
 	weather = next_weather
 	queue_redraw()
+	# 同步到 GPU 天气层
+	if weather_overlay != null and weather_overlay.has_method("set_weather"):
+		weather_overlay.set_weather(next_weather)
 
 func _on_region_changed(next_region: Dictionary, _state: Dictionary) -> void:
 	region = next_region
 	queue_redraw()
+	# 同步地域主题到 GPU 天气层
+	if weather_overlay != null and weather_overlay.has_method("set_region_theme"):
+		weather_overlay.set_region_theme(_region_theme())
+	# 同步门派气场
+	if weather_overlay != null and weather_overlay.has_method("set_sect_aura"):
+		var aura := false
+		var aura_color := Color(1.0, 0.86, 0.38, 0.28)
+		match _region_theme():
+			"snow_sect":
+				aura = true; aura_color = Color(0.62, 0.82, 1.0, 0.28)
+			"flame_sect":
+				aura = true; aura_color = Color(1.0, 0.60, 0.24, 0.36)
+			"shadow_sect":
+				aura = true; aura_color = Color(0.58, 0.40, 0.88, 0.28)
+			"flower_sect":
+				aura = true; aura_color = Color(1.0, 0.82, 0.92, 0.32)
+			"water_sect":
+				aura = true; aura_color = Color(0.76, 0.96, 1.0, 0.30)
+			"daoist_sect":
+				aura = true; aura_color = Color(0.88, 0.92, 0.76, 0.28)
+			"sect":
+				aura = true; aura_color = Color(1.0, 0.86, 0.38, 0.28)
+		weather_overlay.set_sect_aura(aura, aura_color)
 
 func _draw() -> void:
 	var canvas := Rect2(Vector2.ZERO, size)
@@ -369,9 +397,10 @@ func _draw_sun_wash(canvas: Rect2) -> void:
 			draw_circle(center, 90.0 + float(i) * 50.0, Color(1.0, 0.86, 0.46, 0.018 - float(i) * 0.002))
 
 func _draw_vignette(canvas: Rect2) -> void:
-	var edge_alpha := 0.16
+	# GPU 后处理 shader 已经提供渗墨暗角，这里降低强度以避免双重叠加
+	var edge_alpha := 0.06
 	if hour < 6.0 or hour >= 20.0:
-		edge_alpha = 0.26
+		edge_alpha = 0.12
 	draw_rect(Rect2(Vector2.ZERO, Vector2(canvas.size.x, 42)), Color(0, 0, 0, edge_alpha), true)
 	draw_rect(Rect2(Vector2(0, canvas.size.y - 48), Vector2(canvas.size.x, 48)), Color(0, 0, 0, edge_alpha), true)
 	draw_rect(Rect2(Vector2.ZERO, Vector2(48, canvas.size.y)), Color(0, 0, 0, edge_alpha * 0.82), true)

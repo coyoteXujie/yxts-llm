@@ -7,6 +7,8 @@ const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
 const COMBAT_PANEL_SCRIPT := preload("res://scripts/ui/combat_panel.gd")
 const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
+const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
+const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
 const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
@@ -99,11 +101,32 @@ func _ready() -> void:
 	add_child(combat_system)
 	combat_system.combat_finished.connect(_on_combat_finished)
 
+	# UI 层叠顺序（从底到顶）：
+	#   layer 1: atmosphere_layer  （CPU 氛围覆盖）
+	#   layer 2: weather_overlay   （GPU 天气粒子）
+	#   layer 3: HUD / 面板
+	#   layer 10: ink_wash_postfx  （水墨后处理，采样整个画面）
+
 	var ui_layer := CanvasLayer.new()
+	ui_layer.layer = 3
 	add_child(ui_layer)
 
+	# 底层氛围（CPU _draw，保留原有系统）
+	var atm_layer_node := CanvasLayer.new()
+	atm_layer_node.layer = 1
+	add_child(atm_layer_node)
 	atmosphere_layer = ATMOSPHERE_LAYER_SCRIPT.new()
-	ui_layer.add_child(atmosphere_layer)
+	atm_layer_node.add_child(atmosphere_layer)
+
+	# GPU 天气粒子层
+	var weather_layer_node := CanvasLayer.new()
+	weather_layer_node.layer = 2
+	add_child(weather_layer_node)
+	var weather_overlay := WEATHER_OVERLAY_SCRIPT.new()
+	weather_layer_node.add_child(weather_overlay)
+	# 桥接 atmosphere_layer 的天气状态到 GPU shader
+	atmosphere_layer.weather_overlay = weather_overlay
+
 	hud = HUD_SCRIPT.new()
 	ui_layer.add_child(hud)
 	dialogue_panel = DIALOGUE_PANEL_SCRIPT.new()
@@ -151,6 +174,14 @@ func _ready() -> void:
 	character_creation_panel.character_created.connect(_start_new_game)
 
 	main_menu_panel.show_menu(false)
+
+	# 水墨后处理（最顶层，对全屏采样）
+	var postfx_layer := CanvasLayer.new()
+	postfx_layer.layer = 10
+	add_child(postfx_layer)
+	var ink_wash := INK_WASH_POSTFX_SCRIPT.new()
+	postfx_layer.add_child(ink_wash)
+	ink_wash.name = "InkWashPostFX"
 
 func _process(delta: float) -> void:
 	GameState.advance_time(delta)

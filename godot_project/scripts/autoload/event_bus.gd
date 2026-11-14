@@ -14,6 +14,7 @@ signal toast_requested(text: String)
 signal dialogue_requested(npc: Dictionary)
 signal combat_requested(enemy: Dictionary)
 signal shop_requested(npc: Dictionary)
+signal postfx_settings_changed(params: Dictionary)
 
 func emit_toast(text: String) -> void:
 	toast_requested.emit(text)

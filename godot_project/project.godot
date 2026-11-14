@@ -36,3 +36,11 @@ common/physics_interpolation=true
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[yxts]
+
+postfx/intensity=0.85
+postfx/warm_tone=0.35
+postfx/ink_bleed=3.2
+postfx/paper_strength=0.060
+postfx/vignette=0.55
