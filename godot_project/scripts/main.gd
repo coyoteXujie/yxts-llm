@@ -10,6 +10,7 @@ const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
 const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
 const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
 const OPENING_NARRATIVE_SCRIPT := preload("res://scripts/ui/opening_narrative_panel.gd")
+const ENDING_CREDITS_SCRIPT := preload("res://scripts/ui/ending_credits_panel.gd")
 const INK_SPLASH_SCRIPT := preload("res://scripts/ui/ink_splash_overlay.gd")
 const INK_TRANSITION_SHADER := preload("res://shaders/ink_transition.gdshader")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
@@ -75,6 +76,7 @@ var ambient_npc_timer := 2.0
 var ambient_npc_round := 0
 var game_started := false
 var pending_quest_summaries: Array[Dictionary] = []
+var ui_layer: CanvasLayer
 
 func _ready() -> void:
 	randomize()
@@ -511,6 +513,12 @@ func _on_combat_finished(result: Dictionary) -> void:
 func _on_quest_completed(summary: Dictionary) -> void:
 	pending_quest_summaries.append(summary.duplicate(true))
 	call_deferred("_try_show_pending_quest_summary")
+
+func _on_game_ending(epilogue: String) -> void:
+	# 主线终章→片尾滚动字幕
+	var credits := ENDING_CREDITS_SCRIPT.new()
+	ui_layer.add_child(credits)
+	credits.show_credits(epilogue)
 
 func _try_show_pending_quest_summary() -> void:
 	if pending_quest_summaries.is_empty():

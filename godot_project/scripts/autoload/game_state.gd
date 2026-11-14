@@ -2062,6 +2062,10 @@ func _complete_quest(quest_id: String) -> void:
 		active_quest = "江湖初成"
 		EventBus.player_changed.emit(player)
 		EventBus.emit_toast("阶段通关：江湖初成")
+	# 主线终章→触发片尾
+	if quest_id == "q_main_epilogue_mercy" or quest_id == "q_main_epilogue_reckoning":
+		var epilogue := "mercy" if quest_id == "q_main_epilogue_mercy" else "reckoning"
+		EventBus.game_ending.emit(epilogue)
 	EventBus.emit_quest_completed(_quest_completion_summary(quest_id, quest))
 
 func _quest_completion_summary(quest_id: String, quest: Dictionary) -> Dictionary:
