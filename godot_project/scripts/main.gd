@@ -10,6 +10,7 @@ const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
 const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
 const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
 const OPENING_NARRATIVE_SCRIPT := preload("res://scripts/ui/opening_narrative_panel.gd")
+const INK_SPLASH_SCRIPT := preload("res://scripts/ui/ink_splash_overlay.gd")
 const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
 const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
 const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
@@ -183,7 +184,13 @@ func _ready() -> void:
 	main_menu_panel.save_requested.connect(_save_from_menu)
 	character_creation_panel.character_created.connect(_start_new_game)
 
-	main_menu_panel.show_menu(false)
+	# 墨滴开场动画 → 主菜单
+	var ink_splash := INK_SPLASH_SCRIPT.new()
+	ui_layer.add_child(ink_splash)
+	ink_splash.splash_finished.connect(func():
+		main_menu_panel.show_menu(false)
+	)
+	ink_splash.start_splash()
 
 	# 水墨后处理（最顶层，对全屏采样）
 	var postfx_layer := CanvasLayer.new()
