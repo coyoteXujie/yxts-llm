@@ -181,7 +181,7 @@ const ENDING_DEFINITIONS := [
 const CONTEXTUAL_DIALOGUES := {
 	"苏梦瑶": [
 		{
-			"after": "q_main_intro_town",
+			"after": "q_intro_town",
 			"lines": [
 				"平安镇的青石板路我走过很多次，但从没在这里找到过苏家的消息。",
 				"你若愿意帮我追查洛阳旧案，花间派不会亏待你。",
@@ -189,7 +189,7 @@ const CONTEXTUAL_DIALOGUES := {
 			]
 		},
 		{
-			"after": "q_main_clear_thugs",
+			"after": "q_clear_thugs",
 			"lines": [
 				"镇东的事我听说了一些——你出手很快，但那几个恶徒不过是冰山一角。",
 				"背后的线还在暗处，你若想往下查，先留意洛阳方向的消息。",
@@ -223,7 +223,7 @@ const CONTEXTUAL_DIALOGUES := {
 	],
 	"陈天行": [
 		{
-			"after": "q_main_intro_town",
+			"after": "q_intro_town",
 			"lines": [
 				"平安镇的说书人见得多、讲得多，但也有些事只能在桌底下讲。",
 				"洛阳旧火的事你若感兴趣，夜里来客栈，我给你讲一段外围的故事。",
@@ -231,7 +231,7 @@ const CONTEXTUAL_DIALOGUES := {
 			]
 		},
 		{
-			"after": "q_main_clear_thugs",
+			"after": "q_clear_thugs",
 			"lines": [
 				"镇东那几个恶徒是被人雇的——雇他们的人出手不算大方，但也够买几条人命。",
 				"你若继续追查，背后的人很快会知道你的名字。",
@@ -291,7 +291,7 @@ const CONTEXTUAL_DIALOGUES := {
 	],
 	"玄机子": [
 		{
-			"after": "q_main_choose_path",
+			"after": "q_hero_trial",
 			"lines": [
 				"八卦门的推演之术告诉我，你命中有三条路可选。",
 				"你的根骨不错，但心性才是决定你能走多远的东西。",
