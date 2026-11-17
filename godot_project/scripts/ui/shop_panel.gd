@@ -86,8 +86,15 @@ func close_panel() -> void:
 
 func _build() -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(742, 88)
-	panel.size = Vector2(492, 584)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE, 0)
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -246
+	panel.offset_top = -292
+	panel.offset_right = 246
+	panel.offset_bottom = 292
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(panel)
 
@@ -250,8 +257,15 @@ func _build_confirmation_overlay() -> void:
 	add_child(overlay)
 
 	var card := PanelContainer.new()
-	card.position = Vector2(410, 210)
-	card.size = Vector2(460, 230)
+	card.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE, 0)
+	card.anchor_left = 0.5
+	card.anchor_top = 0.5
+	card.anchor_right = 0.5
+	card.anchor_bottom = 0.5
+	card.offset_left = -230
+	card.offset_top = -115
+	card.offset_right = 230
+	card.offset_bottom = 115
 	card.add_theme_stylebox_override("panel", _panel_style())
 	overlay.add_child(card)
 

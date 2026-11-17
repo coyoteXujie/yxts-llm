@@ -25,7 +25,7 @@ func _ready() -> void:
 func show_panel() -> void:
 	_refresh_list()
 	PANEL_ANIM.open(self)
-	GameState.set_mode(GameState.Mode.CULTIVATION)
+	GameState.set_mode(GameState.Mode.FORGE)
 
 func close_panel() -> void:
 	PANEL_ANIM.close(self)
@@ -38,8 +38,15 @@ func _build() -> void:
 	add_child(shade)
 
 	var panel = PanelContainer.new()
-	panel.position = Vector2(140, 72)
-	panel.size = Vector2(1000, 580)
+	panel.anchors_preset = Control.PRESET_CENTER
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -500
+	panel.offset_top = -290
+	panel.offset_right = 500
+	panel.offset_bottom = 290
 	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(24, 20, 24, 20)))
 	add_child(panel)
 
@@ -182,6 +189,7 @@ func _on_craft() -> void:
 	if result.get("ok", false):
 		_status_label.text = "✅ 锻造成功！获得 %s %s" % [result.get("quality", ""), result.get("item_name", "")]
 		AudioManager.play_sfx("hammer")
+		EventBus.inventory_changed.emit(GameState.inventory)
 		_refresh_list()
 		_select_recipe(_current_recipe_id)
 	else:
