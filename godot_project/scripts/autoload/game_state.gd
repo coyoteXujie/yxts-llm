@@ -12,7 +12,10 @@ enum Mode {
 	CULTIVATION,
 	FORGE,
 	MAP,
-	DISCOVERY
+	DISCOVERY,
+	SECT,
+	ACHIEVEMENT,
+	PET
 }
 
 var mode: Mode = Mode.EXPLORE
@@ -40,6 +43,11 @@ var current_region_id := ""
 var current_region_name := "未知之地"
 var current_tile := Vector2i.ZERO
 var map_target_region_id := ""
+
+# 门派/成就/灵宠存档数据
+var sect_save_data: Dictionary = {}
+var achievement_save_data: Dictionary = {}
+var pet_save_data: Dictionary = {}
 
 const SAVE_PATH := "user://savegame.json"
 const EQUIPMENT_DURABILITY_MAX := 100
@@ -217,6 +225,9 @@ func new_game(config: Dictionary = {}) -> void:
 	adventure_clues = []
 	trade_records = []
 	trade_reputation = 0
+	sect_save_data = {}
+	achievement_save_data = {}
+	pet_save_data = {}
 	active_quest = "初入平安镇"
 	_start_quest_silently("q_intro_town")
 	# 自动标���平安镇为初始目标
@@ -1517,6 +1528,7 @@ func reward_player(exp_amount: int, money_amount: int) -> void:
 		player["hp"] = player["max_hp"]
 		player["mp"] = player["max_mp"]
 		EventBus.emit_toast("境界提升：等级 %d" % int(player["level"]))
+		_notify_achievement("player_level_up", 1)
 	EventBus.player_changed.emit(player)
 
 func grant_enemy_loot(enemy_data: Dictionary) -> Array[String]:
@@ -1619,6 +1631,10 @@ func add_item(item_id: String, count: int = 1) -> void:
 	ensure_equipment_durability(item_id)
 	progress_quest("collect", item_id, count)
 	EventBus.inventory_changed.emit(inventory)
+	_notify_achievement("item_collect", 1, item_id)
+
+func has_item(item_id: String, count: int = 1) -> bool:
+	return int(inventory.get(item_id, 0)) >= count
 
 func remove_item(item_id: String, count: int = 1) -> bool:
 	if int(inventory.get(item_id, 0)) < count:
@@ -1678,6 +1694,9 @@ func equip_item(item_id: String) -> bool:
 	_apply_equipment_stats(item_id, 1)
 	EventBus.player_changed.emit(player)
 	EventBus.emit_toast("装备%s" % str(item.get("name", item_id)))
+	# 检查装备齐全成就
+	if not str(equipment.get("weapon", "")).is_empty() and not str(equipment.get("armor", "")).is_empty():
+		_notify_achievement("equip_full", 1)
 	return true
 
 func get_equipment_slot_for_item(item: Dictionary) -> String:
@@ -2068,6 +2087,9 @@ func _complete_quest(quest_id: String) -> void:
 		var epilogue := "mercy" if quest_id == "q_main_epilogue_mercy" else "reckoning"
 		EventBus.game_ending.emit(epilogue)
 	EventBus.emit_quest_completed(_quest_completion_summary(quest_id, quest))
+	_notify_achievement("quest_complete", 1)
+	# 故事成就检查
+	_notify_achievement("story_complete", 1, quest_id)
 
 func _quest_completion_summary(quest_id: String, quest: Dictionary) -> Dictionary:
 	var next_hint := str(quest.get("next_hint", active_quest))
@@ -2495,7 +2517,10 @@ func build_save_snapshot(position: Vector2, map_context: Dictionary = {}) -> Dic
 		"weather": weather,
 		"map_target_region_id": map_target_region_id,
 		"map_context": context,
-		"player_position": {"x": position.x, "y": position.y}
+		"player_position": {"x": position.x, "y": position.y},
+		"sect_save_data": _get_system_save("SectSystem"),
+		"achievement_save_data": _get_system_save("AchievementSystem"),
+		"pet_save_data": _get_system_save("PetSystem")
 	}
 
 func save_game(position: Vector2, map_context: Dictionary = {}) -> bool:
@@ -2595,6 +2620,12 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	hour = float(snapshot.get("hour", 8.0))
 	weather = str(snapshot.get("weather", "晴朗"))
 	map_target_region_id = str(snapshot.get("map_target_region_id", ""))
+	sect_save_data = snapshot.get("sect_save_data", {})
+	achievement_save_data = snapshot.get("achievement_save_data", {})
+	pet_save_data = snapshot.get("pet_save_data", {})
+	_restore_system_state("SectSystem", sect_save_data)
+	_restore_system_state("AchievementSystem", achievement_save_data)
+	_restore_system_state("PetSystem", pet_save_data)
 	var pos: Dictionary = snapshot.get("player_position", {"x": 0, "y": 0})
 	player_position = Vector2(float(pos.get("x", 0)), float(pos.get("y", 0)))
 	current_tile = Vector2i(floori(player_position.x / GameData.TILE_SIZE), floori(player_position.y / GameData.TILE_SIZE))
@@ -2636,3 +2667,21 @@ func _normalize_equipment_durability() -> void:
 			ensure_equipment_durability(item_id)
 	for raw_item_id in equipment.values():
 		ensure_equipment_durability(str(raw_item_id))
+
+func _get_system_save(system_name: String) -> Dictionary:
+	var node := get_node_or_null("/root/%s" % system_name)
+	if node != null and node.has_method("save_state"):
+		return node.save_state()
+	return {}
+
+func _restore_system_state(system_name: String, data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	var node := get_node_or_null("/root/%s" % system_name)
+	if node != null and node.has_method("load_state"):
+		node.load_state(data)
+
+func _notify_achievement(event_type: String, value: int = 1, target: String = "") -> void:
+	var ach := get_node_or_null("/root/AchievementSystem")
+	if ach != null and ach.has_method("notify_event"):
+		ach.notify_event(event_type, value, target)

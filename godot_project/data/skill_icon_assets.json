@@ -39,5 +39,11 @@
   "kf_beiming": "res://assets/skills/icons/kf_beiming.png",
   "kf_liuyang": "res://assets/skills/icons/kf_liuyang.png",
   "kf_xiaowuxiang": "res://assets/skills/icons/kf_xiaowuxiang.png",
-  "kf_lingbo": "res://assets/skills/icons/kf_lingbo.png"
+  "kf_lingbo": "res://assets/skills/icons/kf_lingbo.png",
+  "kf_baihua": "res://assets/skills/icons/kf_basic_sword.png",
+  "kf_xuanming": "res://assets/skills/icons/kf_basic_sword.png",
+  "kf_qingyun": "res://assets/skills/icons/kf_basic_sword.png",
+  "kf_jingang": "res://assets/skills/icons/kf_basic_sword.png",
+  "kf_tianji": "res://assets/skills/icons/kf_basic_sword.png",
+  "kf_tianjian": "res://assets/skills/icons/kf_basic_sword.png"
 }

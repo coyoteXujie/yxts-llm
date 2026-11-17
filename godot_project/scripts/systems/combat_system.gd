@@ -43,7 +43,13 @@ const SKILL_PROFILES := {
 	"kf_renshu": {"mp": 10, "bonus": 13, "variance": 9, "accuracy": 0.93, "crit": 0.18, "status": "poison", "status_chance": 0.30, "status_power": 7, "status_turns": 3},
 	"kf_wufa": {"mp": 9, "bonus": 12, "variance": 7, "accuracy": 0.95, "crit": 0.10, "status": "slow", "status_chance": 0.36, "status_turns": 2},
 	"kf_yidao": {"mp": 16, "bonus": 27, "variance": 16, "accuracy": 0.80, "crit": 0.22, "cooldown": 3, "armor_pierce": 0.30, "status": "bleed", "status_chance": 0.36, "status_power": 10, "status_turns": 3},
-	"kf_liuyang": {"mp": 15, "bonus": 23, "variance": 10, "accuracy": 0.88, "crit": 0.12, "cooldown": 2, "status": "burn", "status_chance": 0.34, "status_power": 9, "status_turns": 3}
+	"kf_liuyang": {"mp": 15, "bonus": 23, "variance": 10, "accuracy": 0.88, "crit": 0.12, "cooldown": 2, "status": "burn", "status_chance": 0.34, "status_power": 9, "status_turns": 3},
+	"kf_tianjian": {"mp": 14, "bonus": 24, "variance": 10, "accuracy": 0.90, "crit": 0.18, "cooldown": 2, "armor_pierce": 0.15, "status": "vulnerable", "status_chance": 0.24, "status_turns": 2},
+	"kf_qingyun": {"mp": 12, "bonus": 18, "variance": 8, "accuracy": 0.92, "crit": 0.14, "status": "slow", "status_chance": 0.28, "status_turns": 2},
+	"kf_xuanming": {"mp": 15, "bonus": 22, "variance": 12, "accuracy": 0.86, "crit": 0.15, "cooldown": 2, "status": "poison", "status_chance": 0.36, "status_power": 10, "status_turns": 3, "armor_pierce": 0.10},
+	"kf_baihua": {"mp": 13, "bonus": 17, "variance": 9, "accuracy": 0.93, "crit": 0.16, "hits": 2, "status": "poison", "status_chance": 0.20, "status_power": 5, "status_turns": 2},
+	"kf_jingang": {"mp": 16, "bonus": 26, "variance": 10, "accuracy": 0.84, "crit": 0.12, "cooldown": 2, "status": "stun", "status_chance": 0.18, "status_turns": 1, "self_status": "guard", "self_status_turns": 1},
+	"kf_tianji": {"mp": 14, "bonus": 20, "variance": 8, "accuracy": 0.91, "crit": 0.20, "cooldown": 1, "status": "weaken", "status_chance": 0.30, "status_turns": 2}
 }
 
 var enemy: Dictionary = {}
@@ -225,6 +231,10 @@ func _enemy_turn() -> void:
 			_enemy_attack(action)
 	if not active:
 		return
+	# 灵宠技能支援
+	_pet_skill_support()
+	if not active:
+		return
 	turn_count += 1
 	combat_changed.emit(snapshot())
 
@@ -346,12 +356,15 @@ func _player_hit_damage(profile: Dictionary, level: int) -> int:
 	if player == null or typeof(player) != TYPE_DICTIONARY:
 		return 1
 	var base_attack := int(player.get("attack", 12))
+	# 灵宠攻击加成
+	var pet_bonus = _get_pet_attack_bonus()
+	var total_attack = base_attack + pet_bonus
 	var defense := int(enemy.get("defense", 0))
 	var pierce := clampf(float(profile.get("armor_pierce", 0.0)), 0.0, 0.8)
 	var effective_defense := int(float(defense) * (1.0 - pierce))
 	var variance: int = int(profile.get("variance", 7)) + mini(12, int(level / 5))
 	var bonus := int(profile.get("bonus", 0)) + int(float(level) * float(profile.get("level_scale", 0.45)))
-	var damage := int(max(1, base_attack + bonus + randi_range(0, max(1, variance)) - int(float(effective_defense) * 0.45)))
+	var damage := int(max(1, total_attack + bonus + randi_range(0, max(1, variance)) - int(float(effective_defense) * 0.45)))
 	if player_statuses.has("weaken"):
 		damage = max(1, int(float(damage) * 0.75))
 		_decrement_status(player_statuses, "weaken")
@@ -365,9 +378,12 @@ func _player_hit_damage(profile: Dictionary, level: int) -> int:
 
 func _enemy_hit_damage(action: Dictionary) -> int:
 	var player_defense := int(GameState.player.get("defense", 6)) if GameState.player != null and typeof(GameState.player) == TYPE_DICTIONARY else 6
+	# 灵宠防御加成
+	var pet_def_bonus = _get_pet_defense_bonus()
+	var total_defense = player_defense + pet_def_bonus
 	var enemy_attack := int(enemy.get("attack", enemy.get("damage", 5)))
 	var bonus := int(action.get("bonus", 0))
-	var damage := int(max(1, enemy_attack + bonus + randi_range(0, 6) - int(float(player_defense) * 0.42)))
+	var damage := int(max(1, enemy_attack + bonus + randi_range(0, 6) - int(float(total_defense) * 0.42)))
 	if enemy_statuses.has("weaken"):
 		damage = max(1, int(float(damage) * 0.75))
 		_decrement_status(enemy_statuses, "weaken")
@@ -531,6 +547,24 @@ func _finish(victory: bool, escaped: bool = false) -> void:
 		money_reward = int(enemy.get("money", 0))
 		GameState.reward_player(exp_reward, money_reward)
 		GameState.progress_quest("kill", str(enemy.get("name", "")), 1)
+		# 成就跟踪 — 击杀计数
+		_notify_achievement("kill", 1)
+		var style := str(enemy.get("combat_style", ""))
+		var max_hp := int(enemy.get("max_hp", 0))
+		if max_hp >= 500 or style == "boss":
+			_notify_achievement("kill_boss", 1)
+		if max_hp >= 200 or style in ["beast", "assassin"]:
+			_notify_achievement("kill_elite", 1)
+		# 指定Boss击杀
+		var enemy_name := str(enemy.get("name", ""))
+		if enemy_name == "蛇王":
+			var ach := get_node_or_null("/root/AchievementSystem")
+			if ach != null and ach.has_method("try_conditional_unlock"):
+				ach.try_conditional_unlock("ach_defeat_snake", 1)
+		if enemy_name == "烈火":
+			var ach := get_node_or_null("/root/AchievementSystem")
+			if ach != null and ach.has_method("try_conditional_unlock"):
+				ach.try_conditional_unlock("ach_defeat_blaze", 1)
 		loot_parts = GameState.grant_enemy_loot(enemy)
 		var loot_text := ""
 		if not loot_parts.is_empty():
@@ -618,3 +652,59 @@ func _record_event(target: String, kind: String, amount: int, label: String, sou
 	})
 	while combat_events.size() > 10:
 		combat_events.pop_front()
+
+func _get_pet_attack_bonus() -> int:
+	var ps := get_node_or_null("/root/PetSystem")
+	if ps == null or not ps.has_method("get_battle_bonus"):
+		return 0
+	var bonus: Dictionary = ps.get_battle_bonus()
+	return int(bonus.get("attack_bonus", 0))
+
+func _get_pet_defense_bonus() -> int:
+	var ps := get_node_or_null("/root/PetSystem")
+	if ps == null or not ps.has_method("get_battle_bonus"):
+		return 0
+	var bonus: Dictionary = ps.get_battle_bonus()
+	return int(bonus.get("defense_bonus", 0))
+
+func _pet_skill_support() -> void:
+	var ps := get_node_or_null("/root/PetSystem")
+	if ps == null or not ps.has_method("get_battle_skill_action"):
+		return
+	var action: Dictionary = ps.get_battle_skill_action(turn_count)
+	if not bool(action.get("active", false)):
+		return
+	var pet_name := str(action.get("pet_name", "灵宠"))
+	var skill_name := str(action.get("skill_name", "技能"))
+	var power := int(action.get("power", 8))
+	var skill_type := str(action.get("skill_type", "attack"))
+	
+	match skill_type:
+		"attack":
+			var damage := power + randi_range(0, 4)
+			enemy["hp"] = max(0, int(enemy.get("hp", 0)) - damage)
+			_append_log("%s使出【%s】，造成 %d 点伤害！" % [pet_name, skill_name, damage])
+			_record_event("enemy", "damage", damage, "-%d" % damage, skill_name)
+			if int(enemy.get("hp", 0)) <= 0:
+				_finish(true)
+		"heal":
+			var heal := power + randi_range(2, 6)
+			var actual := GameState.heal_player(heal)
+			_append_log("%s使出【%s】，恢复 %d 点气血。" % [pet_name, skill_name, actual])
+			_record_event("player", "heal", actual, "+%d" % actual, skill_name)
+		"buff":
+			_add_status(player_statuses, "guard", 1, 0)
+			_append_log("%s使出【%s】，为你附加防御状态。" % [pet_name, skill_name])
+		"debuff":
+			_add_status(enemy_statuses, "weaken", 2, 0)
+			_append_log("%s使出【%s】，削弱了敌方。" % [pet_name, skill_name])
+		"defense":
+			_add_status(player_statuses, "guard", 1, power)
+			_append_log("%s使出【%s】，为你抵挡伤害。" % [pet_name, skill_name])
+		"passive":
+			_append_log("%s的【%s】发挥了作用。" % [pet_name, skill_name])
+
+func _notify_achievement(event_type: String, value: int) -> void:
+	var ach := get_node_or_null("/root/AchievementSystem")
+	if ach != null and ach.has_method("notify_event"):
+		ach.notify_event(event_type, value)

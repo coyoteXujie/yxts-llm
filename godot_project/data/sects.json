@@ -1,0 +1,92 @@
+[
+	{
+		"id": "sect_tianjian",
+		"name": "天剑宗",
+		"description": "位于青云山巅，以剑法冠绝江湖。天剑宗讲究「剑即是心」，门规森严，弟子须以剑道为本。",
+		"join_condition": {"cultivation": 3, "quest": "q_sect_tianjian_test"},
+		"skills": ["kf_tianjian"],
+		"skill_names": {"kf_tianjian": "天剑诀"},
+		"contribution_skills": {"kf_tianjian": 500},
+		"contribution_items": {"item_spirit_stone": 50, "item_sword_steel": 30},
+		"missions": [
+			{"id": "sect_m_tianjian_1", "title": "守山巡夜", "description": "在天剑宗山门巡逻，驱赶趁夜偷袭的盗匪。", "type": "kill", "target": "山贼", "count": 3, "reward_contribution": 30, "reward_exp": 40, "reward_money": 15},
+			{"id": "sect_m_tianjian_2", "title": "剑意试炼", "description": "在剑意崖面壁参悟，领悟剑意真谛。", "type": "cultivate", "target": "any", "count": 1, "reward_contribution": 60, "reward_exp": 80, "reward_money": 0},
+			{"id": "sect_m_tianjian_3", "title": "斩妖除魔", "description": "山下村镇有妖兽作乱，下山除害。", "type": "kill", "target": "妖兽", "count": 1, "reward_contribution": 100, "reward_exp": 120, "reward_money": 50}
+		]
+	},
+	{
+		"id": "sect_qingyun",
+		"name": "青云门",
+		"description": "坐落于云雾缭绕的青云峰上，以道法自然为训。门下弟子修习内外兼修的功法，擅长以柔克刚。",
+		"join_condition": {"cultivation": 2, "reputation": 10},
+		"skills": ["kf_qingyun"],
+		"skill_names": {"kf_qingyun": "青云诀"},
+		"contribution_skills": {"kf_qingyun": 400},
+		"contribution_items": {"item_spirit_stone": 60, "item_herb_lingzhi": 20},
+		"missions": [
+			{"id": "sect_m_qingyun_1", "title": "采药任务", "description": "前往后山采集灵芝草药，供宗门炼丹之用。", "type": "collect", "target": "item_herb_lingzhi", "count": 5, "reward_contribution": 25, "reward_exp": 30, "reward_money": 10},
+			{"id": "sect_m_qingyun_2", "title": "传道解惑", "description": "为新入门弟子讲解基础功法。", "type": "cultivate", "target": "any", "count": 1, "reward_contribution": 40, "reward_exp": 50, "reward_money": 0},
+			{"id": "sect_m_qingyun_3", "title": "清理妖物", "description": "青云峰下出现妖物伤人，前往清理。", "type": "kill", "target": "妖兽", "count": 3, "reward_contribution": 80, "reward_exp": 90, "reward_money": 40}
+		]
+	},
+	{
+		"id": "sect_xuanming",
+		"name": "玄冥教",
+		"description": "隐于极北玄冥谷中，武功以阴寒诡异著称。行事低调神秘，江湖传闻其教中藏有上古秘籍。",
+		"join_condition": {"cultivation": 4, "quest": "q_sect_xuanming_test", "daode": -10},
+		"skills": ["kf_xuanming"],
+		"skill_names": {"kf_xuanming": "玄冥神掌"},
+		"contribution_skills": {"kf_xuanming": 600},
+		"contribution_items": {"item_spirit_stone": 80, "item_dark_herb": 15},
+		"missions": [
+			{"id": "sect_m_xuanming_1", "title": "暗夜巡逻", "description": "巡查玄冥谷四周，防范外人入侵。", "type": "kill", "target": "探子", "count": 2, "reward_contribution": 35, "reward_exp": 45, "reward_money": 20},
+			{"id": "sect_m_xuanming_2", "title": "毒草采集", "description": "采集谷中毒草，为护教大阵所用。", "type": "collect", "target": "item_dark_herb", "count": 3, "reward_contribution": 50, "reward_exp": 60, "reward_money": 0},
+			{"id": "sect_m_xuanming_3", "title": "教训叛徒", "description": "有一叛徒携秘籍逃往南境，速去追回。", "type": "kill", "target": "叛徒", "count": 1, "reward_contribution": 120, "reward_exp": 150, "reward_money": 80}
+		]
+	},
+	{
+		"id": "sect_baihua",
+		"name": "百花谷",
+		"description": "四季如春的百花谷中，弟子皆为女子。武学以灵巧飘逸见长，兼修医术毒术。",
+		"join_condition": {"cultivation": 2, "quest": "q_sect_baihua_test"},
+		"skills": ["kf_baihua"],
+		"skill_names": {"kf_baihua": "百花缭乱"},
+		"contribution_skills": {"kf_baihua": 450},
+		"contribution_items": {"item_herb_lingzhi": 25, "item_spirit_stone": 40},
+		"missions": [
+			{"id": "sect_m_baihua_1", "title": "采花酿蜜", "description": "采集谷中奇花，为师姐们炼制百花蜜。", "type": "collect", "target": "item_flower", "count": 5, "reward_contribution": 20, "reward_exp": 25, "reward_money": 5},
+			{"id": "sect_m_baihua_2", "title": "行医济世", "description": "前往山下村镇为百姓义诊。", "type": "cultivate", "target": "any", "count": 1, "reward_contribution": 45, "reward_exp": 55, "reward_money": 0},
+			{"id": "sect_m_baihua_3", "title": "驱逐采花贼", "description": "附近有采花贼出没，速去制止。", "type": "kill", "target": "采花大盗", "count": 1, "reward_contribution": 90, "reward_exp": 100, "reward_money": 60}
+		]
+	},
+	{
+		"id": "sect_jingang",
+		"name": "金刚寺",
+		"description": "千年古刹金刚寺，以佛法慈悲度世，武功刚猛无俦。弟子皆精研金刚不坏神功。",
+		"join_condition": {"cultivation": 3, "daode": 15},
+		"skills": ["kf_jingang"],
+		"skill_names": {"kf_jingang": "金刚怒目"},
+		"contribution_skills": {"kf_jingang": 500},
+		"contribution_items": {"item_herb_lingzhi": 30, "item_spirit_stone": 40},
+		"missions": [
+			{"id": "sect_m_jingang_1", "title": "早课诵经", "description": "完成每日早课诵经，修身养性。", "type": "cultivate", "target": "any", "count": 1, "reward_contribution": 20, "reward_exp": 20, "reward_money": 0},
+			{"id": "sect_m_jingang_2", "title": "护送商队", "description": "护送山下商队通过虎啸岭。", "type": "kill", "target": "山贼", "count": 5, "reward_contribution": 50, "reward_exp": 60, "reward_money": 30},
+			{"id": "sect_m_jingang_3", "title": "降妖除魔", "description": "有妖兽在山中残害生灵，前往降服。", "type": "kill", "target": "妖兽", "count": 2, "reward_contribution": 110, "reward_exp": 130, "reward_money": 50}
+		]
+	},
+	{
+		"id": "sect_tianji",
+		"name": "天机阁",
+		"description": "天下情报汇聚之地，天机阁以智谋和推算闻名。阁中弟子不仅修武，更修阵法卜算之术。",
+		"join_condition": {"cultivation": 3, "quest": "q_sect_tianji_test"},
+		"skills": ["kf_tianji"],
+		"skill_names": {"kf_tianji": "天机推演"},
+		"contribution_skills": {"kf_tianji": 550},
+		"contribution_items": {"item_spirit_stone": 70, "item_scroll_ancient": 10},
+		"missions": [
+			{"id": "sect_m_tianji_1", "title": "情报收集", "description": "前往城中打探消息，收集江湖情报。", "type": "collect", "target": "item_info_scroll", "count": 3, "reward_contribution": 30, "reward_exp": 35, "reward_money": 15},
+			{"id": "sect_m_tianji_2", "title": "推演阵法", "description": "在天机阁推演阁中失传的阵法图。", "type": "cultivate", "target": "any", "count": 1, "reward_contribution": 55, "reward_exp": 70, "reward_money": 0},
+			{"id": "sect_m_tianji_3", "title": "破敌谋略", "description": "有神秘势��在布局对抗天机阁，前往破坏其计划。", "type": "kill", "target": "密探", "count": 4, "reward_contribution": 100, "reward_exp": 110, "reward_money": 70}
+		]
+	}
+]

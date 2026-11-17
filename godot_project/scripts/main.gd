@@ -26,6 +26,12 @@ const DISCOVERY_PANEL_SCRIPT := preload("res://scripts/ui/discovery_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
 const MAP_TRANSITION_MANAGER := preload("res://scripts/systems/map_transition_manager.gd")
 const INTERACTION_MANAGER := preload("res://scripts/systems/interaction_manager.gd")
+const SECT_SYSTEM_SCRIPT := preload("res://scripts/systems/sect_system.gd")
+const ACHIEVEMENT_SYSTEM_SCRIPT := preload("res://scripts/systems/achievement_system.gd")
+const PET_SYSTEM_SCRIPT := preload("res://scripts/systems/pet_system.gd")
+const SECT_PANEL_SCRIPT := preload("res://scripts/ui/sect_panel.gd")
+const ACHIEVEMENT_PANEL_SCRIPT := preload("res://scripts/ui/achievement_panel.gd")
+const PET_PANEL_SCRIPT := preload("res://scripts/ui/pet_panel.gd")
 
 const NEW_GAME_STARTS_IN_LOCAL_TOWN := true
 
@@ -49,6 +55,9 @@ var forge_panel: Node
 var world_map_panel: Node
 var discovery_panel: Node
 var opening_narrative: Node
+var sect_panel: Node
+var achievement_panel: Node
+var pet_panel: Node
 var ui_layer: CanvasLayer
 
 var map_transition_mgr
@@ -81,6 +90,17 @@ func _ready() -> void:
 	add_child(combat_system)
 	combat_system.combat_finished.connect(_on_combat_finished)
 
+	# 初始化门派/成就/灵宠系统（Autoload方式）
+	var sect_sys := SECT_SYSTEM_SCRIPT.new()
+	sect_sys.name = "SectSystem"
+	add_child(sect_sys)
+	var ach_sys := ACHIEVEMENT_SYSTEM_SCRIPT.new()
+	ach_sys.name = "AchievementSystem"
+	add_child(ach_sys)
+	var pet_sys := PET_SYSTEM_SCRIPT.new()
+	pet_sys.name = "PetSystem"
+	add_child(pet_sys)
+
 	_setup_layers_and_panels()
 
 	# 初始化系统模块
@@ -103,6 +123,8 @@ func _ready() -> void:
 	EventBus.game_loaded.connect(_on_game_loaded)
 	EventBus.quest_completed.connect(_on_quest_completed)
 	EventBus.map_target_changed.connect(_on_map_target_changed)
+	EventBus.sect_changed.connect(_on_sect_changed)
+	EventBus.achievement_unlocked.connect(_on_achievement_unlocked)
 	main_menu_panel.new_game_requested.connect(_open_character_creation)
 	main_menu_panel.continue_requested.connect(_continue_game)
 	main_menu_panel.resume_requested.connect(_resume_from_menu)
@@ -174,6 +196,12 @@ func _setup_layers_and_panels() -> void:
 	ui_layer.add_child(main_menu_panel)
 	opening_narrative = OPENING_NARRATIVE_SCRIPT.new()
 	ui_layer.add_child(opening_narrative)
+	sect_panel = SECT_PANEL_SCRIPT.new()
+	ui_layer.add_child(sect_panel)
+	achievement_panel = ACHIEVEMENT_PANEL_SCRIPT.new()
+	ui_layer.add_child(achievement_panel)
+	pet_panel = PET_PANEL_SCRIPT.new()
+	ui_layer.add_child(pet_panel)
 
 func _process(delta: float) -> void:
 	GameState.advance_time(delta)
@@ -226,6 +254,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("quick_load"):
 		GameState.load_game()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("sect"):
+		_close_gameplay_panels()
+		sect_panel.show_panel()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("achievement"):
+		_close_gameplay_panels()
+		achievement_panel.show_panel()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pet"):
+		_close_gameplay_panels()
+		pet_panel.show_panel()
+		get_viewport().set_input_as_handled()
 
 func _handle_cancel() -> void:
 	match GameState.mode:
@@ -245,6 +285,12 @@ func _handle_cancel() -> void:
 			world_map_panel.close_panel()
 		GameState.Mode.DISCOVERY:
 			discovery_panel.close_panel()
+		GameState.Mode.SECT:
+			sect_panel.close_panel()
+		GameState.Mode.ACHIEVEMENT:
+			achievement_panel.close_panel()
+		GameState.Mode.PET:
+			pet_panel.close_panel()
 		GameState.Mode.COMBAT:
 			if combat_panel != null and combat_panel.has_method("is_result_visible") and combat_panel.is_result_visible():
 				combat_panel.close_result_panel()
@@ -311,15 +357,18 @@ func _start_new_game(config: Dictionary) -> void:
 	EventBus.emit_toast("新的江湖开始")
 
 func _close_gameplay_panels() -> void:
-	dialogue_panel.hide()
-	combat_panel.hide()
-	inventory_panel.hide()
-	quest_panel.hide()
-	shop_panel.hide()
-	cultivation_panel.hide()
-	forge_panel.hide()
-	world_map_panel.hide()
-	discovery_panel.hide()
+	PanelAnim.close_panel(dialogue_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(combat_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(inventory_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(quest_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(shop_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(cultivation_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(forge_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(world_map_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(discovery_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(sect_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(achievement_panel, PanelAnim.EaseType.SCALE_FADE)
+	PanelAnim.close_panel(pet_panel, PanelAnim.EaseType.SCALE_FADE)
 
 func _open_dialogue(npc: Dictionary) -> void:
 	interaction_mgr.clear_explore_state()
@@ -421,6 +470,9 @@ func _register_inputs() -> void:
 	_add_key_action("quick_save", [KEY_F5])
 	_add_key_action("quick_load", [KEY_F9])
 	_add_key_action("ui_cancel", [KEY_ESCAPE])
+	_add_key_action("sect", [KEY_U])
+	_add_key_action("achievement", [KEY_Y])
+	_add_key_action("pet", [KEY_P])
 
 func _add_key_action(action_name: String, keys: Array[int]) -> void:
 	if not InputMap.has_action(action_name):
@@ -436,3 +488,11 @@ func _add_key_action(action_name: String, keys: Array[int]) -> void:
 		var key_event := InputEventKey.new()
 		key_event.physical_keycode = key
 		InputMap.action_add_event(action_name, key_event)
+
+func _on_sect_changed(_sect_id: String, _sect_name: String) -> void:
+	# 门派变更时更新相关UI
+	pass
+
+func _on_achievement_unlocked(_achievement_id: String, _achievement_name: String) -> void:
+	# 成就解锁时更新HUD或弹出通知
+	pass

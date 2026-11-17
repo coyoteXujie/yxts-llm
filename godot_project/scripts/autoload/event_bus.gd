@@ -16,6 +16,12 @@ signal dialogue_requested(npc: Dictionary)
 signal combat_requested(enemy: Dictionary)
 signal shop_requested(npc: Dictionary)
 signal postfx_settings_changed(params: Dictionary)
+signal sect_changed(sect_id: String, sect_name: String)
+signal sect_contribution_changed(contribution: int)
+signal achievement_unlocked(achievement_id: String, achievement_name: String)
+signal pet_added(pet_id: String)
+signal pet_removed(pet_id: String)
+signal pet_roster_changed()
 
 func emit_toast(text: String) -> void:
 	toast_requested.emit(text)

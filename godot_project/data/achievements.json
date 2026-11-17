@@ -1,0 +1,308 @@
+[
+	{
+		"id": "ach_kill_10",
+		"name": "初露锋芒",
+		"description": "击杀10个敌人",
+		"type": "combat",
+		"target": "kill_count",
+		"count": 10,
+		"reward": {"exp": 50, "money": 20}
+	},
+	{
+		"id": "ach_kill_50",
+		"name": "斩将夺旗",
+		"description": "击杀50个敌人",
+		"type": "combat",
+		"target": "kill_count",
+		"count": 50,
+		"reward": {"exp": 200, "money": 100}
+	},
+	{
+		"id": "ach_kill_100",
+		"name": "百人斩",
+		"description": "击杀100个敌人",
+		"type": "combat",
+		"target": "kill_count",
+		"count": 100,
+		"reward": {"exp": 500, "money": 300}
+	},
+	{
+		"id": "ach_kill_elite",
+		"name": "猎妖者",
+		"description": "击杀一个精英妖怪",
+		"type": "combat",
+		"target": "kill_elite",
+		"count": 1,
+		"reward": {"exp": 150, "money": 80, "item": "item_spirit_stone"}
+	},
+	{
+		"id": "ach_kill_boss",
+		"name": "屠龙勇士",
+		"description": "击败一个BOSS级敌人",
+		"type": "combat",
+		"target": "kill_boss",
+		"count": 1,
+		"reward": {"exp": 300, "money": 200, "item": "item_dragon_scale"}
+	},
+	{
+		"id": "ach_explore_5",
+		"name": "初行江湖",
+		"description": "发现5个区域",
+		"type": "explore",
+		"target": "region_discover",
+		"count": 5,
+		"reward": {"exp": 30, "money": 10}
+	},
+	{
+		"id": "ach_explore_15",
+		"name": "四海为家",
+		"description": "发现15个区域",
+		"type": "explore",
+		"target": "region_discover",
+		"count": 15,
+		"reward": {"exp": 100, "money": 50}
+	},
+	{
+		"id": "ach_explore_30",
+		"name": "天涯行脚",
+		"description": "发现30个区域",
+		"type": "explore",
+		"target": "region_discover",
+		"count": 30,
+		"reward": {"exp": 300, "money": 150}
+	},
+	{
+		"id": "ach_explore_all_cities",
+		"name": "足迹天下",
+		"description": "发现所有主要城市",
+		"type": "explore",
+		"target": "all_cities",
+		"count": 5,
+		"reward": {"exp": 200, "money": 100}
+	},
+	{
+		"id": "ach_level_5",
+		"name": "小有所成",
+		"description": "角色达到5级",
+		"type": "character",
+		"target": "player_level",
+		"count": 5,
+		"reward": {"exp": 100, "money": 30}
+	},
+	{
+		"id": "ach_level_10",
+		"name": "江湖新秀",
+		"description": "角色达到10级",
+		"type": "character",
+		"target": "player_level",
+		"count": 10,
+		"reward": {"exp": 300, "money": 100}
+	},
+	{
+		"id": "ach_level_20",
+		"name": "一方高手",
+		"description": "角色达到20级",
+		"type": "character",
+		"target": "player_level",
+		"count": 20,
+		"reward": {"exp": 800, "money": 300}
+	},
+	{
+		"id": "ach_skill_5",
+		"name": "博学多才",
+		"description": "学会5种技能",
+		"type": "character",
+		"target": "skill_count",
+		"count": 5,
+		"reward": {"exp": 80, "money": 20}
+	},
+	{
+		"id": "ach_skill_15",
+		"name": "武痴",
+		"description": "学会15种技能",
+		"type": "character",
+		"target": "skill_count",
+		"count": 15,
+		"reward": {"exp": 400, "money": 150}
+	},
+	{
+		"id": "ach_quest_5",
+		"name": "行侠仗义",
+		"description": "完成5个任务",
+		"type": "quest",
+		"target": "quest_complete",
+		"count": 5,
+		"reward": {"exp": 50, "money": 30}
+	},
+	{
+		"id": "ach_quest_15",
+		"name": "侠名远播",
+		"description": "完成15个任务",
+		"type": "quest",
+		"target": "quest_complete",
+		"count": 15,
+		"reward": {"exp": 200, "money": 100}
+	},
+	{
+		"id": "ach_quest_30",
+		"name": "江湖传奇",
+		"description": "完成30个任务",
+		"type": "quest",
+		"target": "quest_complete",
+		"count": 30,
+		"reward": {"exp": 500, "money": 300}
+	},
+	{
+		"id": "ach_collect_10",
+		"name": "收藏家",
+		"description": "获得10种不同物品",
+		"type": "collect",
+		"target": "item_collect",
+		"count": 10,
+		"reward": {"exp": 30, "money": 10}
+	},
+	{
+		"id": "ach_collect_30",
+		"name": "珍宝阁主",
+		"description": "获得30种不同物品",
+		"type": "collect",
+		"target": "item_collect",
+		"count": 30,
+		"reward": {"exp": 150, "money": 80}
+	},
+	{
+		"id": "ach_collect_60",
+		"name": "富甲一方",
+		"description": "获得60种不同物品",
+		"type": "collect",
+		"target": "item_collect",
+		"count": 60,
+		"reward": {"exp": 500, "money": 300}
+	},
+	{
+		"id": "ach_story_intro",
+		"name": "江湖初入",
+		"description": "完成平安镇的新手引导",
+		"type": "story",
+		"target": "q_intro_town",
+		"count": 1,
+		"reward": {"exp": 50, "money": 20}
+	},
+	{
+		"id": "ach_story_thugs",
+		"name": "镇东英雄",
+		"description": "完成清除流氓任务",
+		"type": "story",
+		"target": "q_clear_thugs",
+		"count": 1,
+		"reward": {"exp": 80, "money": 30}
+	},
+	{
+		"id": "ach_story_flower",
+		"name": "护花使者",
+		"description": "解决采花大盗事件",
+		"type": "story",
+		"target": "q_flower_thief",
+		"count": 1,
+		"reward": {"exp": 120, "money": 50}
+	},
+	{
+		"id": "ach_story_trial",
+		"name": "英雄试炼",
+		"description": "完成英雄试炼挑战",
+		"type": "story",
+		"target": "q_hero_trial",
+		"count": 1,
+		"reward": {"exp": 200, "money": 100}
+	},
+	{
+		"id": "ach_money_1000",
+		"name": "小有余财",
+		"description": "拥有1000两银子",
+		"type": "collect",
+		"target": "money_total",
+		"count": 1000,
+		"reward": {"exp": 50, "money": 0}
+	},
+	{
+		"id": "ach_money_5000",
+		"name": "万贯家财",
+		"description": "拥有5000两银子",
+		"type": "collect",
+		"target": "money_total",
+		"count": 5000,
+		"reward": {"exp": 200, "money": 0}
+	},
+	{
+		"id": "ach_faction_join",
+		"name": "拜入门派",
+		"description": "加入一个门派",
+		"type": "story",
+		"target": "join_sect",
+		"count": 1,
+		"reward": {"exp": 100, "money": 50}
+	},
+	{
+		"id": "ach_sect_contribute_500",
+		"name": "宗门栋梁",
+		"description": "在门派中积累500贡献",
+		"type": "story",
+		"target": "sect_contribution",
+		"count": 500,
+		"reward": {"exp": 200, "money": 100, "item": "item_spirit_stone"}
+	},
+	{
+		"id": "ach_pet_get",
+		"name": "灵兽相伴",
+		"description": "获得一只灵宠",
+		"type": "story",
+		"target": "get_pet",
+		"count": 1,
+		"reward": {"exp": 80, "money": 30}
+	},
+	{
+		"id": "ach_pet_level_5",
+		"name": "共同成长",
+		"description": "任意灵宠达到5级",
+		"type": "story",
+		"target": "pet_level",
+		"count": 5,
+		"reward": {"exp": 150, "money": 80}
+	},
+	{
+		"id": "ach_defeat_snake",
+		"name": "蛇王伏法",
+		"description": "击败蛇王",
+		"type": "combat",
+		"target": "kill_snake_king",
+		"count": 1,
+		"reward": {"exp": 250, "money": 150, "item": "item_snake_scale"}
+	},
+	{
+		"id": "ach_defeat_blaze",
+		"name": "烈火伏诛",
+		"description": "击败烈火",
+		"type": "combat",
+		"target": "kill_blaze",
+		"count": 1,
+		"reward": {"exp": 300, "money": 200, "item": "item_flame_core"}
+	},
+	{
+		"id": "ach_daode_50",
+		"name": "侠之大者",
+		"description": "道德值达到50",
+		"type": "character",
+		"target": "daode_high",
+		"count": 50,
+		"reward": {"exp": 500, "money": 200}
+	},
+	{
+		"id": "ach_equip_full",
+		"name": "全副武装",
+		"description": "同时装备武器和护甲",
+		"type": "character",
+		"target": "equip_full",
+		"count": 1,
+		"reward": {"exp": 50, "money": 20}
+	}
+]

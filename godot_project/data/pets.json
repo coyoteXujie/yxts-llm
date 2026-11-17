@@ -1,0 +1,114 @@
+[
+	{
+		"id": "pet_qingluan",
+		"name": "青鸾",
+		"description": "传说中青鸟后代，羽色青翠如碧玉。翱翔九天，速度快如闪电，擅长风系辅助。",
+		"rarity": "rare",
+		"base_stats": {"attack": 8, "defense": 5, "speed": 14, "spirit": 10},
+		"skills": [
+			{"id": "pet_skill_wind_blade", "name": "风刃", "description": "召唤风刃切割敌人", "power": 12, "type": "attack"},
+			{"id": "pet_skill_swift_wind", "name": "疾风", "description": "提升主人速度", "power": 8, "type": "buff"},
+			{"id": "pet_skill_healing_breeze", "name": "和风", "description": "微风治愈主人伤势", "power": 10, "type": "heal"}
+		],
+		"acquire": {"method": "explore", "location": "qingyun_peak"},
+		"evolves_to": "pet_qingluan_evo"
+	},
+	{
+		"id": "pet_xuangui",
+		"name": "玄龟",
+		"description": "千年玄龟，背甲坚硬如玄铁。性沉稳，防御无双。",
+		"rarity": "rare",
+		"base_stats": {"attack": 4, "defense": 18, "speed": 2, "spirit": 8},
+		"skills": [
+			{"id": "pet_skill_iron_shell", "name": "铁甲", "description": "大幅提升主人防御", "power": 15, "type": "buff"},
+			{"id": "pet_skill_water_shield", "name": "水盾", "description": "用水之护盾抵挡伤害", "power": 10, "type": "defense"},
+			{"id": "pet_skill_steady_presence", "name": "稳重", "description": "守护主人不被眩晕", "power": 0, "type": "passive"}
+		],
+		"acquire": {"method": "shop", "price": 2000},
+		"evolves_to": "pet_xuangui_evo"
+	},
+	{
+		"id": "pet_chiyanhu",
+		"name": "赤焰虎",
+		"description": "生于火山烈焰之中的猛虎，浑身赤毛如火。性情凶猛，战斗力极强。",
+		"rarity": "epic",
+		"base_stats": {"attack": 16, "defense": 10, "speed": 8, "spirit": 6},
+		"skills": [
+			{"id": "pet_skill_flame_bite", "name": "烈焰撕咬", "description": "火焰缠绕的利齿攻击", "power": 18, "type": "attack"},
+			{"id": "pet_skill_roar", "name": "虎啸", "description": "威吓敌人降低其防御", "power": 6, "type": "debuff"},
+			{"id": "pet_skill_blaze_aura", "name": "灼热光环", "description": "每回合对敌人造成火焰伤害", "power": 5, "type": "passive"}
+		],
+		"acquire": {"method": "quest", "quest_id": "q_pet_chiyanhu"},
+		"evolves_to": "pet_chiyanhu_evo"
+	},
+	{
+		"id": "pet_bingjingdie",
+		"name": "冰晶蝶",
+		"description": "极寒之地孕育的冰晶蝴蝶，翅翼如冰片般剔透。散发的寒气能冻结敌人的行动。",
+		"rarity": "rare",
+		"base_stats": {"attack": 6, "defense": 4, "speed": 12, "spirit": 14},
+		"skills": [
+			{"id": "pet_skill_frost_breath", "name": "霜息", "description": "喷吐寒气冻结敌人", "power": 10, "type": "attack"},
+			{"id": "pet_skill_ice_barrier", "name": "冰障", "description": "寒气结成冰墙抵挡伤害", "power": 8, "type": "defense"},
+			{"id": "pet_skill_freeze_dust", "name": "冻粉", "description": "散播冻粉迟缓敌人", "power": 0, "type": "debuff"}
+		],
+		"acquire": {"method": "explore", "location": "ice_cave"},
+		"evolves_to": ""
+	},
+	{
+		"id": "pet_jinmaohou",
+		"name": "金毛吼",
+		"description": "上古异兽后裔，浑身金毛如针。力大无穷，吼声震天。",
+		"rarity": "epic",
+		"base_stats": {"attack": 18, "defense": 14, "speed": 5, "spirit": 4},
+		"skills": [
+			{"id": "pet_skill_thunder_punch", "name": "雷霆一击", "description": "汇聚雷霆之力的重拳", "power": 22, "type": "attack"},
+			{"id": "pet_skill_iron_body", "name": "金刚体", "description": "短时间内大幅提升防御", "power": 12, "type": "buff"},
+			{"id": "pet_skill_rage", "name": "狂怒", "description": "血量低时攻击力翻倍", "power": 0, "type": "passive"}
+		],
+		"acquire": {"method": "combat", "enemy": "金毛吼", "drop_chance": 0.05},
+		"evolves_to": "pet_jinmaohou_evo"
+	},
+	{
+		"id": "pet_moyushe",
+		"name": "墨玉蛇",
+		"description": "通体漆黑如墨玉的灵蛇，毒性极烈。行动诡秘无声，是暗杀的好手。",
+		"rarity": "common",
+		"base_stats": {"attack": 10, "defense": 6, "speed": 10, "spirit": 8},
+		"skills": [
+			{"id": "pet_skill_venom_bite", "name": "毒牙", "description": "注入剧毒的撕咬", "power": 10, "type": "attack"},
+			{"id": "pet_skill_shadow_strike", "name": "暗影突袭", "description": "从暗处发动偷袭", "power": 14, "type": "attack"},
+			{"id": "pet_skill_scale_armor", "name": "鳞甲", "description": "柔韧鳞甲吸收部分伤害", "power": 0, "type": "passive"}
+		],
+		"acquire": {"method": "explore", "location": "dark_forest"},
+		"evolves_to": "pet_moyushe_evo"
+	},
+	{
+		"id": "pet_zidiandiao",
+		"name": "紫电貂",
+		"description": "身披紫色皮毛，行动迅捷如电。灵性极高，能感知周围环境的细微变化。",
+		"rarity": "common",
+		"base_stats": {"attack": 7, "defense": 3, "speed": 16, "spirit": 12},
+		"skills": [
+			{"id": "pet_skill_lightning_dash", "name": "电光一闪", "description": "以闪电般的速度冲击敌人", "power": 8, "type": "attack"},
+			{"id": "pet_skill_alert", "name": "预警", "description": "提前感知危险，提升闪避", "power": 0, "type": "passive"},
+			{"id": "pet_skill_spark", "name": "电火花", "description": "放出微弱电流麻痹敌人", "power": 6, "type": "debuff"}
+		],
+		"acquire": {"method": "shop", "price": 800},
+		"evolves_to": ""
+	},
+	{
+		"id": "pet_jiuweihu",
+		"name": "九尾狐",
+		"description": "传说中的九尾灵狐，千年道行。能够幻化人形，魅惑众生。",
+		"rarity": "legendary",
+		"base_stats": {"attack": 12, "defense": 8, "speed": 12, "spirit": 20},
+		"skills": [
+			{"id": "pet_skill_charm", "name": "魅惑", "description": "迷惑敌人使其无法行动", "power": 0, "type": "debuff"},
+			{"id": "pet_skill_spirit_flame", "name": "灵狐焰", "description": "九尾灵狐的本命火焰", "power": 20, "type": "attack"},
+			{"id": "pet_skill_rebirth", "name": "再生", "description": "每回合恢复少量气血", "power": 6, "type": "passive"}
+		],
+		"acquire": {"method": "quest", "quest_id": "q_pet_jiuweihu"},
+		"evolves_to": ""
+	}
+]

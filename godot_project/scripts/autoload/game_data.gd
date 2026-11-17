@@ -35,6 +35,24 @@ const FACTION_ALIASES := {
 	"山贼": "bandit"
 }
 
+const SECT_SKILL_NAMES := {
+	"kf_tianjian": "天剑诀",
+	"kf_qingyun": "青云诀",
+	"kf_xuanming": "玄冥神掌",
+	"kf_baihua": "百花缭乱",
+	"kf_jingang": "金刚怒目",
+	"kf_tianji": "天机推演"
+}
+
+const SECT_SKILLS := {
+	"sect_tianjian": ["kf_tianjian"],
+	"sect_qingyun": ["kf_qingyun"],
+	"sect_xuanming": ["kf_xuanming"],
+	"sect_baihua": ["kf_baihua"],
+	"sect_jingang": ["kf_jingang"],
+	"sect_tianji": ["kf_tianji"]
+}
+
 const SKILL_NAMES := {
 	"kf_basic_bare": "基本拳脚",
 	"kf_basic_sword": "基本剑法",
@@ -76,7 +94,13 @@ const SKILL_NAMES := {
 	"kf_beiming": "北冥神功",
 	"kf_liuyang": "天山六阳掌",
 	"kf_xiaowuxiang": "小无相功",
-	"kf_lingbo": "凌波微步"
+	"kf_lingbo": "凌波微步",
+	"kf_tianjian": "天剑诀",
+	"kf_qingyun": "青云诀",
+	"kf_xuanming": "玄冥神掌",
+	"kf_baihua": "百花缭乱",
+	"kf_jingang": "金刚怒目",
+	"kf_tianji": "天机推演"
 }
 
 const FACTION_SKILLS := {
@@ -112,7 +136,13 @@ const ATTACK_SKILLS := {
 	"kf_renshu": true,
 	"kf_wufa": true,
 	"kf_yidao": true,
-	"kf_liuyang": true
+	"kf_liuyang": true,
+	"kf_tianjian": true,
+	"kf_qingyun": true,
+	"kf_xuanming": true,
+	"kf_baihua": true,
+	"kf_jingang": true,
+	"kf_tianji": true
 }
 
 const DIALOGUES := {
