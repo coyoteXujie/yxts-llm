@@ -183,20 +183,93 @@ func _world_event_lines() -> Array[String]:
 			])
 		lines.append("")
 	lines.append("【江湖风声】")
-	var events := GameState.get_recent_world_events(12)
+	var events := GameState.get_recent_world_events(24)
 	if events.is_empty():
 		lines.append("暂无新的江湖传闻。")
 		return lines
+
+	# Group events by kind for better readability
+	var story_events: Array[Dictionary] = []
+	var quest_events: Array[Dictionary] = []
+	var other_events: Array[Dictionary] = []
 	for event in events:
-		var entry: Dictionary = event
-		var title := str(entry.get("title", "传闻"))
-		var description := str(entry.get("description", ""))
-		var region := str(entry.get("region_name", ""))
-		var region_prefix := "%s · " % region if not region.is_empty() else ""
-		lines.append("第%d日  %s%s" % [int(entry.get("day", GameState.day)), region_prefix, title])
-		if not description.is_empty():
-			lines.append("  %s" % description)
+		var kind := str(event.get("kind", ""))
+		if kind == "story" or kind == "story_choice":
+			story_events.append(event)
+		elif kind == "quest":
+			quest_events.append(event)
+		else:
+			other_events.append(event)
+
+	var has_story := not story_events.is_empty()
+	var has_quest := not quest_events.is_empty()
+	var has_other := not other_events.is_empty()
+
+	# Story events first (main thread)
+	if has_story:
+		if has_quest or has_other:
+			lines.append("── 主线风声 ──")
+		for event in story_events:
+			lines.append(_format_world_event(event, true))
+		if has_quest or has_other:
+			lines.append("")
+
+	# Quest events
+	if has_quest:
+		if has_story or has_other:
+			lines.append("── 江湖轶事 ──")
+		for event in quest_events:
+			lines.append(_format_world_event(event, false))
+		if has_story or has_other:
+			lines.append("")
+
+	# Other events (travel, market, seasonal, discovery)
+	if has_other:
+		if has_story or has_quest:
+			lines.append("── 四方见闻 ──")
+		for event in other_events:
+			lines.append(_format_world_event(event, false))
+
 	return lines
+
+func _format_world_event(event: Dictionary, is_story: bool) -> String:
+	var title := str(event.get("title", "传闻"))
+	var description := str(event.get("description", ""))
+	var region := str(event.get("region_name", ""))
+	var region_prefix := "%s · " % region if not region.is_empty() else ""
+	var day_str := "第%d日" % int(event.get("day", GameState.day))
+	var line := "%s  %s%s" % [day_str, region_prefix, title]
+
+	# Add more literary descriptions for key story events
+	if is_story and not description.is_empty():
+		line += "\n  %s" % _story_event_literary_touch(title, description)
+	elif not description.is_empty():
+		line += "\n  %s" % description
+	return line
+
+func _story_event_literary_touch(title: String, description: String) -> String:
+	var enriched := {
+		"平安镇初闻": "你在平安镇醒来，客栈檐角的铜铃在风里轻响。\n江湖风声还只是几句闲话，但暗处的影子已经动了。",
+		"江湖初成": "神秘人败退时留下了一句话——「洛阳的旧火，烧了十五年还没灭。」\n洛阳旧案和暗影司的名字，第一次连在了一起。",
+		"洛阳旧火重燃": "苏家旧宅遗址的焦木下，\n有人发现了一块刻着残月的玉佩。\n武林盟的旧卷不再安静，有人连夜翻开了泛黄的纸页。",
+		"暗影书信现世": "两封密信被截获，信上的暗号与七派门规如出一辙。\n山门之间的信任，第一次有了裂纹。\n是谁在替暗影司传信？",
+		"七派风声渐紧": "太极、雪山、逍遥都听见了暗处的脚步声。\n夜路开始不太平，有人在暗处说：\n「七派里，有暗影司的眼睛。」",
+		"暗影眼线暴露": "黑衣大盗败退时，腰间掉下半截密令。\n暗影司藏在路上的眼睛，少了一只。",
+		"断令归卷": "断令的花纹与武林盟旧卷的落款严丝合缝。\n七派夜议，终于有了拿得出手的证据。\n有人开始紧张了。",
+		"武林夜议成局": description,
+		"血月残印现世": "血月使者败退，暗影司的旧账里第一次露出一个名字——\n「无面主事」。没有人见过他的脸，\n但他留下的每一道残印，都指向同一条路。",
+		"无面账册归卷": "无面君失手，苏家账册落入你手。\n账册最后一页画着一幅地形图——\n暗影司总坛的方位，终于浮出水面。",
+		"影司总坛暂破": "暗影司影主败退，总坛暗道被七派合力封堵。\n江湖各派，终于有了短暂的喘息。\n但余烬未灭，暗处的火种还在燃烧。",
+		"总坛余烬未灭": "苏梦瑶、陈天行与花间暗线开始清点暗影司残部。\n苏家旧账，终于能翻到最后几页了。",
+		"旧案终册落印": "武林盟与七派共同落印，苏家旧案暂得收束。\n卷宗封面上多了一行小字：\n「此案见证者——%s。江湖有眼，公道在人心。」" % GameState.player.get("name", "无名少侠"),
+		"江湖留灯": "你选择封存旧案。\n苏梦瑶在苏家旧宅的废墟上，点了一盏灯。\n她说：有些伤疤不必揭开，但要让后人记得这里曾经亮过。",
+		"残影清剿": "你选择追剿到底。\n陈天行放下说书人的醒木，拿起了剑。\n他说：故事还没讲完——暗处的影子，一个都不能留。",
+		"清算有度": "七派共同封存旧案，只清点首恶和铁证。\n几处被胁迫的暗线得以改过，\n江湖在这一夜，少了一场血雨腥风。",
+		"追剿残影": "武林盟连夜清查暗影司残部，\n几条蛰伏多年的旧怨被翻到明面。\n有人在暗处说：旧案虽了，但新的账册，才刚刚翻开。"
+	}
+	if enriched.has(title):
+		return enriched[title]
+	return description
 
 func _clue_delivery_hint(clue: Dictionary) -> String:
 	if str(clue.get("source", "")) != "market":
