@@ -304,6 +304,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("enter_area"):
 		_handle_enter_area()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("forge"):
+		_close_gameplay_panels()
+		forge_panel.show_panel()
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_save"):
 		_save_current_game()
 		get_viewport().set_input_as_handled()

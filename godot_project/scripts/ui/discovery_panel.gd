@@ -38,8 +38,14 @@ func _build() -> void:
 	add_child(shade)
 
 	var panel := PanelContainer.new()
-	panel.position = Vector2(308, 132)
-	panel.size = Vector2(664, 420)
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -332
+	panel.offset_top = -210
+	panel.offset_right = 332
+	panel.offset_bottom = 210
 	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(36, 28, 36, 24)))
 	add_child(panel)
 
