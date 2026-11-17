@@ -17,12 +17,24 @@ func _ready() -> void:
 		warm_tone = ProjectSettings.get_setting("yxts/postfx/warm_tone", 0.35),
 		paper_strength = ProjectSettings.get_setting("yxts/postfx/paper_strength", 0.060),
 		vignette_strength = ProjectSettings.get_setting("yxts/postfx/vignette", 0.55),
+		ink_spread = ProjectSettings.get_setting("yxts/postfx/ink_spread", 0.30),
+		brush_stroke = ProjectSettings.get_setting("yxts/postfx/brush_stroke", 0.35),
 	}
 	for key in settings:
 		material.set_shader_parameter(key, settings[key])
 	
+	material.set_shader_parameter("time", 0.0)
+	
 	# 听 setting 变更事件
 	EventBus.postfx_settings_changed.connect(_on_settings_changed)
+	
+	# Time 动画更新
+	set_process(true)
+
+func _process(delta: float) -> void:
+	if material and material is ShaderMaterial:
+		var t = material.get_shader_parameter("time")
+		material.set_shader_parameter("time", float(t) + delta)
 
 func set_shader_param(name: String, value) -> void:
 	if material and material is ShaderMaterial:
@@ -47,6 +59,12 @@ func set_paper_strength(v: float) -> void:
 
 func set_vignette(v: float) -> void:
 	set_shader_param("vignette_strength", clamp(v, 0.0, 1.0))
+
+func set_ink_spread(v: float) -> void:
+	set_shader_param("ink_spread", clamp(v, 0.0, 1.0))
+
+func set_brush_stroke(v: float) -> void:
+	set_shader_param("brush_stroke", clamp(v, 0.0, 1.0))
 
 func toggle_on() -> void:
 	set_shader_param("intensity", 0.85)

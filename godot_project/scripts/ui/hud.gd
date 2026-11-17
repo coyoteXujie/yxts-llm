@@ -39,6 +39,7 @@ var toast_label: Label
 var minimap
 var region_banner_panel: PanelContainer
 var region_banner_label: Label
+var region_title_panel
 var toast_timer := 0.0
 var region_banner_timer := 0.0
 var last_region_id := ""
@@ -51,6 +52,7 @@ func _ready() -> void:
 	_build_minimap()
 	_build_prompt()
 	_build_region_banner()
+	_build_region_title()
 	_build_toast()
 	EventBus.player_changed.connect(_on_player_changed)
 	EventBus.inventory_changed.connect(_on_inventory_changed)
@@ -267,6 +269,14 @@ func _build_region_banner() -> void:
 	region_banner_label.add_theme_constant_override("shadow_offset_y", 2)
 	region_banner_panel.add_child(region_banner_label)
 	region_banner_panel.hide()
+
+func _build_region_title() -> void:
+	# 水墨风格区域名称浮现效果（覆盖在 HUD 层之上）
+	region_title_panel = preload("res://scripts/ui/region_title_panel.gd").new()
+	region_title_panel.name = "RegionTitlePanel"
+	region_title_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(region_title_panel)
+	region_title_panel.hide()
 
 func _build_toast() -> void:
 	toast_label = Label.new()
@@ -544,6 +554,14 @@ func _show_region_banner(region: Dictionary, state: Dictionary) -> void:
 	region_banner_panel.modulate.a = 1.0
 	region_banner_panel.show()
 	region_banner_timer = 2.6
+	
+	# 触发水墨区域名称浮现效果
+	if region_title_panel != null:
+		var region_name := str(region.get("name", region.get("id", "")))
+		var region_type := _region_type_name(str(region.get("type", "wild")))
+		var danger := _danger_text(int(region.get("danger", 0)))
+		var subtitle := "%s  ·  %s" % [region_type, danger]
+		region_title_panel.show_title(region_name, subtitle)
 
 func _region_type_name(region_type: String) -> String:
 	match region_type:

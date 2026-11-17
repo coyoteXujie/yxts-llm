@@ -1,306 +1,2013 @@
 {
   "qinghe": {
     "landmarks": [
-      {"label": "镇口告示", "description": "告示上写着近路、盗匪和失物，许多小任务会从这里冒头。", "kind": "notice", "tile": [20, 10], "reward_money": 2},
-      {"label": "练武空场", "description": "空场地面被脚步磨亮，是镇上年轻人练拳脚的地方。", "kind": "training", "tile": [42, 27], "reward_exp": 4},
-      {"label": "老井茶棚", "description": "井水清冽，茶棚边常有赶路人歇脚。", "kind": "well", "tile": [11, 28], "reward_item": "item_baozi"}
+      {
+        "label": "镇口告示",
+        "description": "告示上写着近路、盗匪和失物，许多小任务会从这里冒头。",
+        "kind": "notice",
+        "tile": [
+          20,
+          10
+        ],
+        "reward_money": 2
+      },
+      {
+        "label": "练武空场",
+        "description": "空场地面被脚步磨亮，是镇上年轻人练拳脚的地方。",
+        "kind": "training",
+        "tile": [
+          42,
+          27
+        ],
+        "reward_exp": 4
+      },
+      {
+        "label": "老井茶棚",
+        "description": "井水清冽，茶棚边常有赶路人歇脚。",
+        "kind": "well",
+        "tile": [
+          11,
+          28
+        ],
+        "reward_item": "item_baozi"
+      }
     ],
     "resources": [
-      {"label": "田埂药草", "description": "田埂边长着几株常见药草，适合初行江湖的人练手采摘。", "kind": "herb", "tile": [46, 30], "reward_item": "item_red_flower"},
-      {"label": "茶棚食盒", "description": "茶棚老板见你赶路，塞给你一个热包子。", "kind": "cache", "tile": [12, 27], "reward_item": "item_baozi"}
+      {
+        "label": "田埂药草",
+        "description": "田埂边长着几株常见药草，适合初行江湖的人练手采摘。",
+        "kind": "herb",
+        "tile": [
+          46,
+          30
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "茶棚食盒",
+        "description": "茶棚老板见你赶路，塞给你一个热包子。",
+        "kind": "cache",
+        "tile": [
+          12,
+          27
+        ],
+        "reward_item": "item_baozi"
+      }
     ]
   },
   "luoyang": {
     "landmarks": [
-      {"label": "苏家旧宅", "description": "墙根还有焦黑旧痕，洛阳旧火的线索并没有被岁月完全抹去。", "kind": "ruin", "tile": [25, 34], "reward_exp": 8},
-      {"label": "天街武馆", "description": "木人桩排在院中，来往侠少在这里试拳脚。", "kind": "training", "tile": [56, 19], "reward_exp": 6}
+      {
+        "label": "苏家旧宅",
+        "description": "墙根还有焦黑旧痕，洛阳旧火的线索并没有被岁月完全抹去。",
+        "kind": "ruin",
+        "tile": [
+          25,
+          34
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "天街武馆",
+        "description": "木人桩排在院中，来往侠少在这里试拳脚。",
+        "kind": "training",
+        "tile": [
+          56,
+          19
+        ],
+        "reward_exp": 6
+      }
     ],
     "resources": [
-      {"label": "街边食盒", "description": "街边摊贩收摊前分你一份热食。", "kind": "cache", "tile": [22, 35], "reward_item": "item_baozi"},
-      {"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": [56, 19], "reward_item": "item_yao"}
+      {
+        "label": "街边食盒",
+        "description": "街边摊贩收摊前分你一份热食。",
+        "kind": "cache",
+        "tile": [
+          22,
+          35
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "武馆药罐",
+        "description": "武馆药罐里还有一点跌打药粉。",
+        "kind": "herb",
+        "tile": [
+          56,
+          19
+        ],
+        "reward_item": "item_yao"
+      }
     ]
   },
   "luoshui_river": {
     "landmarks": [
-      {"label": "洛水拱桥", "description": "拱桥横跨浅水，桥栏上有新旧刀痕，像是有人在此截过镖。", "kind": "bridge", "tile": [36, 22], "reward_exp": 7},
-      {"label": "旧渡口木桩", "description": "木桩缆痕很深，河风里夹着船夫和脚夫的闲话。", "kind": "dock", "tile": [24, 26], "reward_item": "item_fish"},
-      {"label": "河畔茶棚", "description": "茶棚半开，过路人把洛阳城里的消息留在竹帘背后。", "kind": "well", "tile": [13, 30], "reward_item": "item_baozi"}
+      {
+        "label": "洛水拱桥",
+        "description": "拱桥横跨浅水，桥栏上有新旧刀痕，像是有人在此截过镖。",
+        "kind": "bridge",
+        "tile": [
+          36,
+          22
+        ],
+        "reward_exp": 7
+      },
+      {
+        "label": "旧渡口木桩",
+        "description": "木桩缆痕很深，河风里夹着船夫和脚夫的闲话。",
+        "kind": "dock",
+        "tile": [
+          24,
+          26
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "河畔茶棚",
+        "description": "茶棚半开，过路人把洛阳城里的消息留在竹帘背后。",
+        "kind": "well",
+        "tile": [
+          13,
+          30
+        ],
+        "reward_item": "item_baozi"
+      }
     ],
     "resources": [
-      {"label": "浅滩鱼篓", "description": "鱼篓压在浅水边，水草晃动时还能看见鱼影。", "kind": "fish", "tile": [54, 23], "reward_item": "item_fish"},
-      {"label": "水边药草", "description": "潮湿河岸边长着止血药草，采摘时要避开滑石。", "kind": "herb", "tile": [16, 34], "reward_item": "item_yao"},
-      {"label": "桥下铜钱", "description": "桥洞阴影里露出几枚旧钱，像是行商匆忙落下的。", "kind": "coin", "tile": [40, 27], "reward_money": 4}
+      {
+        "label": "浅滩鱼篓",
+        "description": "鱼篓压在浅水边，水草晃动时还能看见鱼影。",
+        "kind": "fish",
+        "tile": [
+          54,
+          23
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "水边药草",
+        "description": "潮湿河岸边长着止血药草，采摘时要避开滑石。",
+        "kind": "herb",
+        "tile": [
+          16,
+          34
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "桥下铜钱",
+        "description": "桥洞阴影里露出几枚旧钱，像是行商匆忙落下的。",
+        "kind": "coin",
+        "tile": [
+          40,
+          27
+        ],
+        "reward_money": 4
+      }
     ]
   },
   "chengdu": {
     "landmarks": [
-      {"label": "天府药市", "description": "药香从竹棚和木匣之间漫出来，蜀中药农在这里分拣草药、交换山路消息。", "kind": "market", "tile": [18, 24], "reward_money": 4},
-      {"label": "都江渠眼", "description": "清水从石渠分流入城，老工匠说这道水脉护住了天府平原的气运。", "kind": "water", "tile": [55, 30], "reward_exp": 7},
-      {"label": "竹廊茶肆", "description": "竹帘半卷，茶客谈着蜀道、盐帮和西岭来信，话里常藏着下一段路。", "kind": "well", "tile": [40, 18], "reward_item": "item_wine"}
+      {
+        "label": "天府药市",
+        "description": "药香从竹棚和木匣之间漫出来，蜀中药农在这里分拣草药、交换山路消息。",
+        "kind": "market",
+        "tile": [
+          18,
+          24
+        ],
+        "reward_money": 4
+      },
+      {
+        "label": "都江渠眼",
+        "description": "清水从石渠分流入城，老工匠说这道水脉护住了天府平原的气运。",
+        "kind": "water",
+        "tile": [
+          55,
+          30
+        ],
+        "reward_exp": 7
+      },
+      {
+        "label": "竹廊茶肆",
+        "description": "竹帘半卷，茶客谈着蜀道、盐帮和西岭来信，话里常藏着下一段路。",
+        "kind": "well",
+        "tile": [
+          40,
+          18
+        ],
+        "reward_item": "item_wine"
+      }
     ],
     "resources": [
-      {"label": "药摊药罐", "description": "摊主把跌打药罐留在案边，见你行路辛苦，分你一小包金创药。", "kind": "herb", "tile": [21, 25], "reward_item": "item_yao"},
-      {"label": "竹篮酒食", "description": "茶肆竹篮里还有一壶温米酒，正适合压一压潮湿山气。", "kind": "cache", "tile": [38, 19], "reward_item": "item_wine"},
-      {"label": "水渠鱼篓", "description": "鱼篓挂在水渠边，渠水清浅，里面还有一尾活鱼。", "kind": "fish", "tile": [58, 31], "reward_item": "item_fish"}
+      {
+        "label": "药摊药罐",
+        "description": "摊主把跌打药罐留在案边，见你行路辛苦，分你一小包金创药。",
+        "kind": "herb",
+        "tile": [
+          21,
+          25
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "竹篮酒食",
+        "description": "茶肆竹篮里还有一壶温米酒，正适合压一压潮湿山气。",
+        "kind": "cache",
+        "tile": [
+          38,
+          19
+        ],
+        "reward_item": "item_wine"
+      },
+      {
+        "label": "水渠鱼篓",
+        "description": "鱼篓挂在水渠边，渠水清浅，里面还有一尾活鱼。",
+        "kind": "fish",
+        "tile": [
+          58,
+          31
+        ],
+        "reward_item": "item_fish"
+      }
     ]
   },
   "dujiang_weir": {
     "landmarks": [
-      {"label": "飞沙分水堰", "description": "石堰斜分江水，水声轰鸣处能看出老水工留下的巧思。", "kind": "water", "tile": [38, 24], "reward_exp": 8},
-      {"label": "鱼嘴石堤", "description": "石堤像鱼嘴探入江心，分出内外两道水势，也分出入蜀商路。", "kind": "bridge", "tile": [52, 28], "reward_money": 4},
-      {"label": "古堰水工棚", "description": "棚里挂着旧尺和竹简图样，水工们谈起山雨涨水时格外慎重。", "kind": "market", "tile": [20, 20], "reward_item": "item_yao"}
+      {
+        "label": "飞沙分水堰",
+        "description": "石堰斜分江水，水声轰鸣处能看出老水工留下的巧思。",
+        "kind": "water",
+        "tile": [
+          38,
+          24
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "鱼嘴石堤",
+        "description": "石堤像鱼嘴探入江心，分出内外两道水势，也分出入蜀商路。",
+        "kind": "bridge",
+        "tile": [
+          52,
+          28
+        ],
+        "reward_money": 4
+      },
+      {
+        "label": "古堰水工棚",
+        "description": "棚里挂着旧尺和竹简图样，水工们谈起山雨涨水时格外慎重。",
+        "kind": "market",
+        "tile": [
+          20,
+          20
+        ],
+        "reward_item": "item_yao"
+      }
     ],
     "resources": [
-      {"label": "渠边鱼篓", "description": "鱼篓压在回水湾里，水势缓处常有肥鱼误入。", "kind": "fish", "tile": [58, 31], "reward_item": "item_fish"},
-      {"label": "水工药箱", "description": "木箱里备着跌打药，修堰人常在湿滑石面上摔伤。", "kind": "cache", "tile": [24, 21], "reward_item": "item_yao"},
-      {"label": "堰边散钱", "description": "石缝里卡着几枚铜钱，像是商旅过桥时匆忙落下的。", "kind": "coin", "tile": [48, 29], "reward_money": 5}
+      {
+        "label": "渠边鱼篓",
+        "description": "鱼篓压在回水湾里，水势缓处常有肥鱼误入。",
+        "kind": "fish",
+        "tile": [
+          58,
+          31
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "水工药箱",
+        "description": "木箱里备着跌打药，修堰人常在湿滑石面上摔伤。",
+        "kind": "cache",
+        "tile": [
+          24,
+          21
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "堰边散钱",
+        "description": "石缝里卡着几枚铜钱，像是商旅过桥时匆忙落下的。",
+        "kind": "coin",
+        "tile": [
+          48,
+          29
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "minjiang_river": {
     "landmarks": [
-      {"label": "岷江索桥", "description": "索桥晃在河谷水声之上，桥板间能看见翻白的急流。", "kind": "bridge", "tile": [38, 25], "reward_exp": 8},
-      {"label": "河谷渡口", "description": "渡口木桩被江水磨得发黑，船夫们用这里交换成都和西岭的消息。", "kind": "dock", "tile": [58, 30], "reward_item": "item_fish"},
-      {"label": "半崖茶棚", "description": "茶棚倚着山脚，竹帘后常坐着盐帮、药农和避雨的江湖客。", "kind": "well", "tile": [18, 20], "reward_item": "item_baozi"}
+      {
+        "label": "岷江索桥",
+        "description": "索桥晃在河谷水声之上，桥板间能看见翻白的急流。",
+        "kind": "bridge",
+        "tile": [
+          38,
+          25
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "河谷渡口",
+        "description": "渡口木桩被江水磨得发黑，船夫们用这里交换成都和西岭的消息。",
+        "kind": "dock",
+        "tile": [
+          58,
+          30
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "半崖茶棚",
+        "description": "茶棚倚着山脚，竹帘后常坐着盐帮、药农和避雨的江湖客。",
+        "kind": "well",
+        "tile": [
+          18,
+          20
+        ],
+        "reward_item": "item_baozi"
+      }
     ],
     "resources": [
-      {"label": "浅湾鱼篓", "description": "鱼篓压在缓水湾里，江鱼顺着回流钻了进去。", "kind": "fish", "tile": [62, 31], "reward_item": "item_fish"},
-      {"label": "河滩药草", "description": "潮湿河滩旁长着清凉药草，叶片沾着细雾。", "kind": "herb", "tile": [24, 34], "reward_item": "item_yao"},
-      {"label": "码头散钱", "description": "木箱旁散着几枚铜钱，像是装船时从钱袋里漏下的。", "kind": "coin", "tile": [50, 32], "reward_money": 5}
+      {
+        "label": "浅湾鱼篓",
+        "description": "鱼篓压在缓水湾里，江鱼顺着回流钻了进去。",
+        "kind": "fish",
+        "tile": [
+          62,
+          31
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "河滩药草",
+        "description": "潮湿河滩旁长着清凉药草，叶片沾着细雾。",
+        "kind": "herb",
+        "tile": [
+          24,
+          34
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "码头散钱",
+        "description": "木箱旁散着几枚铜钱，像是装船时从钱袋里漏下的。",
+        "kind": "coin",
+        "tile": [
+          50,
+          32
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "shudao_mtn": {
     "landmarks": [
-      {"label": "蜀道栈关", "description": "木关卡嵌在崖壁之间，过关人把兵荒马乱和入蜀难路都写在脸上。", "kind": "bridge", "tile": [36, 21], "reward_exp": 9},
-      {"label": "绝壁栈道", "description": "栈道贴着峭壁横过深谷，脚下木板会随山风轻轻发响。", "kind": "bridge", "tile": [52, 27], "reward_exp": 8},
-      {"label": "入蜀驿亭", "description": "驿亭灯笼未灭，亭中行脚客谈着西岭风雪和成都近况。", "kind": "well", "tile": [22, 20], "reward_item": "item_baozi"}
+      {
+        "label": "蜀道栈关",
+        "description": "木关卡嵌在崖壁之间，过关人把兵荒马乱和入蜀难路都写在脸上。",
+        "kind": "bridge",
+        "tile": [
+          36,
+          21
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "绝壁栈道",
+        "description": "栈道贴着峭壁横过深谷，脚下木板会随山风轻轻发响。",
+        "kind": "bridge",
+        "tile": [
+          52,
+          27
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "入蜀驿亭",
+        "description": "驿亭灯笼未灭，亭中行脚客谈着西岭风雪和成都近况。",
+        "kind": "well",
+        "tile": [
+          22,
+          20
+        ],
+        "reward_item": "item_baozi"
+      }
     ],
     "resources": [
-      {"label": "崖缝药草", "description": "峭壁裂缝里长着耐寒药草，采摘时要用脚尖扣住石缝。", "kind": "herb", "tile": [18, 29], "reward_item": "item_yao"},
-      {"label": "栈道补给箱", "description": "关卡旁的木箱里有行脚客留下的干粮，用粗布包着。", "kind": "cache", "tile": [44, 31], "reward_item": "item_baozi"},
-      {"label": "崖边散钱", "description": "栏杆旁压着几枚铜钱，许是山风吹落的钱袋余响。", "kind": "coin", "tile": [58, 32], "reward_money": 6}
+      {
+        "label": "崖缝药草",
+        "description": "峭壁裂缝里长着耐寒药草，采摘时要用脚尖扣住石缝。",
+        "kind": "herb",
+        "tile": [
+          18,
+          29
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "栈道补给箱",
+        "description": "关卡旁的木箱里有行脚客留下的干粮，用粗布包着。",
+        "kind": "cache",
+        "tile": [
+          44,
+          31
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "崖边散钱",
+        "description": "栏杆旁压着几枚铜钱，许是山风吹落的钱袋余响。",
+        "kind": "coin",
+        "tile": [
+          58,
+          32
+        ],
+        "reward_money": 6
+      }
     ]
   },
   "xindu_field": {
     "landmarks": [
-      {"label": "连片稻田", "description": "稻田铺到远处村舍边，灌渠水声把成都平原的安稳一点点送来。", "kind": "market", "tile": [28, 28], "reward_money": 3},
-      {"label": "古道驿站遗址", "description": "旧驿站只剩半截地基，石缝里还能看出当年商旅入蜀的车辙。", "kind": "ruin", "tile": [48, 24], "reward_exp": 7},
-      {"label": "竹林小径", "description": "竹影压在田埂尽头，小径绕向新都镇，也绕向更深的山路。", "kind": "shrine", "tile": [60, 32], "reward_exp": 5}
+      {
+        "label": "连片稻田",
+        "description": "稻田铺到远处村舍边，灌渠水声把成都平原的安稳一点点送来。",
+        "kind": "market",
+        "tile": [
+          28,
+          28
+        ],
+        "reward_money": 3
+      },
+      {
+        "label": "古道驿站遗址",
+        "description": "旧驿站只剩半截地基，石缝里还能看出当年商旅入蜀的车辙。",
+        "kind": "ruin",
+        "tile": [
+          48,
+          24
+        ],
+        "reward_exp": 7
+      },
+      {
+        "label": "竹林小径",
+        "description": "竹影压在田埂尽头，小径绕向新都镇，也绕向更深的山路。",
+        "kind": "shrine",
+        "tile": [
+          60,
+          32
+        ],
+        "reward_exp": 5
+      }
     ],
     "resources": [
-      {"label": "田埂稻束", "description": "田埂旁晒着新割稻束，村人分你一小把作路粮。", "kind": "cache", "tile": [22, 34], "reward_item": "item_baozi"},
-      {"label": "林间草药", "description": "小树林边长着止血草，叶脉里还带着清晨露水。", "kind": "herb", "tile": [36, 20], "reward_item": "item_yao"},
-      {"label": "古道散钱", "description": "旧车辙旁压着几枚铜钱，像是赶路人从腰袋里颠落的。", "kind": "coin", "tile": [50, 30], "reward_money": 5}
+      {
+        "label": "田埂稻束",
+        "description": "田埂旁晒着新割稻束，村人分你一小把作路粮。",
+        "kind": "cache",
+        "tile": [
+          22,
+          34
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "林间草药",
+        "description": "小树林边长着止血草，叶脉里还带着清晨露水。",
+        "kind": "herb",
+        "tile": [
+          36,
+          20
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "古道散钱",
+        "description": "旧车辙旁压着几枚铜钱，像是赶路人从腰袋里颠落的。",
+        "kind": "coin",
+        "tile": [
+          50,
+          30
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "wenjiang_garden": {
     "landmarks": [
-      {"label": "四季花田", "description": "花垄从小径两侧铺开，春桃夏荷、秋桂冬梅的香气在这里交叠。", "kind": "flower", "tile": [30, 28], "reward_exp": 6},
-      {"label": "花商小棚", "description": "小棚下摆着花篮和种袋，花商把温江、成都和山门的消息都掺进叫卖声里。", "kind": "market", "tile": [44, 24], "reward_money": 4},
-      {"label": "古花农居所", "description": "旧屋半掩在花树之后，墙根还留着前人培花的陶罐。", "kind": "ruin", "tile": [58, 31], "reward_exp": 7}
+      {
+        "label": "四季花田",
+        "description": "花垄从小径两侧铺开，春桃夏荷、秋桂冬梅的香气在这里交叠。",
+        "kind": "flower",
+        "tile": [
+          30,
+          28
+        ],
+        "reward_exp": 6
+      },
+      {
+        "label": "花商小棚",
+        "description": "小棚下摆着花篮和种袋，花商把温江、成都和山门的消息都掺进叫卖声里。",
+        "kind": "market",
+        "tile": [
+          44,
+          24
+        ],
+        "reward_money": 4
+      },
+      {
+        "label": "古花农居所",
+        "description": "旧屋半掩在花树之后，墙根还留着前人培花的陶罐。",
+        "kind": "ruin",
+        "tile": [
+          58,
+          31
+        ],
+        "reward_exp": 7
+      }
     ],
     "resources": [
-      {"label": "花田花种", "description": "花垄边落着几枚饱满花种，适合带回城里换些银钱。", "kind": "flower", "tile": [26, 34], "reward_money": 4},
-      {"label": "花田草药", "description": "花田边缘长着一簇药草，香气里带着清苦。", "kind": "herb", "tile": [36, 21], "reward_item": "item_red_flower"},
-      {"label": "花篮食盒", "description": "花农把点心放在花篮旁，见你赶路辛苦便让你取走。", "kind": "cache", "tile": [48, 33], "reward_item": "item_baozi"}
+      {
+        "label": "花田花种",
+        "description": "花垄边落着几枚饱满花种，适合带回城里换些银钱。",
+        "kind": "flower",
+        "tile": [
+          26,
+          34
+        ],
+        "reward_money": 4
+      },
+      {
+        "label": "花田草药",
+        "description": "花田边缘长着一簇药草，香气里带着清苦。",
+        "kind": "herb",
+        "tile": [
+          36,
+          21
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "花篮食盒",
+        "description": "花农把点心放在花篮旁，见你赶路辛苦便让你取走。",
+        "kind": "cache",
+        "tile": [
+          48,
+          33
+        ],
+        "reward_item": "item_baozi"
+      }
     ]
   },
   "western_plateau": {
     "landmarks": [
-      {"label": "高原古寺", "description": "风雪把旧寺檐角磨白，钟声不响了，石阶上仍有香灰痕。", "kind": "shrine", "tile": [34, 18], "reward_exp": 9},
-      {"label": "冰川洞穴", "description": "冰洞口泛着冷蓝光，风从洞里吹出，像有人在雪下低语。", "kind": "cave", "tile": [14, 22], "reward_item": "item_yao"},
-      {"label": "山顶神坛", "description": "石坛立在雪线之上，残旗被高原风拉得笔直。", "kind": "ruin", "tile": [54, 26], "reward_exp": 10}
+      {
+        "label": "高原古寺",
+        "description": "风雪把旧寺檐角磨白，钟声不响了，石阶上仍有香灰痕。",
+        "kind": "shrine",
+        "tile": [
+          34,
+          18
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "冰川洞穴",
+        "description": "冰洞口泛着冷蓝光，风从洞里吹出，像有人在雪下低语。",
+        "kind": "cave",
+        "tile": [
+          14,
+          22
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "山顶神坛",
+        "description": "石坛立在雪线之上，残旗被高原风拉得笔直。",
+        "kind": "ruin",
+        "tile": [
+          54,
+          26
+        ],
+        "reward_exp": 10
+      }
     ],
     "resources": [
-      {"label": "高原草药", "description": "冻土边缘长着耐寒药草，根须扎进薄雪下的黑土。", "kind": "herb", "tile": [24, 31], "reward_item": "item_yao"},
-      {"label": "雪线寒石", "description": "雪线旁露出一块冷硬矿石，带着细碎冰纹。", "kind": "ore", "tile": [48, 30], "reward_money": 7},
-      {"label": "雪莲旧株", "description": "岩缝里残着一株雪莲，花瓣被风雪压得发亮。", "kind": "flower", "tile": [60, 34], "reward_item": "item_red_flower"}
+      {
+        "label": "高原草药",
+        "description": "冻土边缘长着耐寒药草，根须扎进薄雪下的黑土。",
+        "kind": "herb",
+        "tile": [
+          24,
+          31
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "雪线寒石",
+        "description": "雪线旁露出一块冷硬矿石，带着细碎冰纹。",
+        "kind": "ore",
+        "tile": [
+          48,
+          30
+        ],
+        "reward_money": 7
+      },
+      {
+        "label": "雪莲旧株",
+        "description": "岩缝里残着一株雪莲，花瓣被风雪压得发亮。",
+        "kind": "flower",
+        "tile": [
+          60,
+          34
+        ],
+        "reward_item": "item_red_flower"
+      }
     ]
   },
   "funiu_mtn": {
     "landmarks": [
-      {"label": "伏牛古矿洞", "description": "废弃矿洞口还压着旧木梁，洞里隐约能听见滴水和碎石声。", "kind": "cave", "tile": [18, 24], "reward_money": 6},
-      {"label": "那迦密林入口", "description": "密林深处立着蛇纹旧门，藤蔓遮住大半门额，外人难辨去路。", "kind": "ruin", "tile": [56, 25], "reward_exp": 9},
-      {"label": "山顶神坛", "description": "石坛立在高处，残旗被山风吹得猎猎作响，像在警告后来人。", "kind": "shrine", "tile": [44, 18], "reward_exp": 8}
+      {
+        "label": "伏牛古矿洞",
+        "description": "废弃矿洞口还压着旧木梁，洞里隐约能听见滴水和碎石声。",
+        "kind": "cave",
+        "tile": [
+          18,
+          24
+        ],
+        "reward_money": 6
+      },
+      {
+        "label": "那迦密林入口",
+        "description": "密林深处立着蛇纹旧门，藤蔓遮住大半门额，外人难辨去路。",
+        "kind": "ruin",
+        "tile": [
+          56,
+          25
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "山顶神坛",
+        "description": "石坛立在高处，残旗被山风吹得猎猎作响，像在警告后来人。",
+        "kind": "shrine",
+        "tile": [
+          44,
+          18
+        ],
+        "reward_exp": 8
+      }
     ],
     "resources": [
-      {"label": "伏牛草药", "description": "山路湿处长着耐寒草药，叶片边缘带着淡淡苦香。", "kind": "herb", "tile": [24, 32], "reward_item": "item_yao"},
-      {"label": "寒铁矿脉", "description": "矿洞旁露出暗色矿脉，石面带着冷硬金属光。", "kind": "ore", "tile": [20, 27], "reward_money": 8},
-      {"label": "山阴老参", "description": "山阴潮土里藏着老参细须，采挖时要避开松动石块。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+      {
+        "label": "伏牛草药",
+        "description": "山路湿处长着耐寒草药，叶片边缘带着淡淡苦香。",
+        "kind": "herb",
+        "tile": [
+          24,
+          32
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "寒铁矿脉",
+        "description": "矿洞旁露出暗色矿脉，石面带着冷硬金属光。",
+        "kind": "ore",
+        "tile": [
+          20,
+          27
+        ],
+        "reward_money": 8
+      },
+      {
+        "label": "山阴老参",
+        "description": "山阴潮土里藏着老参细须，采挖时要避开松动石块。",
+        "kind": "herb",
+        "tile": [
+          48,
+          34
+        ],
+        "reward_item": "item_shengji"
+      }
     ]
   },
   "wudang_peak": {
     "landmarks": [
-      {"label": "武当金顶", "description": "金顶立在云海之上，日光照上殿脊时，连山风都像慢了半拍。", "kind": "shrine", "tile": [36, 18], "reward_exp": 9},
-      {"label": "太极演武台", "description": "石台中央刻着阴阳鱼，道士晨练时脚步绕圆，劲力却不散。", "kind": "training", "tile": [48, 25], "reward_exp": 8},
-      {"label": "后山隐径", "description": "侧殿之后有一条隐在松影里的小路，似乎通往更清静的后山。", "kind": "ruin", "tile": [58, 31], "reward_exp": 7}
+      {
+        "label": "武当金顶",
+        "description": "金顶立在云海之上，日光照上殿脊时，连山风都像慢了半拍。",
+        "kind": "shrine",
+        "tile": [
+          36,
+          18
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "太极演武台",
+        "description": "石台中央刻着阴阳鱼，道士晨练时脚步绕圆，劲力却不散。",
+        "kind": "training",
+        "tile": [
+          48,
+          25
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "后山隐径",
+        "description": "侧殿之后有一条隐在松影里的小路，似乎通往更清静的后山。",
+        "kind": "ruin",
+        "tile": [
+          58,
+          31
+        ],
+        "reward_exp": 7
+      }
     ],
     "resources": [
-      {"label": "古松松脂", "description": "古松树皮渗出清香松脂，道童说它能入药，也能护弦。", "kind": "herb", "tile": [22, 30], "reward_item": "item_yao"},
-      {"label": "金顶仙草", "description": "石阶尽头有几株耐寒灵草，叶尖沾着云雾凝成的水珠。", "kind": "herb", "tile": [42, 20], "reward_item": "item_red_flower"},
-      {"label": "香客平安钱", "description": "石栏边压着几枚平安钱，知客道士让你收作路资。", "kind": "coin", "tile": [54, 32], "reward_money": 5}
+      {
+        "label": "古松松脂",
+        "description": "古松树皮渗出清香松脂，道童说它能入药，也能护弦。",
+        "kind": "herb",
+        "tile": [
+          22,
+          30
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "金顶仙草",
+        "description": "石阶尽头有几株耐寒灵草，叶尖沾着云雾凝成的水珠。",
+        "kind": "herb",
+        "tile": [
+          42,
+          20
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "香客平安钱",
+        "description": "石栏边压着几枚平安钱，知客道士让你收作路资。",
+        "kind": "coin",
+        "tile": [
+          54,
+          32
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "three_gorges": {
     "landmarks": [
-      {"label": "瞿塘古栈道", "description": "古栈道贴着江壁悬在急流上方，木桩被江雾和岁月磨得发黑。", "kind": "bridge", "tile": [26, 22], "reward_exp": 8},
-      {"label": "巫峡云渡", "description": "渡口木板常年湿滑，船夫只在云雾散开时才敢摆渡。", "kind": "dock", "tile": [52, 28], "reward_item": "item_fish"},
-      {"label": "西陵险滩", "description": "白浪在暗礁间翻卷，水声像万马挤过峡口。", "kind": "water", "tile": [42, 31], "reward_exp": 9}
+      {
+        "label": "瞿塘古栈道",
+        "description": "古栈道贴着江壁悬在急流上方，木桩被江雾和岁月磨得发黑。",
+        "kind": "bridge",
+        "tile": [
+          26,
+          22
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "巫峡云渡",
+        "description": "渡口木板常年湿滑，船夫只在云雾散开时才敢摆渡。",
+        "kind": "dock",
+        "tile": [
+          52,
+          28
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "西陵险滩",
+        "description": "白浪在暗礁间翻卷，水声像万马挤过峡口。",
+        "kind": "water",
+        "tile": [
+          42,
+          31
+        ],
+        "reward_exp": 9
+      }
     ],
     "resources": [
-      {"label": "江滩鱼篓", "description": "鱼篓压在回水湾边，急流带来的江鱼正撞在竹篾上。", "kind": "fish", "tile": [58, 32], "reward_item": "item_fish"},
-      {"label": "峡畔草药", "description": "湿润江雾滋养着草药，叶片贴着岩壁生长。", "kind": "herb", "tile": [18, 30], "reward_item": "item_yao"},
-      {"label": "古滩遗物", "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。", "kind": "cache", "tile": [34, 34], "reward_money": 6}
+      {
+        "label": "江滩鱼篓",
+        "description": "鱼篓压在回水湾边，急流带来的江鱼正撞在竹篾上。",
+        "kind": "fish",
+        "tile": [
+          58,
+          32
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "峡畔草药",
+        "description": "湿润江雾滋养着草药，叶片贴着岩壁生长。",
+        "kind": "herb",
+        "tile": [
+          18,
+          30
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "古滩遗物",
+        "description": "江滩卵石间露出一枚旧物，像是旧船货仓里冲出来的。",
+        "kind": "cache",
+        "tile": [
+          34,
+          34
+        ],
+        "reward_money": 6
+      }
     ]
   },
   "yiling_gap": {
     "landmarks": [
-      {"label": "峡谷密室", "description": "峭壁暗处有一扇半掩石门，落石把门缝遮住了大半。", "kind": "ruin", "tile": [20, 26], "reward_exp": 8},
-      {"label": "隐蔽山谷", "description": "古道尽头忽然开出一线山谷，竹影和水雾把入口藏得极深。", "kind": "cave", "tile": [42, 24], "reward_exp": 9},
-      {"label": "瀑布水帘", "description": "最大瀑布后有一片水帘，水声遮住了石后空洞的回响。", "kind": "water", "tile": [58, 27], "reward_item": "item_yao"}
+      {
+        "label": "峡谷密室",
+        "description": "峭壁暗处有一扇半掩石门，落石把门缝遮住了大半。",
+        "kind": "ruin",
+        "tile": [
+          20,
+          26
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "隐蔽山谷",
+        "description": "古道尽头忽然开出一线山谷，竹影和水雾把入口藏得极深。",
+        "kind": "cave",
+        "tile": [
+          42,
+          24
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "瀑布水帘",
+        "description": "最大瀑布后有一片水帘，水声遮住了石后空洞的回响。",
+        "kind": "water",
+        "tile": [
+          58,
+          27
+        ],
+        "reward_item": "item_yao"
+      }
     ],
     "resources": [
-      {"label": "峡谷草药", "description": "湿润石缝里长着几株草药，叶片被江雾洗得发亮。", "kind": "herb", "tile": [26, 33], "reward_item": "item_yao"},
-      {"label": "崖壁铁矿", "description": "峭壁裂缝里露出暗色矿脉，敲下碎石能换些银两。", "kind": "ore", "tile": [60, 24], "reward_money": 8},
-      {"label": "峡谷山参", "description": "山阴潮土里露出参须，附近落石痕迹还很新。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+      {
+        "label": "峡谷草药",
+        "description": "湿润石缝里长着几株草药，叶片被江雾洗得发亮。",
+        "kind": "herb",
+        "tile": [
+          26,
+          33
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "崖壁铁矿",
+        "description": "峭壁裂缝里露出暗色矿脉，敲下碎石能换些银两。",
+        "kind": "ore",
+        "tile": [
+          60,
+          24
+        ],
+        "reward_money": 8
+      },
+      {
+        "label": "峡谷山参",
+        "description": "山阴潮土里露出参须，附近落石痕迹还很新。",
+        "kind": "herb",
+        "tile": [
+          48,
+          34
+        ],
+        "reward_item": "item_shengji"
+      }
     ]
   },
   "dangyang_plain": {
     "landmarks": [
-      {"label": "三国古战场", "description": "旧旗插在官道旁，残碑上还能摸到刀斧留下的浅痕。", "kind": "ruin", "tile": [42, 25], "reward_exp": 8},
-      {"label": "地下古墓", "description": "平原土丘下露出石门，墓道口被稻草和尘土遮住。", "kind": "cave", "tile": [58, 28], "reward_money": 6},
-      {"label": "古道驿站遗址", "description": "废驿站还挂着旧木牌，来往脚夫偶尔在这里避风。", "kind": "market", "tile": [24, 26], "reward_exp": 6}
+      {
+        "label": "三国古战场",
+        "description": "旧旗插在官道旁，残碑上还能摸到刀斧留下的浅痕。",
+        "kind": "ruin",
+        "tile": [
+          42,
+          25
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "地下古墓",
+        "description": "平原土丘下露出石门，墓道口被稻草和尘土遮住。",
+        "kind": "cave",
+        "tile": [
+          58,
+          28
+        ],
+        "reward_money": 6
+      },
+      {
+        "label": "古道驿站遗址",
+        "description": "废驿站还挂着旧木牌，来往脚夫偶尔在这里避风。",
+        "kind": "market",
+        "tile": [
+          24,
+          26
+        ],
+        "reward_exp": 6
+      }
     ],
     "resources": [
-      {"label": "田埂稻米", "description": "稻田边晒着新收稻米，村人分你一小袋作路粮。", "kind": "cache", "tile": [30, 34], "reward_item": "item_baozi"},
-      {"label": "林间草药", "description": "小树林旁长着几株止血草，叶背还沾着晨雾。", "kind": "herb", "tile": [22, 31], "reward_item": "item_yao"},
-      {"label": "古战场遗物", "description": "官道碎石间压着一枚旧铁片，像是古战场遗落的兵器残件。", "kind": "cache", "tile": [46, 32], "reward_money": 6}
+      {
+        "label": "田埂稻米",
+        "description": "稻田边晒着新收稻米，村人分你一小袋作路粮。",
+        "kind": "cache",
+        "tile": [
+          30,
+          34
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "林间草药",
+        "description": "小树林旁长着几株止血草，叶背还沾着晨雾。",
+        "kind": "herb",
+        "tile": [
+          22,
+          31
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "古战场遗物",
+        "description": "官道碎石间压着一枚旧铁片，像是古战场遗落的兵器残件。",
+        "kind": "cache",
+        "tile": [
+          46,
+          32
+        ],
+        "reward_money": 6
+      }
     ]
   },
   "hanjiang_river": {
     "landmarks": [
-      {"label": "汉江古渡", "description": "废弃渡口还留着旧缆痕，船夫说这里能听到武当和云梦两头的消息。", "kind": "dock", "tile": [22, 29], "reward_item": "item_fish"},
-      {"label": "沙洲密室", "description": "最大沙洲中央露出半截暗门，潮水退去时才能看清石缝。", "kind": "ruin", "tile": [46, 25], "reward_exp": 8},
-      {"label": "江底洞穴", "description": "清水深处隐约有黑色洞口，水流到这里忽然变得沉静。", "kind": "cave", "tile": [62, 31], "reward_money": 7}
+      {
+        "label": "汉江古渡",
+        "description": "废弃渡口还留着旧缆痕，船夫说这里能听到武当和云梦两头的消息。",
+        "kind": "dock",
+        "tile": [
+          22,
+          29
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "沙洲密室",
+        "description": "最大沙洲中央露出半截暗门，潮水退去时才能看清石缝。",
+        "kind": "ruin",
+        "tile": [
+          46,
+          25
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "江底洞穴",
+        "description": "清水深处隐约有黑色洞口，水流到这里忽然变得沉静。",
+        "kind": "cave",
+        "tile": [
+          62,
+          31
+        ],
+        "reward_money": 7
+      }
     ],
     "resources": [
-      {"label": "汉江鲤鱼", "description": "鱼篓压在缓流回湾，几尾汉江鲤鱼正撞着竹篾。", "kind": "fish", "tile": [58, 32], "reward_item": "item_fish"},
-      {"label": "江畔草药", "description": "江畔湿土里长着清凉草药，叶片沾着水雾。", "kind": "herb", "tile": [28, 34], "reward_item": "item_yao"},
-      {"label": "汉江古物", "description": "江滩卵石间露出一枚旧物，像是楚地旧船货仓里冲出的器片。", "kind": "cache", "tile": [40, 33], "reward_money": 6}
+      {
+        "label": "汉江鲤鱼",
+        "description": "鱼篓压在缓流回湾，几尾汉江鲤鱼正撞着竹篾。",
+        "kind": "fish",
+        "tile": [
+          58,
+          32
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "江畔草药",
+        "description": "江畔湿土里长着清凉草药，叶片沾着水雾。",
+        "kind": "herb",
+        "tile": [
+          28,
+          34
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "汉江古物",
+        "description": "江滩卵石间露出一枚旧物，像是楚地旧船货仓里冲出的器片。",
+        "kind": "cache",
+        "tile": [
+          40,
+          33
+        ],
+        "reward_money": 6
+      }
     ]
   },
   "yunmeng_marsh": {
     "landmarks": [
-      {"label": "云梦古泽", "description": "古泽深处雾气贴着水面，石台半沉半露，像旧楚祭祀留下的遗址。", "kind": "water", "tile": [42, 25], "reward_exp": 9},
-      {"label": "水贼巢穴", "description": "芦苇后藏着架在水上的木屋，黑旗压得很低，怕被远处官船看见。", "kind": "dock", "tile": [62, 27], "reward_money": 7},
-      {"label": "沼泽密室", "description": "芦苇荡里有一块陷下去的木板，下面露出潮湿暗门。", "kind": "ruin", "tile": [28, 31], "reward_exp": 8}
+      {
+        "label": "云梦古泽",
+        "description": "古泽深处雾气贴着水面，石台半沉半露，像旧楚祭祀留下的遗址。",
+        "kind": "water",
+        "tile": [
+          42,
+          25
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "水贼巢穴",
+        "description": "芦苇后藏着架在水上的木屋，黑旗压得很低，怕被远处官船看见。",
+        "kind": "dock",
+        "tile": [
+          62,
+          27
+        ],
+        "reward_money": 7
+      },
+      {
+        "label": "沼泽密室",
+        "description": "芦苇荡里有一块陷下去的木板，下面露出潮湿暗门。",
+        "kind": "ruin",
+        "tile": [
+          28,
+          31
+        ],
+        "reward_exp": 8
+      }
     ],
     "resources": [
-      {"label": "浅水莲藕", "description": "浅水处莲叶密布，拨开泥水能摸到几截莲藕。", "kind": "cache", "tile": [34, 34], "reward_item": "item_baozi"},
-      {"label": "云梦草药", "description": "沼泽边缘长着带辛味的草药，采摘时要避开脚下软泥。", "kind": "herb", "tile": [22, 33], "reward_item": "item_yao"},
-      {"label": "河蚌珠壳", "description": "水草间压着几枚河蚌，壳缝里泛着细白珠光。", "kind": "fish", "tile": [56, 32], "reward_money": 6}
+      {
+        "label": "浅水莲藕",
+        "description": "浅水处莲叶密布，拨开泥水能摸到几截莲藕。",
+        "kind": "cache",
+        "tile": [
+          34,
+          34
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "云梦草药",
+        "description": "沼泽边缘长着带辛味的草药，采摘时要避开脚下软泥。",
+        "kind": "herb",
+        "tile": [
+          22,
+          33
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "河蚌珠壳",
+        "description": "水草间压着几枚河蚌，壳缝里泛着细白珠光。",
+        "kind": "fish",
+        "tile": [
+          56,
+          32
+        ],
+        "reward_money": 6
+      }
     ]
   },
   "daba_mtn": {
     "landmarks": [
-      {"label": "大巴古矿洞", "description": "废弃矿洞口压着旧木梁，洞壁露出冷硬矿纹。", "kind": "cave", "tile": [20, 25], "reward_money": 8},
-      {"label": "山顶神坛", "description": "神坛立在云雾高处，残旗被山风吹得猎猎作响。", "kind": "shrine", "tile": [52, 18], "reward_exp": 10},
-      {"label": "山间暗道", "description": "两块巨石之间藏着狭窄暗道，像是通往巴蜀的旧路。", "kind": "ruin", "tile": [60, 30], "reward_exp": 9}
+      {
+        "label": "大巴古矿洞",
+        "description": "废弃矿洞口压着旧木梁，洞壁露出冷硬矿纹。",
+        "kind": "cave",
+        "tile": [
+          20,
+          25
+        ],
+        "reward_money": 8
+      },
+      {
+        "label": "山顶神坛",
+        "description": "神坛立在云雾高处，残旗被山风吹得猎猎作响。",
+        "kind": "shrine",
+        "tile": [
+          52,
+          18
+        ],
+        "reward_exp": 10
+      },
+      {
+        "label": "山间暗道",
+        "description": "两块巨石之间藏着狭窄暗道，像是通往巴蜀的旧路。",
+        "kind": "ruin",
+        "tile": [
+          60,
+          30
+        ],
+        "reward_exp": 9
+      }
     ],
     "resources": [
-      {"label": "大巴草药", "description": "山雾湿处长着耐寒草药，叶片带着淡淡苦香。", "kind": "herb", "tile": [26, 32], "reward_item": "item_yao"},
-      {"label": "深山铜矿", "description": "矿洞深处露出带赤色光泽的矿脉，敲下碎矿能换不少银钱。", "kind": "ore", "tile": [34, 28], "reward_money": 9},
-      {"label": "大巴山参", "description": "山阴潮土里露出粗壮参须，附近落石痕迹很新。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"}
+      {
+        "label": "大巴草药",
+        "description": "山雾湿处长着耐寒草药，叶片带着淡淡苦香。",
+        "kind": "herb",
+        "tile": [
+          26,
+          32
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "深山铜矿",
+        "description": "矿洞深处露出带赤色光泽的矿脉，敲下碎矿能换不少银钱。",
+        "kind": "ore",
+        "tile": [
+          34,
+          28
+        ],
+        "reward_money": 9
+      },
+      {
+        "label": "大巴山参",
+        "description": "山阴潮土里露出粗壮参须，附近落石痕迹很新。",
+        "kind": "herb",
+        "tile": [
+          48,
+          34
+        ],
+        "reward_item": "item_shengji"
+      }
     ]
   },
   "shennongjia": {
     "landmarks": [
-      {"label": "神农百草谷", "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。", "kind": "flower", "tile": [40, 25], "reward_exp": 9},
-      {"label": "神农洞穴", "description": "洞口被古藤半遮，洞壁留着旧火痕，像是有人曾在此避雨煎药。", "kind": "cave", "tile": [16, 22], "reward_item": "item_yao"},
-      {"label": "原始林心", "description": "巨木根系盘成天然小径，走进去后连鸟鸣都被树冠吞掉。", "kind": "ruin", "tile": [58, 30], "reward_exp": 8}
+      {
+        "label": "神农百草谷",
+        "description": "瀑布水雾落进谷中，百草贴着湿石生长，药香和毒雾混在一起。",
+        "kind": "flower",
+        "tile": [
+          40,
+          25
+        ],
+        "reward_exp": 9
+      },
+      {
+        "label": "神农洞穴",
+        "description": "洞口被古藤半遮，洞壁留着旧火痕，像是有人曾在此避雨煎药。",
+        "kind": "cave",
+        "tile": [
+          16,
+          22
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "原始林心",
+        "description": "巨木根系盘成天然小径，走进去后连鸟鸣都被树冠吞掉。",
+        "kind": "ruin",
+        "tile": [
+          58,
+          30
+        ],
+        "reward_exp": 8
+      }
     ],
     "resources": [
-      {"label": "神农草药", "description": "溪边草药带着清苦香气，叶背还有细小水珠。", "kind": "herb", "tile": [24, 32], "reward_item": "item_yao"},
-      {"label": "神农山参", "description": "山阴湿土里露出一截参须，周围藤蔓像在替它遮风。", "kind": "herb", "tile": [48, 34], "reward_item": "item_shengji"},
-      {"label": "林间野果", "description": "灌木丛里藏着几枚酸甜野果，能稍解山路疲乏。", "kind": "cache", "tile": [62, 36], "reward_item": "item_baozi"}
+      {
+        "label": "神农草药",
+        "description": "溪边草药带着清苦香气，叶背还有细小水珠。",
+        "kind": "herb",
+        "tile": [
+          24,
+          32
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "神农山参",
+        "description": "山阴湿土里露出一截参须，周围藤蔓像在替它遮风。",
+        "kind": "herb",
+        "tile": [
+          48,
+          34
+        ],
+        "reward_item": "item_shengji"
+      },
+      {
+        "label": "林间野果",
+        "description": "灌木丛里藏着几枚酸甜野果，能稍解山路疲乏。",
+        "kind": "cache",
+        "tile": [
+          62,
+          36
+        ],
+        "reward_item": "item_baozi"
+      }
     ]
   },
   "qingcheng_mtn": {
     "landmarks": [
-      {"label": "青城山门", "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。", "kind": "shrine", "tile": [36, 18], "reward_exp": 7},
-      {"label": "问道石台", "description": "石台临风，老道人常在此讲动静之理，也观察来客脚步。", "kind": "training", "tile": [50, 25], "reward_exp": 8},
-      {"label": "清溪小桥", "description": "小桥压着山溪水声，桥边竹影摇动，适合听风辨路。", "kind": "bridge", "tile": [58, 31], "reward_item": "item_baozi"}
+      {
+        "label": "青城山门",
+        "description": "山门藏在松竹雾气里，门前石阶被香客和道人踩得发亮。",
+        "kind": "shrine",
+        "tile": [
+          36,
+          18
+        ],
+        "reward_exp": 7
+      },
+      {
+        "label": "问道石台",
+        "description": "石台临风，老道人常在此讲动静之理，也观察来客脚步。",
+        "kind": "training",
+        "tile": [
+          50,
+          25
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "清溪小桥",
+        "description": "小桥压着山溪水声，桥边竹影摇动，适合听风辨路。",
+        "kind": "bridge",
+        "tile": [
+          58,
+          31
+        ],
+        "reward_item": "item_baozi"
+      }
     ],
     "resources": [
-      {"label": "松根药草", "description": "松根旁长着几株清凉药草，采下可缓解山路疲乏。", "kind": "herb", "tile": [18, 28], "reward_item": "item_red_flower"},
-      {"label": "道童香囊", "description": "道童落下的小香囊里装着醒神药末，可作外伤药引。", "kind": "cache", "tile": [39, 20], "reward_item": "item_yao"},
-      {"label": "桥边散钱", "description": "桥边石缝里压着几枚旧钱，像是香客投下的平安钱。", "kind": "coin", "tile": [55, 32], "reward_money": 4}
+      {
+        "label": "松根药草",
+        "description": "松根旁长着几株清凉药草，采下可缓解山路疲乏。",
+        "kind": "herb",
+        "tile": [
+          18,
+          28
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "道童香囊",
+        "description": "道童落下的小香囊里装着醒神药末，可作外伤药引。",
+        "kind": "cache",
+        "tile": [
+          39,
+          20
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "桥边散钱",
+        "description": "桥边石缝里压着几枚旧钱，像是香客投下的平安钱。",
+        "kind": "coin",
+        "tile": [
+          55,
+          32
+        ],
+        "reward_money": 4
+      }
     ]
   },
   "emei_sacred": {
     "landmarks": [
-      {"label": "金顶山寺", "description": "山寺立在云海边，钟声越过石阶，连远处的江湖风声也静了几分。", "kind": "shrine", "tile": [38, 18], "reward_exp": 8},
-      {"label": "云海观台", "description": "观台下云气翻涌，香客说晴雨之间能看见蜀地群山的脉络。", "kind": "ruin", "tile": [51, 25], "reward_money": 4},
-      {"label": "舍身崖栈道", "description": "栈道贴着崖壁，脚下云雾深不可测，胆气不足的人走不远。", "kind": "bridge", "tile": [60, 31], "reward_exp": 7}
+      {
+        "label": "金顶山寺",
+        "description": "山寺立在云海边，钟声越过石阶，连远处的江湖风声也静了几分。",
+        "kind": "shrine",
+        "tile": [
+          38,
+          18
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "云海观台",
+        "description": "观台下云气翻涌，香客说晴雨之间能看见蜀地群山的脉络。",
+        "kind": "ruin",
+        "tile": [
+          51,
+          25
+        ],
+        "reward_money": 4
+      },
+      {
+        "label": "舍身崖栈道",
+        "description": "栈道贴着崖壁，脚下云雾深不可测，胆气不足的人走不远。",
+        "kind": "bridge",
+        "tile": [
+          60,
+          31
+        ],
+        "reward_exp": 7
+      }
     ],
     "resources": [
-      {"label": "山寺药箱", "description": "寺中备着跌打药，给被山路磨伤脚的香客取用。", "kind": "cache", "tile": [34, 20], "reward_item": "item_yao"},
-      {"label": "云雾灵草", "description": "云雾湿润处长着清凉药草，叶尖还挂着细小水珠。", "kind": "herb", "tile": [18, 28], "reward_item": "item_red_flower"},
-      {"label": "香客散钱", "description": "石阶旁压着几枚平安钱，知客僧示意你收下作路资。", "kind": "coin", "tile": [46, 32], "reward_money": 5}
+      {
+        "label": "山寺药箱",
+        "description": "寺中备着跌打药，给被山路磨伤脚的香客取用。",
+        "kind": "cache",
+        "tile": [
+          34,
+          20
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "云雾灵草",
+        "description": "云雾湿润处长着清凉药草，叶尖还挂着细小水珠。",
+        "kind": "herb",
+        "tile": [
+          18,
+          28
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "香客散钱",
+        "description": "石阶旁压着几枚平安钱，知客僧示意你收下作路资。",
+        "kind": "coin",
+        "tile": [
+          46,
+          32
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "jiangling": {
     "landmarks": [
-      {"label": "江防码头", "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。", "kind": "dock", "tile": [62, 36], "reward_item": "item_fish"},
-      {"label": "旧战鼓台", "description": "鼓面龟裂，仍能想见当年兵家重镇的声势。", "kind": "training", "tile": [18, 19], "reward_exp": 8},
-      {"label": "楚商货栈", "description": "货栈门前混着镖客、船夫和外地客商，最容易听见边地风声。", "kind": "market", "tile": [41, 31], "reward_money": 4}
+      {
+        "label": "江防码头",
+        "description": "战船旧缆还系在岸边，荆楚水路的消息从这里上岸。",
+        "kind": "dock",
+        "tile": [
+          62,
+          36
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "旧战鼓台",
+        "description": "鼓面龟裂，仍能想见当年兵家重镇的声势。",
+        "kind": "training",
+        "tile": [
+          18,
+          19
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "楚商货栈",
+        "description": "货栈门前混着镖客、船夫和外地客商，最容易听见边地风声。",
+        "kind": "market",
+        "tile": [
+          41,
+          31
+        ],
+        "reward_money": 4
+      }
     ],
     "resources": [
-      {"label": "码头鱼篓", "description": "船夫把鱼篓压在木桩边，里面还有一尾江鱼。", "kind": "fish", "tile": [66, 35], "reward_item": "item_fish"},
-      {"label": "军需药箱", "description": "旧军需箱里还剩几包跌打药，边角写着江防二字。", "kind": "cache", "tile": [22, 20], "reward_item": "item_yao"},
-      {"label": "货栈散钱", "description": "货栈台阶缝里卡着几枚散钱，像是装卸时掉下的。", "kind": "coin", "tile": [44, 32], "reward_money": 5}
+      {
+        "label": "码头鱼篓",
+        "description": "船夫把鱼篓压在木桩边，里面还有一尾江鱼。",
+        "kind": "fish",
+        "tile": [
+          66,
+          35
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "军需药箱",
+        "description": "旧军需箱里还剩几包跌打药，边角写着江防二字。",
+        "kind": "cache",
+        "tile": [
+          22,
+          20
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "货栈散钱",
+        "description": "货栈台阶缝里卡着几枚散钱，像是装卸时掉下的。",
+        "kind": "coin",
+        "tile": [
+          44,
+          32
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "linan": {
     "landmarks": [
-      {"label": "画舫码头", "description": "水雾贴着河面，船娘唱词里夹着花间旧事。", "kind": "dock", "tile": [24, 33], "reward_item": "item_fish"},
-      {"label": "烟雨廊桥", "description": "桥下水声不断，适合听风，也适合藏信。", "kind": "bridge", "tile": [52, 20], "reward_exp": 6}
+      {
+        "label": "画舫码头",
+        "description": "水雾贴着河面，船娘唱词里夹着花间旧事。",
+        "kind": "dock",
+        "tile": [
+          24,
+          33
+        ],
+        "reward_item": "item_fish"
+      },
+      {
+        "label": "烟雨廊桥",
+        "description": "桥下水声不断，适合听风，也适合藏信。",
+        "kind": "bridge",
+        "tile": [
+          52,
+          20
+        ],
+        "reward_exp": 6
+      }
     ],
     "resources": [
-      {"label": "街边食盒", "description": "街边摊贩收摊前分你一份热食。", "kind": "cache", "tile": [22, 35], "reward_item": "item_baozi"},
-      {"label": "武馆药罐", "description": "武馆药罐里还有一点跌打药粉。", "kind": "herb", "tile": [56, 19], "reward_item": "item_yao"},
-      {"label": "河边鱼篓", "description": "河边鱼篓压在水草旁，里面还有一尾活鱼。", "kind": "fish", "tile": [68, 20], "reward_item": "item_fish"}
+      {
+        "label": "街边食盒",
+        "description": "街边摊贩收摊前分你一份热食。",
+        "kind": "cache",
+        "tile": [
+          22,
+          35
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "武馆药罐",
+        "description": "武馆药罐里还有一点跌打药粉。",
+        "kind": "herb",
+        "tile": [
+          56,
+          19
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "河边鱼篓",
+        "description": "河边鱼篓压在水草旁，里面还有一尾活鱼。",
+        "kind": "fish",
+        "tile": [
+          68,
+          20
+        ],
+        "reward_item": "item_fish"
+      }
     ]
   },
   "beiling_mtn": {
     "landmarks": [
-      {"label": "山壁石洞", "description": "洞口冷风外涌，石缝里藏着前人留下的伤药。", "kind": "cave", "tile": [57, 13], "reward_item": "item_yao"},
-      {"label": "观云石台", "description": "站在石台上能远望山势，胸中郁气也散了些。", "kind": "ruin", "tile": [15, 16], "reward_exp": 7}
+      {
+        "label": "山壁石洞",
+        "description": "洞口冷风外涌，石缝里藏着前人留下的伤药。",
+        "kind": "cave",
+        "tile": [
+          57,
+          13
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "观云石台",
+        "description": "站在石台上能远望山势，胸中郁气也散了些。",
+        "kind": "ruin",
+        "tile": [
+          15,
+          16
+        ],
+        "reward_exp": 7
+      }
     ],
     "resources": [
-      {"label": "野草药坡", "description": "路边药坡长着几株常见药草。", "kind": "herb", "tile": [12, 13], "reward_item": "item_red_flower"},
-      {"label": "破棚食盒", "description": "破棚木桌下有个食盒，里面还有一个包子。", "kind": "cache", "tile": [28, 33], "reward_item": "item_baozi"},
-      {"label": "山壁矿点", "description": "山壁露出一点矿脉，虽然不能锻成兵器，也能换些银两。", "kind": "ore", "tile": [59, 12], "reward_money": 5}
+      {
+        "label": "野草药坡",
+        "description": "路边药坡长着几株常见药草。",
+        "kind": "herb",
+        "tile": [
+          12,
+          13
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "破棚食盒",
+        "description": "破棚木桌下有个食盒，里面还有一个包子。",
+        "kind": "cache",
+        "tile": [
+          28,
+          33
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "山壁矿点",
+        "description": "山壁露出一点矿脉，虽然不能锻成兵器，也能换些银两。",
+        "kind": "ore",
+        "tile": [
+          59,
+          12
+        ],
+        "reward_money": 5
+      }
     ]
   },
   "bashu_bamboo": {
     "landmarks": [
-      {"label": "林下药坡", "description": "潮湿树影下生着药草，采摘时要避开毒虫。", "kind": "herb", "tile": [13, 13], "reward_item": "item_red_flower"},
-      {"label": "竹影小径", "description": "竹影斜落，风一吹像有许多人低声说话。", "kind": "shrine", "tile": [54, 35], "reward_exp": 6}
+      {
+        "label": "林下药坡",
+        "description": "潮湿树影下生着药草，采摘时要避开毒虫。",
+        "kind": "herb",
+        "tile": [
+          13,
+          13
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "竹影小径",
+        "description": "竹影斜落，风一吹像有许多人低声说话。",
+        "kind": "shrine",
+        "tile": [
+          54,
+          35
+        ],
+        "reward_exp": 6
+      }
     ],
     "resources": [
-      {"label": "野草药坡", "description": "路边药坡长着几株常见药草。", "kind": "herb", "tile": [12, 13], "reward_item": "item_red_flower"},
-      {"label": "破棚食盒", "description": "破棚木桌下有个食盒，里面还有一个包子。", "kind": "cache", "tile": [28, 33], "reward_item": "item_baozi"},
-      {"label": "林下药草", "description": "林下潮湿，药草长得比镇外更好。", "kind": "herb", "tile": [13, 13], "reward_item": "item_red_flower"}
+      {
+        "label": "野草药坡",
+        "description": "路边药坡长着几株常见药草。",
+        "kind": "herb",
+        "tile": [
+          12,
+          13
+        ],
+        "reward_item": "item_red_flower"
+      },
+      {
+        "label": "破棚食盒",
+        "description": "破棚木桌下有个食盒，里面还有一个包子。",
+        "kind": "cache",
+        "tile": [
+          28,
+          33
+        ],
+        "reward_item": "item_baozi"
+      },
+      {
+        "label": "林下药草",
+        "description": "林下潮湿，药草长得比镇外更好。",
+        "kind": "herb",
+        "tile": [
+          13,
+          13
+        ],
+        "reward_item": "item_red_flower"
+      }
     ]
   },
   "flower_sect": {
     "landmarks": [
-      {"label": "演武坪", "description": "花间派弟子在此晨练，步伐与呼吸自成章法。", "kind": "training", "tile": [32, 30], "reward_exp": 8},
-      {"label": "祖师碑", "description": "碑前香灰未冷，门派戒律和前人名号刻得很深。", "kind": "shrine", "tile": [32, 12], "reward_exp": 6}
+      {
+        "label": "演武坪",
+        "description": "花间派弟子在此晨练，步伐与呼吸自成章法。",
+        "kind": "training",
+        "tile": [
+          32,
+          30
+        ],
+        "reward_exp": 8
+      },
+      {
+        "label": "祖师碑",
+        "description": "碑前香灰未冷，门派戒律和前人名号刻得很深。",
+        "kind": "shrine",
+        "tile": [
+          32,
+          12
+        ],
+        "reward_exp": 6
+      }
     ],
     "resources": [
-      {"label": "练功药罐", "description": "演武坪旁备着跌打药，弟子们用后会及时补上。", "kind": "herb", "tile": [20, 31], "reward_item": "item_yao"},
-      {"label": "香案供钱", "description": "香案上有几枚散钱，知客让你拿去添置路粮。", "kind": "coin", "tile": [44, 13], "reward_money": 3}
+      {
+        "label": "练功药罐",
+        "description": "演武坪旁备着跌打药，弟子们用后会及时补上。",
+        "kind": "herb",
+        "tile": [
+          20,
+          31
+        ],
+        "reward_item": "item_yao"
+      },
+      {
+        "label": "香案供钱",
+        "description": "香案上有几枚散钱，知客让你拿去添置路粮。",
+        "kind": "coin",
+        "tile": [
+          44,
+          13
+        ],
+        "reward_money": 3
+      }
+    ]
+  },
+  "desert_road": {
+    "landmarks": [
+      {
+        "label": "古道界碑",
+        "description": "风化已久的界碑，刻着模糊的西域文字",
+        "kind": "ruin",
+        "tile": [
+          3,
+          2
+        ]
+      },
+      {
+        "label": "枯井",
+        "description": "一口已经干涸的古井，井底似乎有东西",
+        "kind": "well",
+        "tile": [
+          8,
+          5
+        ]
+      },
+      {
+        "label": "秘境入口",
+        "description": "被巨石遮挡的入口，需要钥匙才能打开",
+        "kind": "cave",
+        "tile": [
+          12,
+          3
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "沙漠蝎巢穴",
+        "description": "沙漠蝎的出没之地",
+        "kind": "herb",
+        "tile": [
+          6,
+          4
+        ],
+        "reward_count": 1,
+        "reward_item": "item_scorpion_poison"
+      }
+    ]
+  },
+  "longmen_inn": {
+    "landmarks": [
+      {
+        "label": "龙门客栈",
+        "description": "西域最大的客栈，人来人往",
+        "kind": "notice",
+        "tile": [
+          3,
+          3
+        ]
+      },
+      {
+        "label": "地下黑市",
+        "description": "客栈地下的秘密交易市场",
+        "kind": "market",
+        "tile": [
+          5,
+          4
+        ]
+      },
+      {
+        "label": "水井",
+        "description": "绿洲中唯一的水源",
+        "kind": "well",
+        "tile": [
+          1,
+          2
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "商人摊位",
+        "description": "西域商人的固定摊位",
+        "kind": "coin",
+        "tile": [
+          3,
+          3
+        ],
+        "reward_count": 1
+      }
+    ]
+  },
+  "flame_valley": {
+    "landmarks": [
+      {
+        "label": "火山口",
+        "description": "喷涌着地火的巨大火山口",
+        "kind": "cave",
+        "tile": [
+          5,
+          4
+        ]
+      },
+      {
+        "label": "熔岩池",
+        "description": "翻涌的岩浆散发着炙热",
+        "kind": "water",
+        "tile": [
+          8,
+          2
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "火灵芝生长地",
+        "description": "极热之地生长的珍稀药草",
+        "kind": "herb",
+        "tile": [
+          9,
+          6
+        ],
+        "reward_count": 1,
+        "reward_item": "item_herb_huoling"
+      }
+    ]
+  },
+  "ice_cave": {
+    "landmarks": [
+      {
+        "label": "冰晶大厅",
+        "description": "寒气最盛的洞窟中央大厅",
+        "kind": "ruin",
+        "tile": [
+          4,
+          3
+        ]
+      },
+      {
+        "label": "上古祭坛",
+        "description": "冰封的祭坛上似乎刻有文字",
+        "kind": "shrine",
+        "tile": [
+          6,
+          5
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "寒冰水晶",
+        "description": "从洞壁上凝结的寒冰结晶",
+        "kind": "herb",
+        "tile": [
+          7,
+          2
+        ],
+        "reward_count": 1,
+        "reward_item": "item_ice_essence"
+      }
+    ]
+  },
+  "mojiao_branch": {
+    "landmarks": [
+      {
+        "label": "分舵大门",
+        "description": "魔教分舵的正门，有精英弟子把守",
+        "kind": "notice",
+        "tile": [
+          4,
+          4
+        ]
+      },
+      {
+        "label": "议事厅",
+        "description": "魔教头目议事的大厅，墙上有地图",
+        "kind": "ruin",
+        "tile": [
+          2,
+          2
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "魔教仓库",
+        "description": "存放物资的库房",
+        "kind": "cache",
+        "tile": [
+          6,
+          6
+        ],
+        "reward_count": 1
+      }
+    ]
+  },
+  "mojiao_base": {
+    "landmarks": [
+      {
+        "label": "总坛大门",
+        "description": "巨大的黑铁大门，上面镶有魔教徽记",
+        "kind": "notice",
+        "tile": [
+          4,
+          4
+        ]
+      },
+      {
+        "label": "护法大殿",
+        "description": "魔教护法的座殿，阴气森森",
+        "kind": "shrine",
+        "tile": [
+          6,
+          3
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "总坛宝库",
+        "description": "魔教积攒多年的珍宝",
+        "kind": "cache",
+        "tile": [
+          2,
+          6
+        ],
+        "reward_count": 1,
+        "reward_item": "item_mojiao_ring"
+      }
+    ]
+  },
+  "yaowang_valley": {
+    "landmarks": [
+      {
+        "label": "药王庐",
+        "description": "药童居住的茅庐，门口晒着药草",
+        "kind": "notice",
+        "tile": [
+          3,
+          3
+        ]
+      },
+      {
+        "label": "百草园",
+        "description": "种植着各种珍稀药材的药圃",
+        "kind": "herb",
+        "tile": [
+          5,
+          4
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "药田",
+        "description": "生长着各种灵草的田野",
+        "kind": "herb",
+        "tile": [
+          1,
+          2
+        ],
+        "reward_count": 1,
+        "reward_item": "item_herb_xuelian"
+      },
+      {
+        "label": "龙须草丛",
+        "description": "龙须草密集生长的地方",
+        "kind": "herb",
+        "tile": [
+          4,
+          5
+        ],
+        "reward_count": 1,
+        "reward_item": "item_herb_longxu"
+      }
+    ]
+  },
+  "painting_world": {
+    "landmarks": [
+      {
+        "label": "画中亭台",
+        "description": "仙境中央的亭台楼阁，云雾缭绕",
+        "kind": "shrine",
+        "tile": [
+          3,
+          4
+        ]
+      },
+      {
+        "label": "墨色瀑布",
+        "description": "如同水墨画般的银白瀑布",
+        "kind": "water",
+        "tile": [
+          5,
+          2
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "画仙遗物",
+        "description": "画仙留下的笔砚",
+        "kind": "cache",
+        "tile": [
+          2,
+          5
+        ],
+        "reward_count": 1,
+        "reward_item": "item_painting_brush"
+      }
+    ]
+  },
+  "tianji_pavilion": {
+    "landmarks": [
+      {
+        "label": "天机阁",
+        "description": "隐藏在山崖上的古阁",
+        "kind": "ruin",
+        "tile": [
+          4,
+          3
+        ]
+      },
+      {
+        "label": "藏书洞",
+        "description": "堆满古籍的隐秘洞窟",
+        "kind": "cave",
+        "tile": [
+          6,
+          5
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "古卷",
+        "description": "散落的古籍残页",
+        "kind": "cache",
+        "tile": [
+          3,
+          2
+        ],
+        "reward_count": 1
+      }
+    ]
+  },
+  "wanshou_mtn": {
+    "landmarks": [
+      {
+        "label": "兽王洞",
+        "description": "百兽之王的巢穴",
+        "kind": "cave",
+        "tile": [
+          4,
+          3
+        ]
+      },
+      {
+        "label": "万兽崖",
+        "description": "可以俯瞰整片山林的崖顶",
+        "kind": "notice",
+        "tile": [
+          6,
+          5
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "label": "灵兽果",
+        "description": "灵兽喜爱的奇异果实",
+        "kind": "herb",
+        "tile": [
+          2,
+          4
+        ],
+        "reward_count": 1
+      }
     ]
   }
 }

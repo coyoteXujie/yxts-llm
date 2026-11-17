@@ -7,6 +7,9 @@ const BUTTON_GOLD := "res://assets/ui/button_gold.png"
 const SLOT_ITEM := "res://assets/ui/slot_item.png"
 const WORLD_MAP_BACKDROP := "res://assets/ui/world_map_backdrop_v1.png"
 
+const COLOR_GOLD := Color(0.788, 0.663, 0.431)
+const COLOR_GOLD_BRIGHT := Color(0.980, 0.860, 0.580)
+
 static func load_texture(path: String, use_mipmaps: bool = true) -> Texture2D:
 	if path.is_empty():
 		return null

@@ -69,6 +69,10 @@
       "target": "chengdu",
       "type": "road",
       "note": "城际驿路"
+    },
+    {
+      "target": "desert_road",
+      "type": "road"
     }
   ],
   "linan": [
@@ -312,6 +316,10 @@
     },
     {
       "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "wanshou_mtn",
       "type": "road"
     }
   ],
@@ -651,6 +659,10 @@
     {
       "target": "xianyang_mound",
       "type": "road"
+    },
+    {
+      "target": "ice_cave",
+      "type": "mountain"
     }
   ],
   "songshan_peak": [
@@ -677,6 +689,10 @@
     {
       "target": "xianyang_mound",
       "type": "road"
+    },
+    {
+      "target": "flame_valley",
+      "type": "mountain"
     }
   ],
   "luoshui_river": [
@@ -755,6 +771,14 @@
     {
       "target": "naja_sect",
       "type": "road"
+    },
+    {
+      "target": "tianji_pavilion",
+      "type": "secret"
+    },
+    {
+      "target": "wanshou_mtn",
+      "type": "forest"
     }
   ],
   "yanshi_plain": [
@@ -806,6 +830,14 @@
     },
     {
       "target": "gongyi",
+      "type": "road"
+    },
+    {
+      "target": "tianji_pavilion",
+      "type": "mountain"
+    },
+    {
+      "target": "wanshou_mtn",
       "type": "road"
     }
   ],
@@ -859,6 +891,14 @@
     {
       "target": "huashan_cliff",
       "type": "mountain"
+    },
+    {
+      "target": "painting_world",
+      "type": "mountain"
+    },
+    {
+      "target": "tianji_pavilion",
+      "type": "road"
     }
   ],
   "qinling_deep": [
@@ -885,6 +925,10 @@
     {
       "target": "dangyang",
       "type": "road"
+    },
+    {
+      "target": "mojiao_branch",
+      "type": "secret"
     }
   ],
   "zhongnan_mtn": [
@@ -989,6 +1033,10 @@
     {
       "target": "fengxiang",
       "type": "road"
+    },
+    {
+      "target": "longmen_inn",
+      "type": "road"
     }
   ],
   "huashan_cliff": [
@@ -1015,6 +1063,10 @@
     {
       "target": "luoyang",
       "type": "road"
+    },
+    {
+      "target": "painting_world",
+      "type": "secret"
     }
   ],
   "tongguan_pass": [
@@ -1361,6 +1413,10 @@
     {
       "target": "western_plateau",
       "type": "mountain"
+    },
+    {
+      "target": "yaowang_valley",
+      "type": "mountain"
     }
   ],
   "bashu_bamboo": [
@@ -1455,6 +1511,10 @@
       "required_quest": "",
       "required_source_exploration": 50,
       "required_item": ""
+    },
+    {
+      "target": "yaowang_valley",
+      "type": "road"
     }
   ],
   "dujiang_weir": [
@@ -1671,6 +1731,10 @@
       "required_quest": "",
       "required_source_exploration": 50,
       "required_item": ""
+    },
+    {
+      "target": "mojiao_base",
+      "type": "mountain"
     }
   ],
   "three_gorges": [
@@ -1765,6 +1829,10 @@
     {
       "target": "qinling_deep",
       "type": "mountain"
+    },
+    {
+      "target": "mojiao_branch",
+      "type": "road"
     }
   ],
   "yunmeng_marsh": [
@@ -1843,6 +1911,10 @@
     {
       "target": "dangyang_plain",
       "type": "road"
+    },
+    {
+      "target": "mojiao_base",
+      "type": "secret"
     }
   ],
   "bagua_sect": [
@@ -2007,6 +2079,10 @@
     {
       "target": "luoyang",
       "type": "road"
+    },
+    {
+      "target": "ice_cave",
+      "type": "road"
     }
   ],
   "xiaoyao_sect": [
@@ -2041,6 +2117,150 @@
       "required_quest": "",
       "required_source_exploration": 50,
       "required_item": ""
+    }
+  ],
+  "desert_road": [
+    {
+      "target": "changan",
+      "type": "road"
+    },
+    {
+      "target": "longmen_inn",
+      "type": "road"
+    },
+    {
+      "target": "yaowang_valley",
+      "type": "mountain"
+    },
+    {
+      "target": "flame_valley",
+      "type": "secret"
+    }
+  ],
+  "longmen_inn": [
+    {
+      "target": "desert_road",
+      "type": "road"
+    },
+    {
+      "target": "longxi_desert",
+      "type": "road"
+    },
+    {
+      "target": "yaowang_valley",
+      "type": "road"
+    }
+  ],
+  "flame_valley": [
+    {
+      "target": "desert_road",
+      "type": "secret"
+    },
+    {
+      "target": "ice_cave",
+      "type": "mountain"
+    },
+    {
+      "target": "songshan_peak",
+      "type": "mountain"
+    }
+  ],
+  "ice_cave": [
+    {
+      "target": "flame_valley",
+      "type": "mountain"
+    },
+    {
+      "target": "xueshan_sect",
+      "type": "road"
+    },
+    {
+      "target": "beiling_mtn",
+      "type": "mountain"
+    }
+  ],
+  "mojiao_branch": [
+    {
+      "target": "qinling_deep",
+      "type": "secret"
+    },
+    {
+      "target": "mojiao_base",
+      "type": "road"
+    },
+    {
+      "target": "dangyang_plain",
+      "type": "road"
+    }
+  ],
+  "mojiao_base": [
+    {
+      "target": "mojiao_branch",
+      "type": "road"
+    },
+    {
+      "target": "shennongjia",
+      "type": "mountain"
+    },
+    {
+      "target": "daba_mtn",
+      "type": "secret"
+    }
+  ],
+  "yaowang_valley": [
+    {
+      "target": "longmen_inn",
+      "type": "road"
+    },
+    {
+      "target": "desert_road",
+      "type": "mountain"
+    },
+    {
+      "target": "shudao_mtn",
+      "type": "mountain"
+    },
+    {
+      "target": "qingcheng_mtn",
+      "type": "road"
+    }
+  ],
+  "painting_world": [
+    {
+      "target": "huashan_cliff",
+      "type": "secret"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "mountain"
+    }
+  ],
+  "tianji_pavilion": [
+    {
+      "target": "taihang_range",
+      "type": "secret"
+    },
+    {
+      "target": "mengjin_ford",
+      "type": "mountain"
+    },
+    {
+      "target": "zhongtiao_mtn",
+      "type": "road"
+    }
+  ],
+  "wanshou_mtn": [
+    {
+      "target": "mengjin_ford",
+      "type": "road"
+    },
+    {
+      "target": "taihang_range",
+      "type": "forest"
+    },
+    {
+      "target": "mengjin",
+      "type": "road"
     }
   ]
 }

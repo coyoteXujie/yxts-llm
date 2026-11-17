@@ -46,6 +46,17 @@ var effect_timer := 0.0
 var _ink_burst_overlay: ColorRect
 var _ink_burst_tween: Tween
 
+# 平滑血量条
+var _enemy_hp_smooth := 0.0
+var _player_hp_smooth := 0.0
+var _hp_tween: Tween
+
+# 胜利/失败粒子
+var _victory_particles: Array[Dictionary] = []
+var _defeat_overlay: ColorRect
+var _victory_active := false
+var _defeat_active := false
+
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
@@ -54,13 +65,20 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if effect_label == null or not effect_label.visible:
-		return
-	effect_timer -= delta
-	if effect_timer <= 0.0:
-		effect_label.hide()
-		return
-	effect_label.modulate.a = clampf(effect_timer / 0.9, 0.0, 1.0)
-	effect_label.position.y -= delta * 22.0
+		pass
+	else:
+		effect_timer -= delta
+		if effect_timer <= 0.0:
+			effect_label.hide()
+			return
+		effect_label.modulate.a = clampf(effect_timer / 0.9, 0.0, 1.0)
+		effect_label.position.y -= delta * 22.0
+	
+	# 更新胜利粒子
+	_update_victory_particles(delta)
+	
+	# 更新失败血色滤镜
+	_update_defeat_effects(delta)
 
 func set_combat_system(system) -> void:
 	combat_system = system
@@ -231,16 +249,34 @@ func _on_combat_started(enemy: Dictionary) -> void:
 	_set_enemy_portrait(enemy)
 	_refresh_status_chips({})
 	_refresh_actions()
+	
+	# 重置平滑血量
+	_enemy_hp_smooth = float(enemy.get("hp", 0))
+	_player_hp_smooth = float(GameState.player.get("hp", 0))
+	
+	# 清理胜利/失败效果
+	_clear_victory_effects()
+	_clear_defeat_effects()
+	
 	show()
 
 func _on_combat_changed(snapshot: Dictionary) -> void:
 	last_snapshot = snapshot
 	var enemy: Dictionary = snapshot.get("enemy", {})
 	enemy_bar.max_value = max(1, int(enemy.get("max_hp", 1)))
-	enemy_bar.value = max(0, int(enemy.get("hp", 0)))
+	# 平滑血量变化
+	var target_enemy_hp := float(max(0, int(enemy.get("hp", 0))))
+	var target_player_hp := float(max(0, int(GameState.player.get("hp", 0))))
+	_enemy_hp_smooth = enemy_bar.value
+	_player_hp_smooth = player_bar.value if player_bar != null else target_player_hp
+	if _hp_tween != null and _hp_tween.is_valid():
+		_hp_tween.kill()
+	_hp_tween = create_tween()
+	_hp_tween.set_parallel(true)
+	_hp_tween.tween_method(func(v): enemy_bar.value = v, _enemy_hp_smooth, target_enemy_hp, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	if player_bar != null:
 		player_bar.max_value = max(1, int(GameState.player.get("max_hp", 1)))
-		player_bar.value = max(0, int(GameState.player.get("hp", player_bar.max_value)))
+		_hp_tween.tween_method(func(v): player_bar.value = v, _player_hp_smooth, target_player_hp, 0.25).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	status_label.text = "敌方：%s    你：%s" % [
 		str(snapshot.get("enemy_status_text", "无")),
 		str(snapshot.get("player_status_text", "无"))
@@ -254,13 +290,20 @@ func _on_combat_changed(snapshot: Dictionary) -> void:
 	_refresh_actions()
 
 func _on_combat_finished(result: Dictionary) -> void:
-	if bool(result.get("victory", false)):
+	var victory := bool(result.get("victory", false))
+	var escaped := bool(result.get("escaped", false))
+	
+	if victory:
 		EventBus.emit_toast("战斗胜利")
 		AudioManager.play_sfx("skill_unlock")
-	elif bool(result.get("escaped", false)):
+		# 触发胜利金色粒子特效
+		_start_victory_effect()
+	elif escaped:
 		EventBus.emit_toast("已脱离战斗")
 	else:
 		EventBus.emit_toast("战败，回客栈休养")
+		# 触发失败血色滤镜
+		_start_defeat_effect()
 	_show_result_panel(result)
 
 func close_result_panel() -> void:
@@ -699,6 +742,108 @@ func _screen_shake(amount: float, duration: float) -> void:
 	shake_tween.tween_method(func(v: Vector2): position = v, orig, orig + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * amount * 0.5, duration * 0.15).set_ease(Tween.EASE_IN)
 	shake_tween.tween_method(func(v: Vector2): position = v, orig, orig + Vector2(randf_range(-1, 1), randf_range(-1, 1)) * amount * 0.3, duration * 0.15).set_ease(Tween.EASE_IN)
 	shake_tween.tween_callback(func(): position = orig)
+
+# ── 胜利金色粒子特效 ──
+
+func _start_victory_effect() -> void:
+	_victory_active = true
+	_victory_particles.clear()
+	# 创建金色粒子：从屏幕中央散开
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = Vector2(1280, 720)
+	for i in range(30):
+		var angle := randf_range(0.0, TAU)
+		var dist := randf_range(30.0, 400.0)
+		_victory_particles.append({
+			"pos": viewport_size * 0.5,
+			"target": viewport_size * 0.5 + Vector2(cos(angle), sin(angle)) * dist,
+			"size": randf_range(3.0, 8.0),
+			"color": Color(1.0, 0.82, 0.28, 1.0) if i % 2 == 0 else Color(1.0, 0.92, 0.52, 0.8),
+			"life": 1.5 + randf_range(0.0, 0.8),
+			"max_life": 2.0,
+			"elapsed": 0.0,
+		})
+
+func _update_victory_particles(delta: float) -> void:
+	if not _victory_active or _victory_particles.is_empty():
+		return
+	var all_dead := true
+	for p in _victory_particles:
+		p["elapsed"] = float(p["elapsed"]) + delta
+		if float(p["elapsed"]) >= float(p["life"]):
+			continue
+		all_dead = false
+		# 粒子会随时间停止并淡出
+		var t = float(p["elapsed"]) / float(p["life"])
+		var pos: Vector2 = p.get("pos", Vector2.ZERO)
+		var target: Vector2 = p.get("target", pos)
+		p["pos"] = pos.lerp(target, minf(1.0, t * 0.03))
+	if all_dead:
+		_victory_active = false
+		_victory_particles.clear()
+	queue_redraw()
+
+func _draw() -> void:
+	if _victory_active:
+		_draw_victory_particles()
+
+func _draw_victory_particles() -> void:
+	var time_scale := 0.0
+	if _victory_particles.size() > 0:
+		var first: Dictionary = _victory_particles[0]
+		time_scale = float(first.get("elapsed", 0.0))
+	for p in _victory_particles:
+		var elapsed := float(p.get("elapsed", 0.0))
+		var life := float(p.get("life", 1.0))
+		if elapsed >= life:
+			continue
+		var t = elapsed / life
+		var pos: Vector2 = p.get("pos", Vector2.ZERO)
+		var size := float(p.get("size", 4.0))
+		var color: Color = p.get("color", Color(1.0, 0.85, 0.3))
+		color.a = clampf(1.0 - t, 0.0, 1.0)
+		# 金色粒子闪烁
+		var glow := sin(elapsed * 8.0 + float(_victory_particles.find(p)) * 1.3) * 0.3 + 0.7
+		color.a *= glow
+		draw_circle(pos, size * (1.0 - t * 0.5), color)
+		# 光晕
+		var halo := color
+		halo.a = color.a * 0.25
+		draw_circle(pos, size * 2.5 * (1.0 + t * 0.3), halo)
+
+func _clear_victory_effects() -> void:
+	_victory_active = false
+	_victory_particles.clear()
+
+# ── 失败血色滤镜 ──
+
+func _start_defeat_effect() -> void:
+	_defeat_active = true
+	# 创建血色覆盖层
+	if _defeat_overlay == null or not is_instance_valid(_defeat_overlay):
+		_defeat_overlay = ColorRect.new()
+		_defeat_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_defeat_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_defeat_overlay.color = Color(0.6, 0.02, 0.02, 0.0)
+		_defeat_overlay.show_behind_parent = true
+		add_child(_defeat_overlay)
+	else:
+		_defeat_overlay.show()
+	# 血色淡入 + 画面变暗
+	var tween := create_tween()
+	tween.tween_property(_defeat_overlay, "color", Color(0.4, 0.01, 0.01, 0.35), 0.8).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(_defeat_overlay, "self_modulate:a", 0.8, 0.8).set_ease(Tween.EASE_IN)
+
+func _update_defeat_effects(delta: float) -> void:
+	if not _defeat_active:
+		return
+
+func _clear_defeat_effects() -> void:
+	_defeat_active = false
+	if _defeat_overlay != null and is_instance_valid(_defeat_overlay):
+		_defeat_overlay.hide()
+		_defeat_overlay.color = Color(0.6, 0.02, 0.02, 0.0)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or result_panel == null or not result_panel.visible:

@@ -29,7 +29,7 @@
     "wild": {
       "label": "野地补给行情",
       "buy_factor": 1.08,
-      "sell_factor": 0.90,
+      "sell_factor": 0.9,
       "shop_factors": {
         "market": 1.04,
         "medicine": 1.06
@@ -46,9 +46,9 @@
       "market": 0.94
     },
     "item_factors": {
-      "item_baozi": 0.90,
+      "item_baozi": 0.9,
       "item_white_doufu": 0.88,
-      "item_green_doufu": 0.90
+      "item_green_doufu": 0.9
     }
   },
   "luoyang": {
@@ -99,7 +99,7 @@
     "buy_factor": 0.99,
     "sell_factor": 1.02,
     "shop_factors": {
-      "medicine": 0.90,
+      "medicine": 0.9,
       "teahouse": 0.93
     },
     "item_factors": {
@@ -119,9 +119,29 @@
     },
     "item_factors": {
       "item_blade": 0.92,
-      "item_fish": 0.90,
+      "item_fish": 0.9,
       "item_hetun_blade": 1.08,
       "item_wine": 0.94
     }
+  },
+  "desert_road": {
+    "label": "古道市集",
+    "buy_factor": 1.2,
+    "sell_factor": 0.8
+  },
+  "longmen_inn": {
+    "label": "龙门黑市",
+    "buy_factor": 1.1,
+    "sell_factor": 0.85
+  },
+  "mojiao_branch": {
+    "label": "魔教配给",
+    "buy_factor": 0.8,
+    "sell_factor": 1.3
+  },
+  "mojiao_base": {
+    "label": "魔教内库",
+    "buy_factor": 0.8,
+    "sell_factor": 1.25
   }
 }

@@ -237,6 +237,8 @@ func _draw() -> void:
 	_draw_painted_floor(rect)
 	_draw_stage_mid_props(rect)
 	_draw_combatants(rect)
+	_draw_skill_auras(rect)
+	_draw_status_icons(rect)
 	_draw_foreground(rect)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_impact_overlay(rect)
@@ -1048,6 +1050,104 @@ func _draw_impact_overlay(rect: Rect2) -> void:
 	for i in range(4):
 		var radius := 44.0 + float(i) * 28.0
 		draw_arc(center, radius, -0.35, TAU - 0.35, 64, Color(color.r, color.g, color.b, 0.16 * hit_hold / float(i + 1)), 2.0)
+
+func _draw_skill_auras(rect: Rect2) -> void:
+	# 技能释放时角色脚下出现光环/法阵
+	if event_timer <= 0.0:
+		return
+	var elapsed := 1.0 - _event_life_ratio()
+	var windup := _pose_window(elapsed, 0.18, 0.22)
+	var hit_hold := _hit_freeze_alpha()
+	if windup <= 0.01 and hit_hold <= 0.01:
+		return
+	
+	var ground_y := _ground_y(rect)
+	var color := _event_color(event_kind, event_target)
+	# 攻击者在光环位置
+	var attacker_foot := Vector2(rect.position.x + rect.size.x * 0.28, ground_y + 40.0)
+	if event_target == "player":
+		attacker_foot = Vector2(rect.position.x + rect.size.x * 0.72, ground_y + 35.0)
+	var aura_alpha := clampf(windup * 0.8 + hit_hold * 0.5, 0.0, 1.0)
+	var aura_radius := Vector2(28.0 + windup * 16.0 + hit_hold * 12.0, 8.0 + windup * 4.0)
+	
+	# 法阵光环
+	var ring_color := Color(color.r, color.g, color.b, 0.30 * aura_alpha)
+	draw_arc(attacker_foot + Vector2(0.0, 12.0), aura_radius.x * 1.2, 0.0, TAU, 32, ring_color, 2.0)
+	draw_arc(attacker_foot + Vector2(0.0, 12.0), aura_radius.x * 1.6, 0.1, TAU * 0.8, 24, Color(color.r, color.g, color.b, 0.15 * aura_alpha), 1.5)
+	# 底部光晕
+	var glow_color := Color(color.r, color.g, color.b, 0.08 * aura_alpha)
+	_draw_ellipse(attacker_foot + Vector2(0.0, 14.0), aura_radius * Vector2(0.5, 0.5), glow_color)
+	
+	# 回复/增益特效：绿色光环
+	if event_kind == "heal" or event_kind == "mp":
+		var heal_radius := Vector2(22.0 + sin(pulse * 2.0) * 4.0, 7.0 + sin(pulse * 2.0) * 1.5)
+		_draw_ellipse(attacker_foot + Vector2(0.0, 12.0), heal_radius, Color(0.42, 0.95, 0.56, 0.12 * aura_alpha))
+		draw_arc(attacker_foot + Vector2(0.0, 12.0), 26.0, 0.0, TAU, 24, Color(0.42, 0.95, 0.56, 0.20 * aura_alpha), 1.5)
+
+func _draw_status_icons(rect: Rect2) -> void:
+	# 在角色旁边显示状态图标（中毒/流血/燃烧等）
+	var ground_y := _ground_y(rect)
+	var player_foot := Vector2(rect.position.x + rect.size.x * 0.28, ground_y + 40.0)
+	var enemy_foot := Vector2(rect.position.x + rect.size.x * 0.72, ground_y + 35.0)
+	
+	var player_statuses: Dictionary = snapshot.get("player_statuses", {})
+	var enemy_statuses: Dictionary = snapshot.get("enemy_statuses", {})
+	
+	# 状态图标颜色映射
+	var status_colors := {
+		"bleed": Color(0.92, 0.18, 0.20),
+		"poison": Color(0.40, 0.78, 0.26),
+		"burn": Color(1.00, 0.43, 0.18),
+		"stun": Color(0.56, 0.72, 1.00),
+		"slow": Color(0.35, 0.80, 0.88),
+		"weaken": Color(0.73, 0.48, 0.88),
+		"vulnerable": Color(1.00, 0.76, 0.30),
+		"guard": Color(0.92, 0.78, 0.42),
+	}
+	
+	var idx := 0
+	for status_id in player_statuses.keys():
+		if idx >= 3:
+			break
+		var color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
+		var px := player_foot.x - 36.0 - float(idx) * 24.0
+		var py := player_foot.y - 80.0 + sin(pulse * 0.8 + float(idx)) * 2.0
+		var icon_rect := Rect2(Vector2(px, py), Vector2(18.0, 18.0))
+		# 状态矩形背景
+		draw_rect(icon_rect, Color(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.60), true)
+		draw_rect(icon_rect, Color(color.r, color.g, color.b, 0.80), false, 1.5)
+		# 状态缩写
+		var short_label := _status_short_label(status_id)
+		draw_string(ThemeDB.fallback_font, icon_rect.position + Vector2(2.0, 14.0), short_label.left(2),
+			HORIZONTAL_ALIGNMENT_CENTER, 14, 11, Color(0.98, 0.92, 0.78, 0.95))
+		idx += 1
+	
+	idx = 0
+	for status_id in enemy_statuses.keys():
+		if idx >= 3:
+			break
+		var color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
+		var px := enemy_foot.x + 16.0 + float(idx) * 24.0
+		var py := enemy_foot.y - 90.0 + sin(pulse * 0.8 + float(idx) * 0.5) * 2.0
+		var icon_rect := Rect2(Vector2(px, py), Vector2(18.0, 18.0))
+		draw_rect(icon_rect, Color(color.r * 0.2, color.g * 0.2, color.b * 0.2, 0.60), true)
+		draw_rect(icon_rect, Color(color.r, color.g, color.b, 0.80), false, 1.5)
+		var short_label := _status_short_label(status_id)
+		draw_string(ThemeDB.fallback_font, icon_rect.position + Vector2(2.0, 14.0), short_label.left(2),
+			HORIZONTAL_ALIGNMENT_CENTER, 14, 11, Color(0.98, 0.92, 0.78, 0.95))
+		idx += 1
+
+func _status_short_label(status_id: String) -> String:
+	match status_id:
+		"bleed": return "血"
+		"poison": return "毒"
+		"burn": return "炎"
+		"stun": return "晕"
+		"slow": return "缓"
+		"weaken": return "弱"
+		"vulnerable": return "破"
+		"guard": return "守"
+		_: return status_id.left(1)
 
 func _draw_foreground(rect: Rect2) -> void:
 	var bottom_fog := Color(0.90, 0.84, 0.70, 0.13 + sin(pulse * 0.7) * 0.025)

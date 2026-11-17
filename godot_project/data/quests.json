@@ -1851,5 +1851,627 @@
         "item_longsword": 1
       }
     }
+  },
+  {
+    "id": "q_west_treasure_1",
+    "title": "西域古图",
+    "giver": "西域商人",
+    "description": "西域商人在龙门客栈展示了一张古老的西域地图，但只有三分之一。商人请你帮忙凑齐另外两块碎片：一块在沙漠蝎出没的古道深处，一块在龙门客栈的地下黑市。",
+    "next_hint": "三块碎片凑齐后回龙门客栈找商人拼合地图。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "西域商人",
+        "count": 1,
+        "label": "向西域商人接取古图"
+      },
+      {
+        "type": "kill",
+        "target": "沙漠蝎",
+        "count": 3,
+        "label": "在沙漠古道搜寻碎片线索"
+      }
+    ],
+    "rewards": {
+      "exp": 200,
+      "money": 100,
+      "daode": 3,
+      "items": {
+        "item_ancient_map": 1,
+        "item_map_frag_1": 1
+      }
+    }
+  },
+  {
+    "id": "q_west_treasure_2",
+    "title": "碎片之谜",
+    "giver": "西域商人",
+    "description": "西域商人发现古地图需要三块碎片合一才能显示秘境位置。第二块碎片据说在火焰谷的火山口附近，第三块碎片则在寒冰洞的深处。",
+    "requires_completed": [
+      "q_west_treasure_1"
+    ],
+    "next_hint": "集齐三块碎片后找到西域商人拼合。",
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "石傀儡",
+        "count": 1,
+        "label": "击败火焰谷的守护石傀儡"
+      },
+      {
+        "type": "kill",
+        "target": "冰魄蛇",
+        "count": 1,
+        "label": "击败寒冰洞的冰魄蛇"
+      }
+    ],
+    "rewards": {
+      "exp": 300,
+      "money": 150,
+      "daode": 4,
+      "items": {
+        "item_secret_key": 1,
+        "item_map_frag_2": 1,
+        "item_map_frag_3": 1
+      }
+    }
+  },
+  {
+    "id": "q_west_treasure_3",
+    "title": "秘境之门",
+    "giver": "西域商人",
+    "description": "三块碎片拼合后形成了一把秘境钥匙。西域商人指引你前往沙漠古道深处的一处隐秘入口。你必须击败守门的秘境守护者才能进入。",
+    "requires_completed": [
+      "q_west_treasure_2"
+    ],
+    "min_level": 4,
+    "next_hint": "带着秘境钥匙前往沙漠古道深处的秘境入口。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "秘境守护者",
+        "count": 1,
+        "label": "在秘境入口遇到守护者"
+      },
+      {
+        "type": "kill",
+        "target": "秘境守护者",
+        "count": 1,
+        "label": "击败秘境守护者"
+      }
+    ],
+    "rewards": {
+      "exp": 400,
+      "money": 200,
+      "daode": 5,
+      "items": {
+        "item_dan": 2
+      }
+    }
+  },
+  {
+    "id": "q_west_treasure_4",
+    "title": "西域秘宝",
+    "giver": "西域商人",
+    "description": "击败守护者后，秘境深处藏着一件上古至宝——沙漠之心。西域商人让你将宝物带回龙门客栈，完成这趟西域寻宝之旅。",
+    "requires_completed": [
+      "q_west_treasure_3"
+    ],
+    "min_level": 5,
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "西域商人",
+        "count": 1,
+        "label": "带着沙漠之心回龙门客栈复命"
+      }
+    ],
+    "rewards": {
+      "exp": 600,
+      "money": 400,
+      "daode": 6,
+      "items": {
+        "item_desert_gem": 1,
+        "item_desert_blade": 1
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_1",
+    "title": "魔教踪迹",
+    "giver": "赵德",
+    "description": "洛阳捕头赵德发现近日城中出现了形迹可疑之人，疑似魔教密探。他请你帮忙在洛阳城内外打探消息，找到那名密探。",
+    "next_hint": "在洛阳城中寻找魔教密探的线索。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "赵德",
+        "count": 1,
+        "label": "接受赵德的委托"
+      },
+      {
+        "type": "kill",
+        "target": "魔教密探",
+        "count": 1,
+        "label": "击败魔教密探并缴获密信"
+      }
+    ],
+    "rewards": {
+      "exp": 180,
+      "money": 100,
+      "daode": 3,
+      "items": {
+        "item_mojiao_letter": 1
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_2",
+    "title": "暗流追踪",
+    "giver": "赵无极",
+    "description": "赵无极辨认出密信上的暗号指向长安和成都两地的魔教据点。他让你分别前往长安和成都调查，找到更多线索。",
+    "requires_completed": [
+      "q_mojiao_1"
+    ],
+    "min_level": 2,
+    "next_hint": "前往长安和成都调查魔教线索。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "陈天行",
+        "count": 1,
+        "label": "在长安向陈天行请教魔教消息"
+      },
+      {
+        "type": "talk",
+        "target": "烈火",
+        "count": 1,
+        "label": "在成都附近拜访烈火打探消息"
+      }
+    ],
+    "rewards": {
+      "exp": 240,
+      "money": 120,
+      "daode": 3,
+      "items": {
+        "item_dan": 1
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_3",
+    "title": "卧底接头",
+    "giver": "陈天行",
+    "description": "陈天行告诉你魔教内部有一位正派卧底，可以接头获取情报。但接头需小心行事——卧底约定在江陵城外的伏牛山碰面。",
+    "requires_completed": [
+      "q_mojiao_2"
+    ],
+    "next_hint": "前往伏牛山与卧底接头。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "卧底",
+        "count": 1,
+        "label": "在伏牛山与卧底接头"
+      },
+      {
+        "type": "kill",
+        "target": "魔教精英",
+        "count": 1,
+        "label": "击败跟踪而来的魔教精英"
+      }
+    ],
+    "rewards": {
+      "exp": 320,
+      "money": 160,
+      "daode": 4,
+      "items": {
+        "item_mojiao_token": 1,
+        "item_shengji": 1
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_4",
+    "title": "魔教阴谋",
+    "giver": "卧底",
+    "description": "卧底告知魔教正与朝廷中的贪官勾结，密谋颠覆武林盟。你需要前往魔教分舵搜集更多证据。卧底给了你一块魔教令牌用于混入分舵。",
+    "requires_completed": [
+      "q_mojiao_3"
+    ],
+    "min_level": 3,
+    "next_hint": "前往魔教分舵搜集阴谋证据。",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_evidence_list",
+        "count": 1,
+        "label": "从魔教分舵窃取阴谋证据"
+      },
+      {
+        "type": "kill",
+        "target": "魔教精英",
+        "count": 2,
+        "label": "击败守卫分舵的魔教精英"
+      }
+    ],
+    "rewards": {
+      "exp": 450,
+      "money": 250,
+      "daode": 5,
+      "items": {
+        "item_evidence_list": 1,
+        "item_mojiao_armor": 1
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_5",
+    "title": "攻打分舵",
+    "giver": "卧底",
+    "description": "证据到手后，卧底建议你联合武林盟的力量攻打魔教分舵。赵无极愿意提供人手，但需要你先清除分舵外围的守卫。",
+    "requires_completed": [
+      "q_mojiao_4"
+    ],
+    "min_level": 4,
+    "next_hint": "带领武林盟弟子攻打魔教分舵。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "赵无极",
+        "count": 1,
+        "label": "请赵无极调派武林盟人手"
+      },
+      {
+        "type": "kill",
+        "target": "魔教精英",
+        "count": 3,
+        "label": "清除魔教分舵守卫"
+      }
+    ],
+    "rewards": {
+      "exp": 600,
+      "money": 400,
+      "daode": 6,
+      "items": {
+        "item_shengji": 2
+      }
+    }
+  },
+  {
+    "id": "q_mojiao_6",
+    "title": "决战护法",
+    "giver": "卧底",
+    "description": "分舵被破后，魔教护法震怒，亲自坐镇总坛。卧底传来消息，护法放话要让武林盟血债血偿。你必须前往魔教总坛，与护法决一死战。",
+    "requires_completed": [
+      "q_mojiao_5"
+    ],
+    "min_level": 5,
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "魔教护法",
+        "count": 1,
+        "label": "击败魔教护法"
+      },
+      {
+        "type": "talk",
+        "target": "赵德",
+        "count": 1,
+        "label": "回洛阳向赵德复命"
+      }
+    ],
+    "rewards": {
+      "exp": 800,
+      "money": 600,
+      "daode": 8,
+      "items": {
+        "item_mojiao_ring": 1,
+        "item_dan": 3
+      }
+    }
+  },
+  {
+    "id": "q_yaowang_1",
+    "title": "采药初试",
+    "giver": "药童",
+    "description": "药童在山谷中采药时不慎摔伤了腿，他请你帮忙采集三种珍稀药材：雪莲花、火灵芝和龙须草。",
+    "next_hint": "在各地采集三种药材。",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_herb_xuelian",
+        "count": 1,
+        "label": "采集雪莲花"
+      },
+      {
+        "type": "collect",
+        "target": "item_herb_huoling",
+        "count": 1,
+        "label": "采集火灵芝"
+      },
+      {
+        "type": "collect",
+        "target": "item_herb_longxu",
+        "count": 1,
+        "label": "采集龙须草"
+      }
+    ],
+    "rewards": {
+      "exp": 150,
+      "money": 80,
+      "daode": 2
+    }
+  },
+  {
+    "id": "q_yaowang_2",
+    "title": "试药考验",
+    "giver": "药童",
+    "description": "药童感激你的帮助，但他说药王谷的规矩是外人必须亲身试药才能获得信任。他调配了一副猛药，请你服下考验体质。",
+    "requires_completed": [
+      "q_yaowang_1"
+    ],
+    "next_hint": "服下药童调配的汤药接受考验。",
+    "objectives": [
+      {
+        "type": "collect",
+        "target": "item_bazhen_dan",
+        "count": 1,
+        "label": "试服药童调配的八珍玉露"
+      }
+    ],
+    "rewards": {
+      "exp": 200,
+      "money": 100,
+      "daode": 3,
+      "items": {
+        "item_yaowang_robe": 1
+      }
+    }
+  },
+  {
+    "id": "q_yaowang_3",
+    "title": "药谷除害",
+    "giver": "药童",
+    "description": "药童告诉你山谷附近来了一群毒蛛，威胁到了药田的安全。他请你帮忙清除毒蛛，保护药王谷的灵药。",
+    "requires_completed": [
+      "q_yaowang_2"
+    ],
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "毒蛛",
+        "count": 3,
+        "label": "清除药王谷附近的毒蛛"
+      }
+    ],
+    "rewards": {
+      "exp": 250,
+      "money": 120,
+      "daode": 4
+    }
+  },
+  {
+    "id": "q_yaowang_4",
+    "title": "丹方传承",
+    "giver": "药童",
+    "description": "药童被你的诚心打动，将药王谷秘传的九转玉露丹方赠予你。他希望你用此丹方造福武林，悬壶济世。",
+    "requires_completed": [
+      "q_yaowang_3"
+    ],
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "药童",
+        "count": 1,
+        "label": "接受药王谷丹方传承"
+      }
+    ],
+    "rewards": {
+      "exp": 350,
+      "money": 200,
+      "daode": 5,
+      "items": {
+        "item_dan_formula": 1,
+        "item_yaowang_robe": 1
+      }
+    }
+  },
+  {
+    "id": "q_thief_1",
+    "title": "连环失窃",
+    "giver": "赵德",
+    "description": "洛阳接连发生多起盗窃案，富商们的珍藏接连失窃。赵德请你协助调查，现场发现了一张神偷留书。",
+    "next_hint": "调查盗窃案现场，追踪神偷的线索。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "赵德",
+        "count": 1,
+        "label": "向赵德了解案情"
+      },
+      {
+        "type": "talk",
+        "target": "陈天行",
+        "count": 1,
+        "label": "找陈天行打听神偷下落"
+      }
+    ],
+    "rewards": {
+      "exp": 120,
+      "money": 80,
+      "daode": 2
+    }
+  },
+  {
+    "id": "q_thief_2",
+    "title": "神偷踪迹",
+    "giver": "陈天行",
+    "description": "陈天行认出神偷留书的字迹——这是十年前便已销声匿迹的“鬼手”的记号。他告诉你神偷可能会在长安出现，因为那里有几件值得出手的宝物。",
+    "requires_completed": [
+      "q_thief_1"
+    ],
+    "next_hint": "前往长安寻找神偷的踪迹。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "陈天行",
+        "count": 1,
+        "label": "请陈天行分析神偷线索"
+      },
+      {
+        "type": "talk",
+        "target": "王铁山",
+        "count": 1,
+        "label": "向铁匠王铁山打听失物销赃去向"
+      }
+    ],
+    "rewards": {
+      "exp": 180,
+      "money": 100,
+      "daode": 3
+    }
+  },
+  {
+    "id": "q_thief_3",
+    "title": "追回失物",
+    "giver": "陈天行",
+    "description": "陈天行查到了神偷在长安销赃的渠道。有三件失物——玉瓶、翡翠戒指和名家字画——分别流入了不同的买家手中。请你去找回这些失物作为神偷的罪证。",
+    "requires_completed": [
+      "q_thief_2"
+    ],
+    "next_hint": "追回三件失窃宝物。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "王铁山",
+        "count": 1,
+        "label": "向铁匠王铁山打听失物线索"
+      },
+      {
+        "type": "kill",
+        "target": "神偷",
+        "count": 1,
+        "label": "追踪神偷到长安"
+      }
+    ],
+    "rewards": {
+      "exp": 250,
+      "money": 150,
+      "daode": 4,
+      "items": {
+        "item_dan": 1
+      }
+    }
+  },
+  {
+    "id": "q_thief_4",
+    "title": "最终对决",
+    "giver": "赵德",
+    "description": "赵德根据失物追回的线索锁定了神偷的藏身之处——洛阳东市的一座旧宅。他请你一起去抓捕神偷，但神偷的武功不容小觑。",
+    "requires_completed": [
+      "q_thief_3"
+    ],
+    "min_level": 3,
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "神偷",
+        "count": 1,
+        "label": "击败神偷"
+      },
+      {
+        "type": "talk",
+        "target": "赵德",
+        "count": 1,
+        "label": "将神偷交给赵德法办"
+      }
+    ],
+    "rewards": {
+      "exp": 400,
+      "money": 300,
+      "daode": 5,
+      "items": {
+        "item_fine_cloth": 1,
+        "item_shengji": 1
+      }
+    }
+  },
+  {
+    "id": "q_painting_1",
+    "title": "神秘画卷",
+    "giver": "逍遥子",
+    "description": "逍遥子在游历时得到一幅古画，画中景致栩栩如生，隐隐有灵气流转。他请你帮忙研究这幅画的来历，或许与画中仙境有关。",
+    "next_hint": "寻找关于神秘画卷的线索。",
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "逍遥子",
+        "count": 1,
+        "label": "从逍遥子处接下画卷"
+      },
+      {
+        "type": "talk",
+        "target": "玄机子",
+        "count": 1,
+        "label": "请玄机子鉴定画卷阵法纹路"
+      }
+    ],
+    "rewards": {
+      "exp": 100,
+      "money": 60,
+      "daode": 2,
+      "items": {
+        "item_mystery_scroll": 1
+      }
+    }
+  },
+  {
+    "id": "q_painting_2",
+    "title": "画中天地",
+    "giver": "逍遥子",
+    "description": "玄机子发现这幅画是一件上古法器，可以用内力激活进入画中世界。逍遥子鼓励你一试——但画中世界虽然美丽，也可能暗藏玄机。",
+    "requires_completed": [
+      "q_painting_1"
+    ],
+    "next_hint": "激活画卷，进入画中仙境探索。",
+    "objectives": [
+      {
+        "type": "kill",
+        "target": "剑灵",
+        "count": 1,
+        "label": "击败画中世界的剑灵"
+      }
+    ],
+    "rewards": {
+      "exp": 200,
+      "money": 100,
+      "daode": 3
+    }
+  },
+  {
+    "id": "q_painting_3",
+    "title": "画外之境",
+    "giver": "逍遥子",
+    "description": "你在画中仙境找到了一支画仙笔，这笔蕴含一丝造化之力。逍遥子说此笔可以画出通往秘境的门户，但需要领悟画中意境才能发挥其真正力量。",
+    "requires_completed": [
+      "q_painting_2"
+    ],
+    "objectives": [
+      {
+        "type": "talk",
+        "target": "逍遥子",
+        "count": 1,
+        "label": "向逍遥子请教画中意境"
+      }
+    ],
+    "rewards": {
+      "exp": 300,
+      "money": 150,
+      "daode": 4,
+      "items": {
+        "item_painting_brush": 1
+      }
+    }
   }
 ]

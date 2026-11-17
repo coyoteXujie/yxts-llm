@@ -123,12 +123,20 @@ func _play_map_transition_feedback() -> void:
 	var existing := get_tree().get_first_node_in_group("map_transition_tween")
 	if existing != null and existing.has_method("is_valid") and existing.is_valid():
 		existing.kill()
+	
+	# ★ 触发墨点飞溅效果
+	_trigger_ink_splash()
+	
+	# ★ 触发音效
+	_trigger_transition_audio()
+	
 	var tween := create_tween()
 	tween.set_parallel(true)
 	if transition_overlay != null:
 		var mat := transition_overlay.material as ShaderMaterial
 		if mat != null:
-			tween.tween_method(func(v): mat.set_shader_parameter("progress", v), 0.85, 0.0, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			# ★ 优化转场曲线：更自然的墨迹消散（TRANS_EXPO + EASE_OUT）
+			tween.tween_method(func(v): mat.set_shader_parameter("progress", v), 0.85, 0.0, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 		tween.chain().tween_callback(func() -> void:
 			if transition_overlay != null:
 				transition_overlay.hide()
@@ -137,6 +145,30 @@ func _play_map_transition_feedback() -> void:
 		var target_zoom := camera.zoom
 		camera.zoom = target_zoom * MAP_TRANSITION_ZOOM_PUNCH
 		tween.tween_property(camera, "zoom", target_zoom, MAP_TRANSITION_FADE_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+## 触发墨点飞溅效果
+func _trigger_ink_splash() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	# 在转场 overlay 位置触发
+	var splash := preload("res://scripts/ui/ink_splash_effect.gd").new()
+	tree.current_scene.add_child(splash)
+	splash.splash_at(Vector2(960, 540), 160.0)
+	# 自动清理
+	var cleanup := create_tween()
+	cleanup.tween_interval(2.0)
+	cleanup.tween_callback(func():
+		if is_instance_valid(splash):
+			splash.queue_free()
+	)
+
+## 触发转场音效
+func _trigger_transition_audio() -> void:
+	# 使用已有的 SFX，map_transition 是个新触发位点
+	# 如果已有音效文件可用，这里会被触发
+	if AudioManager.has_method("play_sfx"):
+		AudioManager.play_sfx("ui_confirm")
 
 ## 从世界地图进入局部区域
 func enter_local_region(region: Dictionary) -> void:

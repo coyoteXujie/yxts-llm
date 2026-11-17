@@ -1,11 +1,57 @@
 {
   "_defaults": {
-    "city": ["inn", "medicine", "blacksmith", "tailor", "market", "teahouse"],
-    "town": ["inn", "market", "medicine", "blacksmith", "tailor"],
-    "sect": ["medicine", "market"]
+    "city": [
+      "inn",
+      "medicine",
+      "blacksmith",
+      "tailor",
+      "market",
+      "teahouse"
+    ],
+    "town": [
+      "inn",
+      "market",
+      "medicine",
+      "blacksmith",
+      "tailor"
+    ],
+    "sect": [
+      "medicine",
+      "market"
+    ]
   },
-  "changan": ["inn", "blacksmith", "tailor", "medicine", "market"],
-  "chengdu": ["inn", "medicine", "market", "blacksmith", "teahouse", "tailor"],
-  "jiangling": ["inn", "blacksmith", "medicine", "market", "tailor"],
-  "linan": ["inn", "teahouse", "tailor", "market", "medicine", "blacksmith"]
+  "changan": [
+    "inn",
+    "blacksmith",
+    "tailor",
+    "medicine",
+    "market"
+  ],
+  "chengdu": [
+    "inn",
+    "medicine",
+    "market",
+    "blacksmith",
+    "teahouse",
+    "tailor"
+  ],
+  "jiangling": [
+    "inn",
+    "blacksmith",
+    "medicine",
+    "market",
+    "tailor"
+  ],
+  "linan": [
+    "inn",
+    "teahouse",
+    "tailor",
+    "market",
+    "medicine",
+    "blacksmith"
+  ],
+  "longmen_inn": [
+    "inn",
+    "market"
+  ]
 }

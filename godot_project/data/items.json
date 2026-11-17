@@ -1261,5 +1261,299 @@
       "defense": 2
     },
     "slot": "accessory"
+  },
+  {
+    "id": "item_ancient_map",
+    "name": "西域古地图",
+    "type": "quest",
+    "price": 0,
+    "description": "一张泛黄的羊皮古地图，标记着西域秘境的位置。",
+    "effects": {}
+  },
+  {
+    "id": "item_map_frag_1",
+    "name": "地图碎片·日",
+    "type": "quest",
+    "price": 0,
+    "description": "古地图的三分之一，上面绘有太阳标记。",
+    "effects": {}
+  },
+  {
+    "id": "item_map_frag_2",
+    "name": "地图碎片·月",
+    "type": "quest",
+    "price": 0,
+    "description": "古地图的三分之一，上面绘有月亮标记。",
+    "effects": {}
+  },
+  {
+    "id": "item_map_frag_3",
+    "name": "地图碎片·星",
+    "type": "quest",
+    "price": 0,
+    "description": "古地图的三分之一，上面绘有星辰标记。",
+    "effects": {}
+  },
+  {
+    "id": "item_secret_key",
+    "name": "秘境钥匙",
+    "type": "quest",
+    "price": 0,
+    "description": "融合三块碎片后形成的完整密钥，可打开秘境之门。",
+    "effects": {}
+  },
+  {
+    "id": "item_desert_gem",
+    "name": "沙漠之心",
+    "type": "accessory",
+    "price": 2000,
+    "description": "西域秘境的至宝，一颗会散发温热光芒的宝石。",
+    "effects": {
+      "attack": 15,
+      "defense": 10,
+      "hp_max": 50
+    },
+    "slot": "accessory",
+    "rarity": "legendary"
+  },
+  {
+    "id": "item_mojiao_letter",
+    "name": "魔教密信",
+    "type": "quest",
+    "price": 0,
+    "description": "截获的魔教密信，上面写有暗号指令。",
+    "effects": {}
+  },
+  {
+    "id": "item_mojiao_token",
+    "name": "魔教令牌",
+    "type": "quest",
+    "price": 0,
+    "description": "魔教弟子令牌，可在分舵通行。",
+    "effects": {}
+  },
+  {
+    "id": "item_evidence_list",
+    "name": "阴谋证据",
+    "type": "quest",
+    "price": 0,
+    "description": "魔教与朝廷官员勾结的证据文书。",
+    "effects": {}
+  },
+  {
+    "id": "item_herb_xuelian",
+    "name": "雪莲花",
+    "type": "material",
+    "price": 80,
+    "description": "生长在高山雪线之上的珍稀药材。",
+    "effects": {}
+  },
+  {
+    "id": "item_herb_huoling",
+    "name": "火灵芝",
+    "type": "material",
+    "price": 100,
+    "description": "火山地热带的罕见灵芝，药性极热。",
+    "effects": {}
+  },
+  {
+    "id": "item_herb_longxu",
+    "name": "龙须草",
+    "type": "material",
+    "price": 60,
+    "description": "形如龙须的灵草，是多种丹药的药引。",
+    "effects": {}
+  },
+  {
+    "id": "item_dan_formula",
+    "name": "九转玉露丹方",
+    "type": "quest",
+    "price": 0,
+    "description": "药王谷秘传的丹药配方，可炼出顶级疗伤药。",
+    "effects": {}
+  },
+  {
+    "id": "item_thief_note",
+    "name": "神偷留书",
+    "type": "quest",
+    "price": 0,
+    "description": "神偷留在案发现场的嘲讽字条。",
+    "effects": {}
+  },
+  {
+    "id": "item_stolen_vase",
+    "name": "失窃玉瓶",
+    "type": "quest",
+    "price": 0,
+    "description": "被神偷盗走的羊脂玉瓶，价值连城。",
+    "effects": {}
+  },
+  {
+    "id": "item_stolen_ring",
+    "name": "翡翠戒指",
+    "type": "quest",
+    "price": 0,
+    "description": "被神偷盗走的翡翠戒指，是某位富商的传家宝。",
+    "effects": {}
+  },
+  {
+    "id": "item_stolen_scroll",
+    "name": "名家字画",
+    "type": "quest",
+    "price": 0,
+    "description": "被神偷盗走的古画，落款是前朝大家。",
+    "effects": {}
+  },
+  {
+    "id": "item_mystery_scroll",
+    "name": "神秘画卷",
+    "type": "quest",
+    "price": 0,
+    "description": "一幅古旧的山水画卷，展开时隐隐有流光转动。",
+    "effects": {}
+  },
+  {
+    "id": "item_painting_brush",
+    "name": "画仙笔",
+    "type": "quest",
+    "price": 0,
+    "description": "画中仙境遗留的仙笔，蕴含一丝造化之力。",
+    "effects": {}
+  },
+  {
+    "id": "item_huiqi_dan",
+    "name": "回气丹",
+    "type": "consumable",
+    "price": 50,
+    "description": "快速恢复内力的丹药。",
+    "effects": {
+      "mp": 50
+    }
+  },
+  {
+    "id": "item_bazhen_dan",
+    "name": "八珍玉露",
+    "type": "consumable",
+    "price": 150,
+    "description": "八种珍药炼制的大补丹，大幅恢复气血。",
+    "effects": {
+      "hp": 200,
+      "mp": 50
+    }
+  },
+  {
+    "id": "item_desert_blade",
+    "name": "沙漠弯刀",
+    "type": "weapon",
+    "price": 800,
+    "description": "西域工匠打造的弯刀，刀身带有月牙纹路。",
+    "effects": {
+      "attack": 28,
+      "speed": 5
+    },
+    "weapon_type": "blade",
+    "slot": "hand",
+    "rarity": "rare"
+  },
+  {
+    "id": "item_frost_sword",
+    "name": "寒冰剑",
+    "type": "weapon",
+    "price": 1000,
+    "description": "寒冰洞深处的冰晶铸剑，剑身寒气逼人。",
+    "effects": {
+      "attack": 30,
+      "mp_max": 30
+    },
+    "weapon_type": "sword",
+    "slot": "hand",
+    "rarity": "rare"
+  },
+  {
+    "id": "item_mojiao_armor",
+    "name": "魔教玄铁甲",
+    "type": "armor",
+    "price": 900,
+    "description": "魔教精英的制式铠甲，以玄铁打造。",
+    "effects": {
+      "defense": 25,
+      "hp_max": 60
+    },
+    "slot": "body",
+    "rarity": "rare"
+  },
+  {
+    "id": "item_mojiao_ring",
+    "name": "暗影指环",
+    "type": "accessory",
+    "price": 600,
+    "description": "魔教护法的贴身饰物，蕴含阴寒之力。",
+    "effects": {
+      "attack": 12,
+      "mp_steal": 3
+    },
+    "slot": "accessory",
+    "rarity": "rare"
+  },
+  {
+    "id": "item_yaowang_robe",
+    "name": "药王袍",
+    "type": "armor",
+    "price": 700,
+    "description": "药王谷传人的采药袍，以百草药汁浸染。",
+    "effects": {
+      "defense": 18,
+      "hp_max": 80
+    },
+    "slot": "body",
+    "rarity": "rare"
+  },
+  {
+    "id": "item_scorpion_poison",
+    "name": "蝎毒囊",
+    "type": "material",
+    "price": 30,
+    "description": "沙漠蝎的毒囊，可用于炼毒制药。",
+    "effects": {}
+  },
+  {
+    "id": "item_ice_essence",
+    "name": "冰魄精华",
+    "type": "material",
+    "price": 50,
+    "description": "从冰魄蛇体内取出的寒晶，蕴含纯阴之力。",
+    "effects": {}
+  },
+  {
+    "id": "item_spider_silk",
+    "name": "毒蛛丝",
+    "type": "material",
+    "price": 25,
+    "description": "毒蛛吐出的坚韧丝线，可织入护甲。",
+    "effects": {}
+  },
+  {
+    "id": "item_stone_core",
+    "name": "石傀儡核心",
+    "type": "material",
+    "price": 80,
+    "description": "石傀儡的能量核心，坚硬无比。",
+    "effects": {}
+  },
+  {
+    "id": "item_bat_blood",
+    "name": "血蝠精血",
+    "type": "material",
+    "price": 20,
+    "description": "血蝠的纯净精血，可入药。",
+    "effects": {}
+  },
+  {
+    "id": "item_sword_spirit",
+    "name": "剑意残魂",
+    "type": "material",
+    "price": 100,
+    "description": "剑灵消散后残留的剑意精华。",
+    "effects": {}
   }
 ]

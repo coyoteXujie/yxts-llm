@@ -264,7 +264,7 @@ def main() -> int:
 
     if len(region_ids) != len(set(region_ids)):
         errors.append("regions.json has duplicate ids")
-    expected_counts = {"city": 5, "town": 16, "wild": 45, "sect": 7}
+    expected_counts = {"city": 5, "town": 16, "wild": 55, "sect": 7}
     for region_type, expected in expected_counts.items():
         actual = sum(1 for region in regions if region.get("type") == region_type)
         if actual != expected:
