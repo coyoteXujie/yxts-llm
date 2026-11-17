@@ -22,6 +22,11 @@ func _ready() -> void:
 	_crafting = CRAFTING_SYSTEM.new()
 	_build()
 
+func _exit_tree() -> void:
+	_crafting = null
+	_recipe_buttons.clear()
+	_current_recipe_id = ""
+
 func show_panel() -> void:
 	_refresh_list()
 	PANEL_ANIM.open(self)

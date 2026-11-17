@@ -1323,6 +1323,7 @@ func _register_inputs() -> void:
 	_add_key_action("inventory", [KEY_B])
 	_add_key_action("journal", [KEY_J])
 	_add_key_action("cultivation", [KEY_K])
+	_add_key_action("forge", [KEY_N])
 	_add_key_action("world_map", [KEY_M])
 	_add_key_action("quick_save", [KEY_F5])
 	_add_key_action("quick_load", [KEY_F9])
