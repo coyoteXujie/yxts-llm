@@ -10,6 +10,7 @@ enum Mode {
 	JOURNAL,
 	SHOP,
 	CULTIVATION,
+	FORGE,
 	MAP,
 	DISCOVERY
 }

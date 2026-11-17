@@ -19,6 +19,7 @@ var teach_button: Button
 var quest_button: Button
 var story_button: Button
 var shop_button: Button
+var forge_button: Button
 var join_button: Button
 var rest_button: Button
 var close_button: Button
@@ -142,6 +143,12 @@ func _build() -> void:
 	UI_ART.apply_button(shop_button)
 	shop_button.pressed.connect(_shop)
 	actions.add_child(shop_button)
+
+	forge_button = Button.new()
+	forge_button.text = "锻造"
+	UI_ART.apply_button(forge_button)
+	forge_button.pressed.connect(_open_forge)
+	actions.add_child(forge_button)
 
 	join_button = Button.new()
 	join_button.text = "拜师"
@@ -289,6 +296,12 @@ func _refresh_action_buttons() -> void:
 	_set_button_state(shop_button, can_trade, "打开交易和修理服务" if can_trade else "此人不做买卖")
 	if can_trade:
 		available_actions.append("交易")
+
+	var npc_name := str(npc_data.get("name", ""))
+	var can_forge := can_trade and (npc_name.contains("铁匠") or str(npc_data.get("npc_type", "")) == "blacksmith")
+	_set_button_state(forge_button, can_forge, "打开锻造面板" if can_forge else "此处不能锻造")
+	if can_forge:
+		available_actions.append("锻造")
 
 	var join_state := _join_action_state()
 	var join_enabled := bool(join_state.get("enabled", false))
@@ -517,6 +530,20 @@ func _shop() -> void:
 	GameState.record_npc_interaction(npc_data, "trade")
 	hide()
 	EventBus.emit_shop_requested(npc_data)
+
+func _open_forge() -> void:
+	_clear_story_choice_buttons()
+	hide()
+	EventBus.emit_toast("你走到铁砧前，准备开炉锻造")
+	if Engine.get_main_loop() != null and Engine.get_main_loop().root.has_node("/root/Main/ForgePanel"):
+		Engine.get_main_loop().root.get_node("/root/Main/ForgePanel").show_panel()
+	else:
+		# Fallback: try to find ForgePanel anywhere in the scene tree
+		var main := Engine.get_main_loop().root.get_node("/root/Main") if Engine.get_main_loop() != null else null
+		if main != null and main.has_node("ForgePanel"):
+			main.get_node("ForgePanel").show_panel()
+		else:
+			EventBus.emit_toast("锻造面板未加载")
 
 func _join_faction() -> void:
 	_clear_story_choice_buttons()

@@ -19,6 +19,7 @@ const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
 const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
 const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
 const CULTIVATION_PANEL_SCRIPT := preload("res://scripts/ui/cultivation_panel.gd")
+const FORGE_PANEL_SCRIPT := preload("res://scripts/ui/forge_panel.gd")
 const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
 const DISCOVERY_PANEL_SCRIPT := preload("res://scripts/ui/discovery_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
@@ -62,6 +63,7 @@ var inventory_panel
 var quest_panel
 var shop_panel
 var cultivation_panel
+var forge_panel
 var world_map_panel
 var discovery_panel
 var opening_narrative
@@ -150,6 +152,8 @@ func _ready() -> void:
 	ui_layer.add_child(shop_panel)
 	cultivation_panel = CULTIVATION_PANEL_SCRIPT.new()
 	ui_layer.add_child(cultivation_panel)
+	forge_panel = FORGE_PANEL_SCRIPT.new()
+	ui_layer.add_child(forge_panel)
 	world_map_panel = WORLD_MAP_PANEL_SCRIPT.new()
 	ui_layer.add_child(world_map_panel)
 	world_map_panel.focus_region_requested.connect(_mark_region_target)
@@ -319,6 +323,8 @@ func _handle_cancel() -> void:
 			shop_panel.close_panel()
 		GameState.Mode.CULTIVATION:
 			cultivation_panel.close_panel()
+		GameState.Mode.FORGE:
+			forge_panel.close_panel()
 		GameState.Mode.MAP:
 			world_map_panel.close_panel()
 		GameState.Mode.DISCOVERY:
@@ -409,6 +415,7 @@ func _close_gameplay_panels() -> void:
 	quest_panel.hide()
 	shop_panel.hide()
 	cultivation_panel.hide()
+	forge_panel.hide()
 	world_map_panel.hide()
 	discovery_panel.hide()
 
