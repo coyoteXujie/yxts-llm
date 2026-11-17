@@ -1,20 +1,28 @@
 extends RefCounted
 ## 锻造系统：管理配方、材料消耗与装备生成
 
+## 配方数据路径 — 可通过外部赋值替换，方便测试
+var _recipes_path := "res://data/crafting_recipes.json"
+
 var _recipes: Array = []
 
-func _init() -> void:
+func _init(path_override: String = "") -> void:
+	if not path_override.is_empty():
+		_recipes_path = path_override
 	_load_recipes()
 
 func _load_recipes() -> void:
-	var file = FileAccess.open("res://data/crafting_recipes.json", FileAccess.READ)
+	var file = FileAccess.open(_recipes_path, FileAccess.READ)
 	if file == null:
-		push_error("锻造配方文件加载失败")
+		push_error("锻造配方文件加载失败: %s" % _recipes_path)
 		return
 	var text = file.get_as_text()
 	var json = JSON.new()
 	if json.parse(text) != OK:
 		push_error("锻造配方解析失败: %s" % json.get_error_message())
+		return
+	if typeof(json.data) != TYPE_ARRAY:
+		push_error("锻造配方数据格式错误，期望 Array")
 		return
 	_recipes = json.data
 
@@ -35,7 +43,10 @@ func can_craft(recipe_id: String) -> Dictionary:
 	if recipe.is_empty():
 		return {"ok": false, "reason": "配方不存在"}
 
-	var forge_level: int = int(GameState.player.get("forge_level", 0))
+	var player_data := GameState.player
+	if player_data == null or typeof(player_data) != TYPE_DICTIONARY:
+		return {"ok": false, "reason": "玩家数据不可用"}
+	var forge_level: int = int(player_data.get("forge_level", 0))
 	var skill_req: int = int(recipe.get("skill_req", 0))
 	if forge_level < skill_req:
 		return {"ok": false, "reason": "锻造等级不足（需要 %d）" % skill_req}

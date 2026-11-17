@@ -65,6 +65,20 @@ func _ready() -> void:
 	_setup_players()
 	_load_settings()
 
+func _exit_tree() -> void:
+	if _bgm_tween != null:
+		_bgm_tween.kill()
+		_bgm_tween = null
+	if _ambient_tween != null:
+		_ambient_tween.kill()
+		_ambient_tween = null
+	_cached_streams.clear()
+	for player in _bgm_players:
+		if is_instance_valid(player):
+			player.stop()
+	if is_instance_valid(_ambient_player):
+		_ambient_player.stop()
+
 func _load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SETTINGS_PATH) != OK:
@@ -86,7 +100,9 @@ func _save_settings() -> void:
 	cfg.set_value(SETTINGS_SECTION, "bgm_volume", _bgm_volume)
 	cfg.set_value(SETTINGS_SECTION, "sfx_volume", _sfx_volume)
 	cfg.set_value(SETTINGS_SECTION, "ambient_volume", _ambient_volume)
-	cfg.save(SETTINGS_PATH)
+	var result := cfg.save(SETTINGS_PATH)
+	if result != OK:
+		push_error("音频设置保存失败: %d" % result)
 
 func _setup_buses() -> void:
 	_ensure_bus(BUS_BGM, BUS_MASTER)

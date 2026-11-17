@@ -192,6 +192,8 @@ func _player_focus() -> void:
 		if active:
 			_enemy_turn()
 		return
+	if GameState.player == null:
+		return
 	var hp_gain := GameState.heal_player(10 + int(GameState.learned_skills.get("kf_basic_force", 1)) * 3)
 	var mp_gain := GameState.restore_mp(14 + int(GameState.learned_skills.get("kf_basic_force", 1)) * 4)
 	_add_status(player_statuses, "guard", 1, 0)
@@ -341,6 +343,8 @@ func _process_turn_start(actor: String) -> bool:
 
 func _player_hit_damage(profile: Dictionary, level: int) -> int:
 	var player := GameState.player
+	if player == null or typeof(player) != TYPE_DICTIONARY:
+		return 1
 	var base_attack := int(player.get("attack", 12))
 	var defense := int(enemy.get("defense", 0))
 	var pierce := clampf(float(profile.get("armor_pierce", 0.0)), 0.0, 0.8)
@@ -360,7 +364,7 @@ func _player_hit_damage(profile: Dictionary, level: int) -> int:
 	return damage
 
 func _enemy_hit_damage(action: Dictionary) -> int:
-	var player_defense := int(GameState.player.get("defense", 6))
+	var player_defense := int(GameState.player.get("defense", 6)) if GameState.player != null and typeof(GameState.player) == TYPE_DICTIONARY else 6
 	var enemy_attack := int(enemy.get("attack", enemy.get("damage", 5)))
 	var bonus := int(action.get("bonus", 0))
 	var damage := int(max(1, enemy_attack + bonus + randi_range(0, 6) - int(float(player_defense) * 0.42)))
@@ -511,7 +515,7 @@ func _tick_cooldowns() -> void:
 		player_cooldowns.erase(skill_id)
 
 func _finish(victory: bool, escaped: bool = false) -> void:
-	var player_before := GameState.player.duplicate(true)
+	var player_before := GameState.player.duplicate(true) if GameState.player != null else {}
 	var completed_before: Array = GameState.completed_quests.duplicate()
 	var exp_reward := 0
 	var money_reward := 0
