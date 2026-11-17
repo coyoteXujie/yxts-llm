@@ -51,8 +51,14 @@ func close_panel() -> void:
 
 func _build() -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(84, 366)
-	panel.size = Vector2(1112, 330)
+	panel.anchor_left = 0.05
+	panel.anchor_top = 1.0
+	panel.anchor_right = 0.95
+	panel.anchor_bottom = 1.0
+	panel.offset_left = 0
+	panel.offset_top = -320
+	panel.offset_right = 0
+	panel.offset_bottom = -20
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(panel)
 
@@ -539,7 +545,7 @@ func _open_forge() -> void:
 		Engine.get_main_loop().root.get_node("/root/Main/ForgePanel").show_panel()
 	else:
 		# Fallback: try to find ForgePanel anywhere in the scene tree
-		var main := Engine.get_main_loop().root.get_node("/root/Main") if Engine.get_main_loop() != null else null
+		var main: Node = Engine.get_main_loop().root.get_node("/root/Main") if Engine.get_main_loop() != null else null
 		if main != null and main.has_node("ForgePanel"):
 			main.get_node("ForgePanel").show_panel()
 		else:

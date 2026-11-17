@@ -491,7 +491,7 @@ func _confirm_discard_all() -> void:
 				GameState.remove_item(item_id, count)
 		_refresh()
 	var body := _confirm_internal_text()
-	if body != None:
+	if body != null:
 		body.text = "丢弃所有非装备物品吗？\n此操作不可撤销。"
 	confirm_overlay.show()
 
