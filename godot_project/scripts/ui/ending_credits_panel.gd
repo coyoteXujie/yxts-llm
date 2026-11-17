@@ -55,11 +55,17 @@ func _build_credits_text(epilogue: String) -> String:
 	var epilogue_title := "江湖留灯" if epilogue == "mercy" else "残影清剿"
 	var epilogue_line := "你选择与苏梦瑶一起，为江湖留一盏灯。" if epilogue == "mercy" else "你选择与陈天行一起，清剿暗影司残部。"
 
+	var npc_epilogues := _build_npc_epilogues(epilogue)
+
 	return """[center][b]白金英雄坛说[/b]
 
 
 
 —— 终章 · %s ——
+
+
+
+%s
 
 
 
@@ -93,7 +99,7 @@ func _build_credits_text(epilogue: String) -> String:
 
 
 
-• 美 术 & 程 序 •
+• 美术 & 程序 •
 
 Godot Engine 4.6
 
@@ -120,7 +126,23 @@ Godot Engine 4.6
 
 
 © 2025 白金英雄坛说开发组
-按任意键返回主菜单[/center]""" % [epilogue_title, epilogue_line]
+按任意键返回主菜单[/center]""" % [epilogue_title, epilogue_line, npc_epilogues]
+
+func _build_npc_epilogues(epilogue: String) -> String:
+	if epilogue == "mercy":
+		return (
+			"\n\n\n— 江湖留灯 · 故人余音 —\n\n"
+			+ "苏梦瑶\n将苏家旧宅遗址改建为一座无名茶寮，\n专收无处可去的孤儿。\n花间派的姐妹们轮流来帮忙，\n茶寮的灯，每晚都亮到深夜。\n\n"
+			+ "陈天行\n放下说书人的醒木，为旧案写下一部完整的《暗影录》，\n藏于武林盟书阁。\n他说：有些故事不是用来讲的，是用来提醒后人的。\n\n"
+			+ "赵无极\n带着武林盟的手令巡游七派，\n督办旧案善后。\n他在一份密报里写道：\n「江湖欠苏家一个公道，今日总算还了。」"
+		)
+	else:
+		return (
+			"\n\n\n— 残影清剿 · 余烬归处 —\n\n"
+			+ "苏梦瑶\n随武林盟连夜清查暗影司残部，\n在最后一条暗线落网后，\n她独自回到苏家旧宅遗址，\n烧了一炷香，什么也没说。\n\n"
+			+ "陈天行\n以说书人的身份游走南北，\n将暗影司的覆灭编成新书。\n他说：\n「要让百姓知道江湖的黑夜是谁点亮的，也得知道谁曾走在黑暗里。」\n\n"
+			+ "赵无极\n带队收押暗影司余党，\n在总坛暗道里找到了一卷旧信——\n信中提及了更深处的势力。\n他将那卷信锁进了武林盟的铁柜。\n卷宗名册上只写了四个字：待查。"
+		)
 
 func _input(event: InputEvent) -> void:
 	if not visible or _is_closing:
