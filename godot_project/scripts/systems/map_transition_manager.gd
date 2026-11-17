@@ -42,6 +42,30 @@ const ENTERABLE_REGION_TYPES := {
 ## --- 状态 ---
 var world_return_position := Vector2.ZERO
 
+func initialize(p_world_map: Node, p_local_area: Node, p_player: Node, p_camera: Camera2D) -> void:
+	world_map = p_world_map
+	local_area = p_local_area
+	player_actor = p_player
+	camera = p_camera
+	_setup_transition_overlay()
+
+func _setup_transition_overlay() -> void:
+	transition_overlay = ColorRect.new()
+	transition_overlay.name = "MapTransitionOverlay"
+	transition_overlay.color = Color.BLACK
+	transition_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	transition_overlay.size = Vector2(1920, 1080)
+	transition_overlay.show_behind_parent = true
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/ink_transition.gdshader")
+	mat.set_shader_parameter("progress", 1.0)
+	transition_overlay.material = mat
+	transition_overlay.hide()
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.layer = 8
+	add_child(canvas_layer)
+	canvas_layer.add_child(transition_overlay)
+
 ## 相机边界更新
 func update_camera_limits(active_map: Node) -> void:
 	if active_map == null or camera == null:
@@ -97,7 +121,7 @@ func _play_map_transition_feedback() -> void:
 		if mat != null:
 			mat.set_shader_parameter("progress", 0.85)
 	var existing := get_tree().get_first_node_in_group("map_transition_tween")
-	if existing != null and existing is Tween and existing.is_valid():
+	if existing != null and existing.has_method("is_valid") and existing.is_valid():
 		existing.kill()
 	var tween := create_tween()
 	tween.set_parallel(true)

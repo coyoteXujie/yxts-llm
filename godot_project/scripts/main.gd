@@ -402,8 +402,8 @@ func _update_current_region() -> void:
 	GameState.update_current_region(region, tile)
 
 func _save_current_game() -> bool:
-	var save_pos := map_transition_mgr.current_world_save_position(active_map)
-	var save_ctx := map_transition_mgr.build_save_context(active_map)
+	var save_pos: Vector2 = map_transition_mgr.current_world_save_position(active_map)
+	var save_ctx: Dictionary = map_transition_mgr.build_save_context(active_map)
 	return GameState.save_game(save_pos, save_ctx)
 
 func _register_inputs() -> void:

@@ -261,7 +261,13 @@ func _handle_fast_travel_complication(complication: Dictionary) -> void:
 
 func _can_enter_region(region: Dictionary) -> bool:
 	var region_type := str(region.get("type", ""))
-	return MapTransitionManager.ENTERABLE_REGION_TYPES.get(region_type, false)
+	var enterable := {
+		"city": true,
+		"town": true,
+		"sect": true,
+		"wild": true
+	}
+	return enterable.get(region_type, false)
 
 func _current_region_for_entry(active_map: Node) -> Dictionary:
 	if active_map != world_map:
