@@ -38,6 +38,20 @@ common/physics_interpolation=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 
+anti_aliasing/quality/msaa=2
+anti_aliasing/quality/use_debanding=true
+
+texture/filter/default_filter=1
+texture/filter/use_anisotropic_filter=true
+
+quality/intended_usage/framebuffer_allocation=2
+
+shadows/quality/shadow_atlas_size=2048
+shadows/quality/shadow_atlas_quadrant_0_subdiv=1
+shadows/quality/shadow_atlas_quadrant_1_subdiv=2
+shadows/quality/shadow_atlas_quadrant_2_subdiv=3
+shadows/quality/shadow_atlas_quadrant_3_subdiv=3
+
 [yxts]
 
 postfx/intensity=0.85
