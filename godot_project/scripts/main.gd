@@ -1,37 +1,24 @@
 extends Node2D
-## 主控制脚本 — 协调游戏生命周期、UI 面板和系统模块
+## 主控制脚本 — 模块加载器
+## 职责仅限：游戏对象创建、系统/面板注册、输入路由、生命周期桥接
+
+const HUD_ALPHA_OPEN := 0.30
+const HUD_ALPHA_CLOSED := 1.0
+
+var _onboarding_shown: Dictionary = {}
 
 const WORLD_MAP_SCRIPT := preload("res://scripts/world/world_map.gd")
 const LOCAL_AREA_SCRIPT := preload("res://scripts/world/local_area_map.gd")
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
-const DIALOGUE_PANEL_SCRIPT := preload("res://scripts/ui/dialogue_panel.gd")
-const COMBAT_PANEL_SCRIPT := preload("res://scripts/ui/combat_panel.gd")
-const ATMOSPHERE_LAYER_SCRIPT := preload("res://scripts/ui/atmosphere_layer.gd")
-const INK_WASH_POSTFX_SCRIPT := preload("res://scripts/ui/ink_wash_postfx.gd")
-const WEATHER_OVERLAY_SCRIPT := preload("res://scripts/ui/weather_overlay.gd")
-const OPENING_NARRATIVE_SCRIPT := preload("res://scripts/ui/opening_narrative_panel.gd")
-const ENDING_CREDITS_SCRIPT := preload("res://scripts/ui/ending_credits_panel.gd")
-const INK_SPLASH_SCRIPT := preload("res://scripts/ui/ink_splash_overlay.gd")
-const INK_TRANSITION_SHADER := preload("res://shaders/ink_transition.gdshader")
-const MAIN_MENU_SCRIPT := preload("res://scripts/ui/main_menu_panel.gd")
-const CHARACTER_CREATION_SCRIPT := preload("res://scripts/ui/character_creation_panel.gd")
-const INVENTORY_PANEL_SCRIPT := preload("res://scripts/ui/inventory_panel.gd")
-const QUEST_PANEL_SCRIPT := preload("res://scripts/ui/quest_panel.gd")
-const SHOP_PANEL_SCRIPT := preload("res://scripts/ui/shop_panel.gd")
-const CULTIVATION_PANEL_SCRIPT := preload("res://scripts/ui/cultivation_panel.gd")
-const FORGE_PANEL_SCRIPT := preload("res://scripts/ui/forge_panel.gd")
-const WORLD_MAP_PANEL_SCRIPT := preload("res://scripts/ui/world_map_panel.gd")
-const DISCOVERY_PANEL_SCRIPT := preload("res://scripts/ui/discovery_panel.gd")
 const COMBAT_SYSTEM_SCRIPT := preload("res://scripts/systems/combat_system.gd")
-const MAP_TRANSITION_MANAGER := preload("res://scripts/systems/map_transition_manager.gd")
-const INTERACTION_MANAGER := preload("res://scripts/systems/interaction_manager.gd")
+const INTERACTION_SCRIPT := preload("res://scripts/systems/interaction_manager.gd")
+const MAP_TRANSITION_SCRIPT := preload("res://scripts/systems/map_transition_manager.gd")
 const SECT_SYSTEM_SCRIPT := preload("res://scripts/systems/sect_system.gd")
 const ACHIEVEMENT_SYSTEM_SCRIPT := preload("res://scripts/systems/achievement_system.gd")
 const PET_SYSTEM_SCRIPT := preload("res://scripts/systems/pet_system.gd")
-const SECT_PANEL_SCRIPT := preload("res://scripts/ui/sect_panel.gd")
-const ACHIEVEMENT_PANEL_SCRIPT := preload("res://scripts/ui/achievement_panel.gd")
-const PET_PANEL_SCRIPT := preload("res://scripts/ui/pet_panel.gd")
+const INK_SPLASH_SCRIPT := preload("res://scripts/ui/ink_splash_overlay.gd")
+const LIGHTING_MANAGER_SCRIPT := preload("res://scripts/systems/lighting_manager.gd")
 
 const NEW_GAME_STARTS_IN_LOCAL_TOWN := true
 
@@ -40,35 +27,14 @@ var local_area: Node
 var active_map: Node
 var player_actor: Node
 var camera: Camera2D
-var hud: Node
-var dialogue_panel: Node
-var combat_panel: Node
-var combat_system: Node
-var atmosphere_layer: Node
-var main_menu_panel: Node
-var character_creation_panel: Node
-var inventory_panel: Node
-var quest_panel: Node
-var shop_panel: Node
-var cultivation_panel: Node
-var forge_panel: Node
-var world_map_panel: Node
-var discovery_panel: Node
-var opening_narrative: Node
-var sect_panel: Node
-var achievement_panel: Node
-var pet_panel: Node
-var ui_layer: CanvasLayer
-
-var map_transition_mgr
-var interaction_mgr
-
 var game_started := false
+var atmosphere_layer: Node
 
 func _ready() -> void:
 	randomize()
 	_register_inputs()
 
+	# ── 1. 游戏世界对象 ──
 	world_map = WORLD_MAP_SCRIPT.new()
 	add_child(world_map)
 	local_area = LOCAL_AREA_SCRIPT.new()
@@ -86,167 +52,122 @@ func _ready() -> void:
 	player_actor.add_child(camera)
 	camera.make_current()
 
-	combat_system = COMBAT_SYSTEM_SCRIPT.new()
-	add_child(combat_system)
-	combat_system.combat_finished.connect(_on_combat_finished)
+	# ── 2. UI 层级与面板注册 ──
+	_setup_ui_layers()
 
-	# 初始化门派/成就/灵宠系统（Autoload方式）
+	# ── 3. 系统注册（SystemManager） ──
+	var combat_sys := COMBAT_SYSTEM_SCRIPT.new()
+	add_child(combat_sys)
+	SystemManager.register_system("combat", combat_sys, ["game_state"])
+
 	var sect_sys := SECT_SYSTEM_SCRIPT.new()
 	sect_sys.name = "SectSystem"
 	add_child(sect_sys)
+	SystemManager.register_system("sect", sect_sys)
+
 	var ach_sys := ACHIEVEMENT_SYSTEM_SCRIPT.new()
 	ach_sys.name = "AchievementSystem"
 	add_child(ach_sys)
+	SystemManager.register_system("achievement", ach_sys)
+
 	var pet_sys := PET_SYSTEM_SCRIPT.new()
 	pet_sys.name = "PetSystem"
 	add_child(pet_sys)
+	SystemManager.register_system("pet", pet_sys)
 
-	_setup_layers_and_panels()
+	SystemManager.register_system("interaction", INTERACTION_SCRIPT.new())
+	SystemManager.register_system("map_transition", MAP_TRANSITION_SCRIPT.new())
 
-	# 初始化系统模块
-	map_transition_mgr = MAP_TRANSITION_MANAGER.new()
-	add_child(map_transition_mgr)
-	map_transition_mgr.initialize(world_map, local_area, player_actor, camera)
+	var lighting_manager := LIGHTING_MANAGER_SCRIPT.new()
+	add_child(lighting_manager)
+	SystemManager.register_system("lighting", lighting_manager)
 
-	interaction_mgr = INTERACTION_MANAGER.new()
-	add_child(interaction_mgr)
-	interaction_mgr.setup_references(world_map, local_area, player_actor, hud,
-		dialogue_panel, shop_panel, combat_panel, discovery_panel,
-		combat_system, map_transition_mgr)
+	SystemManager.init_all()
 
-	# 信号连接
+	# 桥接：为 InteractionManager 注入运行时节点引用
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction != null and interaction.has_method("setup_references"):
+		interaction.call("setup_references", world_map, local_area, player_actor, _hud_node(),
+			PanelManager.get_panel("dialogue"), PanelManager.get_panel("shop"),
+			PanelManager.get_panel("combat"), PanelManager.get_panel("discovery"),
+			combat_sys, SystemManager.get_system("map_transition"))
+
+	var map_transition: Node = SystemManager.get_system("map_transition")
+	if map_transition != null and map_transition.has_method("initialize"):
+		map_transition.call("initialize", world_map, local_area, player_actor, camera)
+
+	# 向 AtmosphereLayer 传递 lighting_manager 引用
+	if atmosphere_layer != null and atmosphere_layer.has_method("set_lighting_manager"):
+		atmosphere_layer.call("set_lighting_manager", lighting_manager)
+
+	# ── 4. 信号连接 ──
+	combat_sys.combat_finished.connect(_on_combat_finished)
 	AudioManager.play_bgm("main_menu")
 	EventBus.mode_changed.connect(_on_mode_changed_bgm)
-	EventBus.dialogue_requested.connect(_open_dialogue)
+	EventBus.mode_changed.connect(_on_mode_changed_hud)
+	PanelManager.panel_opened.connect(_on_panel_opened_onboarding)
+	EventBus.dialogue_requested.connect(func(npc): PanelManager.open_panel("dialogue", {"npc": npc}))
 	EventBus.combat_requested.connect(_start_combat_from_data)
-	EventBus.shop_requested.connect(_open_shop)
+	EventBus.shop_requested.connect(func(npc): PanelManager.open_panel("shop", {"npc": npc}))
 	EventBus.game_loaded.connect(_on_game_loaded)
 	EventBus.quest_completed.connect(_on_quest_completed)
 	EventBus.map_target_changed.connect(_on_map_target_changed)
-	EventBus.sect_changed.connect(_on_sect_changed)
-	EventBus.achievement_unlocked.connect(_on_achievement_unlocked)
-	main_menu_panel.new_game_requested.connect(_open_character_creation)
-	main_menu_panel.continue_requested.connect(_continue_game)
-	main_menu_panel.resume_requested.connect(_resume_from_menu)
-	main_menu_panel.save_requested.connect(_save_from_menu)
-	character_creation_panel.character_created.connect(_start_new_game)
-	world_map_panel.focus_region_requested.connect(_mark_region_target)
-	world_map_panel.fast_travel_requested.connect(_fast_travel_to_region)
-	world_map_panel.clear_target_requested.connect(_clear_region_target)
-	opening_narrative.narrative_finished.connect(_on_narrative_finished)
 
-	# 墨滴开场动画 → 主菜单
+	# ── 5. 墨滴开场 → 主菜单 ──
 	var ink_splash := INK_SPLASH_SCRIPT.new()
+	var ui_layer: Node = _ui_layer_node()
 	ui_layer.add_child(ink_splash)
 	ink_splash.splash_finished.connect(func():
-		main_menu_panel.show_menu(false)
+		PanelManager.open_panel("main_menu", {"show_saved": false})
 	)
 	ink_splash.start_splash()
-
-	# 水墨后处理（最顶层）
-	var postfx_layer := CanvasLayer.new()
-	postfx_layer.layer = 10
-	add_child(postfx_layer)
-	var ink_wash := INK_WASH_POSTFX_SCRIPT.new()
-	postfx_layer.add_child(ink_wash)
-	ink_wash.name = "InkWashPostFX"
-
-func _setup_layers_and_panels() -> void:
-	ui_layer = CanvasLayer.new()
-	ui_layer.layer = 3
-	add_child(ui_layer)
-
-	var atm_layer_node := CanvasLayer.new()
-	atm_layer_node.layer = 1
-	add_child(atm_layer_node)
-	atmosphere_layer = ATMOSPHERE_LAYER_SCRIPT.new()
-	atm_layer_node.add_child(atmosphere_layer)
-
-	var weather_layer_node := CanvasLayer.new()
-	weather_layer_node.layer = 2
-	add_child(weather_layer_node)
-	var weather_overlay := WEATHER_OVERLAY_SCRIPT.new()
-	weather_layer_node.add_child(weather_overlay)
-	atmosphere_layer.weather_overlay = weather_overlay
-
-	hud = HUD_SCRIPT.new()
-	ui_layer.add_child(hud)
-	dialogue_panel = DIALOGUE_PANEL_SCRIPT.new()
-	ui_layer.add_child(dialogue_panel)
-	combat_panel = COMBAT_PANEL_SCRIPT.new()
-	ui_layer.add_child(combat_panel)
-	combat_panel.set_combat_system(combat_system)
-	inventory_panel = INVENTORY_PANEL_SCRIPT.new()
-	ui_layer.add_child(inventory_panel)
-	quest_panel = QUEST_PANEL_SCRIPT.new()
-	ui_layer.add_child(quest_panel)
-	shop_panel = SHOP_PANEL_SCRIPT.new()
-	ui_layer.add_child(shop_panel)
-	cultivation_panel = CULTIVATION_PANEL_SCRIPT.new()
-	ui_layer.add_child(cultivation_panel)
-	forge_panel = FORGE_PANEL_SCRIPT.new()
-	ui_layer.add_child(forge_panel)
-	world_map_panel = WORLD_MAP_PANEL_SCRIPT.new()
-	ui_layer.add_child(world_map_panel)
-	discovery_panel = DISCOVERY_PANEL_SCRIPT.new()
-	ui_layer.add_child(discovery_panel)
-	character_creation_panel = CHARACTER_CREATION_SCRIPT.new()
-	ui_layer.add_child(character_creation_panel)
-	main_menu_panel = MAIN_MENU_SCRIPT.new()
-	ui_layer.add_child(main_menu_panel)
-	opening_narrative = OPENING_NARRATIVE_SCRIPT.new()
-	ui_layer.add_child(opening_narrative)
-	sect_panel = SECT_PANEL_SCRIPT.new()
-	ui_layer.add_child(sect_panel)
-	achievement_panel = ACHIEVEMENT_PANEL_SCRIPT.new()
-	ui_layer.add_child(achievement_panel)
-	pet_panel = PET_PANEL_SCRIPT.new()
-	ui_layer.add_child(pet_panel)
 
 func _process(delta: float) -> void:
 	GameState.advance_time(delta)
 	player_actor.movement_enabled = GameState.can_explore()
-	map_transition_mgr.update_camera_limits(active_map)
-
-	if GameState.can_explore() and not interaction_mgr.pending_quest_summaries.is_empty():
-		interaction_mgr.try_show_pending_quest_summary()
-
-	if not GameState.can_explore():
-		interaction_mgr.clear_explore_state()
+	_update_camera_limits()
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction == null:
 		return
-
-	interaction_mgr.update_explore_context(active_map)
-	interaction_mgr.update_ambient_npc_lines(delta, active_map)
-	interaction_mgr.update_explore_prompt(active_map)
-	interaction_mgr.handle_explore_actions()
+	# pending_quest_summaries check
+	if interaction.get("pending_quest_summaries") != null:
+		var summaries = interaction.get("pending_quest_summaries")
+		if summaries != null and not summaries.is_empty() and GameState.can_explore():
+			interaction.call("try_show_pending_quest_summary")
+	if not GameState.can_explore():
+		if interaction.has_method("clear_explore_state"):
+			interaction.call("clear_explore_state")
+		return
+	if interaction.has_method("update_explore_context"):
+		interaction.call("update_explore_context", active_map)
+	if interaction.has_method("update_ambient_npc_lines"):
+		interaction.call("update_ambient_npc_lines", delta, active_map)
+	if interaction.has_method("update_explore_prompt"):
+		interaction.call("update_explore_prompt", active_map)
+	if interaction.has_method("handle_explore_actions"):
+		interaction.call("handle_explore_actions")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_handle_cancel()
 		get_viewport().set_input_as_handled()
 		return
-
 	if not GameState.can_explore():
 		return
-
-	if event.is_action_pressed("inventory"):
-		_close_gameplay_panels()
-		inventory_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("journal"):
-		_close_gameplay_panels()
-		quest_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("cultivation"):
-		_close_gameplay_panels()
-		cultivation_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("world_map"):
-		_close_gameplay_panels()
-		world_map_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("enter_area"):
-		interaction_mgr.handle_enter_area(active_map)
+	var action_panels := {
+		"inventory": "inventory", "journal": "quest", "cultivation": "cultivation",
+		"world_map": "world_map", "sect": "sect", "achievement": "achievement", "pet": "pet"
+	}
+	for action in action_panels:
+		if event.is_action_pressed(action):
+			PanelManager.close_all()
+			PanelManager.open_panel(action_panels[action])
+			get_viewport().set_input_as_handled()
+			return
+	if event.is_action_pressed("enter_area"):
+		var interaction: Node = SystemManager.get_system("interaction")
+		if interaction != null and interaction.has_method("handle_enter_area"):
+			interaction.call("handle_enter_area", active_map)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_save"):
 		_save_current_game()
@@ -254,75 +175,103 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("quick_load"):
 		GameState.load_game()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("sect"):
-		_close_gameplay_panels()
-		sect_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("achievement"):
-		_close_gameplay_panels()
-		achievement_panel.show_panel()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("pet"):
-		_close_gameplay_panels()
-		pet_panel.show_panel()
-		get_viewport().set_input_as_handled()
 
 func _handle_cancel() -> void:
-	match GameState.mode:
-		GameState.Mode.DIALOGUE:
-			dialogue_panel.close_panel()
-		GameState.Mode.INVENTORY:
-			inventory_panel.close_panel()
-		GameState.Mode.JOURNAL:
-			quest_panel.close_panel()
-		GameState.Mode.SHOP:
-			shop_panel.close_panel()
-		GameState.Mode.CULTIVATION:
-			cultivation_panel.close_panel()
-		GameState.Mode.FORGE:
-			forge_panel.close_panel()
-		GameState.Mode.MAP:
-			world_map_panel.close_panel()
-		GameState.Mode.DISCOVERY:
-			discovery_panel.close_panel()
-		GameState.Mode.SECT:
-			sect_panel.close_panel()
-		GameState.Mode.ACHIEVEMENT:
-			achievement_panel.close_panel()
-		GameState.Mode.PET:
-			pet_panel.close_panel()
-		GameState.Mode.COMBAT:
-			if combat_panel != null and combat_panel.has_method("is_result_visible") and combat_panel.is_result_visible():
-				combat_panel.close_result_panel()
-			else:
-				EventBus.emit_toast("战斗中无法打开菜单")
-		GameState.Mode.MENU:
-			if game_started:
-				_resume_from_menu()
-			else:
-				main_menu_panel.show_menu(false)
-		GameState.Mode.EXPLORE:
-			main_menu_panel.show_menu(true)
-		_:
-			_close_gameplay_panels()
-			GameState.set_mode(GameState.Mode.EXPLORE)
+	if GameState.mode == GameState.Mode.COMBAT:
+		var combat_panel: Node = PanelManager.get_panel("combat")
+		if combat_panel != null and combat_panel.has_method("is_result_visible") and combat_panel.call("is_result_visible"):
+			combat_panel.call("close_result_panel")
+		else:
+			EventBus.emit_toast("战斗中无法打开菜单")
+	elif GameState.mode == GameState.Mode.MENU:
+		if game_started:
+			_resume_from_menu()
+		else:
+			PanelManager.open_panel("main_menu", {"show_saved": false})
+	elif GameState.mode == GameState.Mode.EXPLORE:
+		PanelManager.open_panel("main_menu", {"show_saved": true})
+	else:
+		PanelManager.close_top_panel()
 
-func _open_character_creation() -> void:
-	character_creation_panel.show_panel()
-
-func _continue_game() -> void:
-	if not GameState.load_game():
-		main_menu_panel.show_menu(game_started)
+func _start_new_game(config: Dictionary) -> void:
+	game_started = true
+	GameState.new_game(config)
+	var player_name: String = str(config.get("name", "少侠"))
+	PanelManager.open_panel("narrative", {"player_name": player_name})
+	world_map.call("reset_npcs")
+	world_map.call("set_target_region", GameState.map_target_region_id)
+	var map_transition: Node = SystemManager.get_system("map_transition")
+	var started_in_town := false
+	if NEW_GAME_STARTS_IN_LOCAL_TOWN and map_transition != null and map_transition.has_method("try_enter_new_game_start_region"):
+		started_in_town = map_transition.call("try_enter_new_game_start_region")
+	if not started_in_town and map_transition != null and map_transition.has_method("switch_to_world_map"):
+		map_transition.call("switch_to_world_map", GameState.player_position)
+	_update_current_region()
+	PanelManager.close_all()
+	EventBus.emit_toast("新的江湖开始")
 
 func _resume_from_menu() -> void:
 	if not game_started:
-		main_menu_panel.show_menu(false)
+		PanelManager.open_panel("main_menu", {"show_saved": false})
 		return
-	main_menu_panel.hide()
-	_close_gameplay_panels()
+	PanelManager.close_all()
 	GameState.set_mode(GameState.Mode.EXPLORE)
 
-func _on_mode_changed_bgm(next_mode: GameState.Mode) -> void:
+func _on_combat_finished(result: Dictionary) -> void:
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction == null:
+		return
+	var enemy_actor: Node = interaction.get("active_enemy_actor") as Node
+	if bool(result.get("victory", false)) and enemy_actor != null and is_instance_valid(enemy_actor):
+		var enemy_data: Dictionary = enemy_actor.get("data") if enemy_actor.get("data") != null else {}
+		var enemy_id: int = int(enemy_data.get("id", -1))
+		GameState.mark_enemy_defeated(enemy_id)
+		if active_map != null and active_map.has_method("unregister_npc"):
+			active_map.call("unregister_npc", enemy_actor)
+		enemy_actor.queue_free()
+	interaction.set("active_enemy_actor", null)
+
+func _on_quest_completed(summary: Dictionary) -> void:
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction != null:
+		var summaries = interaction.get("pending_quest_summaries")
+		if summaries != null:
+			summaries.append(summary.duplicate(true))
+	call_deferred("_try_deferred_quest_pending")
+
+func _try_deferred_quest_pending() -> void:
+	if GameState.can_explore():
+		var interaction: Node = SystemManager.get_system("interaction")
+		if interaction != null and interaction.has_method("try_show_pending_quest_summary"):
+			interaction.call("try_show_pending_quest_summary")
+
+func _start_combat_from_data(enemy: Dictionary) -> void:
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction != null and interaction.has_method("clear_explore_state"):
+		interaction.call("clear_explore_state")
+	var combat_sys: Node = SystemManager.get_system("combat")
+	if combat_sys != null and combat_sys.has_method("start"):
+		combat_sys.call("start", enemy)
+
+func _on_game_loaded(_snapshot: Dictionary) -> void:
+	game_started = true
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction != null:
+		var summaries = interaction.get("pending_quest_summaries")
+		if summaries != null:
+			summaries.clear()
+	world_map.call("reset_npcs")
+	world_map.call("apply_defeated_enemies")
+	world_map.call("set_target_region", GameState.map_target_region_id)
+	var map_transition: Node = SystemManager.get_system("map_transition")
+	if map_transition != null and map_transition.has_method("restore_loaded_map"):
+		if not map_transition.call("restore_loaded_map", _snapshot) and map_transition.has_method("switch_to_world_map"):
+			map_transition.call("switch_to_world_map", GameState.player_position)
+	_update_current_region()
+	PanelManager.close_all()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+
+func _on_mode_changed_bgm(next_mode: int) -> void:
 	match next_mode:
 		GameState.Mode.MENU:
 			AudioManager.play_bgm("main_menu")
@@ -331,129 +280,192 @@ func _on_mode_changed_bgm(next_mode: GameState.Mode) -> void:
 		GameState.Mode.EXPLORE:
 			AudioManager.play_bgm("explore", 0.5)
 
-func _on_narrative_finished() -> void:
-	main_menu_panel.hide()
-	GameState.set_mode(GameState.Mode.EXPLORE)
-
-func _save_from_menu() -> void:
-	if not game_started:
+## HUD 透明度：面板打开时半透明
+func _on_mode_changed_hud(next_mode: int) -> void:
+	var hud_node: Node = _hud_node()
+	if hud_node == null:
 		return
-	if _save_current_game():
-		main_menu_panel.refresh_menu_state()
+	# 判断当前模式是否需要半透明HUD
+	var overlay_modes := [
+		GameState.Mode.INVENTORY, GameState.Mode.JOURNAL, GameState.Mode.SHOP,
+		GameState.Mode.CULTIVATION, GameState.Mode.FORGE, GameState.Mode.MAP,
+		GameState.Mode.SECT, GameState.Mode.ACHIEVEMENT, GameState.Mode.PET,
+		GameState.Mode.DIALOGUE, GameState.Mode.COMBAT, GameState.Mode.MENU
+	]
+	var mode_is_overlay := overlay_modes.has(next_mode)
+	var target := HUD_ALPHA_OPEN if mode_is_overlay else HUD_ALPHA_CLOSED
+	var tween := hud_node.create_tween()
+	tween.tween_property(hud_node, "modulate:a", target, 0.15).set_ease(Tween.EASE_OUT)
 
-func _start_new_game(config: Dictionary) -> void:
-	game_started = true
-	GameState.new_game(config)
-	opening_narrative.show_panel(str(config.get("name", "少侠")))
-	world_map.reset_npcs()
-	world_map.set_target_region(GameState.map_target_region_id)
-	var started_in_town := false
-	if NEW_GAME_STARTS_IN_LOCAL_TOWN:
-		started_in_town = map_transition_mgr.try_enter_new_game_start_region()
-	if not started_in_town:
-		map_transition_mgr.switch_to_world_map(GameState.player_position)
-	_update_current_region()
-	_close_gameplay_panels()
-	EventBus.emit_toast("新的江湖开始")
-
-func _close_gameplay_panels() -> void:
-	PanelAnim.close_panel(dialogue_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(combat_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(inventory_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(quest_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(shop_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(cultivation_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(forge_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(world_map_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(discovery_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(sect_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(achievement_panel, PanelAnim.EaseType.SCALE_FADE)
-	PanelAnim.close_panel(pet_panel, PanelAnim.EaseType.SCALE_FADE)
-
-func _open_dialogue(npc: Dictionary) -> void:
-	interaction_mgr.clear_explore_state()
-	GameState.progress_quest("talk", str(npc.get("name", "")), 1)
-	GameState.set_mode(GameState.Mode.DIALOGUE)
-	dialogue_panel.show_npc(npc)
-
-func _open_shop(npc: Dictionary) -> void:
-	_close_gameplay_panels()
-	shop_panel.show_shop(npc)
-
-func _mark_region_target(region_id: String) -> void:
-	var region := GameData.get_region(region_id)
-	if region.is_empty():
+## 新手引导：首次打开面板时弹出工具提示
+func _on_panel_opened_onboarding(panel_name: String) -> void:
+	if _onboarding_shown.has(panel_name):
 		return
-	GameState.set_map_target_region(region_id)
-	world_map.set_target_region(region_id)
-	world_map_panel.close_panel()
-	EventBus.emit_toast("已标记目的地：%s" % str(region.get("name", region_id)))
-
-func _clear_region_target() -> void:
-	if GameState.map_target_region_id.is_empty():
-		EventBus.emit_toast("当前没有地图目的地")
-		return
-	GameState.set_map_target_region("")
-	world_map.set_target_region("")
-	EventBus.emit_toast("已清除地图目的地")
-
-func _fast_travel_to_region(region_id: String) -> void:
-	interaction_mgr.fast_travel_to_region(region_id, active_map)
-
-func _start_combat_from_data(enemy: Dictionary) -> void:
-	interaction_mgr.clear_explore_state()
-	combat_system.start(enemy)
-
-func _on_game_loaded(_snapshot: Dictionary) -> void:
-	game_started = true
-	interaction_mgr.pending_quest_summaries.clear()
-	world_map.reset_npcs()
-	world_map.apply_defeated_enemies()
-	world_map.set_target_region(GameState.map_target_region_id)
-	if not map_transition_mgr.restore_loaded_map(_snapshot):
-		map_transition_mgr.switch_to_world_map(GameState.player_position)
-	_update_current_region()
-	_close_gameplay_panels()
-	main_menu_panel.hide()
-	GameState.set_mode(GameState.Mode.EXPLORE)
+	_onboarding_shown[panel_name] = true
+	var hints := {
+		"inventory": "按 B 打开背包 · 使用或丢弃物品 · 装备带属性的武器/防具",
+		"quest": "按 J 打开任务 · 追踪目标 · 查看探索记录和传闻",
+		"cultivation": "按 K 打开修炼 · 消耗潜能提升修为",
+		"world_map": "按 M 打开地图 · 点击区域标记目的地或快速旅行",
+		"sect": "按 U 打开门派 · 查看贡献与门派任务",
+		"achievement": "按 Y 打开图鉴 · 查看成就与收集进度",
+		"pet": "按 P 打开灵宠 · 出战、喂食与升级",
+		"forge": "铁匠铺锻造装备 · 收集材料打造神兵",
+	}
+	var hint: String = hints.get(panel_name, "")
+	if not hint.is_empty():
+		EventBus.emit_toast("💡 " + hint)
 
 func _on_map_target_changed(region_id: String) -> void:
 	if world_map != null:
-		world_map.set_target_region(region_id)
-
-func _on_combat_finished(result: Dictionary) -> void:
-	var enemy_actor: Node = interaction_mgr.active_enemy_actor
-	if bool(result.get("victory", false)) and enemy_actor != null and is_instance_valid(enemy_actor):
-		GameState.mark_enemy_defeated(int(enemy_actor.data.get("id", -1)))
-		if active_map != null and active_map.has_method("unregister_npc"):
-			active_map.unregister_npc(enemy_actor)
-		enemy_actor.queue_free()
-	interaction_mgr.active_enemy_actor = null
-
-func _on_quest_completed(summary: Dictionary) -> void:
-	interaction_mgr.pending_quest_summaries.append(summary.duplicate(true))
-	call_deferred("_try_deferred_quest_pending")
-
-func _try_deferred_quest_pending() -> void:
-	if GameState.can_explore():
-		interaction_mgr.try_show_pending_quest_summary()
-
-func _on_game_ending(epilogue: String) -> void:
-	var credits := ENDING_CREDITS_SCRIPT.new()
-	ui_layer.add_child(credits)
-	credits.show_credits(epilogue)
+		world_map.call("set_target_region", region_id)
 
 func _update_current_region() -> void:
 	var tile: Vector2i = active_map.world_to_tile(player_actor.position)
 	var region: Dictionary = active_map.get_region_at_world_position(player_actor.position)
 	if active_map == local_area and local_area.has_method("get_world_reference_tile"):
-		tile = local_area.get_world_reference_tile(player_actor.position)
+		tile = local_area.call("get_world_reference_tile", player_actor.position)
 	GameState.update_current_region(region, tile)
 
 func _save_current_game() -> bool:
-	var save_pos: Vector2 = map_transition_mgr.current_world_save_position(active_map)
-	var save_ctx: Dictionary = map_transition_mgr.build_save_context(active_map)
-	return GameState.save_game(save_pos, save_ctx)
+	var map_transition: Node = SystemManager.get_system("map_transition")
+	if map_transition == null or not map_transition.has_method("current_world_save_position"):
+		return false
+	var save_pos: Vector2 = map_transition.call("current_world_save_position", active_map)
+	if map_transition.has_method("build_save_context"):
+		var save_ctx: Dictionary = map_transition.call("build_save_context", active_map)
+		return GameState.save_game(save_pos, save_ctx)
+	return GameState.save_game(save_pos, {})
+
+func _update_camera_limits() -> void:
+	var map_transition: Node = SystemManager.get_system("map_transition")
+	if map_transition != null and map_transition.has_method("update_camera_limits"):
+		map_transition.call("update_camera_limits", active_map)
+
+# ── UI 层级与面板注册 ──
+
+func _setup_ui_layers() -> void:
+	var ui_layer := CanvasLayer.new()
+	ui_layer.layer = 3
+	ui_layer.name = "UILayer"
+	add_child(ui_layer)
+
+	var atm_layer_node := CanvasLayer.new()
+	atm_layer_node.layer = 1
+	add_child(atm_layer_node)
+	var AtmosphereLayer := preload("res://scripts/ui/atmosphere_layer.gd")
+	var atmosphere_layer := AtmosphereLayer.new()
+	atm_layer_node.add_child(atmosphere_layer)
+	self.atmosphere_layer = atmosphere_layer
+
+	var weather_layer_node := CanvasLayer.new()
+	weather_layer_node.layer = 2
+	add_child(weather_layer_node)
+	var WeatherOverlay := preload("res://scripts/ui/weather_overlay.gd")
+	var weather_overlay := WeatherOverlay.new()
+	weather_layer_node.add_child(weather_overlay)
+	atmosphere_layer.weather_overlay = weather_overlay
+
+	# 注册所有面板
+	var panel_defs := {
+		"hud": HUD_SCRIPT.new(),
+		"dialogue": preload("res://scripts/ui/dialogue_panel.gd").new(),
+		"combat": preload("res://scripts/ui/combat_panel.gd").new(),
+		"inventory": preload("res://scripts/ui/inventory_panel.gd").new(),
+		"quest": preload("res://scripts/ui/quest_panel.gd").new(),
+		"shop": preload("res://scripts/ui/shop_panel.gd").new(),
+		"cultivation": preload("res://scripts/ui/cultivation_panel.gd").new(),
+		"forge": preload("res://scripts/ui/forge_panel.gd").new(),
+		"world_map": preload("res://scripts/ui/world_map_panel.gd").new(),
+		"discovery": preload("res://scripts/ui/discovery_panel.gd").new(),
+		"character_creation": preload("res://scripts/ui/character_creation_panel.gd").new(),
+		"main_menu": preload("res://scripts/ui/main_menu_panel.gd").new(),
+		"narrative": preload("res://scripts/ui/opening_narrative_panel.gd").new(),
+		"sect": preload("res://scripts/ui/sect_panel.gd").new(),
+		"achievement": preload("res://scripts/ui/achievement_panel.gd").new(),
+		"pet": preload("res://scripts/ui/pet_panel.gd").new()
+	}
+	for panel_name in panel_defs:
+		var panel: Node = panel_defs[panel_name] as Node
+		ui_layer.add_child(panel)
+		PanelManager.register_panel(panel_name, panel)
+
+	# 战斗面板需要额外引用
+	var combat_panel: Node = PanelManager.get_panel("combat")
+	var combat_sys: Node = SystemManager.get_system("combat")
+	if combat_panel != null and combat_panel.has_method("set_combat_system") and combat_sys != null:
+		combat_panel.call("set_combat_system", combat_sys)
+
+	# 面板信号连接
+	var main_menu: Node = PanelManager.get_panel("main_menu")
+	main_menu.new_game_requested.connect(func(): PanelManager.open_panel("character_creation"))
+	main_menu.continue_requested.connect(_on_continue_game)
+	main_menu.resume_requested.connect(_resume_from_menu)
+	main_menu.save_requested.connect(_on_save_from_menu)
+
+	var char_create: Node = PanelManager.get_panel("character_creation")
+	char_create.character_created.connect(_start_new_game)
+
+	var world_map_panel: Node = PanelManager.get_panel("world_map")
+	world_map_panel.focus_region_requested.connect(_on_focus_region)
+	world_map_panel.fast_travel_requested.connect(_on_fast_travel)
+	world_map_panel.clear_target_requested.connect(_on_clear_target)
+
+	var narrative_panel: Node = PanelManager.get_panel("narrative")
+	narrative_panel.narrative_finished.connect(_on_narrative_finished)
+
+func _on_continue_game() -> void:
+	if not GameState.load_game():
+		PanelManager.open_panel("main_menu", {"show_saved": game_started})
+
+func _on_save_from_menu() -> void:
+	if not game_started:
+		return
+	if _save_current_game():
+		var main_menu: Node = PanelManager.get_panel("main_menu")
+		if main_menu != null and main_menu.has_method("refresh_menu_state"):
+			main_menu.call("refresh_menu_state")
+
+func _on_narrative_finished() -> void:
+	var main_menu: Node = PanelManager.get_panel("main_menu")
+	if main_menu != null:
+		main_menu.hide()
+	GameState.set_mode(GameState.Mode.EXPLORE)
+
+func _on_focus_region(region_id: String) -> void:
+	var region: Dictionary = GameData.get_region(region_id)
+	if region.is_empty():
+		return
+	GameState.set_map_target_region(region_id)
+	world_map.call("set_target_region", region_id)
+	PanelManager.close_all()
+	EventBus.emit_toast("已标记目的地：%s" % str(region.get("name", region_id)))
+
+func _on_clear_target() -> void:
+	if GameState.map_target_region_id.is_empty():
+		EventBus.emit_toast("当前没有地图目的地")
+		return
+	GameState.set_map_target_region("")
+	world_map.call("set_target_region", "")
+	EventBus.emit_toast("已清除地图目的地")
+
+func _on_fast_travel(region_id: String) -> void:
+	var interaction: Node = SystemManager.get_system("interaction")
+	if interaction != null and interaction.has_method("fast_travel_to_region"):
+		interaction.call("fast_travel_to_region", region_id, active_map)
+
+# ── 辅助 ──
+
+func _hud_node() -> Node:
+	return PanelManager.get_panel("hud")
+
+func _ui_layer_node() -> Node:
+	for child in get_children():
+		if child is CanvasLayer and child.name == "UILayer":
+			return child
+	return null
+
+# ── 输入注册 ──
 
 func _register_inputs() -> void:
 	_add_key_action("move_up", [KEY_W, KEY_UP])
@@ -488,11 +500,3 @@ func _add_key_action(action_name: String, keys: Array[int]) -> void:
 		var key_event := InputEventKey.new()
 		key_event.physical_keycode = key
 		InputMap.action_add_event(action_name, key_event)
-
-func _on_sect_changed(_sect_id: String, _sect_name: String) -> void:
-	# 门派变更时更新相关UI
-	pass
-
-func _on_achievement_unlocked(_achievement_id: String, _achievement_name: String) -> void:
-	# 成就解锁时更新HUD或弹出通知
-	pass

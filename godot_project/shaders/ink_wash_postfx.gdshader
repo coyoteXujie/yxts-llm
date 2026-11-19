@@ -1,9 +1,10 @@
 shader_type canvas_item;
 
-// ─── 水墨后处理 Shader v4 ───
+// ─── 水墨后处理 Shader v5 (Forward+ / WorldEnvironment) ───
 // 宣纸纤维 + 墨迹不连续（跳白/漏墨）+ 枯笔 + 晕染光墨
-// v4 增强：边缘晕染扩散 + 暗角增强 + 墨点飞溅纹理 + 笔触纹理叠加
-// ──────────────────────────────────────────
+// v5 新增: Bloom (水墨渗光通道) + Film grain (纸张纹理感)
+// 适配 WorldEnvironment.post_process_material 模式
+// ────────────────────────────────────────────────────────
 
 uniform float intensity : hint_range(0.0, 1.0) = 0.85;
 uniform float paper_strength : hint_range(0.0, 0.20) = 0.070;
@@ -20,6 +21,15 @@ uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_linear;
 uniform float ink_spread : hint_range(0.0, 1.0) = 0.30;       // 边缘墨渍扩散强度
 uniform float brush_stroke : hint_range(0.0, 1.0) = 0.35;      // 笔触纹理叠加强度
 uniform float time : hint_range(0.0, 100.0) = 0.0;             // 动画时间
+
+// v5 新增: Bloom (水墨渗光效果)
+uniform float bloom_intensity : hint_range(0.0, 1.0) = 0.25;   // 渗光强度
+uniform float bloom_threshold : hint_range(0.0, 1.0) = 0.60;   // 亮度阈值(高于此值产生渗光)
+uniform float bloom_tint_warm : hint_range(0.0, 1.0) = 0.60;   // 渗光暖色倾向
+
+// v5 新增: Film grain (纸张纹理感)
+uniform float film_grain : hint_range(0.0, 0.15) = 0.035;      // 颗粒强度
+uniform float grain_size : hint_range(1.0, 16.0) = 4.0;        // 颗粒尺寸
 
 // ── 噪声 ──
 float hash21(vec2 p) {
@@ -151,6 +161,58 @@ float brush_texture(vec2 uv, float ink_density) {
     return smoothstep(0.3, 0.8, brush) * brush_stroke * ink_density * 0.08;
 }
 
+// ── v5 Bloom (水墨渗光效果) ──
+// 提取高亮区域，模糊并叠加回画面，模拟墨渍渗光
+vec3 ink_bloom(vec2 uv, vec2 tex_size, vec3 color) {
+    float bright = max(color.r, max(color.g, color.b));
+    // 只对高于阈值的区域做渗光
+    float mask = smoothstep(bloom_threshold, 1.0, bright);
+    if (mask <= 0.0) return vec3(0.0);
+    
+    // 多级采样模拟模糊
+    vec2 step = 1.0 / tex_size;
+    vec3 blur = vec3(0.0);
+    float w_sum = 0.0;
+    
+    // 3x3 高斯权重近似
+    for (int x = -2; x <= 2; x++) {
+        for (int y = -2; y <= 2; y++) {
+            vec2 offset = vec2(float(x), float(y)) * step * 1.5;
+            vec3 s = texture(SCREEN_TEXTURE, uv + offset).rgb;
+            float b = max(s.r, max(s.g, s.b));
+            float w = exp(-float(x*x + y*y) * 0.3);
+            // 只累积高亮部分
+            float bright_mask = smoothstep(bloom_threshold, 1.0, b);
+            blur += s * w * bright_mask;
+            w_sum += w * bright_mask;
+        }
+    }
+    blur = w_sum > 0.001 ? blur / w_sum : vec3(0.0);
+    
+    // 暖色倾向
+    vec3 tint = mix(blur, blur * vec3(1.3, 1.1, 0.7), bloom_tint_warm);
+    return tint * mask * bloom_intensity;
+}
+
+// ── v5 Film Grain (纸张纹理颗粒) ──
+float ink_film_grain(vec2 uv, float t) {
+    // 基于 hash 的颗粒噪声
+    vec2 grain_uv = uv * (1.0 / grain_size) * vec2(textureSize(SCREEN_TEXTURE, 0));
+    vec2 i = floor(grain_uv);
+    vec2 f = fract(grain_uv);
+    f = f * f * (3.0 - 2.0 * f);
+    
+    float g = hash21(i + vec2(0.0, 0.0));
+    float g2 = hash21(i + vec2(1.0, 0.0));
+    float g3 = hash21(i + vec2(0.0, 1.0));
+    float g4 = hash21(i + vec2(1.0, 1.0));
+    
+    float grain = mix(mix(g, g2, f.x), mix(g3, g4, f.x), f.y);
+    // 增加一点动画闪烁
+    float flicker = sin(t * 12.0 + dot(i, vec2(43.0, 17.0))) * 0.15;
+    return (grain - 0.5) * (1.0 + flicker);
+}
+
 void fragment() {
     vec2 uv = SCREEN_UV;
     vec2 tex_size = vec2(textureSize(SCREEN_TEXTURE, 0));
@@ -220,7 +282,15 @@ void fragment() {
     color = mix(color, dark_tint, (1.0 - vignette) * 0.30);
     color *= vignette;
     
-    // 11. 焦墨保护
+    // 11. ★ v5 Bloom (水墨渗光): 在暗角之后叠加，形成高亮区自然渗光
+    vec3 bloom = ink_bloom(uv, tex_size, color);
+    color += bloom;
+    
+    // 12. ★ v5 Film Grain (纸张纹理颗粒): 叠加在最终色彩上
+    float grain = ink_film_grain(uv, time);
+    color += grain * film_grain;
+    
+    // 13. 焦墨保护
     color = mix(color, mix(ink_color.rgb, color, 0.7), ink_density * 0.06);
     
     color = clamp(color, 0.0, 1.0);

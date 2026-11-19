@@ -22,6 +22,9 @@ signal achievement_unlocked(achievement_id: String, achievement_name: String)
 signal pet_added(pet_id: String)
 signal pet_removed(pet_id: String)
 signal pet_roster_changed()
+signal lighting_region_changed(region: Dictionary)
+signal lighting_sect_aura_changed(has_aura: bool, aura_color: Color)
+signal ending_triggered(ending: Dictionary)
 
 func emit_toast(text: String) -> void:
 	toast_requested.emit(text)
