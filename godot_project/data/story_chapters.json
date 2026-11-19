@@ -1,0 +1,443 @@
+[
+  {
+    "id": "prologue",
+    "index": 0,
+    "title": "序章·初入江湖",
+    "subtitle": "铁剑出青冥",
+    "prerequisites": {"level": 1},
+    "description": "你自幼随师父青云老人隐居青冥山，下山时只携一柄铁剑、一枚玉佩。平安镇的风波是你踏入江湖的第一课。",
+    "opening_narrative": "青冥山的晨雾还未散尽，你已站在下山的路口。\n师父的话还在耳边：「江湖不是山中，人心比拳脚更难防。」\n你握紧手中的铁剑——它很旧，但刃口依然锋利。\n山下的平安镇炊烟袅袅，你听见了第一声江湖的喧闹。",
+    "critical_quests": ["q_intro_town", "q_clear_thugs", "q_flower_thief"],
+    "events": [
+      {
+        "id": "prologue_arrival",
+        "title": "初踏江湖",
+        "type": "narrative",
+        "trigger": {"kind": "region_enter", "id": "qinghe"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "你沿山路下行，青冥山的轮廓在身后渐远。"},
+          {"speaker": "村长", "text": "这位少侠面生得很，可是路过平安镇？"},
+          {"speaker": "旁白", "text": "村长打量了你一番，目光落在你腰间的铁剑上。"},
+          {"speaker": "村长", "text": "镇上最近不太平，若少侠有几分武艺，不妨在客栈落脚，也好帮衬一二。"}
+        ],
+        "outcomes": {"set_flags": ["story_prologue_arrival"], "add_world_event": {"title": "少侠入镇", "description": "一位腰悬铁剑的少侠踏入平安镇，青冥山来的消息很快传开。"}},
+        "priority": 0
+      },
+      {
+        "id": "prologue_old_man_talk",
+        "title": "老夫子的教诲",
+        "type": "narrative",
+        "trigger": {"kind": "npc_talk", "id": "老夫子"},
+        "dialogue": [
+          {"speaker": "老夫子", "text": "年轻人，你身上有股山野气——可是从青冥山下来的？"},
+          {"speaker": "主角", "text": "老先生如何得知？"},
+          {"speaker": "老夫子", "text": "呵呵，你这柄铁剑的剑鞘编法，是青云老人的手艺。二十年前我见过一次。"},
+          {"speaker": "老夫子", "text": "他老人家可还安好？替我带句话：当年那局棋，老夫还没认输。"},
+          {"speaker": "旁白", "text": "老夫子眼中闪过一丝追忆，随即摆摆手让你去了。"}
+        ],
+        "outcomes": {"set_flags": ["story_met_laofuzi"], "add_favor": {"老夫子": 3}},
+        "priority": 1
+      },
+      {
+        "id": "prologue_thugs",
+        "title": "镇东之乱",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_intro_town"},
+        "dialogue": [
+          {"speaker": "捕快", "text": "少侠来得正好，镇东那伙流氓越发嚣张了，今早还打伤了过路的货郎。"},
+          {"speaker": "捕快", "text": "你若能出手，镇上百姓感激不尽。"},
+          {"speaker": "主角", "text": "带路。"}
+        ],
+        "enemy": {"id": "流氓头", "count": 1, "minions": ["流氓", "流氓"]},
+        "outcomes": {"set_flags": ["story_cleared_thugs"], "add_world_event": {"title": "镇东肃清", "description": "少侠出手平定镇东恶徒，平安镇百姓奔走相告。"}},
+        "priority": 2
+      },
+      {
+        "id": "prologue_memory_hint",
+        "title": "玉佩的回响",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_clear_thugs"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "夜深人静时，你取出师父交给你的玉佩。"},
+          {"speaker": "旁白", "text": "月光下，玉佩背面的花纹若隐若现——那是一半的断令纹。"},
+          {"speaker": "旁白", "text": "你突然想起师父的话：「你若想弄清自己的来处，就去洛阳。」"},
+          {"speaker": "旁白", "text": "平安镇的事已了，该往洛阳去了。"}
+        ],
+        "outcomes": {"set_flags": ["story_prologue_done"], "add_clue": {"title": "断令之谜", "description": "玉佩上的花纹是古断令的一半，另一半似乎在洛阳的旧案卷中。"}},
+        "priority": 3
+      }
+    ],
+    "completion_trigger": {"check_flags": ["story_prologue_done"]}
+  },
+  {
+    "id": "chapter1",
+    "index": 1,
+    "title": "第一章·白金之乱",
+    "subtitle": "断令浮暗影",
+    "prerequisites": {"level": 5, "completed_chapters": ["prologue"], "quest_completed": "q_hero_trial"},
+    "description": "洛阳城中，苏家旧火的余烬未冷。你卷入「白金之乱」的余波——一场十年前由暗影司策划的江湖浩劫，七派元气大伤，武林盟威望扫地。",
+    "opening_narrative": "洛阳城的青石板路上，车马声与叫卖声交织。\n你站在苏家旧宅的废墟前，焦黑的木梁还保持着倒塌时的姿态。\n苏梦瑶在废墟旁等你，她的眼神里有十年来不曾熄灭的火。\n「你就是那个人？」她问。\n你不知道该怎么回答。",
+    "critical_quests": ["q_main_shadow_letters", "q_main_broken_token", "q_main_wulin_conclave"],
+    "events": [
+      {
+        "id": "c1_luoyang_first",
+        "title": "洛阳旧火",
+        "type": "narrative",
+        "trigger": {"kind": "region_enter", "id": "luoyang"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "洛阳城比平安镇大了十倍不止。街上的行人步履匆匆，没人注意一个腰悬铁剑的年轻人。"},
+          {"speaker": "苏梦瑶", "text": "你就是那个从青冥山下来的人？我等你很久了。"},
+          {"speaker": "主角", "text": "你是？"},
+          {"speaker": "苏梦瑶", "text": "花间派，苏梦瑶。你腰间的玉佩——能给我看看吗？"},
+          {"speaker": "旁白", "text": "苏梦瑶凝视玉佩，指尖在断令花纹上缓缓划过。"},
+          {"speaker": "苏梦瑶", "text": "没错……这块花纹，和我母亲遗物上的一模一样。"},
+          {"speaker": "苏梦瑶", "text": "十年前洛阳大火，苏家满门十七口，只活了我一个。那不是意外。"}
+        ],
+        "outcomes": {"set_flags": ["story_met_su_in_luoyang"], "add_world_event": {"title": "洛阳旧火重提", "description": "苏家遗孤苏梦瑶在洛阳认出少侠的玉佩，十年前的大火真相开始浮出水面。"}},
+        "priority": 0
+      },
+      {
+        "id": "c1_shadow_letters",
+        "title": "暗影书信",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_main_shadow_letters"},
+        "dialogue": [
+          {"speaker": "陈天行", "text": "两封密信都对上了。暗影司的暗线网比我们想的更深。"},
+          {"speaker": "陈天行", "text": "但你注意到没有——密信上的暗号用的是七派门规。"},
+          {"speaker": "玄机子", "text": "没错，八卦门的阵法被人动过阵眼，有人故意留下破绽。"},
+          {"speaker": "玄机子", "text": "暗影司内部，恐怕不止一个人。"},
+          {"speaker": "苏梦瑶", "text": "你的意思是——暗影司里有七派的人？"},
+          {"speaker": "玄机子", "text": "或者更糟——七派里，有暗影司的人。"}
+        ],
+        "enemy": {"id": "暗影刺客", "count": 1, "minions": ["暗影喽啰", "暗影喽啰"]},
+        "outcomes": {"set_flags": ["story_letters_decoded"], "add_world_event": {"title": "七派暗号破译", "description": "密信暗号被玄机子破译，暗影司的线人网在七派内部。"}},
+        "priority": 1
+      },
+      {
+        "id": "c1_broken_token",
+        "title": "断令归卷",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_main_broken_token"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "断令——传说中武林盟的最高密令信物，可号令七派。"},
+          {"speaker": "旁白", "text": "你的玉佩花纹与断令纹路完全吻合。"},
+          {"speaker": "赵无极", "text": "这是武林盟失传三十年的断令令符。"},
+          {"speaker": "赵无极", "text": "青云老人……他当年曾是武林盟的首席密使。"},
+          {"speaker": "苏梦瑶", "text": "所以你师父让你来洛阳——他不是让你查苏家的事。"},
+          {"speaker": "苏梦瑶", "text": "他是让你续上这根断了的线。"}
+        ],
+        "outcomes": {"set_flags": ["story_token_revealed"], "add_world_event": {"title": "断令现世", "description": "少侠的玉佩被确认为武林盟失传的断令令符，暗影司的布局被撕开一角。"}},
+        "priority": 2
+      },
+      {
+        "id": "c1_conclave_prelude",
+        "title": "七派夜议前夜",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_main_broken_token"},
+        "dialogue": [
+          {"speaker": "赵无极", "text": "七派夜议明日举行。你做好准备。"},
+          {"speaker": "赵无极", "text": "断令现世的消息已经传开，暗影司的人不会坐视。"},
+          {"speaker": "苏梦瑶", "text": "你有三条路可以走——你打算怎么选？"},
+          {"speaker": "旁白", "text": "这一夜，洛阳城比往日更加安静。你知道这不是平静，是暴风雨前的寂静。"}
+        ],
+        "choices_available": ["choice_conclave_public", "choice_conclave_secret", "choice_conclave_betray"],
+        "outcomes": {"set_flags": ["story_conclave_ready"]},
+        "priority": 3
+      },
+      {
+        "id": "c1_blood_moon",
+        "title": "血月夜袭",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_main_wulin_conclave"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "七派夜议当晚，血月当空。"},
+          {"speaker": "旁白", "text": "暗影司的精锐趁夜突袭，他们不打算让断令活着被呈上夜议桌。"},
+          {"speaker": "烈火", "text": "来得正好！红莲教的火今天要烧个痛快！"},
+          {"speaker": "蛇王", "text": "小心他们的毒阵——那是那迦派的叛徒配的！"},
+          {"speaker": "太极真人", "text": "年轻人，跟我来——走密道去议事厅，断令必须送到！"}
+        ],
+        "enemy": {"id": "暗影护法", "count": 1, "minions": ["暗影死士", "暗影死士", "暗影死士"]},
+        "outcomes": {"set_flags": ["story_blood_moon_survived"], "add_world_event": {"title": "血月夜袭", "description": "暗影司趁血月夜袭七派夜议，少侠在烈火与太极真人掩护下将断令送抵议事厅。"}},
+        "priority": 4
+      }
+    ],
+    "completion_trigger": {"check_flags": ["story_blood_moon_survived"]}
+  },
+  {
+    "id": "chapter2",
+    "index": 2,
+    "title": "第二章·魔教暗影",
+    "subtitle": "暗度陈仓",
+    "prerequisites": {"level": 10, "completed_chapters": ["chapter1"], "quest_completed": "q_main_blood_moon"},
+    "description": "暗影司总坛浮出水面，但它的根基比想象中更深。魔教残余势力与暗影司暗中勾结，一场针对七派的更大阴谋正在酝酿。",
+    "opening_narrative": "血月夜袭之后，七派终于相信了你的话。\n但赵无极关上门后告诉你一个更坏的消息：\n暗影司的总坛不止一处。\n「明面上的是空壳，」他压低声音，\n「真正的总坛在魔教旧地——他们在用当年的余烬重新点火。」",
+    "critical_quests": ["q_mojiao_3", "q_mojiao_5", "q_main_shadow_citadel"],
+    "events": [
+      {
+        "id": "c2_mojiao_first",
+        "title": "魔教余烬",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_main_blood_moon"},
+        "dialogue": [
+          {"speaker": "卧底", "text": "总算等到接头的人了……我在魔教潜伏了三年。"},
+          {"speaker": "卧底", "text": "暗影司的人三个月前来了总坛，他们和魔教护法做了笔交易。"},
+          {"speaker": "卧底", "text": "他们用朝廷的盐铁引换魔教的旧部——暗影司在组建一支影子军队。"},
+          {"speaker": "主角", "text": "有多少人？"},
+          {"speaker": "卧底", "text": "分舵已聚了三百余人，总坛还有更多。你若动手，必须在他们完成整编之前。"}
+        ],
+        "outcomes": {"set_flags": ["story_met_spy"], "add_world_event": {"title": "魔教暗线现身", "description": "潜伏魔教三年的卧底现身，暗影司与魔教残部的交易浮出水面。"}},
+        "priority": 0
+      },
+      {
+        "id": "c2_mojiao_battle",
+        "title": "分舵之战",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_mojiao_3"},
+        "dialogue": [
+          {"speaker": "卧底", "text": "分舵的机关图我画好了，暗影司的阵法师每隔三个时辰换一次岗。"},
+          {"speaker": "卧底", "text": "亥时换岗间隙，是我们唯一的机会。"},
+          {"speaker": "烈火", "text": "老子早就想烧了这鬼地方了！"},
+          {"speaker": "花如玉", "text": "别急。分舵里有几个花间派的旧人，是被胁迫的。若能劝降，少死几个无辜。"}
+        ],
+        "enemy": {"id": "魔教护法", "count": 1, "minions": ["魔教弟子", "魔教弟子", "暗影喽啰"]},
+        "outcomes": {"set_flags": ["story_mojiao_cleared"], "add_world_event": {"title": "魔教分舵告破", "description": "少侠率众攻破魔教分舵，缴获暗影司与魔教密约的信函。"}},
+        "priority": 1
+      },
+      {
+        "id": "c2_citadel_prep",
+        "title": "总坛之前",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_mojiao_5"},
+        "dialogue": [
+          {"speaker": "玄机子", "text": "暗影司总坛的阵法我已推演完毕。"},
+          {"speaker": "玄机子", "text": "三阵连环——外围毒阵、中围迷阵、核心血阵。"},
+          {"speaker": "玄机子", "text": "破阵顺序不能错，否则触发自毁机关，所有证据将化为灰烬。"},
+          {"speaker": "陈天行", "text": "说书人打听到一件事——总坛地牢里关着一个人。"},
+          {"speaker": "陈天行", "text": "十年前苏家的老账房，他没死。"}
+        ],
+        "outcomes": {"set_flags": ["story_citadel_ready"]},
+        "priority": 2
+      },
+      {
+        "id": "c2_final_assault",
+        "title": "暗影总坛",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_main_shadow_citadel"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "暗影司总坛终于展现在你面前——它建在魔教旧地的山腹之中。"},
+          {"speaker": "旁白", "text": "三道阵法在玄机子的指挥下逐一破解。"},
+          {"speaker": "冰魄", "text": "雪山弟子已占据制高点，他们逃不掉了。"},
+          {"speaker": "烈火", "text": "哈哈哈！烧！把十年前苏家的火还给他们！"},
+          {"speaker": "旁白", "text": "在熊熊火光中，你看见了那个被关押十年的老人。"}
+        ],
+        "enemy": {"id": "暗影司主", "count": 1, "minions": ["暗影护法", "暗影死士", "暗影死士", "魔教护法"]},
+        "outcomes": {"set_flags": ["story_citadel_fallen"], "add_world_event": {"title": "暗影总坛覆灭", "description": "少侠率七派攻破暗影司总坛，救出苏家旧账房，十年旧案的铁证终于到手。"}},
+        "priority": 3
+      },
+      {
+        "id": "c2_old_man_testimony",
+        "title": "账房的证言",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_main_after_shadow"},
+        "dialogue": [
+          {"speaker": "老账房", "text": "少侠……多谢你救我出来。"},
+          {"speaker": "老账房", "text": "苏家的账册我藏了一本，烧不掉的。"},
+          {"speaker": "老账房", "text": "上面记着暗影司的每一笔进账——谁出了银子，谁收了地契。"},
+          {"speaker": "老账房", "text": "七派里有三人收了暗影司的钱。名字我都记着。"},
+          {"speaker": "苏梦瑶", "text": "……你可知道，这个名单一旦公开，七派就要天翻地覆。"},
+          {"speaker": "苏梦瑶", "text": "但我们等这一天，已经等了十年。"}
+        ],
+        "outcomes": {"set_flags": ["story_account_book"], "add_world_event": {"title": "账册现世", "description": "苏家旧账房保全的账册记录了暗影司的金钱流向，七派内鬼名单触目惊心。"}},
+        "priority": 4
+      }
+    ],
+    "completion_trigger": {"check_flags": ["story_account_book"]}
+  },
+  {
+    "id": "chapter3",
+    "index": 3,
+    "title": "第三章·西域秘宝",
+    "subtitle": "大漠孤烟",
+    "prerequisites": {"level": 15, "completed_chapters": ["chapter2"], "quest_completed": "q_main_after_shadow"},
+    "description": "账册中记载了一条不明去向的巨额资金——全部流向了西域。暗影司在西域还有一座藏宝秘境，那里藏着他们最后的底牌：一件足以改变武林格局的秘宝。",
+    "opening_narrative": "老账房的账册上，有一笔帐画了红圈。\n「白银十二万两，由长安经由驼队运往西域。」\n赵无极看着那条记录沉默了很久。\n「暗影司用这笔钱在西域买了一处地方，」他说，\n「不是什么分坛——是一把钥匙。」\n「一把能打开传说中『沙漠之心』的钥匙。」",
+    "critical_quests": ["q_west_treasure_1", "q_west_treasure_2", "q_west_treasure_4"],
+    "events": [
+      {
+        "id": "c3_merchant_first",
+        "title": "西域商人",
+        "type": "narrative",
+        "trigger": {"kind": "npc_talk", "id": "西域商人"},
+        "dialogue": [
+          {"speaker": "西域商人", "text": "少侠来西域做什么？这里可不是游山玩水的地方。"},
+          {"speaker": "主角", "text": "我在查一笔帐——十二万两白银流向沙漠深处。"},
+          {"speaker": "西域商人", "text": "（脸色一变）……你说的是那笔钱。"},
+          {"speaker": "西域商人", "text": "三年前的确有一支驼队带着重金往沙海深处去了。领头的是个中原人，自称「影子使者」。"},
+          {"speaker": "西域商人", "text": "他们买了一座古庙的地契。那座庙在沙漠古道最深处——传说那里藏着西域古国的「沙漠之心」。"}
+        ],
+        "outcomes": {"set_flags": ["story_west_intro"]},
+        "priority": 0
+      },
+      {
+        "id": "c3_treasure_map",
+        "title": "寻宝碎图",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_west_treasure_1"},
+        "dialogue": [
+          {"speaker": "西域商人", "text": "这是古地图的碎片，我从一个老喇嘛手里收来的。"},
+          {"speaker": "西域商人", "text": "一共有三块，我这里只有一块。"},
+          {"speaker": "西域商人", "text": "第二块在沙匪头子手里——那家伙叫「蝎子王」，盘踞在古道驿站。"},
+          {"speaker": "西域商人", "text": "第三块……据说在古庙废墟的祭坛下。"},
+          {"speaker": "主角", "text": "看来得一个一个去取了。"}
+        ],
+        "outcomes": {"set_flags": ["story_fragment_1"], "add_clue": {"title": "地图碎片", "description": "第一块地图碎片指向沙漠古道深处，另外两块分别在蝎子王和古庙废墟中。"}},
+        "priority": 1
+      },
+      {
+        "id": "c3_scorpion_king",
+        "title": "蝎子王",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_west_treasure_2"},
+        "dialogue": [
+          {"speaker": "蛇王", "text": "蝎子王……我在那迦派时听过他的名号。"},
+          {"speaker": "蛇王", "text": "他要的不是钱，是毒——暗影司用西域奇毒跟他换的地图碎片。"},
+          {"speaker": "蛇王", "text": "那些毒是我那迦派的秘方，暗影司能拿到，说明那迦派里有叛徒。"},
+          {"speaker": "主角", "text": "先取碎片，再算旧账。"}
+        ],
+        "enemy": {"id": "蝎子王", "count": 1, "minions": ["沙匪", "沙匪", "沙匪"]},
+        "outcomes": {"set_flags": ["story_fragment_2"], "add_world_event": {"title": "蝎子王伏诛", "description": "少侠击败沙漠悍匪蝎子王，夺回第二块地图碎片。"}},
+        "priority": 2
+      },
+      {
+        "id": "c3_ruins_riddle",
+        "title": "古庙谜题",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_west_treasure_4"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "三块碎片拼合，指向沙漠深处一座废弃的佛寺。"},
+          {"speaker": "旁白", "text": "寺庙地下三层，暗影司将这里改造成了最后的藏宝库。"},
+          {"speaker": "旁白", "text": "每一道门都需要解答西域古国的谜题才能打开。"},
+          {"speaker": "西域商人", "text": "这些梵文我认得大半——第一道题是：「日出方向，入地七尺，见佛则止」。"}
+        ],
+        "outcomes": {"set_flags": ["story_ruins_entered"]},
+        "priority": 3
+      },
+      {
+        "id": "c3_heart_of_desert",
+        "title": "沙漠之心",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_west_treasure_4"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "沙漠之心——一块泛着蓝光的古玉，据说能感应天下气脉。"},
+          {"speaker": "旁白", "text": "暗影司的西域分坛主站在祭坛前，手中握着沙漠之心。"},
+          {"speaker": "暗影坛主", "text": "你以为你赢了？这块玉能感应天下所有真气流动——"},
+          {"speaker": "暗影坛主", "text": "七派的功法破绽，我都记在这块玉里了！"},
+          {"speaker": "主角", "text": "那今日，这块玉就不能留了。"}
+        ],
+        "enemy": {"id": "暗影坛主", "count": 1, "minions": ["暗影死士", "暗影死士"]},
+        "outcomes": {"set_flags": ["story_heart_gained"], "add_world_event": {"title": "沙漠之心夺得", "description": "少侠击败暗影司西域坛主，夺取沙漠之心——一件能感应天下真气流动的上古秘宝。"}},
+        "priority": 4
+      }
+    ],
+    "completion_trigger": {"check_flags": ["story_heart_gained"]}
+  },
+  {
+    "id": "chapter4",
+    "index": 4,
+    "title": "第四章·天下之争",
+    "subtitle": "风云际会",
+    "prerequisites": {"level": 25, "completed_chapters": ["chapter3"]},
+    "description": "断令、账册、沙漠之心——三件关键信物齐聚。暗影司的幕后黑手终于浮出水面：此人不在江湖，而在庙堂之上。你必须在朝廷与武林之间做出抉择，结束这场延续十年的暗战。",
+    "opening_narrative": "你带着沙漠之心回到中原。\n赵无极看着那块古玉，声音很低：\n「账册上最后一条记录——白银三十万两，不记去向。」\n「不是不记，是不敢记。」\n他摊开一张地图，手指点在京城的方向。\n「暗影司的主人，不在魔教，不在西域。」\n「他在宫里。」",
+    "critical_quests": ["q_main_old_case_closure"],
+    "events": [
+      {
+        "id": "c4_court_reveal",
+        "title": "庙堂之影",
+        "type": "narrative",
+        "trigger": {"kind": "quest_completed", "id": "q_main_after_shadow"},
+        "dialogue": [
+          {"speaker": "赵无极", "text": "暗影司的经费来源，我查了三年。"},
+          {"speaker": "赵无极", "text": "七派那三个内鬼只是中间人，真正的金主出自朝廷。"},
+          {"speaker": "赵无极", "text": "户部的账上有一笔「军械修筑银」——每年拨出，不记明细。"},
+          {"speaker": "赵无极", "text": "掌握这笔银子的人，是当朝户部侍郎。"},
+          {"speaker": "陈天行", "text": "户部侍郎……他二十年前曾是武林盟的密使。"},
+          {"speaker": "陈天行", "text": "他和青云老人是同门师兄弟。"}
+        ],
+        "outcomes": {"set_flags": ["story_court_revealed"], "add_world_event": {"title": "庙堂暗影", "description": "暗影司的最终资金来源指向户部侍郎——他竟是青云老人的同门师弟。"}},
+        "priority": 0
+      },
+      {
+        "id": "c4_old_man_choice",
+        "title": "青云旧事",
+        "type": "narrative",
+        "trigger": {"kind": "flag_set", "id": "story_court_revealed"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "你回到青冥山。师父青云老人正在山门前扫落叶，仿佛知道你要来。"},
+          {"speaker": "青云老人", "text": "你查到了多少？"},
+          {"speaker": "主角", "text": "户部侍郎——你的师弟。"},
+          {"speaker": "青云老人", "text": "他叫陈观海。四十年前，我们一起在武林盟学艺。"},
+          {"speaker": "青云老人", "text": "他天赋极高，但心术不正。当年断令失窃，就是他做的。"},
+          {"speaker": "青云老人", "text": "我追回了断令，但没有揭发他——我以为他能改。"},
+          {"speaker": "青云老人", "text": "四十年了……是我养虎为患。"}
+        ],
+        "outcomes": {"set_flags": ["story_teacher_confession"], "add_world_event": {"title": "青云旧案", "description": "青云老人道出四十年前往事——暗影司真正的主人是他的师弟陈观海。"}},
+        "priority": 1
+      },
+      {
+        "id": "c4_three_paths",
+        "title": "三条道路",
+        "type": "narrative",
+        "trigger": {"kind": "flag_set", "id": "story_teacher_confession"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "你手中握着三件东西：断令、账册、沙漠之心。"},
+          {"speaker": "旁白", "text": "每一样都足以掀翻整个江湖——甚至朝廷。"},
+          {"speaker": "苏梦瑶", "text": "你可以用断令号令七派，以江湖之力逼朝廷交人。"},
+          {"speaker": "赵无极", "text": "也可以把铁证交给武林盟，让盟主出面收束旧案，不惊动庙堂。"},
+          {"speaker": "陈天行", "text": "或者——你把沙漠之心献给朝廷，换取一个官职。"},
+          {"speaker": "陈天行", "text": "从内部查他。这是最危险，也最彻底的路。"}
+        ],
+        "choices_available": ["choice_epilogue_mercy", "choice_epilogue_reckoning", "choice_epilogue_massacre"],
+        "outcomes": {"set_flags": ["story_final_choice_ready"]},
+        "priority": 2
+      },
+      {
+        "id": "c4_final_battle",
+        "title": "终局之战",
+        "type": "battle",
+        "trigger": {"kind": "quest_completed", "id": "q_main_old_case_closure"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "陈观海站在户部衙门的后堂之中，一身官服，气定神闲。"},
+          {"speaker": "陈观海", "text": "你就是师兄的关门弟子？"},
+          {"speaker": "陈观海", "text": "他老人家身体可好？四十年不见，他还是一样——"},
+          {"speaker": "陈观海", "text": "一样的天真。"},
+          {"speaker": "陈观海", "text": "你以为江湖是干净的？没有朝廷的银子，七派早就在白金之乱中死绝了！"},
+          {"speaker": "陈观海", "text": "暗影司不是我的势力——是我的手段。"},
+          {"speaker": "主角", "text": "你的手段，害死了苏家十七条人命。"},
+          {"speaker": "陈观海", "text": "成大事者不拘小节。今日，让我看看师兄教了你多少。"}
+        ],
+        "enemy": {"id": "陈观海", "count": 1, "minions": ["暗影死士", "暗影死士", "朝廷护卫", "朝廷护卫"]},
+        "outcomes": {"set_flags": ["story_final_battle_won"], "add_world_event": {"title": "终局之战", "description": "少侠在户部衙门与暗影司真正的主使陈观海展开决战，十年旧案迎来终章。"}},
+        "priority": 3
+      },
+      {
+        "id": "c4_epilogue",
+        "title": "江湖留灯",
+        "type": "narrative",
+        "trigger": {"kind": "flag_set", "id": "story_final_battle_won"},
+        "dialogue": [
+          {"speaker": "旁白", "text": "陈观海伏法。户部侍郎的罪证公之于众，朝廷震动。"},
+          {"speaker": "旁白", "text": "七派夜议重新召开，断令归位，武林盟重建。"},
+          {"speaker": "旁白", "text": "苏梦瑶在苏家旧宅的遗址上，建起了一座无名茶寮。"},
+          {"speaker": "旁白", "text": "陈天行放下了说书人的醒木，为这段历史写下了完整的《暗影录》。"},
+          {"speaker": "旁白", "text": "你站在青冥山的山门前，师父已经不在那里了。"},
+          {"speaker": "旁白", "text": "只留下一封信：\n「江湖的路还长，老夫先走一步。你手中的铁剑，该换一把了。」"},
+          {"speaker": "旁白", "text": "—— 终 ——"}
+        ],
+        "outcomes": {"set_flags": ["story_complete"], "add_world_event": {"title": "江湖终章", "description": "十年旧案尘埃落定，江湖翻开新的一页。"}},
+        "priority": 4
+      }
+    ],
+    "completion_trigger": {"check_flags": ["story_complete"]}
+  }
+]

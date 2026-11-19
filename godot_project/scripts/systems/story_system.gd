@@ -1,10 +1,549 @@
 extends RefCounted
 class_name StorySystem
 
+## 剧情内容推进引擎
+##
+## 核心职责：
+## 1. 章节管理器 — 5个故事章节的前置条件检查与推进
+## 2. Flag 系统 — 全局叙事状态跟踪
+## 3. 叙事触发器 — 区域进入/对话/战斗胜利/物品获得触发剧情
+## 4. 巨变事件 — 特定剧情后改变区域描述/NPC对话/可用任务
+## 5. NPC好感度 → 对话选项分支
+
 var _state: Node
 
 func _init(state: Node) -> void:
 	_state = state
+
+
+# ============================================================
+# 1. 章节管理器
+# ============================================================
+
+## 检测某章节是否满足进入条件
+func check_chapter_prerequisites(chapter_id: String) -> Dictionary:
+	var chapter := GameData.get_story_chapter(chapter_id)
+	if chapter.is_empty():
+		return {"ok": false, "reason": "章节不存在"}
+	var prereqs: Dictionary = chapter.get("prerequisites", {})
+	
+	# 等级检测
+	var min_level := int(prereqs.get("level", 0))
+	if min_level > 0 and int(_state.player.get("level", 1)) < min_level:
+		return {"ok": false, "reason": "等级达到 %d 后可进入该章节" % min_level}
+	
+	# 前置章节检测
+	var completed_chapters: Array = prereqs.get("completed_chapters", [])
+	for cid in completed_chapters:
+		if not _is_chapter_completed(str(cid)):
+			return {"ok": false, "reason": "需先完成上一章节"}
+	
+	# 前置任务检测
+	var quest_completed := str(prereqs.get("quest_completed", ""))
+	if not quest_completed.is_empty() and not _state.completed_quests.has(quest_completed):
+		var quest := GameData.get_quest(quest_completed)
+		return {"ok": false, "reason": "需先完成【%s】" % str(quest.get("title", quest_completed))}
+	
+	# 前置 Flag 检测
+	var required_flags: Array = prereqs.get("required_flags", [])
+	for flag in required_flags:
+		if not bool(_state.game_flags.get(str(flag), false)):
+			return {"ok": false, "reason": "条件尚不满足"}
+	
+	return {"ok": true, "chapter": chapter}
+
+
+## 获取当前可进入的章节（按顺序返回第一个可进入但尚未完成的）
+func get_current_active_chapter() -> Dictionary:
+	for chapter in GameData.get_all_story_chapters():
+		var cid := str(chapter.get("id", ""))
+		if _is_chapter_completed(cid):
+			continue
+		var check := check_chapter_prerequisites(cid)
+		if check.get("ok", false):
+			return chapter
+	# 全部完成则返回最后一章
+	var chapters := GameData.get_all_story_chapters()
+	if not chapters.is_empty():
+		return chapters[chapters.size() - 1]
+	return {}
+
+
+## 获取当前章节ID
+func get_current_chapter_id() -> String:
+	return str(get_current_active_chapter().get("id", ""))
+
+
+## 获取当前章节 title
+func get_current_chapter_title() -> String:
+	var ch := get_current_active_chapter()
+	return str(ch.get("title", "自由探索"))
+
+
+## 获取章节中可触发的待处理事件
+func get_pending_chapter_events(chapter_id: String) -> Array[Dictionary]:
+	var chapter := GameData.get_story_chapter(chapter_id)
+	if chapter.is_empty():
+		return []
+	var events: Array = chapter.get("events", [])
+	var result: Array[Dictionary] = []
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var event_id := str(event.get("id", ""))
+		# 跳过已触发的
+		if _state.game_flags.has("story_event_%s" % event_id):
+			continue
+		# 检查是否可触发
+		if _check_event_trigger(event):
+			result.append(event.duplicate(true))
+	return result
+
+
+## 触发指定章节事件
+func trigger_chapter_event(event_id: String) -> bool:
+	# 先在所有章节中查找事件
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			if str(event.get("id", "")) != event_id:
+				continue
+			if _state.game_flags.has("story_event_%s" % event_id):
+				return false
+			_apply_event_outcomes(event)
+			_state.game_flags["story_event_%s" % event_id] = true
+			_state.game_flags["last_story_event"] = event_id
+			_emit_event_details(event)
+			_check_chapter_completion(str(chapter.get("id", "")))
+			EventBus.quests_changed.emit()
+			return true
+	return false
+
+
+## 检查事件触发条件
+func _check_event_trigger(event: Dictionary) -> bool:
+	var trigger: Dictionary = event.get("trigger", {})
+	if trigger.is_empty():
+		return false
+	var kind := str(trigger.get("kind", ""))
+	var tid := str(trigger.get("id", ""))
+	match kind:
+		"region_enter":
+			return _state.current_region_id == tid
+		"npc_talk":
+			return bool(_state.game_flags.get("talked_%s" % tid, false))
+		"quest_completed":
+			return _state.completed_quests.has(tid)
+		"flag_set":
+			return bool(_state.game_flags.get(tid, false))
+		"item_obtained":
+			return int(_state.inventory.get(tid, 0)) > 0
+		"level_reach":
+			return int(_state.player.get("level", 1)) >= int(trigger.get("value", 1))
+		"always":
+			return true
+		_:
+			return false
+	return false
+
+
+## 应用事件结果
+func _apply_event_outcomes(event: Dictionary) -> void:
+	var outcomes: Dictionary = event.get("outcomes", {})
+	# 设置 flag
+	var set_flags: Array = outcomes.get("set_flags", [])
+	for flag in set_flags:
+		_state.game_flags[str(flag)] = true
+	# 添加世界事件
+	var world_event: Dictionary = outcomes.get("add_world_event", {})
+	if not world_event.is_empty():
+		var title := str(world_event.get("title", "剧情事件"))
+		var desc := str(world_event.get("description", ""))
+		var region_id := str(world_event.get("region_id", _state.current_region_id))
+		_state.append_world_event("story", title, desc, region_id, 4)
+	# 添加线索
+	var clue: Dictionary = outcomes.get("add_clue", {})
+	if not clue.is_empty():
+		_state.record_adventure_clue("", str(clue.get("title", "")), str(clue.get("description", "")), _state.current_region_id, "剧情")
+	# 增加好感度
+	var favors: Dictionary = outcomes.get("add_favor", {})
+	for npc_name in favors.keys():
+		var delta := int(favors[npc_name])
+		var mem: Dictionary = _state.get_npc_memory(str(npc_name))
+		var old := int(mem.get("favor", 0))
+		var new_favor := clampi(old + delta, -100, 100)
+		if _state.npc_memory.has(str(npc_name)):
+			_state.npc_memory[str(npc_name)]["favor"] = new_favor
+	# 添加物品
+	var items: Dictionary = outcomes.get("add_items", {})
+	for item_id in items.keys():
+		_state.add_item(str(item_id), int(items[item_id]))
+
+
+## 触发战斗事件（由 CombatSystem 调用）
+func trigger_event_battle(event_id: String) -> Dictionary:
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			if str(event.get("id", "")) != event_id:
+				continue
+			var enemy_data: Dictionary = event.get("enemy", {})
+			if enemy_data.is_empty():
+				return {}
+			return {
+				"event_id": event_id,
+				"main_enemy": str(enemy_data.get("id", "")),
+				"count": int(enemy_data.get("count", 1)),
+				"minions": _string_array(enemy_data.get("minions", [])),
+				"dialogue": event.get("dialogue", [])
+			}
+	return {}
+
+
+## 章节完成检测
+func _check_chapter_completion(chapter_id: String) -> void:
+	var chapter := GameData.get_story_chapter(chapter_id)
+	if chapter.is_empty():
+		return
+	var completion: Dictionary = chapter.get("completion_trigger", {})
+	var check_flags: Array = completion.get("check_flags", [])
+	for flag in check_flags:
+		if not bool(_state.game_flags.get(str(flag), false)):
+			return
+	_state.game_flags["chapter_%s_completed" % chapter_id] = true
+	_state.game_flags["last_completed_chapter"] = chapter_id
+	# 发送章节完成消息
+	var chapter_name := str(chapter.get("title", chapter_id))
+	EventBus.emit_toast("剧情推进：【%s】已完成" % chapter_name)
+	# 应用章节完成后的区域变化（cataclysm effects）
+	_apply_chapter_cataclysms(chapter_id)
+
+
+## 章节是否已完成
+func _is_chapter_completed(chapter_id: String) -> bool:
+	return bool(_state.game_flags.get("chapter_%s_completed" % chapter_id, false))
+
+
+## 获取已完成章节列表
+func get_completed_chapter_ids() -> Array[String]:
+	var result: Array[String] = []
+	for chapter in GameData.get_all_story_chapters():
+		var cid := str(chapter.get("id", ""))
+		if _is_chapter_completed(cid):
+			result.append(cid)
+	return result
+
+
+## 获取当前剧情阶段描述
+func get_current_story_stage_description() -> String:
+	var chapter := get_current_active_chapter()
+	if chapter.is_empty():
+		return "江湖仍在继续"
+	return str(chapter.get("description", "探索江湖"))
+
+
+## 获取剧情进度文本（用于 UI 显示）
+func get_story_progress_text() -> String:
+	var total := GameData.get_story_chapter_count()
+	var completed := get_completed_chapter_ids().size()
+	var current := get_current_active_chapter()
+	var current_title := str(current.get("title", "序章"))
+	var current_subtitle := str(current.get("subtitle", ""))
+	if not current_subtitle.is_empty():
+		return "剧情进度：%d/%d · %s（%s）" % [completed, total, current_title, current_subtitle]
+	return "剧情进度：%d/%d · %s" % [completed, total, current_title]
+
+
+# ============================================================
+# 2. 巨变事件系统（Cataclysm）
+# ============================================================
+
+## 章节完成后的世界变化
+func _apply_chapter_cataclysms(chapter_id: String) -> void:
+	match chapter_id:
+		"chapter1":
+			_apply_c1_aftermath()
+		"chapter2":
+			_apply_c2_aftermath()
+		"chapter3":
+			_apply_c3_aftermath()
+		"chapter4":
+			_apply_c4_aftermath()
+
+
+func _apply_c1_aftermath() -> void:
+	# 血月夜袭后：洛阳氛围变化、暗影司眼线减少、NPC 对话更新
+	_state.game_flags["cataclysm_blood_moon"] = true
+	_state.append_world_event("cataclysm", "洛阳夜变", "血月夜袭之后，洛阳城的夜市提早收摊，巡逻的捕快比往常多了一倍。百姓低头赶路，不敢久留街头。", "luoyang", 3)
+	# 更新区域状态
+	_apply_region_story_state("luoyang", {"mood": "紧张", "night_activity": "reduced"})
+
+
+func _apply_c2_aftermath() -> void:
+	# 暗影总坛覆灭后：长安地区暗影势力消退、新 NPC 出现
+	_state.game_flags["cataclysm_citadel_fallen"] = true
+	_state.append_world_event("cataclysm", "暗影司覆灭", "暗影司总坛被攻破的消息传遍江湖，长安城的暗桩一夜之间跑了大半。酒馆里开始有人大着胆子议论暗影司的旧事。", "changan", 4)
+	_apply_region_story_state("changan", {"shadow_influence": "collapsed"})
+	# 卧底恢复身份
+	_state.game_flags["npc_spy_revealed"] = true
+
+
+func _apply_c3_aftermath() -> void:
+	# 西域秘境揭秘后：西域商路变化
+	_state.game_flags["cataclysm_west_gained"] = true
+	_state.append_world_event("cataclysm", "西域风吹", "沙漠之心的归属震动西域，原本依附暗影司的几股沙匪势力开始倒向中原。西域商路重现生机。", "west_region", 3)
+
+
+func _apply_c4_aftermath() -> void:
+	# 最终战后：全江湖翻新
+	_state.game_flags["cataclysm_final"] = true
+	_state.append_world_event("cataclysm", "天下新章", "户部侍郎落马，朝廷与武林的关系翻开新的一页。七派夜议重开，武林盟开始重建。这是一个旧时代的结束，也是一个新时代的开始。", "luoyang", 5)
+	_apply_region_story_state("luoyang", {"mood": "重建", "authority": "武林盟"})
+	_apply_region_story_state("changan", {"mood": "平静", "authority": "武林盟与朝廷分治"})
+	_apply_region_story_state("qinghe", {"mood": "安宁"})
+	# 触发结局判定
+	_state.trigger_ending()
+
+
+func apply_region_story_state(region_id: String, changes: Dictionary) -> void:
+	_apply_region_story_state(region_id, changes)
+
+
+## 修改区域状态（持久化）
+func _apply_region_story_state(region_id: String, changes: Dictionary) -> void:
+	if not _state.region_state.has(region_id):
+		_state.region_state[region_id] = {"discovered": false, "exploration": 5, "visited": [], "exploration_milestones": []}
+	var state: Dictionary = _state.region_state[region_id]
+	for key in changes.keys():
+		state[str(key)] = changes[key]
+	_state.region_state[region_id] = state
+
+
+## 获取区域受剧情影响后的描述
+func get_region_story_description(region_id: String) -> String:
+	var region := GameData.get_region(region_id)
+	if region.is_empty():
+		return ""
+	var base := str(region.get("description", ""))
+	var state: Dictionary = _state.region_state.get(region_id, {})
+	var mood := str(state.get("mood", ""))
+	if not mood.is_empty():
+		return "%s（当前：%s）" % [base, mood]
+	return base
+
+
+# ============================================================
+# 3. NPC 关系与好感度系统增强
+# ============================================================
+
+## 获取 NPC 基于情节和好感度的分支对话
+func get_branch_dialogue(npc_name: String) -> Dictionary:
+	# 检查是否有剧情对话
+	var story_dialogue := _get_story_dialogue_for_npc(npc_name)
+	if not story_dialogue.is_empty():
+		return story_dialogue
+	
+	# 检查好感度对应的关系线
+	var favor: int = _state.get_npc_favor(npc_name)
+	var relation: String = _state.get_npc_relation_label(npc_name)
+	
+	# 获取基础对话
+	var base_lines := GameData.get_dialogue_lines(npc_name)
+	if base_lines.is_empty():
+		base_lines = ["江湖路远，少侠保重。"]
+	
+	var favor_line := _get_favor_line(npc_name, favor)
+	
+	return {
+		"type": "casual",
+		"relation": relation,
+		"favor": favor,
+		"lines": base_lines,
+		"favor_line": favor_line,
+		"is_story": false
+	}
+
+
+## 获取 NPC 在当前剧情阶段的剧情对话
+func _get_story_dialogue_for_npc(npc_name: String) -> Dictionary:
+	# 从当前章节事件中查找 NPC 对话
+	var chapter_id := get_current_chapter_id()
+	var chapter := GameData.get_story_chapter(chapter_id)
+	if chapter.is_empty():
+		return {}
+	var events: Array = chapter.get("events", [])
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var event_id := str(event.get("id", ""))
+		if _state.game_flags.has("story_event_%s" % event_id):
+			continue
+		var dialogues: Array = event.get("dialogue", [])
+		for d in dialogues:
+			if typeof(d) != TYPE_DICTIONARY:
+				continue
+			if str(d.get("speaker", "")) == npc_name:
+				# 这个 NPC 在当前事件中有对话
+				return {
+					"type": "story",
+					"event_id": event_id,
+					"lines": [str(d.get("text", "..."))],
+					"is_story": true
+				}
+	return {}
+
+
+## 好感度影响下的特殊对话
+func _get_favor_line(npc_name: String, favor: int) -> String:
+	if favor >= 70:
+		return "%s 看到你，眼中带着笑意。" % npc_name
+	elif favor >= 40:
+		return "%s 对你态度友善，愿意多说几句。" % npc_name
+	elif favor >= 10:
+		return "%s 微微点头，算是打了招呼。" % npc_name
+	elif favor < -30:
+		return "%s 看你的眼神带着戒备。" % npc_name
+	elif favor < -60:
+		return "%s 避开你的目光，手按在刀柄上。" % npc_name
+	return ""
+
+
+# ============================================================
+# 4. 叙事触发系统（由外部系统调用）
+# ============================================================
+
+## 玩家进入新区域时调用
+func on_region_enter(region_id: String) -> void:
+	if region_id.is_empty():
+		return
+	# 检查是否有章节事件因进入区域而触发
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			var trigger: Dictionary = event.get("trigger", {})
+			if str(trigger.get("kind", "")) != "region_enter":
+				continue
+			if str(trigger.get("id", "")) != region_id:
+				continue
+			var event_id := str(event.get("id", ""))
+			if _state.game_flags.has("story_event_%s" % event_id):
+				continue
+			trigger_chapter_event(event_id)
+			return
+
+
+## 玩家完成任务时调用
+func on_quest_completed(quest_id: String) -> void:
+	if quest_id.is_empty():
+		return
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			var trigger: Dictionary = event.get("trigger", {})
+			if str(trigger.get("kind", "")) != "quest_completed":
+				continue
+			if str(trigger.get("id", "")) != quest_id:
+				continue
+			var event_id := str(event.get("id", ""))
+			if _state.game_flags.has("story_event_%s" % event_id):
+				continue
+			trigger_chapter_event(event_id)
+			return
+
+
+## 玩家与 NPC 对话时调用
+func on_npc_talk(npc_name: String) -> void:
+	if npc_name.is_empty():
+		return
+	_state.game_flags["talked_%s" % npc_name] = true
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			var trigger: Dictionary = event.get("trigger", {})
+			if str(trigger.get("kind", "")) != "npc_talk":
+				continue
+			if str(trigger.get("id", "")) != npc_name:
+				continue
+			var event_id := str(event.get("id", ""))
+			if _state.game_flags.has("story_event_%s" % event_id):
+				continue
+			trigger_chapter_event(event_id)
+			return
+
+
+## 获得物品时调用
+func on_item_obtained(item_id: String) -> void:
+	if item_id.is_empty():
+		return
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			var trigger: Dictionary = event.get("trigger", {})
+			if str(trigger.get("kind", "")) != "item_obtained":
+				continue
+			if str(trigger.get("id", "")) != item_id:
+				continue
+			var event_id := str(event.get("id", ""))
+			if _state.game_flags.has("story_event_%s" % event_id):
+				continue
+			trigger_chapter_event(event_id)
+			return
+
+
+## 战斗胜利时调用（由 CombatSystem 调用）
+func on_battle_won(enemy_id: String) -> void:
+	if enemy_id.is_empty():
+		return
+	for chapter in GameData.get_all_story_chapters():
+		var events: Array = chapter.get("events", [])
+		for event in events:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			var trigger: Dictionary = event.get("trigger", {})
+			if str(trigger.get("kind", "")) != "battle_won":
+				continue
+			if str(trigger.get("id", "")) != enemy_id:
+				continue
+			var event_id := str(event.get("id", ""))
+			if _state.game_flags.has("story_event_%s" % event_id):
+				continue
+			trigger_chapter_event(event_id)
+			return
+
+
+# ============================================================
+# 5. 辅助方法
+# ============================================================
+
+func _emit_event_details(event: Dictionary) -> void:
+	var title := str(event.get("title", "事件"))
+	EventBus.emit_toast("剧情事件：%s" % title)
+
+
+func _string_array(value) -> Array[String]:
+	if typeof(value) != TYPE_ARRAY:
+		return []
+	var result: Array[String] = []
+	for item in value:
+		result.append(str(item))
+	return result
+
+
+# ============================================================
+# 保留的原有功能（道德、门派等，通过 GameState 委托）
+# ============================================================
 
 const DAODE_MIN := -100
 const DAODE_MAX := 100
@@ -129,556 +668,114 @@ const STORY_CHOICE_DEFINITIONS := [
 ]
 
 const ENDING_DEFINITIONS := [
-	{
-		"id": "ending_justice",
-		"title": "正义结局 · 武林盟主",
-		"description": "你正气凛然，号令群雄。七派共推你为武林盟主，断令旧案在你手中收束，受万人敬仰，江湖恩怨就此翻过新的一页。",
-		"epitaph": "正气长存，盟印在手。"
-	},
-	{
-		"id": "ending_righteous",
-		"title": "正派结局 · 一代大侠",
-		"description": "你侠义心肠，行走江湖多年，名垂青史。七派以礼相待，百姓传颂你的名号，旧案的余烬终成你侠名的一笔注脚。",
-		"epitaph": "侠名远播，青史留痕。"
-	},
-	{
-		"id": "ending_neutral",
-		"title": "中立结局 · 隐士高人",
-		"description": "你不偏不倚，亦正亦邪，最终选择归隐山林。江湖恩怨与你再无干系，你成了传说中那位逍遥自在的隐士高人。",
-		"epitaph": "逍遥物外，不系名利。"
-	},
-	{
-		"id": "ending_dark",
-		"title": "邪派结局 · 魔教教主",
-		"description": "你行事歹毒，威震江湖，终于坐上魔教教主的宝座。七派对你又恨又惧，暗影司残部尽归你手，江湖一时噤声。",
-		"epitaph": "魔焰滔天，教令如山。"
-	},
-	{
-		"id": "ending_evil",
-		"title": "邪恶结局 · 武林公敌",
-		"description": "你罪大恶极，血债累累，七派联手发出追杀令，你成了武林公敌。纵然一时得势，终究难逃群起而攻的结局。",
-		"epitaph": "千夫所指，百死难赎。"
-	},
-	{
-		"id": "ending_court",
-		"title": "朝廷结局 · 鹰犬之途",
-		"description": "你投效朝廷，成了江湖中的暗桩。六扇门的令牌在手，绿林好汉见你色变，七派对你又恨又忌。江湖的规矩，终究让位于庙堂的律令。",
-		"epitaph": "铁令在手，江湖低头。"
-	},
-	{
-		"id": "ending_merchant",
-		"title": "商贾结局 · 富甲一方",
-		"description": "你放下刀剑，操持算盘。商队遍及南北，银号开遍州府，连七派也要向你借银度日。江湖人提起你，先想到的不是武功，而是那间挂着你招牌的天下第一庄。",
-		"epitaph": "银两过手，天下入彀。"
-	},
-	{
-		"id": "ending_grandmaster",
-		"title": "宗师结局 · 开宗立派",
-		"description": "你穷毕生之力参悟武道，所习功法皆臻化境。你开宗立派，广收门徒，自成一脉。后世论及武学源流，皆以你这一代为分水岭，你的拳经剑谱被奉为圭臬。",
-		"epitaph": "一脉开宗，百代师表。"
-	}
+	{"id": "ending_justice", "title": "正义结局 · 武林盟主", "description": "你正气凛然，号令群雄。七派共推你为武林盟主，断令旧案在你手中收束，受万人敬仰，江湖恩怨就此翻过新的一页。", "epitaph": "正气长存，盟印在手。"},
+	{"id": "ending_righteous", "title": "正派结局 · 一代大侠", "description": "你侠义心肠，行走江湖多年，名垂青史。七派以礼相待，百姓传颂你的名号，旧案的余烬终成你侠名的一笔注脚。", "epitaph": "侠名远播，青史留痕。"},
+	{"id": "ending_neutral", "title": "中立结局 · 隐士高人", "description": "你不偏不倚，亦正亦邪，最终选择归隐山林。江湖恩怨与你再无干系，你成了传说中那位逍遥自在的隐士高人。", "epitaph": "逍遥物外，不系名利。"},
+	{"id": "ending_dark", "title": "邪派结局 · 魔教教主", "description": "你行事歹毒，威震江湖，终于坐上魔教教主的宝座。七派对你又恨又惧，暗影司残部尽归你手，江湖一时噤声。", "epitaph": "魔焰滔天，教令如山。"},
+	{"id": "ending_evil", "title": "邪恶结局 · 武林公敌", "description": "你罪大恶极，血债累累，七派联手发出追杀令，你成了武林公敌。纵然一时得势，终究难逃群起而攻的结局。", "epitaph": "千夫所指，百死难赎。"},
+	{"id": "ending_court", "title": "朝廷结局 · 鹰犬之途", "description": "你投效朝廷，成了江湖中的暗桩。六扇门的令牌在手，绿林好汉见你色变，七派对你又恨又忌。江湖的规矩，终究让位于庙堂的律令。", "epitaph": "铁令在手，江湖低头。"},
+	{"id": "ending_merchant", "title": "商贾结局 · 富甲一方", "description": "你放下刀剑，操持算盘。商队遍及南北，银号开遍州府，连七派也要向你借银度日。江湖人提起你，先想到的不是武功，而是那间挂着你招牌的天下第一庄。", "epitaph": "银两过手，天下入彀。"},
+	{"id": "ending_grandmaster", "title": "宗师结局 · 开宗立派", "description": "你穷毕生之力参悟武道，所习功法皆臻化境。你开宗立派，广收门徒，自成一脉。后世论及武学源流，皆以你这一代为分水岭，你的拳经剑谱被奉为圭臬。", "epitaph": "一脉开宗，百代师表。"}
 ]
+
 const CONTEXTUAL_DIALOGUES := {
 	"苏梦瑶": [
-		{
-			"after": "q_intro_town",
-			"lines": [
-				"平安镇的青石板路我走过很多次，但从没在这里找到过苏家的消息。",
-				"你若愿意帮我追查洛阳旧案，花间派不会亏待你。",
-				"别急，先在镇上站稳脚跟——江湖的事，不是一天能翻完的。"
-			]
-		},
-		{
-			"after": "q_clear_thugs",
-			"lines": [
-				"镇东的事我听说了一些——你出手很快，但那几个恶徒不过是冰山一角。",
-				"背后的线还在暗处，你若想往下查，先留意洛阳方向的消息。",
-				"花间派在洛阳有人，你若有需要，我可以替你递一句话。"
-			]
-		},
-		{
-			"after": "q_main_luoyang_ashes",
-			"lines": [
-				"洛阳旧火的线索总算有了着落，多亏你肯追查。",
-				"母亲留下的玉佩花纹和断令对上了，这绝不是巧合。",
-				"暗影司的人不会善罢甘休，你接下来要小心水路。"
-			]
-		},
-		{
-			"after": "q_main_after_shadow",
-			"lines": [
-				"苏家的账册终于翻到了最后一页，多谢你。",
-				"旧案终册落印在即，但你心里要有数——有些事不是一纸文书能了的。",
-				"无论最后怎么收束，花间派欠你一个人情。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册已落印，苏家冤屈总算有了一个交代。",
-				"江湖的路还长，往后若需要花间派助力，你只管开口。",
-				"母亲若泉下有知，该瞑目了。"
-			]
-		}
+		{"after": "q_intro_town", "lines": ["平安镇的青石板路我走过很多次，但从没在这里找到过苏家的消息。", "你若愿意帮我追查洛阳旧案，花间派不会亏待你。", "别急，先在镇上站稳脚跟——江湖的事，不是一天能翻完的。"]},
+		{"after": "q_clear_thugs", "lines": ["镇东的事我听说了一些——你出手很快，但那几个恶徒不过是冰山一角。", "背后的线还在暗处，你若想往下查，先留意洛阳方向的消息。", "花间派在洛阳有人，你若有需要，我可以替你递一句话。"]},
+		{"after": "q_main_luoyang_ashes", "lines": ["洛阳旧火的线索总算有了着落，多亏你肯追查。", "母亲留下的玉佩花纹和断令对上了，这绝不是巧合。", "暗影司的人不会善罢甘休，你接下来要小心水路。"]},
+		{"after": "q_main_after_shadow", "lines": ["苏家的账册终于翻到了最后一页，多谢你。", "旧案终册落印在即，但你心里要有数——有些事不是一纸文书能了的。", "无论最后怎么收束，花间派欠你一个人情。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册已落印，苏家冤屈总算有了一个交代。", "江湖的路还长，往后若需要花间派助力，你只管开口。", "母亲若泉下有知，该瞑目了。"]}
 	],
 	"陈天行": [
-		{
-			"after": "q_intro_town",
-			"lines": [
-				"平安镇的说书人见得多、讲得多，但也有些事只能在桌底下讲。",
-				"洛阳旧火的事你若感兴趣，夜里来客栈，我给你讲一段外围的故事。",
-				"听说你在打听暗处的事——小心，有些话传了不该传的人，你的命就不值钱了。"
-			]
-		},
-		{
-			"after": "q_clear_thugs",
-			"lines": [
-				"镇东那几个恶徒是被人雇的——雇他们的人出手不算大方，但也够买几条人命。",
-				"你若继续追查，背后的人很快会知道你的名字。",
-				"说书人有一句话送给你：江湖上的第一课，不是怎么出招，是怎么看出谁在出招。"
-			]
-		},
-		{
-			"after": "q_main_shadow_letters",
-			"lines": [
-				"两封密信到手了？好，暗影司的暗线终于被拽到了明面上。",
-				"密信上的暗号和七派门规有关，这不是巧合，是有人故意留下破绽。",
-				"接下来别走官道，暗影司的眼线盯着呢。"
-			]
-		},
-		{
-			"after": "q_main_broken_token",
-			"lines": [
-				"断令花纹对上了武林盟旧卷，七派夜议有了真正的证据。",
-				"你做了我做不到的事——我只会说书，你却把故事变成了铁案。",
-				"夜议之后，暗影司不会再安坐了，你要做好准备。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印了，说书人终于可以把这段故事讲完了。",
-				"你选了哪条路收尾，我都知道——江湖没有不透风的墙。",
-				"长安城还是老样子，但你我都知道，暗处的棋局已经翻了。"
-			]
-		}
+		{"after": "q_intro_town", "lines": ["平安镇的说书人见得多、讲得多，但也有些事只能在桌底下讲。", "洛阳旧火的事你若感兴趣，夜里来客栈，我给你讲一段外围的故事。", "听说你在打听暗处的事——小心，有些话传了不该传的人，你的命就不值钱了。"]},
+		{"after": "q_clear_thugs", "lines": ["镇东那几个恶徒是被人雇的——雇他们的人出手不算大方，但也够买几条人命。", "你若继续追查，背后的人很快会知道你的名字。", "说书人有一句话送给你：江湖上的第一课，不是怎么出招，是怎么看出谁在出招。"]},
+		{"after": "q_main_shadow_letters", "lines": ["两封密信到手了？好，暗影司的暗线终于被拽到了明面上。", "密信上的暗号和七派门规有关，这不是巧合，是有人故意留下破绽。", "接下来别走官道，暗影司的眼线盯着呢。"]},
+		{"after": "q_main_broken_token", "lines": ["断令花纹对上了武林盟旧卷，七派夜议有了真正的证据。", "你做了我做不到的事——我只会说书，你却把故事变成了铁案。", "夜议之后，暗影司不会再安坐了，你要做好准备。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印了，说书人终于可以把这段故事讲完了。", "你选了哪条路收尾，我都知道——江湖没有不透风的墙。", "长安城还是老样子，但你我都知道，暗处的棋局已经翻了。"]}
 	],
 	"赵无极": [
-		{
-			"after": "q_main_broken_token",
-			"lines": [
-				"断令归卷，证据确凿，武林盟不能再装聋作哑了。",
-				"夜议的事我在安排，七派中可信的人不多，但够用。",
-				"你若想在武林盟留一条路，这时候出力是最好的时机。"
-			]
-		},
-		{
-			"after": "q_main_wulin_conclave",
-			"lines": [
-				"夜议成局，暗影司的幕布终于被撕开了一角。",
-				"七派各怀心事，但至少在暗影司这件事上，他们站到了一起。",
-				"接下来打总坛，武林盟能给的支援我会给，但你不要指望太多。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印，武林盟的卷宗里终于补上了这一页。",
-				"你做的选择，我无权评判——江湖人各有各的规矩。",
-				"若日后还需要武林盟出面，拿着这封信来找我。"
-			]
-		}
+		{"after": "q_main_broken_token", "lines": ["断令归卷，证据确凿，武林盟不能再装聋作哑了。", "夜议的事我在安排，七派中可信的人不多，但够用。", "你若想在武林盟留一条路，这时候出力是最好的时机。"]},
+		{"after": "q_main_wulin_conclave", "lines": ["夜议成局，暗影司的幕布终于被撕开了一角。", "七派各怀心事，但至少在暗影司这件事上，他们站到了一起。", "接下来打总坛，武林盟能给的支援我会给，但你不要指望太多。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印，武林盟的卷宗里终于补上了这一页。", "你做的选择，我无权评判——江湖人各有各的规矩。", "若日后还需要武林盟出面，拿着这封信来找我。"]}
 	],
 	"玄机子": [
-		{
-			"after": "q_hero_trial",
-			"lines": [
-				"八卦门的推演之术告诉我，你命中有三条路可选。",
-				"你的根骨不错，但心性才是决定你能走多远的东西。",
-				"若你愿意，我可以传你几手奇门基础——走江湖用得着。"
-			]
-		},
-		{
-			"after": "q_main_sect_warnings",
-			"lines": [
-				"七派都收到了风声，暗影司的手伸得太长了。",
-				"八卦门的阵法被外人窥过阵眼，这件事不简单。",
-				"你若要查暗影司的布局，先学会看谁在故意走错步。"
-			]
-		},
-		{
-			"after": "q_main_wulin_conclave",
-			"lines": [
-				"夜议成局，七派终于肯把暗处的棋子摆到桌上。",
-				"我已布下奇门观测阵，暗影司总坛的方位不会太远。",
-				"打总坛之前，先破他们的阵眼，否则进去容易出来难。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛暂破，暗影司的阵法根基已经动摇。",
-				"但阵眼不会只有一处，残部仍在暗处收拢棋子。",
-				"你若要彻底了结，就别让他们有时间重新布阵。"
-			]
-		}
+		{"after": "q_hero_trial", "lines": ["八卦门的推演之术告诉我，你命中有三条路可选。", "你的根骨不错，但心性才是决定你能走多远的东西。", "若你愿意，我可以传你几手奇门基础——走江湖用得着。"]},
+		{"after": "q_main_sect_warnings", "lines": ["七派都收到了风声，暗影司的手伸得太长了。", "八卦门的阵法被外人窥过阵眼，这件事不简单。", "你若要查暗影司的布局，先学会看谁在故意走错步。"]},
+		{"after": "q_main_wulin_conclave", "lines": ["夜议成局，七派终于肯把暗处的棋子摆到桌上。", "我已布下奇门观测阵，暗影司总坛的方位不会太远。", "打总坛之前，先破他们的阵眼，否则进去容易出来难。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛暂破，暗影司的阵法根基已经动摇。", "但阵眼不会只有一处，残部仍在暗处收拢棋子。", "你若要彻底了结，就别让他们有时间重新布阵。"]}
 	],
 	"花如玉": [
-		{
-			"after": "q_main_luoyang_ashes",
-			"lines": [
-				"苏家旧宅的火，烧的不只是房子，是十几条人命。",
-				"花间派和苏家有些旧缘，你若要查，我可以给你指路。",
-				"你若闻到甜香，先闭气——那是花间的暗号，也是暗影司的陷阱。"
-			]
-		},
-		{
-			"after": "q_main_after_shadow",
-			"lines": [
-				"总坛余烬未灭，暗影司残部还在暗处收拢旧线。",
-				"苏家旧案的最后几页，需要的不是证据，是一个了断。",
-				"花间派的易容术你若用得上，尽管来找我。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印，花间派终于可以把这段旧事翻过去了。",
-				"苏梦瑶欠你的，也是花间派欠你的，日后自有回报。",
-				"你身上的甜香味淡了，看来暗影司的影子离你远了些。"
-			]
-		}
+		{"after": "q_main_luoyang_ashes", "lines": ["苏家旧宅的火，烧的不只是房子，是十几条人命。", "花间派和苏家有些旧缘，你若要查，我可以给你指路。", "你若闻到甜香，先闭气——那是花间的暗号，也是暗影司的陷阱。"]},
+		{"after": "q_main_after_shadow", "lines": ["总坛余烬未灭，暗影司残部还在暗处收拢旧线。", "苏家旧案的最后几页，需要的不是证据，是一个了断。", "花间派的易容术你若用得上，尽管来找我。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印，花间派终于可以把这段旧事翻过去了。", "苏梦瑶欠你的，也是花间派欠你的，日后自有回报。", "你身上的甜香味淡了，看来暗影司的影子离你远了些。"]}
 	],
 	"烈火": [
-		{
-			"after": "q_main_shadow_watchers",
-			"lines": [
-				"暗影司的眼线被你拔掉了一只，痛快！",
-				"红莲教的弟兄等这一天等了太久，血债该有个了断。",
-				"打总坛的时候叫上我，我要亲手烧了他们的门。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛破了，暗影司的火终究没有红莲的旺！",
-				"残部还在逃，我带弟兄们去清剿，你先歇着。",
-				"旧案的事你看着办，但血债要用血来还。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印了？哼，纸上的了断不算了断。",
-				"红莲教的人死在暗影司手里的，可不是一纸文书能还的。",
-				"你做的选择我不评，但江湖的血，迟早要还的。"
-			]
-		}
+		{"after": "q_main_shadow_watchers", "lines": ["暗影司的眼线被你拔掉了一只，痛快！", "红莲教的弟兄等这一天等了太久，血债该有个了断。", "打总坛的时候叫上我，我要亲手烧了他们的门。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛破了，暗影司的火终究没有红莲的旺！", "残部还在逃，我带弟兄们去清剿，你先歇着。", "旧案的事你看着办，但血债要用血来还。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印了？哼，纸上的了断不算了断。", "红莲教的人死在暗影司手里的，可不是一纸文书能还的。", "你做的选择我不评，但江湖的血，迟早要还的。"]}
 	],
 	"蛇王": [
-		{
-			"after": "q_main_shadow_letters",
-			"lines": [
-				"密信到手了？暗影司的暗号我认得，那是那迦派旧术的变体。",
-				"你追查暗影司的路子不错，但别忽略暗处还有眼睛。",
-				"长安来的黑衣人换了三次靴底，走的不是官道，是水路。"
-			]
-		},
-		{
-			"after": "q_main_broken_token",
-			"lines": [
-				"断令归卷了，七派的证据总算齐了。",
-				"暗影司的布局被人窥破，他们会狗急跳墙。",
-				"你要打总坛？那迦派的毒殿里有些东西你用得上。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛破了，暗处的棋子总算被掀了一半。",
-				"残部在逃，其中几个身上的毒我会替你料理。",
-				"旧案怎么收尾是你的事，但那迦派不会忘记谁帮过谁。"
-			]
-		}
+		{"after": "q_main_shadow_letters", "lines": ["密信到手了？暗影司的暗号我认得，那是那迦派旧术的变体。", "你追查暗影司的路子不错，但别忽略暗处还有眼睛。", "长安来的黑衣人换了三次靴底，走的不是官道，是水路。"]},
+		{"after": "q_main_broken_token", "lines": ["断令归卷了，七派的证据总算齐了。", "暗影司的布局被人窥破，他们会狗急跳墙。", "你要打总坛？那迦派的毒殿里有些东西你用得上。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛破了，暗处的棋子总算被掀了一半。", "残部在逃，其中几个身上的毒我会替你料理。", "旧案怎么收尾是你的事，但那迦派不会忘记谁帮过谁。"]}
 	],
 	"太极真人": [
-		{
-			"after": "q_main_wulin_conclave",
-			"lines": [
-				"夜议成局，七派总算同心了一回。",
-				"推手之道在于借力打力，暗影司的攻势越急，破绽越大。",
-				"你要打总坛，太极门派弟子策应，但主攻还是得靠你。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛暂破，七派终于有了喘息之机。",
-				"阴阳有消长，暗影司残部蛰伏，不代表事了。",
-				"旧案的终册要落印，需要有人把最后的证据送上山。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印，太极门见证此事，已记入门规。",
-				"你做的选择不论正邪，都是你自己的因果。",
-				"江湖的路还长，年轻人，守住本心。"
-			]
-		}
+		{"after": "q_main_wulin_conclave", "lines": ["夜议成局，七派总算同心了一回。", "推手之道在于借力打力，暗影司的攻势越急，破绽越大。", "你要打总坛，太极门派弟子策应，但主攻还是得靠你。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛暂破，七派终于有了喘息之机。", "阴阳有消长，暗影司残部蛰伏，不代表事了。", "旧案的终册要落印，需要有人把最后的证据送上山。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印，太极门见证此事，已记入门规。", "你做的选择不论正邪，都是你自己的因果。", "江湖的路还长，年轻人，守住本心。"]}
 	],
 	"冰魄": [
-		{
-			"after": "q_main_sect_warnings",
-			"lines": [
-				"七派风声渐紧，雪山派也收到了暗影司的消息。",
-				"雪岭的寒意已吹到山门，这不是寻常江湖风声。",
-				"你若要查暗影司，先学会在冰面上分辨脚印的真假。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛破了，暗处的寒意终于淡了些。",
-				"雪山弟子参与了总坛之战，表现不错。",
-				"旧案的终册要落印，雪山派不会缺席。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印，雪山派的冰面上终于可以清静一阵。",
-				"你做的选择我不评说，但雪地不会说谎。",
-				"心定则剑稳，年轻人，别让功名乱了你的剑路。"
-			]
-		}
+		{"after": "q_main_sect_warnings", "lines": ["七派风声渐紧，雪山派也收到了暗影司的消息。", "雪岭的寒意已吹到山门，这不是寻常江湖风声。", "你若要查暗影司，先学会在冰面上分辨脚印的真假。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛破了，暗处的寒意终于淡了些。", "雪山弟子参与了总坛之战，表现不错。", "旧案的终册要落印，雪山派不会缺席。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印，雪山派的冰面上终于可以清静一阵。", "你做的选择我不评说，但雪地不会说谎。", "心定则剑稳，年轻人，别让功名乱了你的剑路。"]}
 	],
 	"逍遥子": [
-		{
-			"after": "q_main_broken_token",
-			"lines": [
-				"断令归卷了？好，七派总算有了真正的证据。",
-				"我站得远些反而看得清——暗影司的布局比你们想的深。",
-				"夜议之前，你要想清楚谁该去、谁不该去。"
-			]
-		},
-		{
-			"after": "q_main_shadow_citadel",
-			"lines": [
-				"影司总坛破了，暗影司的棋局被掀了一半。",
-				"旁观者清——残部不会散，他们会换一种方式蛰伏。",
-				"旧案怎么收尾，你心里要有数。"
-			]
-		},
-		{
-			"after": "q_main_old_case_closure",
-			"lines": [
-				"旧案终册落印了，这一局总算有了了断。",
-				"你选了哪条路收尾，我都知道——逍遥宫的消息从不是白来的。",
-				"江湖的路还长，你若想歇歇，逍遥宫的棋阁随时为你开门。"
-			]
-		}
+		{"after": "q_main_broken_token", "lines": ["断令归卷了？好，七派总算有了真正的证据。", "我站得远些反而看得清——暗影司的布局比你们想的深。", "夜议之前，你要想清楚谁该去、谁不该去。"]},
+		{"after": "q_main_shadow_citadel", "lines": ["影司总坛破了，暗影司的棋局被掀了一半。", "旁观者清——残部不会散，他们会换一种方式蛰伏。", "旧案怎么收尾，你心里要有数。"]},
+		{"after": "q_main_old_case_closure", "lines": ["旧案终册落印了，这一局总算有了了断。", "你选了哪条路收尾，我都知道——逍遥宫的消息从不是白来的。", "江湖的路还长，你若想歇歇，逍遥宫的棋阁随时为你开门。"]}
 	],
 	"西域商人": [
-		{
-			"after": "q_west_treasure_1",
-			"lines": [
-				"这古地图是我从西域一个老喇嘛手里收来的，据说藏着沙海深处的秘密。",
-				"碎片一共有三块，我只拿到一块——剩下的就得靠你自己去找了。",
-				"沙漠里不太平，你要小心那些蝎子，还有比蝎子更危险的人。"
-			]
-		},
-		{
-			"after": "q_west_treasure_2",
-			"lines": [
-				"三块碎片都凑齐了？好得很！让我把它拼起来看看……",
-				"看来秘境入口就在沙漠古道最深处，这把钥匙你拿着。",
-				"守门的家伙不是善茬，你要是没把握就多准备些丹药。"
-			]
-		},
-		{
-			"after": "q_west_treasure_4",
-			"lines": [
-				"沙漠之心……我跑西域三十年，还是头一回亲眼见到这东西。",
-				"你的造化不小，这趟我没白等。以后有什么西域的生意，我第一个找你。",
-				"沙漠的风吹不散缘分，后会有期，少侠。"
-			]
-		}
+		{"after": "q_west_treasure_1", "lines": ["这古地图是我从西域一个老喇嘛手里收来的，据说藏着沙海深处的秘密。", "碎片一共有三块，我只拿到一块——剩下的就得靠你自己去找了。", "沙漠里不太平，你要小心那些蝎子，还有比蝎子更危险的人。"]},
+		{"after": "q_west_treasure_2", "lines": ["三块碎片都凑齐了？好得很！让我把它拼起来看看……", "看来秘境入口就在沙漠古道最深处，这把钥匙你拿着。", "守门的家伙不是善茬，你要是没把握就多准备些丹药。"]},
+		{"after": "q_west_treasure_4", "lines": ["沙漠之心……我跑西域三十年，还是头一回亲眼见到这东西。", "你的造化不小，这趟我没白等。以后有什么西域的生意，我第一个找你。", "沙漠的风吹不散缘分，后会有期，少侠。"]}
 	],
 	"药童": [
-		{
-			"after": "q_yaowang_1",
-			"lines": [
-				"多谢你帮我采药，这些药材够师父用一阵子了。",
-				"药王谷的规矩多，师父说外人进来要先试药——你可敢一试？",
-				"你放心，我配的药死不了人，最多躺两天。"
-			]
-		},
-		{
-			"after": "q_yaowang_2",
-			"lines": [
-				"你居然扛住了八珍玉露的药性！师父说得没错，你体质异于常人。",
-				"谷外来了些毒蛛，把药田祸害得不轻，你能帮帮我吗？",
-				"药王谷的灵药若是被糟蹋了，可没第二处能采到。"
-			]
-		},
-		{
-			"after": "q_yaowang_4",
-			"lines": [
-				"这丹方是药王谷祖师爷传下来的，你既是有缘人，就交给你了。",
-				"用它炼出的九转玉露丹能生死人肉白骨——但切记，药能救人也能杀人。",
-				"师父说，真正的医者不是靠药方，是靠心。"
-			]
-		}
+		{"after": "q_yaowang_1", "lines": ["多谢你帮我采药，这些药材够师父用一阵子了。", "药王谷的规矩多，师父说外人进来要先试药——你可敢一试？", "你放心，我配的药死不了人，最多躺两天。"]},
+		{"after": "q_yaowang_2", "lines": ["你居然扛住了八珍玉露的药性！师父说得没错，你体质异于常人。", "谷外来了些毒蛛，把药田祸害得不轻，你能帮帮我吗？", "药王谷的灵药若是被糟蹋了，可没第二处能采到。"]},
+		{"after": "q_yaowang_4", "lines": ["这丹方是药王谷祖师爷传下来的，你既是有缘人，就交给你了。", "用它炼出的九转玉露丹能生死人肉白骨——但切记，药能救人也能杀人。", "师父说，真正的医者不是靠药方，是靠心。"]}
 	],
 	"神偷": [
-		{
-			"after": "q_thief_1",
-			"lines": [
-				"哈，那捕头又派人来追我了？告诉赵德，凭他的本事抓不住我。",
-				"我偷的东西都是为富不仁的家伙，劫富济贫，有什么不对？",
-				"你要是想抓我，先问问我这把轻功答不答应。"
-			]
-		},
-		{
-			"after": "q_thief_2",
-			"lines": [
-				"你倒是有点本事，居然追到了长安。不过那几件东西已经出手了。",
-				"你要那几件破玩意儿？行啊，有本事自己找回来。",
-				"我在旧宅等你——你要是真能打赢我，我随你处置。"
-			]
-		}
+		{"after": "q_thief_1", "lines": ["哈，那捕头又派人来追我了？告诉赵德，凭他的本事抓不住我。", "我偷的东西都是为富不仁的家伙，劫富济贫，有什么不对？", "你要是想抓我，先问问我这把轻功答不答应。"]},
+		{"after": "q_thief_2", "lines": ["你倒是有点本事，居然追到了长安。不过那几件东西已经出手了。", "你要那几件破玩意儿？行啊，有本事自己找回来。", "我在旧宅等你——你要是真能打赢我，我随你处置。"]}
 	],
 	"卧底": [
-		{
-			"after": "q_mojiao_3",
-			"lines": [
-				"总算等到接头的人了……我在魔教潜伏了三年，这日子不是人过的。",
-				"魔教的势力比你们想的要大得多，他们在朝廷里也有人。",
-				"这是分舵的令牌，你拿着它小心行事，别让弟兄们白死了。"
-			]
-		},
-		{
-			"after": "q_mojiao_5",
-			"lines": [
-				"分舵被破的消息已经传到总坛了，护法震怒，正召集所有精锐。",
-				"你要趁他还没完全部署好就打过去，这是唯一的机会。",
-				"总坛的机关我都画了图，你拿着。这一战，不是他死就是我们亡。"
-			]
-		}
+		{"after": "q_mojiao_3", "lines": ["总算等到接头的人了……我在魔教潜伏了三年，这日子不是人过的。", "魔教的势力比你们想的要大得多，他们在朝廷里也有人。", "这是分舵的令牌，你拿着它小心行事，别让弟兄们白死了。"]},
+		{"after": "q_mojiao_5", "lines": ["分舵被破的消息已经传到总坛了，护法震怒，正召集所有精锐。", "你要趁他还没完全部署好就打过去，这是唯一的机会。", "总坛的机关我都画了图，你拿着。这一战，不是他死就是我们亡。"]}
 	]
 }
 const DAODE_REACTIVE_LINES := {
-	"苏梦瑶": {
-		3: "你一身正气，连花间派的人都说你是可托之人。",
-		2: "侠名远播，苏家的事多亏有你这样的侠义之人肯管。",
-		-2: "你身上的戾气太重了，苏家要的不是以暴制暴。",
-		-3: "你和暗影司的人有什么两样？苏家不敢沾你的边。"
-	},
-	"陈天行": {
-		3: "你这身正气，连暗影司都怕你三分——好事。",
-		2: "侠义之名传得快，说书人正好拿你当主角。",
-		-2: "你身上的刀光太盛，我若不说书，怕是要替你讲几句遮掩的话。",
-		-3: "你做的那些事，暗处的影子都比从前淡了——因为你就是新的影子。"
-	},
-	"赵无极": {
-		3: "你一身正气，武林盟若得你助力，是江湖之福。",
-		2: "侠名在外，武林盟的门对你随时是开的。",
-		-2: "你的手段太狠了，武林盟不能明面上与你为伍。",
-		-3: "你已是江湖公敌，武林盟若不拿你，便是失职。"
-	},
-	"玄机子": {
-		3: "正气凛然之人，八卦门的阵法也会为你开一条正路。",
-		2: "侠义心肠，奇门之道最喜有德者得之。",
-		-2: "你身上的煞气太重，我的阵法容不下你这股戾气。",
-		-3: "你已入魔道，八卦门弟子见你当以阵困之。"
-	},
-	"花如玉": {
-		3: "你一身正气，花间派愿意把旧案托付给你。",
-		2: "侠名远播，花间派的姐妹们都信你。",
-		-2: "你身上的戾气太重，花间派不敢与你走得太近。",
-		-3: "你和暗影司一样狠，花间派不会引狼入室。"
-	},
-	"烈火": {
-		3: "你一身正气？哼，正道的火烧不死人，红莲的火才烧得干净。",
-		2: "侠义之人，你的火不够旺，烧不穿暗影司的壳。",
-		-2: "你身上的血腥味我闻到了——好，这才是该有的味道。",
-		-3: "你比红莲教还狠，我服你，来，我们一起烧！"
-	},
-	"蛇王": {
-		3: "正气凛然？那迦派不与正道中人为伍，你走吧。",
-		2: "侠义之名，在那迦派听来不过是另一种伪装。",
-		-2: "你身上的阴气不轻，那迦派倒可以与你谈谈。",
-		-3: "你比我还会用毒——不是药毒，是心毒，那迦派欢迎你。"
-	},
-	"太极真人": {
-		3: "你一身正气，太极门上下都看在眼里，愿与你论道。",
-		2: "侠名远播，年轻人，太极门愿与你结交。",
-		-2: "你身上的戾气太重，太极门不能与你为伍。",
-		-3: "你已入了魔道，太极门弟子见你当拔剑。"
-	},
-	"冰魄": {
-		3: "你一身正气，雪山派的冰面上永远留你一席之地。",
-		2: "侠义之名，雪山派愿意认你这个朋友。",
-		-2: "你的心不够静，雪山派不愿收一身戾气之人。",
-		-3: "你身上的煞气比暴风雪还重，雪山派不欢迎你。"
-	},
-	"逍遥子": {
-		3: "正气凛然，难得，逍遥宫的棋阁随时为你开门。",
-		2: "侠名在外，逍遥宫愿意为你留一盏茶。",
-		-2: "你身上的戾气不轻，逍遥宫的棋局容不下你这步棋。",
-		-3: "你已是江湖的乱局，逍遥宫不愿与你对弈。"
-	},
-	"西域商人": {
-		3: "正气凛然之人，西域商路也会为你敞开大门。",
-		2: "侠义之名传遍西域，商队的伙计们都愿意给你折扣。",
-		-2: "你身上的煞气太重，西域名商不敢与你交易。",
-		-3: "你已成了沙匪一般的人物，西域商路不会欢迎你。"
-	},
-	"药童": {
-		3: "你一身正气，药王谷的灵药都愿意与你亲近。",
-		2: "侠名远播，药童说你是好人的时候眼睛是亮的。",
-		-2: "你身上的戾气太重，药田的花都蔫了……",
-		-3: "你这样的人，药王谷的丹炉容不下你的邪气。"
-	},
-	"神偷": {
-		3: "你正气凛然？哼，正道上的人最无趣了。",
-		2: "侠义之人，你我不过路数不同罢了。",
-		-2: "你够狠，道上的人会给你几分面子。",
-		-3: "你比我还狠，这江湖真是后浪推前浪。"
-	},
-	"卧底": {
-		3: "你一身正气，我在魔教潜伏多年等的就是你这样的人。",
-		2: "侠义之名，让我觉得这三年的卧底没有白费。",
-		-2: "你身上的杀气太重，我分不清你是敌是友。",
-		-3: "你和魔教中人有什么两样？我白等了三年。"
-	}
+	"苏梦瑶": {3: "你一身正气，连花间派的人都说你是可托之人。", 2: "侠名远播，苏家的事多亏有你这样的侠义之人肯管。", -2: "你身上的戾气太重了，苏家要的不是以暴制暴。", -3: "你和暗影司的人有什么两样？苏家不敢沾你的边。"},
+	"陈天行": {3: "你这身正气，连暗影司都怕你三分——好事。", 2: "侠义之名传得快，说书人正好拿你当主角。", -2: "你身上的刀光太盛，我若不说书，怕是要替你讲几句遮掩的话。", -3: "你做的那些事，暗处的影子都比从前淡了——因为你就是新的影子。"},
+	"赵无极": {3: "你一身正气，武林盟若得你助力，是江湖之福。", 2: "侠名在外，武林盟的门对你随时是开的。", -2: "你的手段太狠了，武林盟不能明面上与你为伍。", -3: "你已是江湖公敌，武林盟若不拿你，便是失职。"},
+	"玄机子": {3: "正气凛然之人，八卦门的阵法也会为你开一条正路。", 2: "侠义心肠，奇门之道最喜有德者得之。", -2: "你身上的煞气太重，我的阵法容不下你这股戾气。", -3: "你已入魔道，八卦门弟子见你当以阵困之。"},
+	"花如玉": {3: "你一身正气，花间派愿意把旧案托付给你。", 2: "侠名远播，花间派的姐妹们都信你。", -2: "你身上的戾气太重，花间派不敢与你走得太近。", -3: "你和暗影司一样狠，花间派不会引狼入室。"},
+	"烈火": {3: "你一身正气？哼，正道的火烧不死人，红莲的火才烧得干净。", 2: "侠义之人，你的火不够旺，烧不穿暗影司的壳。", -2: "你身上的血腥味我闻到了——好，这才是该有的味道。", -3: "你比红莲教还狠，我服你，来，我们一起烧！"},
+	"蛇王": {3: "正气凛然？那迦派不与正道中人为伍，你走吧。", 2: "侠义之名，在那迦派听来不过是另一种伪装。", -2: "你身上的阴气不轻，那迦派倒可以与你谈谈。", -3: "你比我还会用毒——不是药毒，是心毒，那迦派欢迎你。"},
+	"太极真人": {3: "你一身正气，太极门上下都看在眼里，愿与你论道。", 2: "侠名远播，年轻人，太极门愿与你结交。", -2: "你身上的戾气太重，太极门不能与你为伍。", -3: "你已入了魔道，太极门弟子见你当拔剑。"},
+	"冰魄": {3: "你一身正气，雪山派的冰面上永远留你一席之地。", 2: "侠义之名，雪山派愿意认你这个朋友。", -2: "你的心不够静，雪山派不愿收一身戾气之人。", -3: "你身上的煞气比暴风雪还重，雪山派不欢迎你。"},
+	"逍遥子": {3: "正气凛然，难得，逍遥宫的棋阁随时为你开门。", 2: "侠名在外，逍遥宫愿意为你留一盏茶。", -2: "你身上的戾气不轻，逍遥宫的棋局容不下你这步棋。", -3: "你已是江湖的乱局，逍遥宫不愿与你对弈。"},
+	"西域商人": {3: "正气凛然之人，西域商路也会为你敞开大门。", 2: "侠义之名传遍西域，商队的伙计们都愿意给你折扣。", -2: "你身上的煞气太重，西域名商不敢与你交易。", -3: "你已成了沙匪一般的人物，西域商路不会欢迎你。"},
+	"药童": {3: "你一身正气，药王谷的灵药都愿意与你亲近。", 2: "侠名远播，药童说你是好人的时候眼睛是亮的。", -2: "你身上的戾气太重，药田的花都蔫了……", -3: "你这样的人，药王谷的丹炉容不下你的邪气。"},
+	"神偷": {3: "你正气凛然？哼，正道上的人最无趣了。", 2: "侠义之人，你我不过路数不同罢了。", -2: "你够狠，道上的人会给你几分面子。", -3: "你比我还狠，这江湖真是后浪推前浪。"},
+	"卧底": {3: "你一身正气，我在魔教潜伏多年等的就是你这样的人。", 2: "侠义之名，让我觉得这三年的卧底没有白费。", -2: "你身上的杀气太重，我分不清你是敌是友。", -3: "你和魔教中人有什么两样？我白等了三年。"}
 }
 const STORY_CHOICE_ACKNOWLEDGMENTS := {
-	"story_conclave_public": {
-		"苏梦瑶": "断令公议的事，七派欠你一个人情，我也算。",
-		"太极真人": "公开断令是正道之举，太极门记你一功。"
-	},
-	"story_conclave_secret": {
-		"苏梦瑶": "你沿旧账暗查暗影司线人，这条路虽慢但稳，我信你。",
-		"陈天行": "暗查旧账的事我参与了，说书人嘴里也留了一半没讲。"
-	},
-	"story_conclave_betray": {
-		"赵无极": "你把断令卖给了暗影司？武林盟的卷宗里已经写了你的名字。",
-		"陈天行": "你倒戈投敌的事我知道了——说书人不讲你的故事，但暗处的人都在讲。"
-	},
-	"story_epilogue_mercy": {
-		"苏梦瑶": "你愿意给被胁迫的人留一条回头路，苏家的事总算有了一个仁义的收束。",
-		"太极真人": "清算有度，是正道该有的模样，太极门愿为你作证。"
-	},
-	"story_epilogue_reckoning": {
-		"陈天行": "追剿残影的事干得漂亮，暗影司再想蛰伏就没那么容易了。",
-		"赵无极": "你趁势追剿残部，武林盟替你记一功——但旧怨翻到明面，你也要收拾得住。"
-	},
-	"story_epilogue_massacre": {
-		"赵无极": "你下令赶尽杀绝的事，武林盟不会替你背，江湖人也都在看。",
-		"陈天行": "连知情百姓也不放过……说书人不讲这种故事，但暗处的人都在讲你。"
-	}
+	"story_conclave_public": {"苏梦瑶": "断令公议的事，七派欠你一个人情，我也算。", "太极真人": "公开断令是正道之举，太极门记你一功。"},
+	"story_conclave_secret": {"苏梦瑶": "你沿旧账暗查暗影司线人，这条路虽慢但稳，我信你。", "陈天行": "暗查旧账的事我参与了，说书人嘴里也留了一半没讲。"},
+	"story_conclave_betray": {"赵无极": "你把断令卖给了暗影司？武林盟的卷宗里已经写了你的名字。", "陈天行": "你倒戈投敌的事我知道了——说书人不讲你的故事，但暗处的人都在讲。"},
+	"story_epilogue_mercy": {"苏梦瑶": "你愿意给被胁迫的人留一条回头路，苏家的事总算有了一个仁义的收束。", "太极真人": "清算有度，是正道该有的模样，太极门愿为你作证。"},
+	"story_epilogue_reckoning": {"陈天行": "追剿残影的事干得漂亮，暗影司再想蛰伏就没那么容易了。", "赵无极": "你趁势追剿残部，武林盟替你记一功——但旧怨翻到明面，你也要收拾得住。"},
+	"story_epilogue_massacre": {"赵无极": "你下令赶尽杀绝的事，武林盟不会替你背，江湖人也都在看。", "陈天行": "连知情百姓也不放过……说书人不讲这种故事，但暗处的人都在讲你。"}
 }
 
 func get_available_story_choices(npc_name: String = "") -> Array:
@@ -714,13 +811,7 @@ func choose_story_branch(choice_id: String) -> bool:
 	for item_id in items.keys():
 		_state.add_item(str(item_id), int(items[item_id]))
 	_state._apply_story_choice_memory(choice)
-	_state.append_world_event(
-		"story_choice",
-		str(choice.get("event_title", choice.get("title", "剧情抉择"))),
-		str(choice.get("event_description", choice.get("description", ""))),
-		str(choice.get("region_id", _state.current_region_id)),
-		4
-	)
+	_state.append_world_event("story_choice", str(choice.get("event_title", choice.get("title", "剧情抉择"))), str(choice.get("event_description", choice.get("description", ""))), str(choice.get("region_id", _state.current_region_id)), 4)
 	EventBus.player_changed.emit(_state.player)
 	EventBus.quests_changed.emit()
 	EventBus.emit_toast("剧情抉择：%s" % str(choice.get("title", choice_id)))
@@ -825,18 +916,12 @@ func change_daode(delta: int) -> void:
 
 func get_daode_tier() -> int:
 	var daode := int(_state.player.get("daode", 0))
-	if daode >= 80:
-		return 3
-	if daode >= 50:
-		return 2
-	if daode >= 20:
-		return 1
-	if daode >= -20:
-		return 0
-	if daode >= -50:
-		return -1
-	if daode >= -80:
-		return -2
+	if daode >= 80: return 3
+	if daode >= 50: return 2
+	if daode >= 20: return 1
+	if daode >= -20: return 0
+	if daode >= -50: return -1
+	if daode >= -80: return -2
 	return -3
 
 
@@ -895,14 +980,10 @@ func get_ending() -> Dictionary:
 		return ENDING_DEFINITIONS[6]
 	if _all_skills_mastered():
 		return ENDING_DEFINITIONS[7]
-	if daode >= 80:
-		return ENDING_DEFINITIONS[0]
-	if daode >= 50:
-		return ENDING_DEFINITIONS[1]
-	if daode <= -80:
-		return ENDING_DEFINITIONS[4]
-	if daode <= -50:
-		return ENDING_DEFINITIONS[3]
+	if daode >= 80: return ENDING_DEFINITIONS[0]
+	if daode >= 50: return ENDING_DEFINITIONS[1]
+	if daode <= -80: return ENDING_DEFINITIONS[4]
+	if daode <= -50: return ENDING_DEFINITIONS[3]
 	return ENDING_DEFINITIONS[2]
 
 
@@ -916,7 +997,7 @@ func _all_skills_mastered() -> bool:
 		if level <= 0:
 			continue
 		learned_count += 1
-		var max_level := GameData.get_skill_max_level(str(skill_id))
+		var max_level: int = GameData.get_skill_max_level(str(skill_id))
 		if max_level > 0 and level >= max_level:
 			mastered_count += 1
 	if learned_count == 0:
@@ -965,4 +1046,3 @@ func join_faction(faction_id: String) -> bool:
 	EventBus.player_changed.emit(_state.player)
 	EventBus.emit_toast("拜入%s" % GameData.get_faction_name(faction_id))
 	return true
-

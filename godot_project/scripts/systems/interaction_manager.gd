@@ -745,11 +745,4 @@ func _show_landmark_discovery(portal: Dictionary, description: String, rewards: 
 	})
 
 func _close_gameplay_panels() -> void:
-	if dialogue_panel != null:
-		dialogue_panel.hide()
-	if combat_panel != null:
-		combat_panel.hide()
-	if shop_panel != null:
-		shop_panel.hide()
-	if discovery_panel != null:
-		discovery_panel.hide()
+	PanelManager.close_all()

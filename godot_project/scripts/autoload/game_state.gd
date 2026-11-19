@@ -15,7 +15,8 @@ enum Mode {
 	DISCOVERY,
 	SECT,
 	ACHIEVEMENT,
-	PET
+	PET,
+	ENDING
 }
 
 var mode: Mode = Mode.EXPLORE
@@ -94,6 +95,10 @@ const STORY_QUEST_PRIORITY := [
 	"q_clear_thugs",
 	"q_flower_thief",
 	"q_hero_trial"
+]
+const EPILOGUE_QUEST_IDS := [
+	"q_main_epilogue_mercy",
+	"q_main_epilogue_reckoning"
 ]
 const STORY_CHOICE_DEFINITIONS := [
 	{
@@ -1623,6 +1628,32 @@ func spend_money(amount: int) -> bool:
 func add_money(amount: int) -> void:
 	player["money"] = int(player.get("money", 0)) + amount
 	EventBus.player_changed.emit(player)
+
+func save_ng_plus_snapshot() -> void:
+	"""保存 NG+ 快照，用于二周目继承"""
+	game_flags["ng_plus_snapshot"] = {
+		"player": player.duplicate(true),
+		"inventory": inventory.duplicate(true),
+		"learned_skills": learned_skills.duplicate(true),
+		"completed_quests": completed_quests.duplicate(),
+		"game_flags": game_flags.duplicate(true),
+		"npc_memory": npc_memory.duplicate(true),
+		"region_state": region_state.duplicate(true),
+		"day": day,
+		"hour": hour
+	}
+
+func trigger_ending() -> void:
+	"""外部触发的结局判定"""
+	if game_flags.get("ending_triggered", false):
+		return
+	game_flags["ending_triggered"] = true
+	var story_sys := StorySystem.new(self)
+	var ending := story_sys.get_ending()
+	save_ng_plus_snapshot()
+	set_mode(Mode.ENDING)
+	EventBus.emit_toast("结局：%s" % str(ending.get("title", "")))
+	EventBus.ending_triggered.emit(ending)
 
 func add_item(item_id: String, count: int = 1) -> void:
 	if count <= 0:

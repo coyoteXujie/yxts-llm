@@ -180,6 +180,6 @@ func _process(delta: float) -> void:
 	if _shader_material != null:
 		var t: Variant = _shader_material.get_shader_parameter("time")
 		if typeof(t) == TYPE_FLOAT:
-			_shader_material.set_shader_parameter("time", float(t) + delta)
+			_shader_material.set_shader_parameter("time", t + delta)
 		else:
 			_shader_material.set_shader_parameter("time", 0.0)

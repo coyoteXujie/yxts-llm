@@ -25,10 +25,23 @@ var rest_button: Button
 var close_button: Button
 var talk_index := 0
 
+# 叙事对话染色
+var _is_story_dialogue := false
+var _story_glow: ColorRect
+var _auto_dialogue_timer: Timer
+var _auto_dialogue_enabled := false
+var _last_line: String = ""
+
+const NARRATIVE_BG_COLOR := Color(0.15, 0.08, 0.05, 0.85)
+const NARRATIVE_BORDER_COLOR := Color(0.85, 0.60, 0.30, 0.5)
+const STANDARD_BG_COLOR := Color(0.12, 0.10, 0.08, 0.80)
+
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	hide()
 	_build()
+	_build_story_glow()
+	_build_auto_dialogue_timer()
 	if not LLMDirector.npc_line_ready.is_connected(_on_director_line_ready):
 		LLMDirector.npc_line_ready.connect(_on_director_line_ready)
 
@@ -594,3 +607,117 @@ func _panel_style() -> StyleBox:
 
 func _portrait_style() -> StyleBox:
 	return UI_ART.panel_texture_style(Vector4(6, 6, 6, 6))
+
+# ============================================================
+# 叙事对话染色系统
+# ============================================================
+
+func _build_story_glow() -> void:
+	# 全屏叙事晕染色
+	_story_glow = ColorRect.new()
+	_story_glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_story_glow.color = Color(0.0, 0.0, 0.0, 0.0)
+	_story_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_story_glow.visible = false
+	add_child(_story_glow)
+	move_child(_story_glow, 0)
+
+## 设置叙事对话模式（重要剧情对话启用）
+func set_story_mode(enabled: bool, title: String = "") -> void:
+	_is_story_dialogue = enabled
+	if enabled:
+		if title.is_empty():
+			title = "重要剧情"
+		EventBus.emit_toast("【%s】" % title)
+		# 全屏染色
+		_story_glow.visible = true
+		var tween := create_tween()
+		tween.tween_property(_story_glow, "color", Color(0.85, 0.60, 0.30, 0.12), 0.6).set_ease(Tween.EASE_OUT)
+		# 面板边框染色
+		var panel_node: PanelContainer = _get_panel_node()
+		if panel_node != null:
+			var border_style := StyleBoxFlat.new()
+			border_style.bg_color = NARRATIVE_BG_COLOR
+			border_style.border_color = NARRATIVE_BORDER_COLOR
+			border_style.border_width_left = 2
+			border_style.border_width_right = 2
+			border_style.border_width_top = 2
+			border_style.border_width_bottom = 2
+			border_style.corner_radius_top_left = 8
+			border_style.corner_radius_top_right = 8
+			border_style.corner_radius_bottom_left = 8
+			border_style.corner_radius_bottom_right = 8
+			panel_node.add_theme_stylebox_override("panel", border_style)
+	else:
+		# 恢复标准样式
+		_story_glow.visible = false
+		_story_glow.color = Color(0.0, 0.0, 0.0, 0.0)
+		var panel_node: PanelContainer = _get_panel_node()
+		if panel_node != null:
+			panel_node.add_theme_stylebox_override("panel", _panel_style())
+
+## 根据剧情状态自动切换叙事模式
+func _update_story_mode_for_npc(npc_name: String) -> void:
+	var story_sys := StorySystem.new(GameState)
+	var dialogue := story_sys.get_branch_dialogue(npc_name)
+	var is_story := bool(dialogue.get("is_story", false))
+	if is_story:
+		set_story_mode(true, "剧情对话 - %s" % npc_name)
+	else:
+		set_story_mode(false)
+
+func _get_panel_node() -> PanelContainer:
+	# 从子节点中查找第一个 PanelContainer
+	for child in get_children():
+		if child is PanelContainer:
+			return child
+	return null
+
+# ============================================================
+# 自动对话模式
+# ============================================================
+
+func _build_auto_dialogue_timer() -> void:
+	_auto_dialogue_timer = Timer.new()
+	_auto_dialogue_timer.wait_time = 2.5  # 默认2.5秒后自动继续
+	_auto_dialogue_timer.one_shot = true
+	_auto_dialogue_timer.timeout.connect(_on_auto_dialogue_tick)
+	add_child(_auto_dialogue_timer)
+
+## 设置自动对话模式（NPC自动说话）
+func set_auto_dialogue(enabled: bool) -> void:
+	_auto_dialogue_enabled = enabled
+	if not enabled:
+		_auto_dialogue_timer.stop()
+
+func _on_auto_dialogue_tick() -> void:
+	if not _auto_dialogue_enabled or not visible:
+		return
+	# 自动推进到下一句
+	if talk_index > 0:
+		_talk()
+
+## 显示带自动推进的对话序列
+func show_auto_sequence(lines: Array[String], npc: Dictionary) -> void:
+	_auto_dialogue_enabled = true
+	show_npc(npc)
+	# 用自动推进模式逐句显示
+	_set_auto_sequence_lines(lines)
+
+var _auto_sequence_lines: Array[String] = []
+var _auto_sequence_index := 0
+
+func _set_auto_sequence_lines(lines: Array[String]) -> void:
+	_auto_sequence_lines = lines
+	_auto_sequence_index = 0
+	_show_next_auto_line()
+
+func _show_next_auto_line() -> void:
+	if _auto_sequence_index >= _auto_sequence_lines.size():
+		_auto_dialogue_enabled = false
+		return
+	body_label.text = _auto_sequence_lines[_auto_sequence_index]
+	_auto_sequence_index += 1
+	# 启动自动推进计时器
+	_auto_dialogue_timer.wait_time = max(1.0, min(4.0, body_label.text.length() * 0.04))
+	_auto_dialogue_timer.start()

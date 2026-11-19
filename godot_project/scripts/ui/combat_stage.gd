@@ -3,6 +3,9 @@ class_name CombatStage
 
 const PLAYER_SCRIPT := preload("res://scripts/entities/player.gd")
 const STAGE_BACKDROP_RENDERER := preload("res://scripts/shared/stage_backdrop_renderer.gd")
+const COMBAT_BACKGROUND_SHADER := preload("res://shaders/combat_background.gdshader")
+const COMBAT_VFX_SHADER := preload("res://shaders/combat_vfx.gdshader")
+const COMBAT_ACTOR_SHADER := preload("res://shaders/combat_actor.gdshader")
 
 const PLAYER_STAGE_HEIGHT := 146.0
 const ENEMY_STAGE_HEIGHT := 154.0

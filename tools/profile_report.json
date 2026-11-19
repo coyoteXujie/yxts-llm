@@ -1,0 +1,184 @@
+{
+  "summary": {
+    "total_scripts": 73,
+    "total_lines": 38549,
+    "long_scripts_count": 24
+  },
+  "long_scripts": [
+    {
+      "file": "godot_project/scripts/world/local_area_map.gd",
+      "lines": 5719,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/autoload/game_state.gd",
+      "lines": 2718,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/world/world_map.gd",
+      "lines": 1975,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/autoload/game_data.gd",
+      "lines": 1726,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/entities/npc.gd",
+      "lines": 1422,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/combat_stage.gd",
+      "lines": 1396,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/map_gen_system.gd",
+      "lines": 1140,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/entities/player.gd",
+      "lines": 1107,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/shop_panel.gd",
+      "lines": 1090,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/story_system.gd",
+      "lines": 1048,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/combat_panel.gd",
+      "lines": 853,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/cultivation_system.gd",
+      "lines": 793,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/interaction_manager.gd",
+      "lines": 748,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/dialogue_panel.gd",
+      "lines": 723,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/combat_system.gd",
+      "lines": 710,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/world/local_stage_foreground.gd",
+      "lines": 657,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/hud.gd",
+      "lines": 653,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/quest_system.gd",
+      "lines": 578,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/shared/shop_interior_renderer.gd",
+      "lines": 527,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/systems/fast_travel_system.gd",
+      "lines": 522,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/inventory_panel.gd",
+      "lines": 518,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/world_map_panel.gd",
+      "lines": 511,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/ui/atmosphere_layer.gd",
+      "lines": 509,
+      "threshold": 500
+    },
+    {
+      "file": "godot_project/scripts/main.gd",
+      "lines": 502,
+      "threshold": 500
+    }
+  ],
+  "top_10_longest": [
+    {
+      "file": "godot_project/scripts/world/local_area_map.gd",
+      "lines": 5719
+    },
+    {
+      "file": "godot_project/scripts/autoload/game_state.gd",
+      "lines": 2718
+    },
+    {
+      "file": "godot_project/scripts/world/world_map.gd",
+      "lines": 1975
+    },
+    {
+      "file": "godot_project/scripts/autoload/game_data.gd",
+      "lines": 1726
+    },
+    {
+      "file": "godot_project/scripts/entities/npc.gd",
+      "lines": 1422
+    },
+    {
+      "file": "godot_project/scripts/ui/combat_stage.gd",
+      "lines": 1396
+    },
+    {
+      "file": "godot_project/scripts/systems/map_gen_system.gd",
+      "lines": 1140
+    },
+    {
+      "file": "godot_project/scripts/entities/player.gd",
+      "lines": 1107
+    },
+    {
+      "file": "godot_project/scripts/ui/shop_panel.gd",
+      "lines": 1090
+    },
+    {
+      "file": "godot_project/scripts/systems/story_system.gd",
+      "lines": 1048
+    }
+  ],
+  "profile": {
+    "exit_code": 0,
+    "wall_time_seconds": 1.36,
+    "errors": [
+      "ERROR: 1 RID allocations of type 'N13RendererDummy15MaterialStorage13DummyMaterialE' were leaked at exit.",
+      "ERROR: 1 RID allocations of type 'N13RendererDummy15MaterialStorage11DummyShaderE' were leaked at exit."
+    ],
+    "warnings": [
+      "WARNING: SystemManager: system 'combat' depends on unknown 'game_state'"
+    ],
+    "load_times_seconds": {},
+    "script_issues": 0
+  }
+}

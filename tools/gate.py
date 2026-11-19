@@ -272,6 +272,31 @@ def check_flow_test() -> None:
         info(f"流程测试通过（耗时 {elapsed:.1f}s）")
 
 
+def check_code_quality() -> None:
+    """运行代码审查工具，FAIL 如果有致命错误（SCAN_ERROR）。"""
+    CR_SCRIPT = REPO / "tools" / "code_review.py"
+    code, out, _ = run([sys.executable, str(CR_SCRIPT)], timeout=120)
+    if code != 0:
+        hard(f"代码审查异常退出: code={code}")
+        return
+    # Parse the JSON report
+    report_path = REPO / "tools" / "code_review_report.json"
+    if report_path.is_file():
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        if report["summary"]["fatal"]:
+            hard(f"代码审查发现 {report['summary']['errors']} 个致命错误")
+            scan_errors = [i for i in report["issues"] if i["code"] == "SCAN_ERROR"][:5]
+            for e in scan_errors:
+                hard(f"  {e['file']}:{e['line']} - {e['message']}")
+            warnings = [i for i in report["issues"] if i["severity"] == "warning"]
+            if warnings:
+                warn(f"代码审查有 {len(report['issues'])} 个问题")
+        elif report["summary"]["warnings"] > 0:
+            warn(f"代码审查有 {report['summary']['warnings']} 个警告 (passed: no fatal)")
+        else:
+            info("代码审查通过")
+
+
 # ---------------------------------------------------------------- 入口
 
 
@@ -287,6 +312,7 @@ def main() -> int:
     check_data()
     check_stage_placeholders()
     check_batch_artifacts()
+    check_code_quality()
     check_git()
     if not args.quick:
         check_headless_boot()

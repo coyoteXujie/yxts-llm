@@ -58,7 +58,7 @@ func _ready() -> void:
 	# ── 3. 系统注册（SystemManager） ──
 	var combat_sys := COMBAT_SYSTEM_SCRIPT.new()
 	add_child(combat_sys)
-	SystemManager.register_system("combat", combat_sys, ["game_state"])
+	SystemManager.register_system("combat", combat_sys)
 
 	var sect_sys := SECT_SYSTEM_SCRIPT.new()
 	sect_sys.name = "SectSystem"

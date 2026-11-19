@@ -797,6 +797,8 @@ var region_market_assets: Dictionary = {}
 var texture_cache: Dictionary = {}
 var regions: Dictionary = {}
 var region_order: Array[String] = []
+var story_chapters: Dictionary = {}
+var story_chapter_order: Array[String] = []
 
 const STAGE_LAYER_FALLBACK_BY_TYPE := {
 	"city": "luoyang",
@@ -871,6 +873,7 @@ func load_database() -> void:
 	_load_region_point_assets()
 	_load_region_market_assets()
 	_load_regions()
+	_load_story_chapters()
 
 func _load_items() -> void:
 	items.clear()
@@ -1684,6 +1687,36 @@ func get_npc_by_name(npc_name: String) -> Dictionary:
 		if str(npc.get("name", "")) == npc_name:
 			return npc
 	return {}
+
+func _load_story_chapters() -> void:
+	story_chapters.clear()
+	story_chapter_order.clear()
+	var file := FileAccess.open("res://data/story_chapters.json", FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_ARRAY:
+		return
+	for chapter in parsed:
+		if typeof(chapter) != TYPE_DICTIONARY:
+			continue
+		var chapter_id := str(chapter.get("id", ""))
+		if chapter_id.is_empty():
+			continue
+		story_chapters[chapter_id] = chapter
+		story_chapter_order.append(chapter_id)
+
+func get_story_chapter(chapter_id: String) -> Dictionary:
+	return story_chapters.get(chapter_id, {})
+
+func get_all_story_chapters() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for cid in story_chapter_order:
+		result.append(story_chapters[cid].duplicate(true))
+	return result
+
+func get_story_chapter_count() -> int:
+	return story_chapter_order.size()
 
 func _fallback_npcs() -> Array:
 	return [
