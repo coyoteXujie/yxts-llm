@@ -116,7 +116,7 @@ func _equipment_scaled_effects(item_id: String) -> Dictionary:
 	var scaled: Dictionary = {}
 	for key in EQUIPMENT_SCALE_KEYS:
 		if effects.has(key):
-			var raw = effects[key]
+			var raw: Variant = effects[key]
 			if key == "crit" or key == "dodge" or key == "flee":
 				scaled[key] = float(raw) * factor
 			else:

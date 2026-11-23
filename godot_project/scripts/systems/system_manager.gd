@@ -49,7 +49,7 @@ func register_system(name: String, node: Node, dependencies: Array[String] = [])
 ## 批量注册系统
 func register_systems(system_map: Dictionary) -> void:
 	for s_name in system_map:
-		var entry = system_map[s_name]
+		var entry: Variant = system_map[s_name]
 		if entry is Array and entry.size() >= 2:
 			register_system(s_name, entry[0], entry[1])
 		else:

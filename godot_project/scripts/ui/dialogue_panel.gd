@@ -598,9 +598,6 @@ func _clear_story_choice_buttons() -> void:
 		child.queue_free()
 	story_choice_box.hide()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
 
 func _panel_style() -> StyleBox:
 	return UI_ART.panel_texture_style(Vector4(18, 14, 18, 14))

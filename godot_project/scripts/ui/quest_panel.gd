@@ -435,6 +435,4 @@ func _relation_lines() -> Array[String]:
 				lines.append("  %s" % str(memories[index]))
 	return lines
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
+

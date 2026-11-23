@@ -286,9 +286,6 @@ func _use_selected() -> void:
 		GameState.use_item(item_ids[index])
 	_refresh()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
 
 func _panel_style() -> StyleBox:
 	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))

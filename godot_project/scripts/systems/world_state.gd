@@ -25,7 +25,7 @@ func get_region_state(region_id: String) -> Dictionary:
 
 
 ## 设置区域自定��状态字段
-func set_region_state_field(region_id: String, key: String, value) -> void:
+func set_region_state_field(region_id: String, key: String, value: Variant) -> void:
 	if region_id.is_empty() or key.is_empty():
 		return
 	var state := _ensure_region_state(region_id)

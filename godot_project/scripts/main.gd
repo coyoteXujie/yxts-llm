@@ -131,7 +131,7 @@ func _process(delta: float) -> void:
 		return
 	# pending_quest_summaries check
 	if interaction.get("pending_quest_summaries") != null:
-		var summaries = interaction.get("pending_quest_summaries")
+		var summaries: Array = interaction.get("pending_quest_summaries")
 		if summaries != null and not summaries.is_empty() and GameState.can_explore():
 			interaction.call("try_show_pending_quest_summary")
 	if not GameState.can_explore():
@@ -234,7 +234,7 @@ func _on_combat_finished(result: Dictionary) -> void:
 func _on_quest_completed(summary: Dictionary) -> void:
 	var interaction: Node = SystemManager.get_system("interaction")
 	if interaction != null:
-		var summaries = interaction.get("pending_quest_summaries")
+		var summaries: Array = interaction.get("pending_quest_summaries")
 		if summaries != null:
 			summaries.append(summary.duplicate(true))
 	call_deferred("_try_deferred_quest_pending")
@@ -257,7 +257,7 @@ func _on_game_loaded(_snapshot: Dictionary) -> void:
 	game_started = true
 	var interaction: Node = SystemManager.get_system("interaction")
 	if interaction != null:
-		var summaries = interaction.get("pending_quest_summaries")
+		var summaries: Array = interaction.get("pending_quest_summaries")
 		if summaries != null:
 			summaries.clear()
 	world_map.call("reset_npcs")

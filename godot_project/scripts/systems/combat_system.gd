@@ -357,8 +357,8 @@ func _player_hit_damage(profile: Dictionary, level: int) -> int:
 		return 1
 	var base_attack := int(player.get("attack", 12))
 	# 灵宠攻击加成
-	var pet_bonus = _get_pet_attack_bonus()
-	var total_attack = base_attack + pet_bonus
+	var pet_bonus: int = _get_pet_attack_bonus()
+	var total_attack: int = base_attack + pet_bonus
 	var defense := int(enemy.get("defense", 0))
 	var pierce := clampf(float(profile.get("armor_pierce", 0.0)), 0.0, 0.8)
 	var effective_defense := int(float(defense) * (1.0 - pierce))
@@ -379,8 +379,8 @@ func _player_hit_damage(profile: Dictionary, level: int) -> int:
 func _enemy_hit_damage(action: Dictionary) -> int:
 	var player_defense := int(GameState.player.get("defense", 6)) if GameState.player != null and typeof(GameState.player) == TYPE_DICTIONARY else 6
 	# 灵宠防御加成
-	var pet_def_bonus = _get_pet_defense_bonus()
-	var total_defense = player_defense + pet_def_bonus
+	var pet_def_bonus: int = _get_pet_defense_bonus()
+	var total_defense: int = player_defense + pet_def_bonus
 	var enemy_attack := int(enemy.get("attack", enemy.get("damage", 5)))
 	var bonus := int(action.get("bonus", 0))
 	var damage := int(max(1, enemy_attack + bonus + randi_range(0, 6) - int(float(total_defense) * 0.42)))

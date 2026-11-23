@@ -32,7 +32,7 @@ func _load_pets() -> void:
 	if file == null:
 		push_error("PetSystem: cannot open pets.json")
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_ARRAY:
 		push_error("PetSystem: pets.json is not an array")
 		return

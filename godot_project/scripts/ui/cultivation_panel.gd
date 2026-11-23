@@ -148,9 +148,7 @@ func _meditate() -> void:
 	GameState.heal_player(12)
 	EventBus.emit_toast("打坐调息")
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
+
 
 func _panel_style() -> StyleBox:
 	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))

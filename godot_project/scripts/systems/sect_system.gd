@@ -27,7 +27,7 @@ func _load_sects() -> void:
 	if file == null:
 		push_error("SectSystem: cannot open sects.json")
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_ARRAY:
 		push_error("SectSystem: sects.json is not an array")
 		return

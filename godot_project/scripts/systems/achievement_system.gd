@@ -84,7 +84,7 @@ func _reset_tracking() -> void:
 	start_money = int(GameState.player.get("money", 0))
 
 ## 外部接口 — 各类系统通过此方法通知成就跟踪
-func notify_event(event_type: String, value = 1, target: String = "") -> void:
+func notify_event(event_type: String, value: Variant = 1, target: String = "") -> void:
 	match event_type:
 		"kill":
 			kill_count += value
@@ -264,10 +264,10 @@ func get_discovered_region_count() -> int:
 	return discovered_regions.size()
 
 func get_all_npc_names() -> Array:
-	var npcs = []
+	var npcs: Array = []
 	var file := FileAccess.open("res://data/npcs.json", FileAccess.READ)
 	if file != null:
-		var parsed = JSON.parse_string(file.get_as_text())
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
 		if typeof(parsed) == TYPE_ARRAY:
 			for npc in parsed:
 				if typeof(npc) == TYPE_DICTIONARY:
@@ -275,10 +275,10 @@ func get_all_npc_names() -> Array:
 	return npcs
 
 func get_all_item_names() -> Array:
-	var items = []
+	var items: Array = []
 	var file := FileAccess.open("res://data/items.json", FileAccess.READ)
 	if file != null:
-		var parsed = JSON.parse_string(file.get_as_text())
+		var parsed: Variant = JSON.parse_string(file.get_as_text())
 		if typeof(parsed) == TYPE_ARRAY:
 			for item in parsed:
 				if typeof(item) == TYPE_DICTIONARY:

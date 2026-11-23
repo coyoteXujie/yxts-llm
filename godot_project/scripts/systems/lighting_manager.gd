@@ -101,7 +101,7 @@ func get_light_layer() -> CanvasLayer:
 	return null
 
 ## 为地图瓦片添加遮光器
-func add_occluder(rect: Rect2, color := Color(1, 1, 1, 1)) -> LightOccluder2D:
+func add_occluder(rect: Rect2, color: Color = Color(1, 1, 1, 1)) -> LightOccluder2D:
 	var occluder := LightOccluder2D.new()
 	var occluder_polygon := OccluderPolygon2D.new()
 	var polygon := PackedVector2Array([

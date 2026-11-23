@@ -37,7 +37,7 @@ func register_panel(panel_name: String, panel: Node,
 ## 批量注册面板
 func register_panels(panel_map: Dictionary) -> void:
 	for p_name in panel_map:
-		var entry = panel_map[p_name]
+		var entry: Variant = panel_map[p_name]
 		if entry is Array and entry.size() >= 2:
 			register_panel(p_name, entry[0], entry[1])
 		else:
@@ -172,6 +172,10 @@ func _call_show_method(panel: Node, panel_name: String, data: Dictionary) -> voi
 
 ## 智能调用面板的 close 方法
 func _call_close_method(panel: Node) -> void:
+	if panel.has_method("close_panel"):
+		panel.call("close_panel")
+	elif panel.has_method("hide"):
+		panel.call("hide")
 	var anim_type: int = PanelAnim.EaseType.SCALE_FADE
 	for name in _panels:
 		if _panels[name] == panel:
@@ -179,7 +183,3 @@ func _call_close_method(panel: Node) -> void:
 			break
 	if panel is Control and panel.visible:
 		PanelAnim.close_panel(panel as Control, anim_type)
-	elif panel.has_method("close_panel"):
-		panel.call("close_panel")
-	elif panel.has_method("hide"):
-		panel.call("hide")

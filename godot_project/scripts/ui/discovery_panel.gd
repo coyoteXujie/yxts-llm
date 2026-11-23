@@ -94,6 +94,4 @@ func _build() -> void:
 	close_button.pressed.connect(close_panel)
 	actions.add_child(close_button)
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
+

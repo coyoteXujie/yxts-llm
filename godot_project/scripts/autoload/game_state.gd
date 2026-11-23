@@ -172,6 +172,8 @@ const STORY_CHOICE_DEFINITIONS := [
 ]
 
 func _ready() -> void:
+	story_system = load("res://scripts/systems/story_system.gd").new(self)
+	world_state = load("res://scripts/systems/world_state.gd").new(self)
 	new_game()
 
 func new_game(config: Dictionary = {}) -> void:

@@ -237,7 +237,7 @@ func travel_to_linked_region(portal: Dictionary) -> void:
 
 ## 从存档快照恢复地图状态
 func restore_loaded_map(snapshot: Dictionary) -> bool:
-	var raw_context = snapshot.get("map_context", {})
+	var raw_context: Variant = snapshot.get("map_context", {})
 	if typeof(raw_context) != TYPE_DICTIONARY:
 		return false
 	var context: Dictionary = raw_context

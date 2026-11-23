@@ -185,7 +185,7 @@ func update_ambient_npc_lines(delta: float, active_map: Node) -> void:
 	if available.is_empty():
 		return
 	var index: int = ambient_npc_round % available.size()
-	var actor = available[index]
+	var actor: Node = available[index]
 	var distance: float = player_actor.position.distance_to(actor.position)
 	var line: String = LLMDirector.generate_ambient_npc_line(actor.data, distance, actor == focused_npc)
 	if not line.is_empty() and actor.has_method("show_ambient_line"):

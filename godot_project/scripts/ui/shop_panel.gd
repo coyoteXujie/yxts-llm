@@ -968,9 +968,7 @@ func _on_inventory_changed(_inventory: Dictionary) -> void:
 	if visible:
 		_refresh()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_panel()
+
 
 func _panel_style() -> StyleBox:
 	return UI_ART.panel_texture_style(Vector4(16, 14, 16, 14))

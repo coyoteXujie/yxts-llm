@@ -1,9 +1,9 @@
 {
   "summary": {
-    "total_files_scanned": 73,
-    "total_issues": 185,
+    "total_files_scanned": 75,
+    "total_issues": 171,
     "errors": 0,
-    "warnings": 181,
+    "warnings": 167,
     "info": 4,
     "fatal": false,
     "passed": false
@@ -318,27 +318,6 @@
       "message": "函数 '_draw' 有 131 行 (阈值 100)"
     },
     {
-      "file": "scripts/main.gd",
-      "line": 134,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'summaries' 缺少类型标注"
-    },
-    {
-      "file": "scripts/main.gd",
-      "line": 237,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'summaries' 缺少类型标注"
-    },
-    {
-      "file": "scripts/main.gd",
-      "line": 260,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'summaries' 缺少类型标注"
-    },
-    {
       "file": "scripts/shared/shop_interior_renderer.gd",
       "line": 1,
       "severity": "warning",
@@ -374,41 +353,6 @@
       "message": "变量 'parsed' 缺少类型标注"
     },
     {
-      "file": "scripts/systems/achievement_system.gd",
-      "line": 87,
-      "severity": "warning",
-      "code": "UNTYPED_PARAM",
-      "message": "函数 'notify_event' 参数 'value' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/achievement_system.gd",
-      "line": 267,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'npcs' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/achievement_system.gd",
-      "line": 270,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'parsed' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/achievement_system.gd",
-      "line": 278,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'items' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/achievement_system.gd",
-      "line": 281,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'parsed' 缺少类型标注"
-    },
-    {
       "file": "scripts/systems/atmosphere_system.gd",
       "line": 1,
       "severity": "warning",
@@ -421,34 +365,6 @@
       "severity": "warning",
       "code": "MISSING_MODULE_COMMENT",
       "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-    },
-    {
-      "file": "scripts/systems/combat_system.gd",
-      "line": 360,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'pet_bonus' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/combat_system.gd",
-      "line": 361,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'total_attack' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/combat_system.gd",
-      "line": 382,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'pet_def_bonus' 缺少类型标注"
-    },
-    {
-      "file": "scripts/systems/combat_system.gd",
-      "line": 383,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'total_defense' 缺少类型标注"
     },
     {
       "file": "scripts/systems/crafting_system.gd",
@@ -528,25 +444,11 @@
       "message": "函数 'setup_references' 缺少返回类型标注"
     },
     {
-      "file": "scripts/systems/interaction_manager.gd",
-      "line": 188,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'actor' 缺少类型标注"
-    },
-    {
       "file": "scripts/systems/inventory_system.gd",
       "line": 1,
       "severity": "warning",
       "code": "MISSING_MODULE_COMMENT",
       "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-    },
-    {
-      "file": "scripts/systems/inventory_system.gd",
-      "line": 119,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'raw' 缺少类型标注"
     },
     {
       "file": "scripts/systems/lighting_manager.gd",
@@ -584,25 +486,11 @@
       "message": "变量 'tile_value' 缺少类型标注"
     },
     {
-      "file": "scripts/systems/map_transition_manager.gd",
-      "line": 240,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'raw_context' 缺少类型标注"
-    },
-    {
       "file": "scripts/systems/npc_memory_system.gd",
       "line": 1,
       "severity": "warning",
       "code": "MISSING_MODULE_COMMENT",
       "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-    },
-    {
-      "file": "scripts/systems/pet_system.gd",
-      "line": 35,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'parsed' 缺少类型标注"
     },
     {
       "file": "scripts/systems/quest_system.gd",
@@ -612,13 +500,6 @@
       "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
     },
     {
-      "file": "scripts/systems/sect_system.gd",
-      "line": 30,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'parsed' 缺少类型标注"
-    },
-    {
       "file": "scripts/systems/story_system.gd",
       "line": 535,
       "severity": "warning",
@@ -626,11 +507,11 @@
       "message": "函数 '_string_array' 有 246 行 (阈值 100)"
     },
     {
-      "file": "scripts/systems/system_manager.gd",
-      "line": 52,
+      "file": "scripts/systems/story_system_node.gd",
+      "line": 84,
       "severity": "warning",
       "code": "UNTYPED_VARIABLE",
-      "message": "变量 'entry' 缺少类型标注"
+      "message": "变量 'narrative_panel' 缺少类型标注"
     },
     {
       "file": "scripts/systems/travel_planner.gd",
@@ -638,13 +519,6 @@
       "severity": "warning",
       "code": "MISSING_MODULE_COMMENT",
       "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-    },
-    {
-      "file": "scripts/systems/world_state.gd",
-      "line": 28,
-      "severity": "warning",
-      "code": "UNTYPED_PARAM",
-      "message": "函数 'set_region_state_field' 参数 'value' 缺少类型标注"
     },
     {
       "file": "scripts/ui/achievement_panel.gd",
@@ -760,10 +634,45 @@
     },
     {
       "file": "scripts/ui/dialogue_panel.gd",
-      "line": 65,
+      "line": 63,
+      "severity": "warning",
+      "code": "UNTYPED_VARIABLE",
+      "message": "变量 'story_node' 缺少类型标注"
+    },
+    {
+      "file": "scripts/ui/dialogue_panel.gd",
+      "line": 71,
       "severity": "warning",
       "code": "LONG_FUNCTION",
       "message": "函数 '_build' 有 179 行 (阈值 100)"
+    },
+    {
+      "file": "scripts/ui/dialogue_panel.gd",
+      "line": 666,
+      "severity": "warning",
+      "code": "UNTYPED_VARIABLE",
+      "message": "变量 'ss' 缺少类型标注"
+    },
+    {
+      "file": "scripts/ui/dialogue_panel.gd",
+      "line": 668,
+      "severity": "warning",
+      "code": "UNTYPED_VARIABLE",
+      "message": "变量 'story_sys' 缺少类型标注"
+    },
+    {
+      "file": "scripts/ui/dialogue_panel.gd",
+      "line": 669,
+      "severity": "warning",
+      "code": "UNTYPED_VARIABLE",
+      "message": "变量 'dialogue' 缺少类型标注"
+    },
+    {
+      "file": "scripts/ui/dialogue_panel.gd",
+      "line": 670,
+      "severity": "warning",
+      "code": "UNTYPED_VARIABLE",
+      "message": "变量 'is_story' 缺少类型标注"
     },
     {
       "file": "scripts/ui/discovery_panel.gd",
@@ -1033,7 +942,7 @@
     },
     {
       "file": "scripts/ui/inventory_panel.gd",
-      "line": 504,
+      "line": 501,
       "severity": "warning",
       "code": "UNTYPED_VARIABLE",
       "message": "变量 'cb' 缺少类型标注"
@@ -1061,7 +970,7 @@
     },
     {
       "file": "scripts/ui/opening_narrative_panel.gd",
-      "line": 237,
+      "line": 251,
       "severity": "warning",
       "code": "LONG_FUNCTION",
       "message": "函数 '_build' 有 130 行 (阈值 100)"
@@ -1072,13 +981,6 @@
       "severity": "info",
       "code": "MISSING_RETURN_TYPE",
       "message": "函数 'register_panel' 缺少返回类型标注"
-    },
-    {
-      "file": "scripts/ui/panel_manager.gd",
-      "line": 40,
-      "severity": "warning",
-      "code": "UNTYPED_VARIABLE",
-      "message": "变量 'entry' 缺少类型标注"
     },
     {
       "file": "scripts/ui/quest_panel.gd",
@@ -1630,29 +1532,6 @@
         "message": "函数 '_draw' 有 131 行 (阈值 100)"
       }
     ],
-    "scripts/main.gd": [
-      {
-        "file": "scripts/main.gd",
-        "line": 134,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'summaries' 缺少类型标注"
-      },
-      {
-        "file": "scripts/main.gd",
-        "line": 237,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'summaries' 缺少类型标注"
-      },
-      {
-        "file": "scripts/main.gd",
-        "line": 260,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'summaries' 缺少类型标注"
-      }
-    ],
     "scripts/shared/shop_interior_renderer.gd": [
       {
         "file": "scripts/shared/shop_interior_renderer.gd",
@@ -1696,41 +1575,6 @@
         "severity": "warning",
         "code": "UNTYPED_VARIABLE",
         "message": "变量 'parsed' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/achievement_system.gd",
-        "line": 87,
-        "severity": "warning",
-        "code": "UNTYPED_PARAM",
-        "message": "函数 'notify_event' 参数 'value' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/achievement_system.gd",
-        "line": 267,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'npcs' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/achievement_system.gd",
-        "line": 270,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'parsed' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/achievement_system.gd",
-        "line": 278,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'items' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/achievement_system.gd",
-        "line": 281,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'parsed' 缺少类型标注"
       }
     ],
     "scripts/systems/atmosphere_system.gd": [
@@ -1749,34 +1593,6 @@
         "severity": "warning",
         "code": "MISSING_MODULE_COMMENT",
         "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-      },
-      {
-        "file": "scripts/systems/combat_system.gd",
-        "line": 360,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'pet_bonus' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/combat_system.gd",
-        "line": 361,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'total_attack' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/combat_system.gd",
-        "line": 382,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'pet_def_bonus' 缺少类型标注"
-      },
-      {
-        "file": "scripts/systems/combat_system.gd",
-        "line": 383,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'total_defense' 缺少类型标注"
       }
     ],
     "scripts/systems/crafting_system.gd": [
@@ -1864,13 +1680,6 @@
         "severity": "info",
         "code": "MISSING_RETURN_TYPE",
         "message": "函数 'setup_references' 缺少返回类型标注"
-      },
-      {
-        "file": "scripts/systems/interaction_manager.gd",
-        "line": 188,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'actor' 缺少类型标注"
       }
     ],
     "scripts/systems/inventory_system.gd": [
@@ -1880,13 +1689,6 @@
         "severity": "warning",
         "code": "MISSING_MODULE_COMMENT",
         "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-      },
-      {
-        "file": "scripts/systems/inventory_system.gd",
-        "line": 119,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'raw' 缺少类型标注"
       }
     ],
     "scripts/systems/lighting_manager.gd": [
@@ -1928,15 +1730,6 @@
         "message": "变量 'tile_value' 缺少类型标注"
       }
     ],
-    "scripts/systems/map_transition_manager.gd": [
-      {
-        "file": "scripts/systems/map_transition_manager.gd",
-        "line": 240,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'raw_context' 缺少类型标注"
-      }
-    ],
     "scripts/systems/npc_memory_system.gd": [
       {
         "file": "scripts/systems/npc_memory_system.gd",
@@ -1944,15 +1737,6 @@
         "severity": "warning",
         "code": "MISSING_MODULE_COMMENT",
         "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-      }
-    ],
-    "scripts/systems/pet_system.gd": [
-      {
-        "file": "scripts/systems/pet_system.gd",
-        "line": 35,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'parsed' 缺少类型标注"
       }
     ],
     "scripts/systems/quest_system.gd": [
@@ -1964,15 +1748,6 @@
         "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
       }
     ],
-    "scripts/systems/sect_system.gd": [
-      {
-        "file": "scripts/systems/sect_system.gd",
-        "line": 30,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'parsed' 缺少类型标注"
-      }
-    ],
     "scripts/systems/story_system.gd": [
       {
         "file": "scripts/systems/story_system.gd",
@@ -1982,13 +1757,13 @@
         "message": "函数 '_string_array' 有 246 行 (阈值 100)"
       }
     ],
-    "scripts/systems/system_manager.gd": [
+    "scripts/systems/story_system_node.gd": [
       {
-        "file": "scripts/systems/system_manager.gd",
-        "line": 52,
+        "file": "scripts/systems/story_system_node.gd",
+        "line": 84,
         "severity": "warning",
         "code": "UNTYPED_VARIABLE",
-        "message": "变量 'entry' 缺少类型标注"
+        "message": "变量 'narrative_panel' 缺少类型标注"
       }
     ],
     "scripts/systems/travel_planner.gd": [
@@ -1998,15 +1773,6 @@
         "severity": "warning",
         "code": "MISSING_MODULE_COMMENT",
         "message": "脚本缺乏模块注释（文件头应有 ## 描述）"
-      }
-    ],
-    "scripts/systems/world_state.gd": [
-      {
-        "file": "scripts/systems/world_state.gd",
-        "line": 28,
-        "severity": "warning",
-        "code": "UNTYPED_PARAM",
-        "message": "函数 'set_region_state_field' 参数 'value' 缺少类型标注"
       }
     ],
     "scripts/ui/achievement_panel.gd": [
@@ -2136,10 +1902,45 @@
       },
       {
         "file": "scripts/ui/dialogue_panel.gd",
-        "line": 65,
+        "line": 63,
+        "severity": "warning",
+        "code": "UNTYPED_VARIABLE",
+        "message": "变量 'story_node' 缺少类型标注"
+      },
+      {
+        "file": "scripts/ui/dialogue_panel.gd",
+        "line": 71,
         "severity": "warning",
         "code": "LONG_FUNCTION",
         "message": "函数 '_build' 有 179 行 (阈值 100)"
+      },
+      {
+        "file": "scripts/ui/dialogue_panel.gd",
+        "line": 666,
+        "severity": "warning",
+        "code": "UNTYPED_VARIABLE",
+        "message": "变量 'ss' 缺少类型标注"
+      },
+      {
+        "file": "scripts/ui/dialogue_panel.gd",
+        "line": 668,
+        "severity": "warning",
+        "code": "UNTYPED_VARIABLE",
+        "message": "变量 'story_sys' 缺少类型标注"
+      },
+      {
+        "file": "scripts/ui/dialogue_panel.gd",
+        "line": 669,
+        "severity": "warning",
+        "code": "UNTYPED_VARIABLE",
+        "message": "变量 'dialogue' 缺少类型标注"
+      },
+      {
+        "file": "scripts/ui/dialogue_panel.gd",
+        "line": 670,
+        "severity": "warning",
+        "code": "UNTYPED_VARIABLE",
+        "message": "变量 'is_story' 缺少类型标注"
       }
     ],
     "scripts/ui/discovery_panel.gd": [
@@ -2425,7 +2226,7 @@
       },
       {
         "file": "scripts/ui/inventory_panel.gd",
-        "line": 504,
+        "line": 501,
         "severity": "warning",
         "code": "UNTYPED_VARIABLE",
         "message": "变量 'cb' 缺少类型标注"
@@ -2459,7 +2260,7 @@
     "scripts/ui/opening_narrative_panel.gd": [
       {
         "file": "scripts/ui/opening_narrative_panel.gd",
-        "line": 237,
+        "line": 251,
         "severity": "warning",
         "code": "LONG_FUNCTION",
         "message": "函数 '_build' 有 130 行 (阈值 100)"
@@ -2472,13 +2273,6 @@
         "severity": "info",
         "code": "MISSING_RETURN_TYPE",
         "message": "函数 'register_panel' 缺少返回类型标注"
-      },
-      {
-        "file": "scripts/ui/panel_manager.gd",
-        "line": 40,
-        "severity": "warning",
-        "code": "UNTYPED_VARIABLE",
-        "message": "变量 'entry' 缺少类型标注"
       }
     ],
     "scripts/ui/quest_panel.gd": [
