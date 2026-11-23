@@ -199,24 +199,32 @@ class DataIntegrityCheck:
                         self.ok(f"章节 [{ch_id}] 事件 [{evt.get('id')}] → 小兵 [{minion}] ✓")
 
     def check_npc_regions(self):
-        """验证 NPC 所在的区域 tile 坐标对应 regions.json"""
+        """验证 NPC 所在的区域坐标对应 regions.json (使用 rect + center)"""
         print("\n--- NPC 区域位置检查 ---")
         for npc in self.npcs:
             name = npc.get("name", "")
             px, py = npc.get("pos_x", -1), npc.get("pos_y", -1)
             found_region = False
             for region in self.regions:
-                tiles = region.get("tiles", [])
-                for tile in tiles:
-                    tx, ty = tile.get("pos_x", 0), tile.get("pos_y", 0)
-                    if px == tx and py == ty:
+                # 区域使用 rect: [x, y, w, h]
+                rect = region.get("rect", None)
+                if rect and len(rect) == 4:
+                    rx, ry, rw, rh = rect
+                    if rx <= px < rx + rw and ry <= py < ry + rh:
                         found_region = True
-                        self.ok(f"NPC [{name}] 在区域 [{region['id']}] ✓")
+                        self.ok(f"NPC [{name}] 在区域 [{region['id']}] ({px},{py}) in rect({rx},{ry},{rw},{rh}) ✓")
                         break
-                if found_region:
-                    break
+                # 也检查 center 附近的 NPC
+                center = region.get("center", None)
+                if center and len(center) == 2:
+                    cx, cy = center
+                    if abs(px - cx) <= 2 and abs(py - cy) <= 2:
+                        if not found_region:
+                            found_region = True
+                            self.ok(f"NPC [{name}] 在区域 [{region['id']}] 中心附近 ({px},{py})~({cx},{cy}) ✓")
+                            break
             if not found_region:
-                self.warn(f"NPC [{name}] 坐标 ({px},{py}) 不在任何区域 tile 中")
+                self.warn(f"NPC [{name}] 坐标 ({px},{py}) 不在任何区域 rect/center 中")
 
     def run(self) -> bool:
         print("=" * 60)
