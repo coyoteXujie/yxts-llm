@@ -655,9 +655,15 @@ func set_story_mode(enabled: bool, title: String = "") -> void:
 
 ## 根据剧情状态自动切换叙事模式
 func _update_story_mode_for_npc(npc_name: String) -> void:
-	var story_sys := StorySystem.new(GameState)
-	var dialogue := story_sys.get_branch_dialogue(npc_name)
-	var is_story := bool(dialogue.get("is_story", false))
+	var ss: Variant = null
+	if Engine.has_singleton("GameState"):
+		ss = Engine.get_singleton("GameState").get("story_system")
+	if ss == null:
+		ss = load("res://scripts/systems/story_system.gd").new(GameState)
+	if ss == null:
+		return
+	var dialogue: Variant = ss.get_branch_dialogue(npc_name) if ss.has_method("get_branch_dialogue") else {}
+	var is_story: bool = bool(dialogue.get("is_story", false))
 	if is_story:
 		set_story_mode(true, "剧情对话 - %s" % npc_name)
 	else:

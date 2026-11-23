@@ -12,12 +12,12 @@ func _init(path_override: String = "") -> void:
 	_load_recipes()
 
 func _load_recipes() -> void:
-	var file = FileAccess.open(_recipes_path, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(_recipes_path, FileAccess.READ)
 	if file == null:
 		push_error("锻造配方文件加载失败: %s" % _recipes_path)
 		return
-	var text = file.get_as_text()
-	var json = JSON.new()
+	var text: String = file.get_as_text()
+	var json: JSON = JSON.new()
 	if json.parse(text) != OK:
 		push_error("锻造配方解析失败: %s" % json.get_error_message())
 		return

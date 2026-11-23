@@ -33,10 +33,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if material and material is ShaderMaterial:
-		var t = material.get_shader_parameter("time")
+		var t: float = material.get_shader_parameter("time")
 		material.set_shader_parameter("time", float(t) + delta)
 
-func set_shader_param(name: String, value) -> void:
+func set_shader_param(name: String, value: Variant) -> void:
 	if material and material is ShaderMaterial:
 		material.set_shader_parameter(name, value)
 

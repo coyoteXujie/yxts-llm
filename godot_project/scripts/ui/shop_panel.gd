@@ -805,10 +805,10 @@ func _region_price_factor(item_id: String, base_factor_key: String) -> float:
 	if market.is_empty():
 		return 1.0
 	var factor := float(market.get(base_factor_key, 1.0))
-	var shop_factors = market.get("shop_factors", {})
+	var shop_factors: Variant = market.get("shop_factors", {})
 	if typeof(shop_factors) == TYPE_DICTIONARY:
 		factor *= float(shop_factors.get(_shop_type(), 1.0))
-	var item_factors = market.get("item_factors", {})
+	var item_factors: Variant = market.get("item_factors", {})
 	if typeof(item_factors) == TYPE_DICTIONARY:
 		factor *= float(item_factors.get(item_id, 1.0))
 	return clampf(factor, MARKET_PRICE_MIN_FACTOR, MARKET_PRICE_MAX_FACTOR)
@@ -914,7 +914,7 @@ func _record_shop_market_clue() -> void:
 	GameState.append_world_event("market", title, description, region_id, 2)
 
 func _market_feature_item(market: Dictionary) -> Dictionary:
-	var item_factors = market.get("item_factors", {})
+	var item_factors: Variant = market.get("item_factors", {})
 	if typeof(item_factors) != TYPE_DICTIONARY:
 		return {}
 	var best_item_id := ""

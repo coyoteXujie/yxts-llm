@@ -45,6 +45,10 @@ var current_region_name := "未知之地"
 var current_tile := Vector2i.ZERO
 var map_target_region_id := ""
 
+# 叙事与世界观持久单例（在_ready中创建）
+var story_system: RefCounted = null
+var world_state: RefCounted = null
+
 # 门派/成就/灵宠存档数据
 var sect_save_data: Dictionary = {}
 var achievement_save_data: Dictionary = {}
@@ -1650,8 +1654,15 @@ func trigger_ending() -> void:
 	if game_flags.get("ending_triggered", false):
 		return
 	game_flags["ending_triggered"] = true
-	var story_sys := StorySystem.new(self)
-	var ending := story_sys.get_ending()
+	# 优先用持久化story_system
+	var ending: Dictionary = {}
+	if story_system != null:
+		ending = story_system.get_ending()
+	if ending.is_empty():
+		# fallback: 动态load（避免class_name时序依赖）
+		var SS = load("res://scripts/systems/story_system.gd")
+		var tmp: RefCounted = SS.new(self)
+		ending = tmp.get_ending()
 	save_ng_plus_snapshot()
 	set_mode(Mode.ENDING)
 	EventBus.emit_toast("结局：%s" % str(ending.get("title", "")))
@@ -1665,6 +1676,12 @@ func add_item(item_id: String, count: int = 1) -> void:
 	progress_quest("collect", item_id, count)
 	EventBus.inventory_changed.emit(inventory)
 	_notify_achievement("item_collect", 1, item_id)
+	# 获得物品 → 叙事引擎事件
+	_story_on_item_obtained(item_id)
+
+func _story_on_item_obtained(item_id: String) -> void:
+	if story_system != null and story_system.has_method("on_item_obtained"):
+		story_system.on_item_obtained(item_id)
 
 func has_item(item_id: String, count: int = 1) -> bool:
 	return int(inventory.get(item_id, 0)) >= count
@@ -2573,7 +2590,7 @@ func load_game() -> bool:
 	if file == null:
 		EventBus.emit_toast("读档失败")
 		return false
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		EventBus.emit_toast("存档损坏")
 		return false
@@ -2591,7 +2608,7 @@ func get_save_summary() -> Dictionary:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
 	if file == null:
 		return {}
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
 	var snapshot: Dictionary = parsed
@@ -2601,7 +2618,7 @@ func get_save_summary() -> Dictionary:
 	var saved_tile := Vector2i(floori(saved_position.x / GameData.TILE_SIZE), floori(saved_position.y / GameData.TILE_SIZE))
 	var region := GameData.get_region_at_tile(saved_tile)
 	var location_name := str(region.get("name", "未知之地"))
-	var map_context = snapshot.get("map_context", {})
+	var map_context: Variant = snapshot.get("map_context", {})
 	if typeof(map_context) == TYPE_DICTIONARY:
 		var context: Dictionary = map_context
 		var context_label := str(context.get("location_label", ""))
@@ -2634,7 +2651,7 @@ func _apply_snapshot(snapshot: Dictionary) -> void:
 	inventory = snapshot.get("inventory", {})
 	equipment = snapshot.get("equipment", {"weapon": "", "armor": ""})
 	_normalize_equipment_slots()
-	var loaded_equipment_durability = snapshot.get("equipment_durability", {})
+	var loaded_equipment_durability: Variant = snapshot.get("equipment_durability", {})
 	equipment_durability = loaded_equipment_durability if typeof(loaded_equipment_durability) == TYPE_DICTIONARY else {}
 	_normalize_equipment_durability()
 	learned_skills = snapshot.get("learned_skills", {})

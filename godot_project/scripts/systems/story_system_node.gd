@@ -81,7 +81,7 @@ func _show_chapter_transition(chapter: Dictionary) -> void:
 	if narrative.is_empty():
 		return
 	# 使用叙事面板显示章节过渡（复用 opening_narrative_panel）
-	var narrative_panel = PanelManager.get_panel("narrative")
+	var narrative_panel: Variant = PanelManager.get_panel("narrative")
 	if narrative_panel != null and narrative_panel.has_method("show_chapter_transition"):
 		narrative_panel.call("show_chapter_transition", title, narrative)
 	elif narrative_panel != null and narrative_panel.has_method("show_panel"):

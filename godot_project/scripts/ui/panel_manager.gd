@@ -1,4 +1,6 @@
 extends Node
+const PANEL_ANIM_SCRIPT := preload("res://scripts/ui/panel_anim.gd")
+
 ## 统一面板管理器 — 面板注册、堆栈管理、动画编排
 ## 自动加载（在 project.godot 中注册），通过 PanelManager 全局访问
 ##
@@ -28,9 +30,9 @@ signal panel_closed(panel_name: String)
 # ── 面板注册 ─────────────────────────────────────────
 
 ## 注册一个面板到管理器
-## anim_type: PanelAnim.EaseType 枚举值，用于打开/关闭动画
+## anim_type: 动画类型（0=SCALE_FADE, 1=SLIDE_LEFT, 2=SLIDE_RIGHT, 3=FADE_ONLY）
 func register_panel(panel_name: String, panel: Node,
-		anim_type: int = PanelAnim.EaseType.SCALE_FADE) -> void:
+		anim_type: int = 0) -> void:
 	_panels[panel_name] = panel
 	_panel_anim_types[panel_name] = anim_type
 
@@ -71,9 +73,9 @@ func open_panel(panel_name: String, data: Dictionary = {}) -> void:
 	_call_show_method(panel, panel_name, data)
 
 	# 执行打开动画
-	var anim_type: int = _panel_anim_types.get(panel_name, PanelAnim.EaseType.SCALE_FADE)
+	var anim_type: int = _panel_anim_types.get(panel_name, PANEL_ANIM_SCRIPT.EaseType.SCALE_FADE)
 	if panel is Control:
-		PanelAnim.open_panel(panel as Control, anim_type)
+		PANEL_ANIM_SCRIPT.open_panel(panel as Control, anim_type)
 
 	# 推入栈
 	_stack.append({"panel": panel, "modal": is_modal})
@@ -176,10 +178,10 @@ func _call_close_method(panel: Node) -> void:
 		panel.call("close_panel")
 	elif panel.has_method("hide"):
 		panel.call("hide")
-	var anim_type: int = PanelAnim.EaseType.SCALE_FADE
+	var anim_type: int = PANEL_ANIM_SCRIPT.EaseType.SCALE_FADE
 	for name in _panels:
 		if _panels[name] == panel:
-			anim_type = _panel_anim_types.get(name, PanelAnim.EaseType.SCALE_FADE)
+			anim_type = _panel_anim_types.get(name, PANEL_ANIM_SCRIPT.EaseType.SCALE_FADE)
 			break
 	if panel is Control and panel.visible:
-		PanelAnim.close_panel(panel as Control, anim_type)
+		PANEL_ANIM_SCRIPT.close_panel(panel as Control, anim_type)

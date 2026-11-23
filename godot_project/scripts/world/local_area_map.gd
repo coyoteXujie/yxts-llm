@@ -1,3 +1,5 @@
+## 本地区域地图（LocalAreaMap）
+## 负责局部场景的网格生成、NPC 布局、色调绘制、商铺内饰、侧视舞台渲染、传送门管理
 extends Node2D
 class_name LocalAreaMap
 
@@ -685,8 +687,8 @@ func _find_nearest_walkable_tile(preferred: Vector2i) -> Vector2i:
 					return tile
 	return preferred
 
-func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true):
-	var best = null
+func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true) -> Node:
+	var best: Node = null
 	var best_distance := radius
 	for actor in npc_nodes:
 		if not is_instance_valid(actor):
@@ -756,12 +758,12 @@ func clear_highlights() -> void:
 			actor.set_highlight(false)
 	focus_portal({})
 
-func focus_actor(actor) -> void:
+func focus_actor(actor: Node) -> void:
 	for npc in npc_nodes:
 		if is_instance_valid(npc):
 			npc.set_highlight(npc == actor)
 
-func unregister_npc(actor) -> void:
+func unregister_npc(actor: Node) -> void:
 	npc_nodes.erase(actor)
 
 func _configure_region_size() -> void:
@@ -1319,7 +1321,7 @@ func _configured_region_points(point_type: String) -> Array:
 	var result: Array = []
 	for point in points:
 		var normalized: Dictionary = point.duplicate(true)
-		var tile_value = normalized.get("tile", [])
+		var tile_value: Variant = normalized.get("tile", [])
 		if typeof(tile_value) == TYPE_ARRAY:
 			var tile_data: Array = tile_value
 			if tile_data.size() >= 2:
@@ -1845,7 +1847,7 @@ func _spawn_shopkeeper(shop_id: String) -> void:
 	occupied_npc_tiles.clear()
 	_spawn_npc(keeper)
 	if not npc_nodes.is_empty():
-		var actor = npc_nodes[npc_nodes.size() - 1]
+		var actor: Node = npc_nodes[npc_nodes.size() - 1]
 		if is_instance_valid(actor) and actor.has_method("show_ambient_line"):
 			actor.show_ambient_line(str(keeper.get("shop_service_line", "")), 8.0)
 
@@ -1895,7 +1897,7 @@ func _spawn_npc(npc_data: Dictionary) -> void:
 			npc_data["stage_lane_offset_y"] = float(anchor.get("offset_y", 0.0))
 			npc_data["stage_lane_strength"] = float(anchor.get("strength", 0.0))
 			npc_data["stage_lane_index"] = int(anchor.get("index", -1))
-	var actor = NPC_SCRIPT.new()
+	var actor: Node = NPC_SCRIPT.new()
 	add_child(actor)
 	actor.setup(npc_data, tile_size)
 	npc_nodes.append(actor)
@@ -1964,7 +1966,7 @@ func _build_depth_props() -> void:
 						_add_depth_prop("market_stall", pos + Vector2(0, 6), seed, 0, 0.62)
 
 func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
-	var prop = MAP_PROP_SCRIPT.new()
+	var prop: Node = MAP_PROP_SCRIPT.new()
 	add_child(prop)
 	var depth_scale := get_actor_depth_scale(world_position) if current_mode == "region" and side_view_stage_enabled else 1.0
 	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor * depth_scale)

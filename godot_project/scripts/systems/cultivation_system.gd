@@ -702,14 +702,14 @@ func deserialize(data: Dictionary) -> void:
 	learned_lightness = data.get("learned_lightness", {}) if typeof(data.get("learned_lightness")) == TYPE_DICTIONARY else {}
 	active_internal = str(data.get("active_internal", "ne_basic"))
 	active_lightness = str(data.get("active_lightness", "qg_basic"))
-	var raw_meridians = data.get("meridian_states", {})
+	var raw_meridians: Variant = data.get("meridian_states", {})
 	meridian_states = raw_meridians.duplicate(true) if typeof(raw_meridians) == TYPE_DICTIONARY else {}
 	realm = clampi(int(data.get("realm", 0)), 0, REALMS.size() - 1)
-	var raw_qi = data.get("qi_deviation", {})
+	var raw_qi: Variant = data.get("qi_deviation", {})
 	qi_deviation = raw_qi.duplicate(true) if typeof(raw_qi) == TYPE_DICTIONARY else {}
-	var raw_enlight = data.get("enlightenment_bonus", {})
+	var raw_enlight: Variant = data.get("enlightenment_bonus", {})
 	enlightenment_bonus = raw_enlight.duplicate(true) if typeof(raw_enlight) == TYPE_DICTIONARY else {}
-	var raw_omen = data.get("active_omen", {})
+	var raw_omen: Variant = data.get("active_omen", {})
 	active_omen = raw_omen.duplicate(true) if typeof(raw_omen) == TYPE_DICTIONARY else {}
 	_normalize()
 

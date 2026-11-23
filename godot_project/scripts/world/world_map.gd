@@ -634,7 +634,7 @@ func spawn_npcs() -> void:
 			continue
 		if not _should_spawn_npc_on_world(npc_data):
 			continue
-		var actor = NPC_SCRIPT.new()
+		var actor: Node = NPC_SCRIPT.new()
 		add_child(actor)
 		var world_data: Dictionary = npc_data.duplicate(true)
 		var tile := _world_npc_tile(world_data, world_npc_tiles.size())
@@ -686,7 +686,7 @@ func _build_depth_props() -> void:
 						_add_depth_prop("awning", pos + Vector2(0, 8), seed, 0, 0.60)
 
 func _add_depth_prop(kind: String, world_position: Vector2, seed: int, z_offset: int = 0, scale_factor: float = 1.0) -> void:
-	var prop = MAP_PROP_SCRIPT.new()
+	var prop: Node = MAP_PROP_SCRIPT.new()
 	add_child(prop)
 	prop.setup(kind, world_position, tile_size, seed, z_offset, scale_factor)
 	prop_nodes.append(prop)
@@ -763,7 +763,7 @@ func reset_npcs() -> void:
 	npc_nodes.clear()
 	spawn_npcs()
 
-func unregister_npc(actor) -> void:
+func unregister_npc(actor: Node) -> void:
 	npc_nodes.erase(actor)
 
 func apply_defeated_enemies() -> void:
@@ -774,8 +774,8 @@ func apply_defeated_enemies() -> void:
 			unregister_npc(actor)
 			actor.queue_free()
 
-func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true):
-	var best = null
+func get_nearest_npc(world_position: Vector2, radius: float, include_enemies: bool = true) -> Node:
+	var best: Node = null
 	var best_distance := radius
 	for actor in npc_nodes:
 		if not is_instance_valid(actor):
@@ -821,7 +821,7 @@ func clear_highlights() -> void:
 		if is_instance_valid(actor):
 			actor.set_highlight(false)
 
-func focus_actor(actor) -> void:
+func focus_actor(actor: Node) -> void:
 	for npc in npc_nodes:
 		if is_instance_valid(npc):
 			npc.set_highlight(npc == actor)

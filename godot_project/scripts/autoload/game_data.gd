@@ -853,7 +853,7 @@ func load_database() -> void:
 	if npc_file == null:
 		npcs = _fallback_npcs()
 	else:
-		var parsed = JSON.parse_string(npc_file.get_as_text())
+		var parsed: Variant = JSON.parse_string(npc_file.get_as_text())
 		if typeof(parsed) == TYPE_ARRAY:
 			npcs = parsed
 		else:
@@ -880,7 +880,7 @@ func _load_items() -> void:
 	var file := FileAccess.open("res://data/items.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) == TYPE_ARRAY:
 		for item in parsed:
 			items[str(item.get("id", ""))] = item
@@ -890,7 +890,7 @@ func _load_quests() -> void:
 	var file := FileAccess.open("res://data/quests.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) == TYPE_ARRAY:
 		for quest in parsed:
 			quests[str(quest.get("id", ""))] = quest
@@ -900,7 +900,7 @@ func _load_npc_sprite_assets() -> void:
 	var file := FileAccess.open("res://data/npc_sprite_assets.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for npc_name in parsed.keys():
@@ -927,11 +927,11 @@ func _load_stage_layer_assets() -> void:
 	var file := FileAccess.open("res://data/stage_layer_assets.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for region_id in parsed.keys():
-		var entry = parsed[region_id]
+		var entry: Variant = parsed[region_id]
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var layers := {}
@@ -948,11 +948,11 @@ func _load_combat_stage_assets() -> void:
 	var file := FileAccess.open("res://data/combat_stage_assets.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for region_id in parsed.keys():
-		var entry = parsed[region_id]
+		var entry: Variant = parsed[region_id]
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var layers := {}
@@ -965,16 +965,16 @@ func _load_combat_actor_frames() -> void:
 	var file := FileAccess.open("res://data/combat_actor_frames.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for actor_key in parsed.keys():
-		var entry = parsed[actor_key]
+		var entry: Variant = parsed[actor_key]
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var actions := {}
 		for action_name in entry.keys():
-			var frames = entry[action_name]
+			var frames: Variant = entry[action_name]
 			if typeof(frames) != TYPE_ARRAY:
 				continue
 			var normalized: Array[String] = []
@@ -988,11 +988,11 @@ func _load_region_shop_assets() -> void:
 	var file := FileAccess.open("res://data/region_shops.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for key in parsed.keys():
-		var entry = parsed[key]
+		var entry: Variant = parsed[key]
 		if str(key) == "_defaults":
 			if typeof(entry) == TYPE_DICTIONARY:
 				var defaults := {}
@@ -1007,11 +1007,11 @@ func _load_region_point_assets() -> void:
 	var file := FileAccess.open("res://data/region_points.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for region_id in parsed.keys():
-		var entry = parsed[region_id]
+		var entry: Variant = parsed[region_id]
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var normalized := {}
@@ -1024,17 +1024,17 @@ func _load_region_market_assets() -> void:
 	var file := FileAccess.open("res://data/region_market_modifiers.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for key in parsed.keys():
-		var entry = parsed[key]
+		var entry: Variant = parsed[key]
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		if str(key) == "_defaults":
 			var defaults := {}
 			for region_type in entry.keys():
-				var default_entry = entry[region_type]
+				var default_entry: Variant = entry[region_type]
 				if typeof(default_entry) == TYPE_DICTIONARY:
 					defaults[str(region_type)] = _normalize_market_entry(default_entry as Dictionary)
 			region_market_assets["_defaults"] = defaults
@@ -1082,7 +1082,7 @@ func _load_asset_mapping(path: String, target: Dictionary) -> void:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	for key in parsed.keys():
@@ -1094,7 +1094,7 @@ func _load_regions() -> void:
 	var file := FileAccess.open("res://data/regions.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_ARRAY:
 		return
 	for region in parsed:
@@ -1361,7 +1361,7 @@ func get_combat_actor_frames(actor_key: String) -> Dictionary:
 func get_region_shop_ids(region: Dictionary) -> Array[String]:
 	var region_id := str(region.get("id", ""))
 	var region_type := str(region.get("type", "wild"))
-	var configured = region_shop_assets.get(region_id, [])
+	var configured: Variant = region_shop_assets.get(region_id, [])
 	if typeof(configured) != TYPE_ARRAY or configured.is_empty():
 		var defaults: Dictionary = region_shop_assets.get("_defaults", {})
 		configured = defaults.get(region_type, [])
@@ -1372,10 +1372,10 @@ func get_region_market(region_id: String) -> Dictionary:
 	var region_type := str(region.get("type", "wild"))
 	var defaults: Dictionary = region_market_assets.get("_defaults", {})
 	var result := {}
-	var default_entry = defaults.get(region_type, {})
+	var default_entry: Variant = defaults.get(region_type, {})
 	if typeof(default_entry) == TYPE_DICTIONARY:
 		result = _merge_market_entries(result, default_entry as Dictionary)
-	var region_entry = region_market_assets.get(region_id, {})
+	var region_entry: Variant = region_market_assets.get(region_id, {})
 	if typeof(region_entry) == TYPE_DICTIONARY:
 		result = _merge_market_entries(result, region_entry as Dictionary)
 	return result
@@ -1386,11 +1386,11 @@ func _merge_market_entries(base: Dictionary, override: Dictionary) -> Dictionary
 		if override.has(key):
 			result[key] = override[key]
 	for factor_key in ["shop_factors", "item_factors"]:
-		var merged = result.get(factor_key, {})
+		var merged: Variant = result.get(factor_key, {})
 		if typeof(merged) != TYPE_DICTIONARY:
 			merged = {}
 		merged = (merged as Dictionary).duplicate(true)
-		var next_factors = override.get(factor_key, {})
+		var next_factors: Variant = override.get(factor_key, {})
 		if typeof(next_factors) == TYPE_DICTIONARY:
 			for next_key in next_factors.keys():
 				merged[str(next_key)] = float(next_factors[next_key])
@@ -1399,7 +1399,7 @@ func _merge_market_entries(base: Dictionary, override: Dictionary) -> Dictionary
 
 func get_region_points(region_id: String, point_type: String) -> Array[Dictionary]:
 	var entry: Dictionary = region_point_assets.get(region_id, {})
-	var points = entry.get(point_type, [])
+	var points: Variant = entry.get(point_type, [])
 	return _dictionary_array(points)
 
 func get_combat_actor_frame_paths(actor_key: String, action_name: String) -> Array:
@@ -1694,7 +1694,7 @@ func _load_story_chapters() -> void:
 	var file := FileAccess.open("res://data/story_chapters.json", FileAccess.READ)
 	if file == null:
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_ARRAY:
 		return
 	for chapter in parsed:

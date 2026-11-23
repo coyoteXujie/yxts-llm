@@ -124,7 +124,7 @@ func _load_settings_from_project() -> void:
 	}
 	for key in keys:
 		var path: String = settings[key]
-		var default_value = defaults[key]
+		var default_value: Variant = defaults[key]
 		_shader_material.set_shader_parameter(key, ProjectSettings.get_setting(path, default_value))
 
 func _on_settings_changed(params: Dictionary) -> void:
@@ -157,7 +157,7 @@ func set_layer_enabled(name: String, enabled: bool) -> void:
 			layer["enabled"] = enabled
 
 ## 便捷调节
-func set_shader_param(name: String, value) -> void:
+func set_shader_param(name: String, value: Variant) -> void:
 	if _shader_material != null:
 		_shader_material.set_shader_parameter(name, value)
 

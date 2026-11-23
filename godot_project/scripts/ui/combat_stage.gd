@@ -1112,7 +1112,7 @@ func _draw_status_icons(rect: Rect2) -> void:
 	for status_id in player_statuses.keys():
 		if idx >= 3:
 			break
-		var color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
+		var color: Color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
 		var px := player_foot.x - 36.0 - float(idx) * 24.0
 		var py := player_foot.y - 80.0 + sin(pulse * 0.8 + float(idx)) * 2.0
 		var icon_rect := Rect2(Vector2(px, py), Vector2(18.0, 18.0))
@@ -1129,7 +1129,7 @@ func _draw_status_icons(rect: Rect2) -> void:
 	for status_id in enemy_statuses.keys():
 		if idx >= 3:
 			break
-		var color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
+		var color: Color = status_colors.get(status_id, Color(0.78, 0.76, 0.68))
 		var px := enemy_foot.x + 16.0 + float(idx) * 24.0
 		var py := enemy_foot.y - 90.0 + sin(pulse * 0.8 + float(idx) * 0.5) * 2.0
 		var icon_rect := Rect2(Vector2(px, py), Vector2(18.0, 18.0))

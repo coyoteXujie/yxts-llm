@@ -16,29 +16,28 @@ var _button_shader: Shader = null
 var _slot_shader: Shader = null
 
 static func _get_panel_shader() -> Shader:
-	var inst := _get_inst()
+	var inst: Variant = _get_inst()
 	if inst._panel_shader == null:
 		inst._panel_shader = load("res://shaders/ui_panel.gdshader") as Shader
 	return inst._panel_shader
 
 static func _get_button_shader() -> Shader:
-	var inst := _get_inst()
+	var inst: Variant = _get_inst()
 	if inst._button_shader == null:
 		inst._button_shader = load("res://shaders/ui_button.gdshader") as Shader
 	return inst._button_shader
 
 static func _get_slot_shader() -> Shader:
-	var inst := _get_inst()
+	var inst: Variant = _get_inst()
 	if inst._slot_shader == null:
 		inst._slot_shader = load("res://shaders/ui_slot.gdshader") as Shader
 	return inst._slot_shader
 
-static func _get_inst() -> UiArt:
-	var inst := Engine.get_singleton("UiArt") as UiArt
+static func _get_inst():
+	# 避免 class_name 自引用导致 autoload 时序问题
+	var inst: Variant = Engine.get_singleton("UiArt")
 	if inst == null:
-		inst = UiArt.new()
-		# 注册为引擎单例以便跨场景复用
-		# 如果没有自动加载，只能每次 new
+		inst = load("res://scripts/ui/ui_art.gd").new()
 	return inst
 
 

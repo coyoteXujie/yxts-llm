@@ -12,7 +12,7 @@ func _ready() -> void:
 	EventBus.time_changed.connect(_on_time_changed)
 
 ## 代理方法
-func get_world_state():
+func get_world_state() -> Node:
 	return world_state
 
 ## 信号桥 — 任务完成事件

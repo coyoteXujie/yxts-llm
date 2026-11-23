@@ -37,12 +37,12 @@ func close_panel() -> void:
 	GameState.set_mode(GameState.Mode.EXPLORE)
 
 func _build() -> void:
-	var shade = ColorRect.new()
+	var shade: ColorRect = ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.02, 0.018, 0.014, 0.72)
 	add_child(shade)
 
-	var panel = PanelContainer.new()
+	var panel: PanelContainer = PanelContainer.new()
 	panel.anchors_preset = Control.PRESET_CENTER
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
@@ -55,21 +55,21 @@ func _build() -> void:
 	panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(24, 20, 24, 20)))
 	add_child(panel)
 
-	var root = HBoxContainer.new()
+	var root: HBoxContainer = HBoxContainer.new()
 	root.add_theme_constant_override("separation", 14)
 	panel.add_child(root)
 
 	# 左列配方列表
-	var left_panel = PanelContainer.new()
+	var left_panel: PanelContainer = PanelContainer.new()
 	left_panel.custom_minimum_size = Vector2(380, 0)
 	left_panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(14, 12, 14, 12)))
 	root.add_child(left_panel)
 
-	var left_box = VBoxContainer.new()
+	var left_box: VBoxContainer = VBoxContainer.new()
 	left_box.add_theme_constant_override("separation", 8)
 	left_panel.add_child(left_box)
 
-	var title = Label.new()
+	var title: Label = Label.new()
 	title.text = "锻造图谱"
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color(0.96, 0.78, 0.38))
@@ -77,19 +77,19 @@ func _build() -> void:
 
 	_recipe_list = VBoxContainer.new()
 	_recipe_list.add_theme_constant_override("separation", 4)
-	var scroll = ScrollContainer.new()
+	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(0, 420)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_recipe_list)
 	left_box.add_child(scroll)
 
 	# 右列详情
-	var right_panel = PanelContainer.new()
+	var right_panel: PanelContainer = PanelContainer.new()
 	right_panel.custom_minimum_size = Vector2(380, 0)
 	right_panel.add_theme_stylebox_override("panel", UI_ART.panel_texture_style(Vector4(18, 16, 18, 16)))
 	root.add_child(right_panel)
 
-	var right_box = VBoxContainer.new()
+	var right_box: VBoxContainer = VBoxContainer.new()
 	right_box.add_theme_constant_override("separation", 12)
 	right_panel.add_child(right_box)
 
@@ -126,10 +126,10 @@ func _build() -> void:
 	_status_label.add_theme_color_override("font_color", Color(0.90, 0.70, 0.30))
 	right_box.add_child(_status_label)
 
-	var actions = HBoxContainer.new()
+	var actions: HBoxContainer = HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	right_box.add_child(actions)
-	var close_btn = Button.new()
+	var close_btn: Button = Button.new()
 	close_btn.text = "关闭"
 	close_btn.custom_minimum_size = Vector2(160, 38)
 	UI_ART.apply_button(close_btn)
@@ -142,11 +142,11 @@ func _refresh_list() -> void:
 	_recipe_buttons.clear()
 
 	for recipe_data in _crafting.get_recipes():
-		var rid = str(recipe_data.get("id", ""))
-		var rname = str(recipe_data.get("name", ""))
-		var check = _crafting.can_craft(rid)
+		var rid: String = str(recipe_data.get("id", ""))
+		var rname: String = str(recipe_data.get("name", ""))
+		var check: Dictionary = _crafting.can_craft(rid)
 
-		var btn = Button.new()
+		var btn: Button = Button.new()
 		btn.text = rname
 		btn.custom_minimum_size = Vector2(340, 36)
 		btn.add_theme_font_size_override("font_size", 14)
@@ -160,37 +160,37 @@ func _refresh_list() -> void:
 
 func _select_recipe(recipe_id: String) -> void:
 	_current_recipe_id = recipe_id
-	var recipe = _crafting.get_recipe(recipe_id)
+	var recipe: Dictionary = _crafting.get_recipe(recipe_id)
 	if recipe.is_empty():
 		return
 
 	_detail_name.text = str(recipe.get("name", ""))
 	_detail_desc.text = str(recipe.get("description", ""))
 
-	var materials = recipe.get("materials", {})
+	var materials: Variant = recipe.get("materials", {})
 	var lines: Array = []
 	for mat_id in materials.keys():
-		var need = int(materials[mat_id])
-		var have = int(GameState.inventory.get(mat_id, 0))
-		var item = GameData.get_item(mat_id)
-		var mat_name = str(item.get("name", mat_id))
-		var status = "✅" if have >= need else "❌"
+		var need: int = int(materials[mat_id])
+		var have: int = int(GameState.inventory.get(mat_id, 0))
+		var item: Variant = GameData.get_item(mat_id)
+		var mat_name: String = str(item.get("name", mat_id))
+		var status: String = "✅" if have >= need else "❌"
 		lines.append("%s %s x%d（持有 %d）" % [status, mat_name, need, have])
 	_detail_materials.text = "\n".join(lines)
 
-	var result_id = str(recipe.get("result_id", ""))
-	var result_item = GameData.get_item(result_id)
-	var result_name = str(result_item.get("name", result_id))
+	var result_id: String = str(recipe.get("result_id", ""))
+	var result_item: Variant = GameData.get_item(result_id)
+	var result_name: String = str(result_item.get("name", result_id))
 	_detail_materials.text += "\n\n产出：%s" % result_name
 
-	var can = _crafting.can_craft(recipe_id)
+	var can: Dictionary = _crafting.can_craft(recipe_id)
 	_detail_btn.disabled = not can.get("ok", false)
 	_status_label.text = "" if can.get("ok", false) else str(can.get("reason", ""))
 
 func _on_craft() -> void:
 	if _current_recipe_id.is_empty():
 		return
-	var result = _crafting.craft(_current_recipe_id)
+	var result: Dictionary = _crafting.craft(_current_recipe_id)
 	if result.get("ok", false):
 		_status_label.text = "✅ 锻造成功！获得 %s %s" % [result.get("quality", ""), result.get("item_name", "")]
 		AudioManager.play_sfx("hammer")

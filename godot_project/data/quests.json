@@ -1809,9 +1809,7 @@
     "title": "密道探索",
     "giver": "何喜",
     "description": "探险家发现了一处密道，邀请你一起去探索。",
-    "requires_completed": [
-      "q_explore_ruins"
-    ],
+    "requires_completed": [],
     "objectives": [
       {
         "type": "collect",

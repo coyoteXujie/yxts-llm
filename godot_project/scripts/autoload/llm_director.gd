@@ -334,7 +334,7 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
 		npc_line_failed.emit(npc_name, "响应异常：%d/%d" % [result, response_code])
 		return
-	var parsed = JSON.parse_string(body.get_string_from_utf8())
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
 	if typeof(parsed) != TYPE_DICTIONARY:
 		npc_line_failed.emit(npc_name, "响应不是 JSON")
 		return

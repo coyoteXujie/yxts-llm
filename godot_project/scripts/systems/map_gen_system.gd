@@ -639,7 +639,7 @@ func _configured_region_points(point_type: String) -> Array:
 	var result: Array = []
 	for point in points:
 		var normalized: Dictionary = point.duplicate(true)
-		var tile_value = normalized.get("tile", [])
+		var tile_value: Variant = normalized.get("tile", [])
 		if typeof(tile_value) == TYPE_ARRAY:
 			var tile_data: Array = tile_value
 			if tile_data.size() >= 2:

@@ -114,8 +114,8 @@ func _refresh_achievements() -> void:
 			var ach: Dictionary = all_ach[ach_id]
 			if str(ach.get("type", "")) != type_id:
 				continue
-			var unlocked = ach_sys.is_unlocked(ach_id)
-			var prog = ach_sys.get_progress(ach_id)
+			var unlocked: bool = ach_sys.is_unlocked(ach_id)
+			var prog: int = ach_sys.get_progress(ach_id)
 			var needed := int(ach.get("count", 1))
 			var name_str := str(ach.get("name", ach_id))
 			var desc := str(ach.get("description", ""))
@@ -186,7 +186,7 @@ func _refresh_item_bestiary() -> void:
 	for iname in item_names:
 		var hbox := HBoxContainer.new()
 		var icon := Label.new()
-		var has = collected.has(iname)
+		var has: bool = collected.has(iname)
 		icon.text = "●" if has else "○"
 		icon.add_theme_color_override("font_color", Color.AQUA if has else Color.GRAY)
 		hbox.add_child(icon)

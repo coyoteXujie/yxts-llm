@@ -80,7 +80,7 @@ func _process(delta: float) -> void:
 	# 更新失败血色滤镜
 	_update_defeat_effects(delta)
 
-func set_combat_system(system) -> void:
+func set_combat_system(system: Node) -> void:
 	combat_system = system
 	combat_system.combat_started.connect(_on_combat_started)
 	combat_system.combat_changed.connect(_on_combat_changed)
@@ -775,7 +775,7 @@ func _update_victory_particles(delta: float) -> void:
 			continue
 		all_dead = false
 		# 粒子会随时间停止并淡出
-		var t = float(p["elapsed"]) / float(p["life"])
+		var t: float = float(p["elapsed"]) / float(p["life"])
 		var pos: Vector2 = p.get("pos", Vector2.ZERO)
 		var target: Vector2 = p.get("target", pos)
 		p["pos"] = pos.lerp(target, minf(1.0, t * 0.03))
@@ -798,7 +798,7 @@ func _draw_victory_particles() -> void:
 		var life := float(p.get("life", 1.0))
 		if elapsed >= life:
 			continue
-		var t = elapsed / life
+		var t: float = elapsed / life
 		var pos: Vector2 = p.get("pos", Vector2.ZERO)
 		var size := float(p.get("size", 4.0))
 		var color: Color = p.get("color", Color(1.0, 0.85, 0.3))

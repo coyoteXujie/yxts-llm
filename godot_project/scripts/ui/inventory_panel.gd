@@ -498,7 +498,7 @@ func _hide_confirm() -> void:
 		confirm_overlay.hide()
 
 func _execute_confirm() -> void:
-	var cb = _pending_confirm
+	var cb: Variant = _pending_confirm
 	_hide_confirm()
 	if cb:
 		cb.call()

@@ -24,18 +24,18 @@ func get_region_state(region_id: String) -> Dictionary:
 	return _state.get_region_state(region_id)
 
 
-## 设置区域自定��状态字段
+## 设置区域自定义状态字段
 func set_region_state_field(region_id: String, key: String, value: Variant) -> void:
 	if region_id.is_empty() or key.is_empty():
 		return
-	var state := _ensure_region_state(region_id)
+	var state: Dictionary = _ensure_region_state(region_id)
 	state[key] = value
 	_state.region_state[region_id] = state
 
 
 ## 区域是否被封锁
 func is_region_blocked(region_id: String) -> bool:
-	var state := _state.get_region_state(region_id)
+	var state: Dictionary = _state.get_region_state(region_id)
 	return bool(state.get("blocked", false))
 
 
@@ -43,7 +43,7 @@ func is_region_blocked(region_id: String) -> bool:
 func set_region_blocked(region_id: String, blocked: bool, reason: String = "") -> void:
 	if region_id.is_empty():
 		return
-	var state := _ensure_region_state(region_id)
+	var state: Dictionary = _ensure_region_state(region_id)
 	state["blocked"] = blocked
 	if blocked and not reason.is_empty():
 		state["block_reason"] = reason
@@ -60,21 +60,21 @@ func set_region_blocked(region_id: String, blocked: bool, reason: String = "") -
 func devastate_region(region_id: String, reason: String = "") -> void:
 	if region_id.is_empty():
 		return
-	var state := _ensure_region_state(region_id)
+	var state: Dictionary = _ensure_region_state(region_id)
 	state["devastated"] = true
 	state["blocked"] = true
 	state["block_reason"] = "该区域已遭破坏，无法通行。"
 	_state.region_state[region_id] = state
-	var name := _get_region_name(region_id)
-	_state.append_world_event("cataclysm", "%s被毁" % name, "%s遭遇大劫。%s" % [name, reason], region_id, 5)
-	EventBus.emit_toast("噩耗：%s被毁！" % name)
+	var name_string: String = _get_region_name(region_id)
+	_state.append_world_event("cataclysm", "%s被毁" % name_string, "%s遭遇大劫。%s" % [name_string, reason], region_id, 5)
+	EventBus.emit_toast("噩耗：%s被毁！" % name_string)
 
 
 ## 修复已被摧毁的区域
 func restore_region(region_id: String, new_description: String = "") -> void:
 	if region_id.is_empty():
 		return
-	var state := _ensure_region_state(region_id)
+	var state: Dictionary = _ensure_region_state(region_id)
 	state["devastated"] = false
 	state["blocked"] = false
 	state.erase("block_reason")
@@ -82,17 +82,17 @@ func restore_region(region_id: String, new_description: String = "") -> void:
 	if not new_description.is_empty():
 		state["restored_description"] = new_description
 	_state.region_state[region_id] = state
-	var name := _get_region_name(region_id)
-	_state.append_world_event("region_change", "%s重建" % name, "%s在各方努力下开始重建。" % name, region_id, 3)
+	var name_string: String = _get_region_name(region_id)
+	_state.append_world_event("region_change", "%s重建" % name_string, "%s在各方努力下开始重建。" % name_string, region_id, 3)
 
 
 ## 获取区域描述（含剧情变更）
 func get_region_description(region_id: String) -> String:
-	var region := GameData.get_region(region_id)
+	var region: Dictionary = GameData.get_region(region_id)
 	if region.is_empty():
 		return "未知之地"
-	var base := str(region.get("description", ""))
-	var state := _state.get_region_state(region_id)
+	var base: String = str(region.get("description", ""))
+	var state: Dictionary = _state.get_region_state(region_id)
 	if state.is_empty():
 		return base
 	if bool(state.get("devastated", false)):
@@ -100,12 +100,12 @@ func get_region_description(region_id: String) -> String:
 	if bool(state.get("blocked", false)):
 		return "此路不通。" + str(state.get("block_reason", ""))
 	if bool(state.get("restored", false)):
-		var restored := str(state.get("restored_description", ""))
-		if not restored.is_empty():
-			return restored
-	var mood := str(state.get("mood", ""))
-	if not mood.is_empty():
-		return "%s（现况：%s）" % [base, mood]
+		var restored_string: String = str(state.get("restored_description", ""))
+		if not restored_string.is_empty():
+			return restored_string
+	var mood_string: String = str(state.get("mood", ""))
+	if not mood_string.is_empty():
+		return "%s（现况：%s）" % [base, mood_string]
 	return base
 
 
@@ -117,15 +117,13 @@ func get_region_description(region_id: String) -> String:
 func is_npc_visible(npc_name: String) -> bool:
 	if npc_name.is_empty():
 		return false
-	var npc := GameData.get_npc_by_name(npc_name)
+	var npc: Dictionary = GameData.get_npc_by_name(npc_name)
 	if npc.is_empty():
 		return false
-	# 检查 NPC 的 appears_after flag
 	var appears_after: Array = npc.get("appears_after", [])
 	for flag in appears_after:
 		if not bool(_state.game_flags.get(str(flag), false)):
 			return false
-	# 检查 NPC 的 disappears_after flag
 	var disappears_after: Array = npc.get("disappears_after", [])
 	for flag in disappears_after:
 		if bool(_state.game_flags.get(str(flag), false)):
@@ -145,9 +143,9 @@ func destroy_faction(faction_id: String) -> void:
 	if faction_id.is_empty():
 		return
 	_state.game_flags["faction_%s_destroyed" % faction_id] = true
-	var name := GameData.get_faction_name(faction_id)
-	_state.append_world_event("faction", "%s覆灭" % name, "%s已在江湖中烟消云散，其势力范围将逐渐被其他势力接管。" % name, "", 5)
-	EventBus.emit_toast("江湖剧变：%s覆灭！" % name)
+	var name_string: String = GameData.get_faction_name(faction_id)
+	_state.append_world_event("faction", "%s覆灭" % name_string, "%s已在江湖中烟消云散，其势力范围将逐渐被其他势力接管。" % name_string, "", 5)
+	EventBus.emit_toast("江湖剧变：%s覆灭！" % name_string)
 
 
 ## 获取当前区域活跃 NPC 列表
@@ -158,8 +156,8 @@ func get_active_npcs_for_region(region_id: String) -> Array[Dictionary]:
 	for npc in GameData.get_npcs():
 		if typeof(npc) != TYPE_DICTIONARY:
 			continue
-		var npc_region := _get_npc_region(npc)
-		if npc_region != region_id:
+		var npc_region_string: String = _get_npc_region(npc)
+		if npc_region_string != region_id:
 			continue
 		if is_npc_visible(str(npc.get("name", ""))):
 			result.append(npc)
@@ -176,21 +174,17 @@ func on_quest_completed(quest_id: String) -> void:
 		return
 	match quest_id:
 		"q_clear_thugs":
-			# 清完镇东流氓后，平安镇安全度提升
 			set_region_state_field("qinghe", "safety", "improved")
 			_state.append_world_event("world_change", "平安镇安靖", "镇东恶徒被清剿后，平安镇的百姓终于敢在夜间出门了。", "qinghe", 2)
 		"q_main_shadow_citadel":
-			# 暗影总坛覆灭后，相关区域变化
 			_state.append_world_event("world_change", "暗影势力消退", "暗影司总坛覆灭的消息传遍江湖，各地暗桩纷纷撤离。长安城的暗处比从前干净了许多。", "changan", 4)
 			set_region_state_field("changan", "shadow_activity", "collapsed")
 		"q_west_treasure_4":
-			# 西域秘境揭示后，西域商路恢复
 			set_region_state_field("west_region", "trade_route", "revived" if "west_region" in _state.region_state else "open")
-			_state.append_world_event("world_change", "西域商路重开", "沙漠之心的谜题解开后，西域商路重新焕发生机，来往商队络绎不绝。", "west_region", 3)
+			_state.append_world_event("world_change", "西域商路重开", "沙漠之心的谜题解开后，西域商路重新焕发生机。", "west_region", 3)
 		"q_main_old_case_closure":
-			# 旧案终册后，洛阳气氛变化
 			set_region_state_field("luoyang", "mood", "安宁")
-			_state.append_world_event("world_change", "洛阳安靖", "旧案终册落印后，洛阳城的气氛明显舒缓。百姓终于可以在茶馆里放心谈论那场大火了。", "luoyang", 4)
+			_state.append_world_event("world_change", "洛阳安靖", "旧案终册落印后，洛阳城气氛明显舒缓。", "luoyang", 4)
 			EventBus.emit_toast("历史被改写：洛阳旧案终于结案！")
 
 
@@ -200,8 +194,8 @@ func on_quest_completed(quest_id: String) -> void:
 
 ## 世界时钟推进（每小时调用一次）
 func advance_world_clock(hours_passed: float) -> void:
-	var old_day := _state.day
-	var old_hour := _state.hour
+	var old_day: int = _state.day
+	var old_hour: float = _state.hour
 	_state.hour += hours_passed
 	while _state.hour >= 24.0:
 		_state.hour -= 24.0
@@ -210,51 +204,42 @@ func advance_world_clock(hours_passed: float) -> void:
 
 
 func _on_time_change(old_day: int, old_hour: float, new_day: int, new_hour: float) -> void:
-	# 每天特定时刻的触发
-	var current_hour := int(floor(new_hour))
-	var old_hour_int := int(floor(old_hour))
+	var current_hour: int = int(floor(new_hour))
+	var old_hour_int: int = int(floor(old_hour))
 	
-	# 只在整点变化时检查（避免每次帧更新都检查）
 	if current_hour == old_hour_int:
 		return
 	
-	# 子时（23:00-01:00）——夜市收摊，宵禁开始
 	if current_hour == 23:
 		_state.append_world_event("time", "夜色已深", "夜深了，街上的行人和酒客逐渐散去。", _state.current_region_id, 1)
 	
-	# 卯时（05:00-07:00）——黎明，早市开张
 	if current_hour == 5:
-		_state.append_world_event("time", "黎明破晓", "东方既白，早市的摊贩开始摆出货物，新的一天开始了。", _state.current_region_id, 1)
+		_state.append_world_event("time", "黎明破晓", "东方既白，早市的摊贩开始摆出货物。", _state.current_region_id, 1)
 	
-	# 午时（11:00-13:00）——正午
 	if current_hour == 12:
 		_state.append_world_event("time", "日正中天", "正午的阳光下，江湖看起来比夜晚简单了许多。", _state.current_region_id, 1)
 	
-	# 检查是否有时间触发的剧情事件
 	_check_time_events(new_day, new_hour)
 
 
 ## 时间触发事件
 func _check_time_events(day: int, hour: float) -> void:
-	var current_hour := int(floor(hour))
+	var current_hour: int = int(floor(hour))
 	
-	# 第3天夜晚自动触发"神秘人"事件
 	if day == 3 and current_hour == 20 and not bool(_state.game_flags.get("time_event_day3_mystery", false)):
 		_state.game_flags["time_event_day3_mystery"] = true
-		_state.record_adventure_clue("", "夜行人的邀约", "有人在平安镇客栈留了一封信，约你去镇外老槐树下见面。落款是一个谁都看不懂的符号。", "qinghe", "夜行人", "qinghe")
+		_state.record_adventure_clue("", "夜行人的邀约", "有人在平安镇客栈留了一封信，约你去镇外老槐树下见面。", "qinghe", "夜行人", "qinghe")
 		EventBus.emit_toast("客栈桌上多了一封信...")
 	
-	# 第7天午夜——暗影信使事件
 	if day == 7 and current_hour == 0 and not bool(_state.game_flags.get("time_event_day7_messenger", false)):
 		if _state.current_region_id == "luoyang" or _state.current_region_id == "qinghe":
 			_state.game_flags["time_event_day7_messenger"] = true
-			_state.append_world_event("time", "暗影信使", "午夜时分，一个黑影在洛阳城头一闪而过。有夜巡的捕快声称看见了暗影司的密令信鸽。", "luoyang", 2)
+			_state.append_world_event("time", "暗影信使", "午夜时分，一个黑影在洛阳城头一闪而过。", "luoyang", 2)
 	
-	# 第15天——血月事件预告
 	if day == 15 and current_hour == 6 and not bool(_state.game_flags.get("time_event_day15_omen", false)):
 		if _state.completed_quests.has("q_main_broken_token"):
 			_state.game_flags["time_event_day15_omen"] = true
-			_state.append_world_event("time", "血月之兆", "清晨的天色异样地红，老农说这是血月将至的征兆。江湖中人在茶楼低声议论着不祥的预感。", _state.current_region_id, 3)
+			_state.append_world_event("time", "血月之兆", "清晨的天色异样地红，老农说这是血月将至的征兆。", _state.current_region_id, 3)
 
 
 # ============================================================
@@ -265,22 +250,22 @@ func _check_time_events(day: int, hour: float) -> void:
 func get_region_atmosphere(region_id: String) -> String:
 	if region_id.is_empty():
 		return ""
-	var state := _state.get_region_state(region_id)
+	var state: Dictionary = _state.get_region_state(region_id)
 	if state.is_empty():
 		return ""
-	var safety := str(state.get("safety", ""))
-	var mood := str(state.get("mood", ""))
-	var shadow := str(state.get("shadow_activity", ""))
+	var safety_string: String = str(state.get("safety", ""))
+	var mood_string: String = str(state.get("mood", ""))
+	var shadow_string: String = str(state.get("shadow_activity", ""))
 	var parts: Array[String] = []
-	if not mood.is_empty():
-		parts.append("氛围：" + mood)
-	if safety == "improved":
+	if not mood_string.is_empty():
+		parts.append("氛围：" + mood_string)
+	if safety_string == "improved":
 		parts.append("治安好转")
-	elif safety == "dangerous":
+	elif safety_string == "dangerous":
 		parts.append("危险区域")
-	if shadow == "collapsed":
+	if shadow_string == "collapsed":
 		parts.append("暗影势力消退")
-	elif shadow == "active":
+	elif shadow_string == "active":
 		parts.append("暗影活动频繁")
 	if parts.is_empty():
 		return ""
@@ -299,14 +284,14 @@ func _ensure_region_state(region_id: String) -> Dictionary:
 
 
 func _get_region_name(region_id: String) -> String:
-	var region := GameData.get_region(region_id)
+	var region: Dictionary = GameData.get_region(region_id)
 	return str(region.get("name", region_id))
 
 
 func _get_npc_region(npc: Dictionary) -> String:
-	var pos_x := int(npc.get("pos_x", -1))
-	var pos_y := int(npc.get("pos_y", -1))
+	var pos_x: int = int(npc.get("pos_x", -1))
+	var pos_y: int = int(npc.get("pos_y", -1))
 	if pos_x < 0 or pos_y < 0:
 		return ""
-	var tile := Vector2i(pos_x, pos_y)
+	var tile: Vector2i = Vector2i(pos_x, pos_y)
 	return str(GameData.get_region_at_tile(tile).get("id", ""))

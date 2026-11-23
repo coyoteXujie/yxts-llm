@@ -29,7 +29,7 @@ func _load_achievements() -> void:
 	if file == null:
 		push_error("AchievementSystem: cannot open achievements.json")
 		return
-	var parsed = JSON.parse_string(file.get_as_text())
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) != TYPE_ARRAY:
 		push_error("AchievementSystem: achievements.json is not an array")
 		return
