@@ -45,9 +45,11 @@ var current_region_name := "未知之地"
 var current_tile := Vector2i.ZERO
 var map_target_region_id := ""
 
-# 叙事与世界观持久单例（在_ready中创建）
-var story_system: RefCounted = null
+# 叙事与世界观持久单例
 var world_state: RefCounted = null
+
+# StorySystemNode 引用（由 StorySystemNode._ready() 注册；避免类名时序依赖，用 Node 类型）
+var story_system_node_ref: Node = null
 
 # 门派/成就/灵宠存档数据
 var sect_save_data: Dictionary = {}
@@ -176,7 +178,6 @@ const STORY_CHOICE_DEFINITIONS := [
 ]
 
 func _ready() -> void:
-	story_system = load("res://scripts/systems/story_system.gd").new(self)
 	world_state = load("res://scripts/systems/world_state.gd").new(self)
 	new_game()
 
@@ -1654,12 +1655,12 @@ func trigger_ending() -> void:
 	if game_flags.get("ending_triggered", false):
 		return
 	game_flags["ending_triggered"] = true
-	# 优先用持久化story_system
+	# 优先用 StorySystemNode 中的持久化 story_system
 	var ending: Dictionary = {}
-	if story_system != null:
-		ending = story_system.get_ending()
+	if story_system_node_ref != null:
+		ending = story_system_node_ref.get_story_system().get_ending()
 	if ending.is_empty():
-		# fallback: 动态load（避免class_name时序依赖）
+		# fallback: 动态 load（避免 class_name 时序依赖）
 		var SS = load("res://scripts/systems/story_system.gd")
 		var tmp: RefCounted = SS.new(self)
 		ending = tmp.get_ending()
@@ -1680,8 +1681,8 @@ func add_item(item_id: String, count: int = 1) -> void:
 	_story_on_item_obtained(item_id)
 
 func _story_on_item_obtained(item_id: String) -> void:
-	if story_system != null and story_system.has_method("on_item_obtained"):
-		story_system.on_item_obtained(item_id)
+	if story_system_node_ref != null and story_system_node_ref.get_story_system().has_method("on_item_obtained"):
+		story_system_node_ref.get_story_system().on_item_obtained(item_id)
 
 func has_item(item_id: String, count: int = 1) -> bool:
 	return int(inventory.get(item_id, 0)) >= count

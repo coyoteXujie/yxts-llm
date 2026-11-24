@@ -2805,7 +2805,7 @@
     "loot": [
       {
         "item": "item_scorpion_poison",
-        "chance": 40
+        "chance": 0.4
       }
     ],
     "spawn_regions": [
@@ -2838,7 +2838,7 @@
     "loot": [
       {
         "item": "item_ice_essence",
-        "chance": 35
+        "chance": 0.35
       }
     ],
     "spawn_regions": [
@@ -2871,11 +2871,11 @@
     "loot": [
       {
         "item": "item_mojiao_armor",
-        "chance": 5
+        "chance": 0.05
       },
       {
         "item": "item_huiqi_dan",
-        "chance": 20
+        "chance": 0.2
       }
     ],
     "spawn_regions": [
@@ -2908,7 +2908,7 @@
     "loot": [
       {
         "item": "item_spider_silk",
-        "chance": 45
+        "chance": 0.45
       }
     ],
     "spawn_regions": [
@@ -2942,7 +2942,7 @@
     "loot": [
       {
         "item": "item_stone_core",
-        "chance": 30
+        "chance": 0.3
       }
     ],
     "spawn_regions": [
@@ -2975,7 +2975,7 @@
     "loot": [
       {
         "item": "item_bat_blood",
-        "chance": 50
+        "chance": 0.5
       }
     ],
     "spawn_regions": [
@@ -3009,7 +3009,7 @@
     "loot": [
       {
         "item": "item_sword_spirit",
-        "chance": 25
+        "chance": 0.25
       }
     ],
     "spawn_regions": [
@@ -3042,7 +3042,7 @@
     "loot": [
       {
         "item": "item_mojiao_ring",
-        "chance": 40
+        "chance": 0.4
       }
     ],
     "spawn_regions": [
@@ -3074,7 +3074,7 @@
     "loot": [
       {
         "item": "item_mojiao_letter",
-        "chance": 15
+        "chance": 0.15
       }
     ],
     "spawn_regions": [
@@ -3170,7 +3170,17 @@
     "exp_reward": 80,
     "pos_x": 45,
     "pos_y": 28,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 128,
@@ -3191,7 +3201,17 @@
     "exp_reward": 35,
     "pos_x": 45,
     "pos_y": 29,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 129,
@@ -3212,7 +3232,17 @@
     "exp_reward": 150,
     "pos_x": 46,
     "pos_y": 30,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 130,
@@ -3233,7 +3263,17 @@
     "exp_reward": 55,
     "pos_x": 46,
     "pos_y": 31,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 131,
@@ -3254,7 +3294,17 @@
     "exp_reward": 500,
     "pos_x": 47,
     "pos_y": 32,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 132,
@@ -3275,7 +3325,17 @@
     "exp_reward": 250,
     "pos_x": 5,
     "pos_y": 38,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 133,
@@ -3296,7 +3356,17 @@
     "exp_reward": 45,
     "pos_x": 40,
     "pos_y": 45,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_yao",
+        "chance": 0.35
+      },
+      {
+        "item": "item_dan",
+        "chance": 0.15
+      }
+    ]
   },
   {
     "id": 134,
@@ -3317,7 +3387,13 @@
     "exp_reward": 200,
     "pos_x": 5,
     "pos_y": 36,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_meat",
+        "chance": 0.5
+      }
+    ]
   },
   {
     "id": 135,
@@ -3338,7 +3414,17 @@
     "exp_reward": 50,
     "pos_x": 6,
     "pos_y": 36,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_meat",
+        "chance": 0.3
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.2
+      }
+    ]
   },
   {
     "id": 136,
@@ -3359,7 +3445,21 @@
     "exp_reward": 800,
     "pos_x": 36,
     "pos_y": 21,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dan",
+        "chance": 0.7
+      },
+      {
+        "item": "item_shengji",
+        "chance": 0.5
+      },
+      {
+        "item": "item_hetun_blade",
+        "chance": 0.15
+      }
+    ]
   },
   {
     "id": 137,
@@ -3380,7 +3480,17 @@
     "exp_reward": 80,
     "pos_x": 47,
     "pos_y": 20,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_yao",
+        "chance": 0.4
+      },
+      {
+        "item": "item_wine",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 347,
@@ -3758,7 +3868,17 @@
     "exp_reward": 80,
     "pos_x": 44,
     "pos_y": 27,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 365,
@@ -3779,7 +3899,13 @@
     "exp_reward": 70,
     "pos_x": 6,
     "pos_y": 37,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_meat",
+        "chance": 0.5
+      }
+    ]
   },
   {
     "id": 366,
@@ -3800,7 +3926,13 @@
     "exp_reward": 85,
     "pos_x": 49,
     "pos_y": 9,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_yao",
+        "chance": 0.35
+      }
+    ]
   },
   {
     "id": 367,
@@ -3821,7 +3953,13 @@
     "exp_reward": 60,
     "pos_x": 8,
     "pos_y": 38,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_meat",
+        "chance": 0.5
+      }
+    ]
   },
   {
     "id": 368,
@@ -3842,7 +3980,13 @@
     "exp_reward": 100,
     "pos_x": 77,
     "pos_y": 51,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 369,
@@ -3863,7 +4007,13 @@
     "exp_reward": 75,
     "pos_x": 14,
     "pos_y": 36,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_yao",
+        "chance": 0.35
+      }
+    ]
   },
   {
     "id": 370,
@@ -3884,7 +4034,13 @@
     "exp_reward": 90,
     "pos_x": 37,
     "pos_y": 45,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_meat",
+        "chance": 0.4
+      }
+    ]
   },
   {
     "id": 371,
@@ -3905,7 +4061,17 @@
     "exp_reward": 80,
     "pos_x": 66,
     "pos_y": 36,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   },
   {
     "id": 372,
@@ -3926,6 +4092,16 @@
     "exp_reward": 65,
     "pos_x": 45,
     "pos_y": 30,
-    "has_quests": false
+    "has_quests": false,
+    "loot": [
+      {
+        "item": "item_dagger",
+        "chance": 0.25
+      },
+      {
+        "item": "item_yao",
+        "chance": 0.3
+      }
+    ]
   }
 ]

@@ -7,7 +7,9 @@ var story_system: StorySystem
 
 func _ready() -> void:
 	story_system = StorySystem.new(GameState)
-	# 监听���键 GameState 事件
+	# 监听关键 GameState 事件
+	# 向 GameState 注册自身引用，避免 game_state 重复构造 StorySystem
+	GameState.story_system_node_ref = self
 	EventBus.quest_completed.connect(_on_quest_completed_ev)
 	EventBus.player_changed.connect(_on_player_changed)
 
